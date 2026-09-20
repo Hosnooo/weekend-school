@@ -1,5 +1,2 @@
-import {FoundationPage} from '@/components/layout/foundation-page';
-
-export default function HistoryPage() {
-  return <FoundationPage titleKey="history" />;
-}
+import {getTranslations} from 'next-intl/server';import {notFound} from 'next/navigation';import {AdminPage} from '@/components/ui/admin-page';import {listTeacherHistory} from '@/features/weekly-updates/weekly-update.repository';import {isLocale} from '@/i18n/config';import {Link} from '@/i18n/navigation';import {requireProfile} from '@/lib/auth/require-profile';
+export default async function HistoryPage({params}:{params:Promise<{locale:string}>}){const{locale}=await params;if(!isLocale(locale))notFound();const profile=await requireProfile(locale,'TEACHER');const history=await listTeacherHistory(profile.schoolId);const t=await getTranslations({locale,namespace:'weekly'});return <AdminPage title={t('history')} description={t('historyDescription')}>{history.length===0?<p className="empty-state">{t('noHistory')}</p>:<div className="table-wrap"><table><thead><tr><th>{t('group')}</th><th>{t('date')}</th><th></th></tr></thead><tbody>{history.map((item)=><tr key={item.id}><td>{locale==='ar'&&item.groupNameAr?item.groupNameAr:item.groupNameEn}</td><td>{new Intl.DateTimeFormat(locale,{dateStyle:'long'}).format(new Date(`${item.sessionDate}T12:00:00`))}</td><td><Link href={`/history/${item.id}`}>{t('view')}</Link></td></tr>)}</tbody></table></div>}</AdminPage>}

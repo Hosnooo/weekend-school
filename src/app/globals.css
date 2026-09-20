@@ -39,6 +39,10 @@ select {
   font: inherit;
 }
 
+textarea {
+  font: inherit;
+}
+
 .admin-page {
   display: grid;
   gap: 1.5rem;
@@ -190,6 +194,37 @@ tbody tr:last-child td {
 .check-item input { inline-size: 1.25rem; block-size: 1.25rem; }
 .compact-form { margin-block-end: 1rem; }
 .subsection { display: grid; gap: 1rem; }
+
+.group-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+  gap: 1rem;
+}
+
+.group-card,
+.weekly-form section {
+  padding: 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+}
+
+.group-card h2,
+.weekly-form h2 { margin-block-start: 0; }
+.weekly-form { display: grid; gap: 1rem; }
+.weekly-form section { display: grid; gap: 1rem; }
+.weekly-form label { display: grid; gap: 0.4rem; font-weight: 600; }
+.weekly-form textarea,
+.weekly-form select { width: 100%; min-height: 2.75rem; padding: 0.65rem 0.75rem; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 0.5rem; }
+.section-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.section-heading h2 { margin: 0; }
+.attendance-list { display: grid; gap: 0.75rem; }
+.attendance-list label { grid-template-columns: minmax(0,1fr) minmax(8rem,11rem); align-items: center; }
+.exception-row { border-block-start: 1px solid var(--border); }
+.exception-toggle { width: 100%; min-height: 3rem; display: flex; justify-content: space-between; align-items: center; padding-inline: 0; color: var(--text); background: transparent; border: 0; cursor: pointer; font: inherit; font-weight: 700; text-align: start; }
+.exception-fields { display: grid; gap: 0.75rem; padding-block-end: 1rem; }
+.sticky-actions { position: sticky; inset-block-end: 0; display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.75rem; background: rgba(255,255,255,0.96); border: 1px solid var(--border); border-radius: 0.75rem; box-shadow: 0 -0.25rem 1rem rgba(23,32,51,0.08); }
+.save-status { color: var(--muted); }
 
 :focus-visible {
   outline: 3px solid var(--focus);
@@ -401,6 +436,11 @@ tbody tr:last-child td {
   .form-grid {
     grid-template-columns: 1fr;
   }
+
+  .attendance-list label { grid-template-columns: 1fr; }
+  .sticky-actions { align-items: stretch; flex-direction: column; }
+  .sticky-actions .form-actions,
+  .sticky-actions .button { width: 100%; }
 
   th,
   td {
