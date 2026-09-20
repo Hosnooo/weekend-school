@@ -24,6 +24,7 @@ supabase/.temp/
 
 # logs and editor files
 *.log
+*.tsbuildinfo
 .DS_Store
 Thumbs.db
 .idea/

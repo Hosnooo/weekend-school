@@ -4,7 +4,7 @@ Last updated: 2026-09-20
 
 ## Current status
 
-Planning is complete. Phase 1 — Foundation is in progress.
+Planning and Phase 1 — Foundation are complete on the `phase-1-foundation` branch.
 
 ## Planning completed
 
@@ -16,17 +16,29 @@ Planning is complete. Phase 1 — Foundation is in progress.
 
 ## Phase 1 — Foundation
 
-Status: In progress.
+Status: Complete.
 
-Planned completion criteria:
+Completed:
 
-- Next.js App Router, strict TypeScript, Tailwind, lint, Vitest, and production build configuration.
-- Supabase browser/server connection factories with validated public environment configuration.
-- Ordered schema migrations and foundational RLS policies.
-- English/Arabic routing, message catalogs, document `lang`/`dir`, and language switcher.
-- Secure login/logout, active-profile requirement, role-aware protected layout, and base navigation.
-- Tests for Phase 1 behavior and migration contracts.
-- Passing `pnpm lint`, `pnpm typecheck`, `pnpm test`, and `pnpm build`.
+- Created a pinned pnpm/Next.js 16 project with strict TypeScript, Tailwind, ESLint, Vitest, Testing Library, and a reproducible lockfile.
+- Added validated public environment configuration and separate Supabase browser, server, and proxy clients. No service-role client or secret is exposed to browser code.
+- Added seven ordered forward-only migrations covering all specified MVP tables, tenant-safe composite relationships, history-preserving constraints, duplicate prevention, immutable submitted sessions/report snapshots, least-privilege RLS, and teacher self-service language preference only.
+- Added `next-intl` locale routing, complete foundation message catalogs, locale switching, persisted authenticated preference, and document-level `lang`/`dir`.
+- Added accessible email/password login, generic login failures, logout, active-profile checks, admin/teacher role route boundaries, exact role navigation, and responsive foundation pages.
+- Added test-first coverage for public environment validation, locale guards/direction, login normalization, safe language redirects, role navigation, active-profile authorization, accessible navigation, migration ordering, required tables/RLS, and duplicate invariants.
+
+Verification evidence from 2026-09-20:
+
+- `pnpm lint` — passed with zero warnings/errors.
+- `pnpm typecheck` — passed.
+- `pnpm test` — 4 files and 19 tests passed.
+- `pnpm build` — passed; Next.js generated all 22 pages and both locale login variants.
+- Production HTTP smoke check — `/en/login` and `/ar/login` returned 200; English rendered `lang="en" dir="ltr"`, Arabic rendered `lang="ar" dir="rtl"`, and both rendered their translated school name.
+
+Not claimed in Phase 1:
+
+- Live Supabase migration execution, Auth login, and adversarial RLS runtime tests were not possible on this workstation because Docker and the Supabase CLI are unavailable and no remote project credentials were provided. SQL contract tests passed, but real PostgreSQL/RLS execution remains mandatory before MVP completion.
+- Feature pages intentionally remain translated foundation/empty states. Their product behavior belongs to Phases 2–5.
 
 ## Remaining phases
 
@@ -39,4 +51,4 @@ Planned completion criteria:
 ## Environment limitations discovered
 
 - Node.js 24.19.0 and pnpm 11.19.0 are available.
-- This workstation currently has neither Docker nor a Supabase CLI, so live migration and RLS execution cannot be claimed during Phase 1 unless that environment becomes available. Static migration contract tests will cover schema presence only; real PostgreSQL/RLS tests remain mandatory before MVP completion.
+- This workstation currently has neither Docker nor a Supabase CLI. Static migration contract tests cover ordering, schema presence, RLS activation, and critical uniqueness declarations only; real PostgreSQL/RLS tests remain mandatory before MVP completion.

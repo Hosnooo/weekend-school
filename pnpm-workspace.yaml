@@ -1,0 +1,13 @@
+packages: []
+
+storeDir: .pnpm-store
+packageImportMethod: copy
+nodeLinker: hoisted
+confirmModulesPurge: false
+
+allowBuilds:
+  '@parcel/watcher': true
+  '@swc/core': true
+  '@tailwindcss/oxide': true
+  esbuild: true
+  unrs-resolver: true

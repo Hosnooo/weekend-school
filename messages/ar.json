@@ -1,0 +1,35 @@
+{
+  "app": {
+    "name": "مدرسة نهاية الأسبوع",
+    "skipToContent": "الانتقال إلى المحتوى"
+  },
+  "auth": {
+    "email": "البريد الإلكتروني",
+    "password": "كلمة المرور",
+    "signIn": "تسجيل الدخول",
+    "signingIn": "جارٍ تسجيل الدخول…",
+    "signOut": "تسجيل الخروج",
+    "invalidCredentials": "تعذر تسجيل الدخول. تحقق من البيانات وحاول مرة أخرى.",
+    "accessUnavailable": "صلاحية الوصول إلى المدرسة غير مفعلة. تواصل مع المسؤول."
+  },
+  "navigation": {
+    "label": "التنقل الرئيسي",
+    "dashboard": "لوحة التحكم",
+    "groups": "المجموعات",
+    "students": "الطلاب",
+    "teachers": "المعلمون",
+    "reports": "التقارير",
+    "settings": "الإعدادات",
+    "myGroups": "مجموعاتي",
+    "history": "السجل"
+  },
+  "language": {
+    "label": "اللغة",
+    "english": "English",
+    "arabic": "العربية"
+  },
+  "foundation": {
+    "pageDescription": "سيتم تنفيذ هذا القسم في مرحلته المخطط لها.",
+    "noGroups": "لم يتم تعيين مجموعات بعد."
+  }
+}
