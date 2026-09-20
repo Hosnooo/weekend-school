@@ -1,35 +1,13 @@
 {
-  "app": {
-    "name": "Weekend School",
-    "skipToContent": "Skip to content"
-  },
-  "auth": {
-    "email": "Email",
-    "password": "Password",
-    "signIn": "Sign in",
-    "signingIn": "Signing in…",
-    "signOut": "Sign out",
-    "invalidCredentials": "We couldn't sign you in. Check your details and try again.",
-    "accessUnavailable": "Your school access is not active. Contact an administrator."
-  },
-  "navigation": {
-    "label": "Main navigation",
-    "dashboard": "Dashboard",
-    "groups": "Groups",
-    "students": "Students",
-    "teachers": "Teachers",
-    "reports": "Reports",
-    "settings": "Settings",
-    "myGroups": "My Groups",
-    "history": "History"
-  },
-  "language": {
-    "label": "Language",
-    "english": "English",
-    "arabic": "العربية"
-  },
-  "foundation": {
-    "pageDescription": "This section will be implemented in its planned phase.",
-    "noGroups": "No groups assigned yet."
-  }
+  "app": {"name": "Weekend School", "skipToContent": "Skip to content"},
+  "auth": {"email": "Email", "password": "Password", "signIn": "Sign in", "signingIn": "Signing in…", "signOut": "Sign out", "invalidCredentials": "We couldn't sign you in. Check your details and try again.", "accessUnavailable": "Your school access is not active. Contact an administrator."},
+  "navigation": {"label": "Main navigation", "dashboard": "Dashboard", "groups": "Groups", "students": "Students", "teachers": "Teachers", "reports": "Reports", "settings": "Settings", "myGroups": "My Groups", "history": "History"},
+  "language": {"label": "Language", "english": "English", "arabic": "العربية"},
+  "foundation": {"pageDescription": "This section will be implemented in its planned phase.", "noGroups": "No groups assigned yet."},
+  "common": {"add": "Add", "edit": "Edit", "save": "Save", "saving": "Saving…", "cancel": "Cancel", "active": "Active", "inactive": "Inactive", "deactivate": "Deactivate", "reactivate": "Reactivate", "none": "None", "notAssigned": "Not assigned", "validation": "Check the required fields and try again.", "saveError": "We couldn't save your changes. Try again.", "inviteError": "We couldn't send the invitation. No teacher record was kept.", "actions": "Actions", "status": "Status"},
+  "students": {"title": "Students", "description": "Manage students, their current groups, and guardian contacts.", "addStudent": "Add student", "manageGuardians": "Manage guardians", "empty": "No students yet. Add your first student to get started.", "name": "Student", "group": "Current group", "firstNameEn": "First name (English)", "lastNameEn": "Last name (English)", "firstNameAr": "First name (Arabic, optional)", "lastNameAr": "Last name (Arabic, optional)", "newTitle": "Add student", "editTitle": "Edit student", "membershipStart": "Group start date", "guardianSection": "Primary guardian", "guardianName": "Guardian name", "guardianEmail": "Guardian email", "reportLanguage": "Report language"},
+  "guardians": {"title": "Guardians", "description": "Manage guardian contact details and report language.", "addGuardian": "Add guardian", "empty": "No guardians yet.", "name": "Name", "email": "Email", "reportLanguage": "Report language", "newTitle": "Add guardian", "editTitle": "Edit guardian"},
+  "groups": {"title": "Groups", "description": "Manage groups, primary teachers, and membership history.", "addGroup": "Add group", "empty": "No groups yet.", "name": "Group", "nameEn": "Group name (English)", "nameAr": "Group name (Arabic, optional)", "teacher": "Primary teacher", "parent": "Parent group", "students": "Students", "newTitle": "Add group", "editTitle": "Edit group", "memberships": "Memberships", "addMembership": "Add student membership", "student": "Student", "startsOn": "Starts on", "endsOn": "Ends on (optional)", "current": "Current", "endToday": "End today", "noMemberships": "No membership history yet."},
+  "teachers": {"title": "Teachers", "description": "Invite teachers and manage their exact group assignments.", "addTeacher": "Invite teacher", "empty": "No teachers yet.", "name": "Teacher", "groups": "Assigned groups", "preferredLanguage": "Preferred language", "newTitle": "Invite teacher", "editTitle": "Edit teacher", "displayName": "Display name", "email": "Email address", "assignments": "Group assignments"},
+  "reportLanguages": {"en": "English", "ar": "Arabic", "both": "English and Arabic"}
 }

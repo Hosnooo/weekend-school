@@ -1,0 +1,2 @@
+import {getTranslations} from 'next-intl/server'; import {notFound} from 'next/navigation'; import {AdminPage} from '@/components/ui/admin-page'; import {GuardianForm} from '@/features/guardians/guardian-form'; import {isLocale} from '@/i18n/config';
+export default async function NewGuardianPage({params}:{params:Promise<{locale:string}>}){const{locale}=await params;if(!isLocale(locale))notFound();const t=await getTranslations({locale,namespace:'guardians'});return <AdminPage title={t('newTitle')} description={t('description')}><GuardianForm locale={locale}/></AdminPage>}

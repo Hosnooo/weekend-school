@@ -4,7 +4,7 @@ Last updated: 2026-09-20
 
 ## Current status
 
-Planning and Phase 1 — Foundation are complete on the `phase-1-foundation` branch.
+Planning, Phase 1 — Foundation, and the locally verifiable portion of Phase 2 — School Administration are complete on `phase-2-administration`.
 
 ## Planning completed
 
@@ -40,9 +40,32 @@ Not claimed in Phase 1:
 - Live Supabase migration execution, Auth login, and adversarial RLS runtime tests were not possible on this workstation because Docker and the Supabase CLI are unavailable and no remote project credentials were provided. SQL contract tests passed, but real PostgreSQL/RLS execution remains mandatory before MVP completion.
 - Feature pages intentionally remain translated foundation/empty states. Their product behavior belongs to Phases 2–5.
 
+## Phase 2 — School Administration
+
+Status: Implementation complete; live Supabase verification remains outstanding.
+
+Completed:
+
+- Added normalized Zod schemas, typed repositories, and admin-only Server Actions for students, guardians, groups, memberships, teacher invitations, and exact group assignments.
+- Added an eighth forward-only migration with atomic student/guardian/membership creation, atomic group/teacher updates, atomic teacher assignment replacement, one-primary-teacher enforcement, normalized guardian email uniqueness, and the required delete policy for assignment replacement.
+- Added a server-only service-role client and compensating cleanup for failed teacher invitations. Group validity and primary-teacher availability are checked before invitation email is sent.
+- Built responsive English/Arabic list, empty, create, edit, activate/deactivate, assignment, and membership-history screens without adding top-level navigation.
+- Preserved membership history by ending memberships rather than deleting them.
+- Added tests for input normalization, optional Arabic names, email normalization, teacher invitation success/cleanup/preflight behavior, server environment isolation, and migration contracts.
+
+Verification evidence from 2026-09-20:
+
+- `pnpm lint` — passed with zero warnings/errors.
+- `pnpm typecheck` — passed.
+- `pnpm test` — 6 files and 30 tests passed.
+- `pnpm build` — passed; Next.js generated all 32 routes/pages, including the Phase 2 administration routes.
+
+Not claimed in Phase 2:
+
+- Fresh-database migration execution and real authorization/RLS integration tests remain unavailable because this workstation has neither Docker nor the Supabase CLI and no remote test project was provided. Static SQL contract coverage passed; this limitation must be cleared before MVP completion.
+
 ## Remaining phases
 
-- Phase 2 — School Administration
 - Phase 3 — Teacher Workflow
 - Phase 4 — Reports
 - Phase 5 — Email

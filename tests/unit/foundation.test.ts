@@ -4,6 +4,7 @@ import {loginSchema} from '@/features/auth/auth.schemas';
 import {languagePreferenceSchema} from '@/features/profiles/profile.schemas';
 import {getNavigationItems} from '@/lib/auth/navigation';
 import {getPublicEnv} from '@/lib/env/public';
+import {getServerEnv} from '@/lib/env/server';
 import {getLocaleDirection, isLocale} from '@/i18n/config';
 
 describe('public environment', () => {
@@ -23,6 +24,14 @@ describe('public environment', () => {
       supabaseUrl: 'https://school.supabase.co',
       supabaseAnonKey: 'public-anon-key'
     });
+  });
+});
+
+describe('server environment', () => {
+  it('rejects a missing service-role key', () => {
+    expect(() =>
+      getServerEnv({NEXT_PUBLIC_SUPABASE_URL: 'https://school.supabase.co'})
+    ).toThrow('SUPABASE_SERVICE_ROLE_KEY');
   });
 });
 

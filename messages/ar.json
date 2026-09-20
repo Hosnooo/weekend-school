@@ -1,35 +1,13 @@
 {
-  "app": {
-    "name": "مدرسة نهاية الأسبوع",
-    "skipToContent": "الانتقال إلى المحتوى"
-  },
-  "auth": {
-    "email": "البريد الإلكتروني",
-    "password": "كلمة المرور",
-    "signIn": "تسجيل الدخول",
-    "signingIn": "جارٍ تسجيل الدخول…",
-    "signOut": "تسجيل الخروج",
-    "invalidCredentials": "تعذر تسجيل الدخول. تحقق من البيانات وحاول مرة أخرى.",
-    "accessUnavailable": "صلاحية الوصول إلى المدرسة غير مفعلة. تواصل مع المسؤول."
-  },
-  "navigation": {
-    "label": "التنقل الرئيسي",
-    "dashboard": "لوحة التحكم",
-    "groups": "المجموعات",
-    "students": "الطلاب",
-    "teachers": "المعلمون",
-    "reports": "التقارير",
-    "settings": "الإعدادات",
-    "myGroups": "مجموعاتي",
-    "history": "السجل"
-  },
-  "language": {
-    "label": "اللغة",
-    "english": "English",
-    "arabic": "العربية"
-  },
-  "foundation": {
-    "pageDescription": "سيتم تنفيذ هذا القسم في مرحلته المخطط لها.",
-    "noGroups": "لم يتم تعيين مجموعات بعد."
-  }
+  "app": {"name": "مدرسة نهاية الأسبوع", "skipToContent": "الانتقال إلى المحتوى"},
+  "auth": {"email": "البريد الإلكتروني", "password": "كلمة المرور", "signIn": "تسجيل الدخول", "signingIn": "جارٍ تسجيل الدخول…", "signOut": "تسجيل الخروج", "invalidCredentials": "تعذر تسجيل الدخول. تحقق من البيانات وحاول مرة أخرى.", "accessUnavailable": "صلاحية الوصول إلى المدرسة غير مفعلة. تواصل مع المسؤول."},
+  "navigation": {"label": "التنقل الرئيسي", "dashboard": "لوحة التحكم", "groups": "المجموعات", "students": "الطلاب", "teachers": "المعلمون", "reports": "التقارير", "settings": "الإعدادات", "myGroups": "مجموعاتي", "history": "السجل"},
+  "language": {"label": "اللغة", "english": "English", "arabic": "العربية"},
+  "foundation": {"pageDescription": "سيتم تنفيذ هذا القسم في مرحلته المخطط لها.", "noGroups": "لم يتم تعيين مجموعات بعد."},
+  "common": {"add": "إضافة", "edit": "تعديل", "save": "حفظ", "saving": "جارٍ الحفظ…", "cancel": "إلغاء", "active": "نشط", "inactive": "غير نشط", "deactivate": "إلغاء التفعيل", "reactivate": "إعادة التفعيل", "none": "لا يوجد", "notAssigned": "غير معيّن", "validation": "تحقق من الحقول المطلوبة وحاول مرة أخرى.", "saveError": "تعذر حفظ التغييرات. حاول مرة أخرى.", "inviteError": "تعذر إرسال الدعوة. لم يتم الاحتفاظ بسجل المعلم.", "actions": "الإجراءات", "status": "الحالة"},
+  "students": {"title": "الطلاب", "description": "إدارة الطلاب ومجموعاتهم الحالية وبيانات أولياء الأمور.", "addStudent": "إضافة طالب", "manageGuardians": "إدارة أولياء الأمور", "empty": "لا يوجد طلاب بعد. أضف أول طالب للبدء.", "name": "الطالب", "group": "المجموعة الحالية", "firstNameEn": "الاسم الأول (بالإنجليزية)", "lastNameEn": "اسم العائلة (بالإنجليزية)", "firstNameAr": "الاسم الأول (بالعربية، اختياري)", "lastNameAr": "اسم العائلة (بالعربية، اختياري)", "newTitle": "إضافة طالب", "editTitle": "تعديل الطالب", "membershipStart": "تاريخ بدء المجموعة", "guardianSection": "ولي الأمر الأساسي", "guardianName": "اسم ولي الأمر", "guardianEmail": "بريد ولي الأمر", "reportLanguage": "لغة التقرير"},
+  "guardians": {"title": "أولياء الأمور", "description": "إدارة بيانات التواصل ولغة التقرير.", "addGuardian": "إضافة ولي أمر", "empty": "لا يوجد أولياء أمور بعد.", "name": "الاسم", "email": "البريد الإلكتروني", "reportLanguage": "لغة التقرير", "newTitle": "إضافة ولي أمر", "editTitle": "تعديل ولي الأمر"},
+  "groups": {"title": "المجموعات", "description": "إدارة المجموعات والمعلمين الأساسيين وسجل العضوية.", "addGroup": "إضافة مجموعة", "empty": "لا توجد مجموعات بعد.", "name": "المجموعة", "nameEn": "اسم المجموعة (بالإنجليزية)", "nameAr": "اسم المجموعة (بالعربية، اختياري)", "teacher": "المعلم الأساسي", "parent": "المجموعة الأم", "students": "الطلاب", "newTitle": "إضافة مجموعة", "editTitle": "تعديل المجموعة", "memberships": "العضويات", "addMembership": "إضافة عضوية طالب", "student": "الطالب", "startsOn": "يبدأ في", "endsOn": "ينتهي في (اختياري)", "current": "حالية", "endToday": "إنهاء اليوم", "noMemberships": "لا يوجد سجل عضويات بعد."},
+  "teachers": {"title": "المعلمون", "description": "دعوة المعلمين وإدارة تعييناتهم الدقيقة للمجموعات.", "addTeacher": "دعوة معلم", "empty": "لا يوجد معلمون بعد.", "name": "المعلم", "groups": "المجموعات المعيّنة", "preferredLanguage": "اللغة المفضلة", "newTitle": "دعوة معلم", "editTitle": "تعديل المعلم", "displayName": "الاسم المعروض", "email": "البريد الإلكتروني", "assignments": "تعيينات المجموعات"},
+  "reportLanguages": {"en": "الإنجليزية", "ar": "العربية", "both": "الإنجليزية والعربية"}
 }

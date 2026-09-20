@@ -17,7 +17,7 @@ async function readMigrations() {
 }
 
 describe('migration contract', () => {
-  it('keeps the seven foundation migrations in dependency order', async () => {
+  it('keeps migrations in dependency order', async () => {
     const {filenames} = await readMigrations();
 
     expect(filenames).toEqual([
@@ -27,8 +27,18 @@ describe('migration contract', () => {
       '202609200004_weekly_updates.sql',
       '202609200005_reports_and_delivery.sql',
       '202609200006_integrity_functions_and_indexes.sql',
-      '202609200007_row_level_security.sql'
+      '202609200007_row_level_security.sql',
+      '202609200008_administration_functions.sql'
     ]);
+  });
+
+  it('provides an atomic student and guardian creation function', async () => {
+    const {sql} = await readMigrations();
+
+    expect(sql).toMatch(/create function public\.create_student_with_guardian\b/i);
+    expect(sql).toContain('grant execute on function public.create_student_with_guardian');
+    expect(sql).toContain('create unique index group_teachers_one_primary_idx');
+    expect(sql).toMatch(/create function public\.update_teacher_administration\b/i);
   });
 
   it('defines every MVP table and enables row-level security', async () => {
