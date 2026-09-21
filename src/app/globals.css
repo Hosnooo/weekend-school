@@ -225,6 +225,15 @@ tbody tr:last-child td {
 .exception-fields { display: grid; gap: 0.75rem; padding-block-end: 1rem; }
 .sticky-actions { position: sticky; inset-block-end: 0; display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.75rem; background: rgba(255,255,255,0.96); border: 1px solid var(--border); border-radius: 0.75rem; box-shadow: 0 -0.25rem 1rem rgba(23,32,51,0.08); }
 .save-status { color: var(--muted); }
+.period-form { display:flex;align-items:end;flex-wrap:wrap;gap:1rem;padding:1rem;background:var(--surface);border:1px solid var(--border);border-radius:.75rem; }
+.period-form label { display:grid;gap:.35rem;font-weight:600; }
+.period-form input { min-height:2.75rem;padding-inline:.75rem;border:1px solid var(--border);border-radius:.5rem; }
+.report-summary { display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1rem; }
+.report-summary div { display:grid;gap:.25rem;padding:1rem;background:var(--surface);border:1px solid var(--border);border-radius:.75rem; }
+.report-summary strong { font-size:1.75rem; }
+.report-summary span { color:var(--muted); }
+.success-message { color:#166534; }
+.report-preview { width:100%;min-height:70vh;background:#fff;border:1px solid var(--border);border-radius:.75rem; }
 
 :focus-visible {
   outline: 3px solid var(--focus);
@@ -441,6 +450,7 @@ tbody tr:last-child td {
   .sticky-actions { align-items: stretch; flex-direction: column; }
   .sticky-actions .form-actions,
   .sticky-actions .button { width: 100%; }
+  .report-summary { grid-template-columns:repeat(2,minmax(0,1fr)); }
 
   th,
   td {

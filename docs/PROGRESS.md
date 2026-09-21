@@ -4,7 +4,7 @@ Last updated: 2026-09-20
 
 ## Current status
 
-Planning and the locally verifiable portions of Phases 1–3 are complete. Phase 3 work is on `phase-3-teacher-workflow` and includes the Phase 2 commit as its base.
+Planning and the locally verifiable portions of Phases 1–4 are complete. Phase 4 work is on `phase-4-reports`.
 
 ## Planning completed
 
@@ -66,9 +66,32 @@ Not claimed in Phase 2:
 
 ## Remaining phases
 
-- Phase 4 — Reports
 - Phase 5 — Email
 - Phase 6 — Hardening
+
+## Phase 4 — Reports
+
+Status: Implementation complete; live Supabase integration verification remains outstanding.
+
+Completed:
+
+- Added pure submitted-session aggregation with inclusive periods, attendance totals, language fallback, latest effective non-null performance, sparse comments, and historical group capture for moved students.
+- Added explicit readiness outcomes for no submitted sessions, incomplete attendance, missing progress, and missing performance; missing active report recipients are counted separately.
+- Added atomic, idempotent snapshot insertion through a school-scoped admin RPC. Existing snapshots are never overwritten.
+- Added one escaped, responsive renderer for English, Arabic, and bilingual HTML; teacher-authored content is always treated as text.
+- Built the admin period selector, readiness summary, report generation, report list, localized statuses, and sandboxed individual preview.
+- Added unit and migration-contract coverage for draft exclusion, attendance aggregation, moved groups, performance overrides, missing data, language fallback, HTML escaping, bilingual output, leap-month periods, and atomic snapshot generation.
+
+Verification evidence from 2026-09-20:
+
+- `pnpm lint` — passed with zero warnings/errors.
+- `pnpm typecheck` — passed.
+- `pnpm test` — 10 files and 48 tests passed.
+- `pnpm build` — passed, including report list and preview routes.
+
+Not claimed in Phase 4:
+
+- Fresh PostgreSQL migration execution and live RLS authorization remain unavailable without a Supabase runtime or configured remote test project.
 
 ## Phase 3 — Teacher Workflow
 

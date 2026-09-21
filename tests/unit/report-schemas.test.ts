@@ -1,0 +1,2 @@
+import {describe,expect,it} from 'vitest';import {reportPeriodSchema} from '@/features/reports/report.schemas';
+describe('report period',()=>{it('accepts an inclusive period',()=>{expect(reportPeriodSchema.safeParse({periodStart:'2026-09-01',periodEnd:'2026-09-30'}).success).toBe(true)});it('rejects a reversed period',()=>{expect(reportPeriodSchema.safeParse({periodStart:'2026-10-01',periodEnd:'2026-09-30'}).success).toBe(false)});});

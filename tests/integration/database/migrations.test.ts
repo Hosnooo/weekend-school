@@ -29,7 +29,8 @@ describe('migration contract', () => {
       '202609200006_integrity_functions_and_indexes.sql',
       '202609200007_row_level_security.sql',
       '202609200008_administration_functions.sql',
-      '202609200009_teacher_workflow.sql'
+      '202609200009_teacher_workflow.sql',
+      '202609200010_report_generation.sql'
     ]);
   });
 
@@ -38,6 +39,8 @@ describe('migration contract', () => {
     expect(sql).toMatch(/create function public\.save_weekly_update\b/i);
     expect(sql).toContain("raise exception 'submitted sessions are immutable'");
   });
+
+  it('inserts immutable report snapshots atomically',async()=>{const{sql}=await readMigrations();expect(sql).toMatch(/create function public\.generate_report_snapshots\b/i);expect(sql).toContain('on conflict (school_id, student_id, period_start, period_end, language) do nothing');});
 
   it('provides an atomic student and guardian creation function', async () => {
     const {sql} = await readMigrations();
