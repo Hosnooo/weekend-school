@@ -1,5 +1,9 @@
 packages: []
 
+# Resend's React renderer is optional. We send pre-rendered HTML, so avoid
+# installing that peer and its build-only Prettier dependency.
+autoInstallPeers: false
+
 storeDir: .pnpm-store
 packageImportMethod: copy
 nodeLinker: hoisted

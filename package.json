@@ -16,17 +16,25 @@
     "test:watch": "vitest --configLoader runner"
   },
   "dependencies": {
+    "@react-email/body": "0.3.0",
+    "@react-email/container": "0.0.16",
+    "@react-email/head": "0.0.13",
+    "@react-email/html": "0.0.12",
+    "@react-email/preview": "0.0.14",
+    "@react-email/section": "0.0.17",
     "@supabase/ssr": "0.12.7",
     "@supabase/supabase-js": "2.116.0",
     "next": "16.3.5",
     "next-intl": "4.13.7",
     "react": "19.2.0",
     "react-dom": "19.2.0",
+    "resend": "^6.28.1",
     "server-only": "0.0.1",
     "zod": "4.1.11"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "4.1.13",
+    "@testing-library/dom": "10.4.2",
     "@testing-library/jest-dom": "6.9.1",
     "@testing-library/react": "16.3.0",
     "@testing-library/user-event": "14.6.1",
@@ -39,6 +47,7 @@
     "jsdom": "27.0.0",
     "tailwindcss": "4.1.13",
     "typescript": "5.9.3",
+    "vite": "7.3.6",
     "vite-tsconfig-paths": "5.1.4",
     "vitest": "5.0.1"
   }

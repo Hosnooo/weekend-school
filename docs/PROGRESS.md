@@ -4,7 +4,7 @@ Last updated: 2026-09-20
 
 ## Current status
 
-Planning and the locally verifiable portions of Phases 1–4 are complete. Phase 4 work is on `phase-4-reports`.
+Planning and the locally verifiable portions of Phases 1–5 are complete. Phase 5 work is on `phase-5-email`.
 
 ## Planning completed
 
@@ -66,7 +66,6 @@ Not claimed in Phase 2:
 
 ## Remaining phases
 
-- Phase 5 — Email
 - Phase 6 — Hardening
 
 ## Phase 4 — Reports
@@ -117,6 +116,32 @@ Verification evidence from 2026-09-20:
 Not claimed in Phase 3:
 
 - The planned authenticated Playwright flows and real RLS matrix require a running seeded Supabase instance. They cannot run on this workstation yet, so Phase 3 is not considered deployment-verified despite passing all locally available gates.
+
+## Phase 5 — Email
+
+Status: Implementation complete; live Supabase and Resend sandbox verification remain outstanding.
+
+Completed:
+
+- Added a provider-neutral email interface, a Resend adapter isolated to server-only configuration, and fake-provider service tests.
+- Added React Email output that reuses the escaped report renderer for English, Arabic, and bilingual snapshots.
+- Added atomic school-scoped delivery reservation and completion functions. They capture the recipient email, persist safe outcomes, aggregate report status, retry failed rows in place, and prevent duplicate pending or sent deliveries.
+- Added admin-only single and bounded sequential bulk sending with resumable partial failures and provider idempotency keys.
+- Added visible localized pending, sent, and failed states; in-flight reports cannot be submitted again from the reports screen.
+- Added tests for provider success/rejection, partial failure, missing recipients, pending/sent duplicate prevention, safe error storage, Resend adaptation, environment validation, and migration contracts.
+- Replaced the deprecated React Email umbrella dependency with focused official layout packages. Resend's unused optional renderer is not installed, avoiding its build-only Prettier dependency while preserving React Email templates.
+
+Verification evidence from 2026-09-20:
+
+- `pnpm lint` — passed with zero warnings/errors.
+- `pnpm typecheck` — passed.
+- `pnpm test` — 12 files and 56 tests passed.
+- `pnpm build` — passed; Next.js generated all 32 routes/pages, including reports and preview routes.
+
+Not claimed in Phase 5:
+
+- No Resend sandbox message was sent because no explicitly authorized sandbox credentials were provided.
+- Fresh PostgreSQL migration execution, concurrent reservation testing, and live RLS authorization remain unavailable without a Supabase runtime or configured remote test project. Static migration contracts and application authorization tests passed, but Phase 6 must run the real integration matrix before MVP completion.
 
 ## Environment limitations discovered
 

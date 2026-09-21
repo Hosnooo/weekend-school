@@ -120,7 +120,7 @@ Use pnpm and commit the lockfile. Production dependencies are intentionally smal
 | `@supabase/supabase-js`, `@supabase/ssr` | browser/server Auth and database clients | Phase 1 |
 | `zod` | authoritative input and environment validation | Phase 1 |
 | `server-only` | guard privileged modules from client bundles | Phase 1 |
-| `@react-email/components` | email-safe report markup | Phase 5 |
+| `@react-email/body`, `container`, `head`, `html`, `preview`, `section` | email-safe report markup without the unused renderer toolchain | Phase 5 |
 | `resend` | initial email provider adapter | Phase 5 |
 
 Development dependencies:

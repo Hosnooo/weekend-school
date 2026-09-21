@@ -30,7 +30,8 @@ describe('migration contract', () => {
       '202609200007_row_level_security.sql',
       '202609200008_administration_functions.sql',
       '202609200009_teacher_workflow.sql',
-      '202609200010_report_generation.sql'
+      '202609200010_report_generation.sql',
+      '202609200011_email_delivery.sql'
     ]);
   });
 
@@ -41,6 +42,7 @@ describe('migration contract', () => {
   });
 
   it('inserts immutable report snapshots atomically',async()=>{const{sql}=await readMigrations();expect(sql).toMatch(/create function public\.generate_report_snapshots\b/i);expect(sql).toContain('on conflict (school_id, student_id, period_start, period_end, language) do nothing');});
+  it('reserves and completes idempotent email deliveries',async()=>{const{sql}=await readMigrations();expect(sql).toMatch(/create function public\.reserve_report_delivery\b/i);expect(sql).toMatch(/create function public\.complete_report_delivery\b/i);expect(sql).toContain("existing_delivery.status in ('SENT','DELIVERED','PENDING')");});
 
   it('provides an atomic student and guardian creation function', async () => {
     const {sql} = await readMigrations();

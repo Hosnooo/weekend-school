@@ -121,3 +121,11 @@ The following are not product contradictions but require explicit handling:
 - No role-permission matrix table for two fixed roles; typed role checks plus RLS are easier to audit.
 - No autosave synchronization engine; debounced draft persistence plus visible state and manual save is sufficient.
 - No averages over performance labels; latest effective non-null performance is a direct query rule.
+
+## D-018 — Email rendering excludes the unused React Email toolchain
+
+**Status:** Accepted — 2026-09-20
+
+Use the focused React Email layout packages and React's browser-compatible static renderer to produce the delivery HTML. Keep pnpm peer auto-installation disabled and explicitly declare required test peers. Resend receives HTML, so its optional `@react-email/render` peer is intentionally absent.
+
+The umbrella React Email package pulled its optional renderer and build-time Prettier dependency into the Next.js production graph. On this Windows/OneDrive workspace, Turbopack then attempted to create a junction for Prettier and failed with access denied. The focused packages preserve the specified React Email template behavior without shipping an unused formatting toolchain or changing the provider interface.
