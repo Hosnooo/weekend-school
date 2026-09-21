@@ -4,7 +4,7 @@ Last updated: 2026-09-20
 
 ## Current status
 
-Planning and the locally verifiable portions of Phases 1–5 are complete. Phase 5 work is on `phase-5-email`.
+Phases 1–5 are implemented. Phase 6 hardening is in progress on `phase-6-hardening`: its local code, documentation, seed, RLS harness, and E2E harness are present, but the release gate remains blocked until a Docker-compatible local Supabase stack is available.
 
 ## Planning completed
 
@@ -66,7 +66,7 @@ Not claimed in Phase 2:
 
 ## Remaining phases
 
-- Phase 6 — Hardening
+- Phase 6 — run fresh migration/seed, real pgTAP RLS, the four authenticated Playwright workflows, and the explicitly authorized Resend sandbox smoke test.
 
 ## Phase 4 — Reports
 
@@ -146,4 +146,37 @@ Not claimed in Phase 5:
 ## Environment limitations discovered
 
 - Node.js 24.19.0 and pnpm 11.19.0 are available.
-- This workstation currently has neither Docker nor a Supabase CLI. Static migration contract tests cover ordering, schema presence, RLS activation, and critical uniqueness declarations only; real PostgreSQL/RLS tests remain mandatory before MVP completion.
+- The repository now pins Supabase CLI 2.117.0 and Playwright 1.63.0. This workstation still has no Docker-compatible runtime, so the CLI cannot start PostgreSQL.
+- No local or remote Supabase credentials and no explicitly authorized Resend sandbox credentials are configured. Real PostgreSQL/RLS/Auth/E2E/email checks remain mandatory before MVP completion.
+
+## Phase 6 — Hardening
+
+Status: In progress; local implementation is ready, runtime verification is blocked.
+
+Completed:
+
+- Added a real pgTAP RLS matrix for own-school admins, assigned and unrelated teachers, inactive profiles, cross-school identifiers, unrelated students, and teacher report-send denial.
+- Audited every Server Action. Authenticated mutations validate with Zod; feature mutations require the appropriate active role; school scoping is explicit in repositories or derived inside narrow security-definer RPCs; failures shown to users are generic; successful mutations revalidate their affected routes. Login, logout, and language preference remain the intentional special cases.
+- Added localized protected-route loading and error states, live success announcements, translated table action headings and language options, and removed remaining visible English/Arabic literals from feature screens.
+- Confirmed the existing focus styles, semantic labels, no-color-only status text, logical CSS properties, RTL document direction, and 360px teacher layout rules; the authenticated visual check still belongs to the blocked E2E run.
+- Added an idempotent development seed with one bilingual school, one admin, two teachers, three groups, twelve students and guardians, current memberships, and submitted bilingual history.
+- Added pinned local Supabase configuration, Playwright configuration, `.env.example`, and complete setup/migration/seed/test/build/deployment instructions in `README.md`.
+- Added exactly four serial Playwright workflows: English administrator-to-report, Arabic RTL/report, student performance exception, and unrelated-group denial.
+- Added release-hardening contracts for message-catalog parity, documentation coverage, seed quantities/idempotency markers, RLS scenarios, and the exact E2E file set.
+
+Verification evidence from 2026-09-20:
+
+- `pnpm lint` — passed with zero warnings/errors.
+- `pnpm typecheck` — passed.
+- `pnpm test` — 13 files and 60 tests passed.
+- `pnpm test:e2e --list` — discovered exactly 4 tests in 4 required files.
+- `pnpm build` with safe placeholder public Supabase values — passed; Next.js generated all 32 routes/pages.
+- `supabase test db` — attempted with the pinned CLI and failed to connect to `127.0.0.1:54322` because no local Supabase/PostgreSQL runtime is running.
+
+Required before Phase 6 can be marked complete:
+
+- Install/start a Docker-compatible runtime, run `pnpm db:start`, and run `pnpm db:reset` from zero.
+- Run `pnpm test:db` and obtain a passing real PostgreSQL/RLS matrix.
+- Populate `.env.local` from `pnpm db:status`, install Chromium, and run `pnpm test:e2e` after the fresh reset.
+- Perform the Resend sandbox smoke test only after explicit authorization and credentials are provided.
+- Repeat the standard lint, type-check, full test, and production-build gate after those runtime checks.

@@ -21,6 +21,7 @@ export function StudentForm({locale, groups, student, today}: {
 }) {
   const t = useTranslations('students');
   const common = useTranslations('common');
+  const reportLanguages = useTranslations('reportLanguages');
   const [state, action, pending] = useActionState(student ? updateStudentAction : createStudentAction, initialActionState);
   const label = (group: GroupOption) => locale === 'ar' && group.nameAr ? group.nameAr : group.nameEn;
 
@@ -38,7 +39,7 @@ export function StudentForm({locale, groups, student, today}: {
         <fieldset><legend>{t('guardianSection')}</legend><div className="form-grid">
           <label>{t('guardianName')}<input name="guardianName" required /></label>
           <label>{t('guardianEmail')}<input autoComplete="email" name="guardianEmail" required type="email" /></label>
-          <label>{t('reportLanguage')}<select defaultValue="en" name="reportLanguage"><option value="en">English</option><option value="ar">العربية</option><option value="both">English / العربية</option></select></label>
+          <label>{t('reportLanguage')}<select defaultValue="en" name="reportLanguage"><option value="en">{reportLanguages('en')}</option><option value="ar">{reportLanguages('ar')}</option><option value="both">{reportLanguages('both')}</option></select></label>
         </div></fieldset>
         <div className="form-grid">
           <label>{t('group')}<select name="groupId" required><option value="">—</option>{groups.map((group) => <option key={group.id} value={group.id}>{label(group)}</option>)}</select></label>

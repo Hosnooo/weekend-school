@@ -129,3 +129,11 @@ The following are not product contradictions but require explicit handling:
 Use the focused React Email layout packages and React's browser-compatible static renderer to produce the delivery HTML. Keep pnpm peer auto-installation disabled and explicitly declare required test peers. Resend receives HTML, so its optional `@react-email/render` peer is intentionally absent.
 
 The umbrella React Email package pulled its optional renderer and build-time Prettier dependency into the Next.js production graph. On this Windows/OneDrive workspace, Turbopack then attempted to create a junction for Prettier and failed with access denied. The focused packages preserve the specified React Email template behavior without shipping an unused formatting toolchain or changing the provider interface.
+
+## D-019 — Release verification is executable but cannot be simulated
+
+**Status:** Accepted — 2026-09-20
+
+Pin the Supabase CLI and Playwright in development dependencies, keep the real pgTAP RLS matrix in `supabase/tests/`, and keep exactly the four required workflows in `tests/e2e/`. The browser suite runs serially against one reset seed and uses separate future reporting periods so immutable report identities cannot collide across workflows.
+
+Do not replace unavailable PostgreSQL, RLS, Auth, or browser execution with mocks at the Phase 6 gate. A missing container runtime or local credentials is reported as a release blocker. Static contracts and test discovery remain useful, but they are not evidence that migrations, RLS, Auth, or end-to-end behavior passed.

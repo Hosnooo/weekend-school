@@ -82,12 +82,19 @@ textarea {
 }
 
 .empty-state,
+.error-state,
+.loading-state,
 .record-form,
 .subsection {
   padding: clamp(1rem, 3vw, 1.5rem);
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 0.75rem;
+}
+
+.error-state,
+.loading-state {
+  margin: 0;
 }
 
 .table-wrap {
