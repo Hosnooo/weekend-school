@@ -33,7 +33,7 @@ describe('server environment', () => {
       getServerEnv({NEXT_PUBLIC_SUPABASE_URL: 'https://school.supabase.co'})
     ).toThrow('SUPABASE_SERVICE_ROLE_KEY');
   });
-  it('validates email provider settings independently',()=>{expect(getEmailEnv({RESEND_API_KEY:'re_test',EMAIL_FROM:'Weekend School <reports@example.com>'})).toEqual({resendApiKey:'re_test',emailFrom:'Weekend School <reports@example.com>'});expect(()=>getEmailEnv({RESEND_API_KEY:'re_test'})).toThrow('EMAIL_FROM');});
+  it('validates email provider settings independently',()=>{expect(getEmailEnv({BREVO_API_KEY:'brevo-test',EMAIL_FROM:'Weekend School <mohssen.elshaar@gmail.com>'})).toEqual({brevoApiKey:'brevo-test',emailFrom:'Weekend School <mohssen.elshaar@gmail.com>'});expect(()=>getEmailEnv({BREVO_API_KEY:'brevo-test'})).toThrow('EMAIL_FROM');});
 });
 
 describe('locale configuration', () => {

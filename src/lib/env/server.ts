@@ -4,7 +4,7 @@ const serverEnvSchema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: z.url(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().trim().min(1)
 });
-const emailEnvSchema=z.object({RESEND_API_KEY:z.string().trim().min(1),EMAIL_FROM:z.string().trim().min(3)});
+const emailEnvSchema=z.object({BREVO_API_KEY:z.string().trim().min(1),EMAIL_FROM:z.string().trim().min(3)});
 
 type ServerEnvironment = Record<string, string | undefined>;
 
@@ -21,4 +21,4 @@ export function getServerEnv(environment: ServerEnvironment = runtimeServerEnvir
   };
 }
 
-export function getEmailEnv(environment:ServerEnvironment={RESEND_API_KEY:process.env.RESEND_API_KEY,EMAIL_FROM:process.env.EMAIL_FROM}){const parsed=emailEnvSchema.parse(environment);return{resendApiKey:parsed.RESEND_API_KEY,emailFrom:parsed.EMAIL_FROM};}
+export function getEmailEnv(environment:ServerEnvironment={BREVO_API_KEY:process.env.BREVO_API_KEY,EMAIL_FROM:process.env.EMAIL_FROM}){const parsed=emailEnvSchema.parse(environment);return{brevoApiKey:parsed.BREVO_API_KEY,emailFrom:parsed.EMAIL_FROM};}

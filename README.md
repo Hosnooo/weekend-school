@@ -20,9 +20,9 @@ pnpm browsers:install
 
 ## Environment variables
 
-Copy `.env.example` to `.env.local` and replace every placeholder. `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are public client configuration. `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`, and `CRON_SECRET` are server-only secrets and must never use a `NEXT_PUBLIC_` prefix or be committed.
+Copy `.env.example` to `.env.local` and replace every placeholder. `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are public client configuration. `SUPABASE_SERVICE_ROLE_KEY`, `BREVO_API_KEY`, and `CRON_SECRET` are server-only secrets and must never use a `NEXT_PUBLIC_` prefix or be committed.
 
-For local development, start Supabase and copy the API URL, anonymous key, and service-role key shown by `pnpm db:status` into `.env.local`. Resend is required only for an explicitly authorized live email smoke test; the automated email tests use a fake provider.
+For local development, start Supabase and copy the API URL, anonymous key, and service-role key shown by `pnpm db:status` into `.env.local`. Brevo is required only for an explicitly authorized live email smoke test; automated tests never call the live provider.
 
 ## Supabase setup
 
@@ -114,9 +114,10 @@ A successful build validates compilation only. It does not prove live Supabase a
 
 1. Create a hosted Supabase project and apply the migration files in order using the Supabase CLI or the platform's approved CI workflow.
 2. Do not apply `supabase/seed.sql` to production.
-3. Configure the public Supabase URL/key and all server-only secrets in the hosting platform.
-4. Set the application's Site URL and allowed redirect URLs in Supabase Auth for the deployed English and Arabic routes.
-5. Run lint, type-check, unit/component tests, real database/RLS tests, E2E tests, and the production build before promotion.
-6. Perform a Resend sandbox smoke test only with explicit authorization and a verified test recipient.
+3. Configure the public Supabase URL/key and all server-only secrets in the hosting platform. Keep `SUPABASE_SERVICE_ROLE_KEY`, `BREVO_API_KEY`, and `CRON_SECRET` server-only.
+4. Set the application's Site URL and allowed `/en/set-password` and `/ar/set-password` redirect URLs in Supabase Auth. Disable public signup for the invite-only pilot.
+5. Configure Supabase Auth custom SMTP separately from the app's Brevo API key. Teacher invitations are sent by Supabase Auth and need the Brevo SMTP login and SMTP key; parent reports use `BREVO_API_KEY` through the application.
+6. Run lint, type-check, unit/component tests, real database/RLS tests, E2E tests, and the production build before promotion.
+7. Perform a Brevo smoke test only with explicit authorization and a verified sender address.
 
 Deploy one Next.js application; no worker, queue, scheduler, or second service is required for this MVP.

@@ -68,7 +68,7 @@ Files are introduced in their owning phase; empty placeholder modules are not cr
 │   │   ├── attendance/{attendance.schemas,attendance.service,attendance.types}.ts
 │   │   ├── progress/{progress.schemas,progress.service,progress.types}.ts
 │   │   ├── reports/{report.actions,report.repository,report.schemas,report.service,report.renderer,report.types}.ts
-│   │   └── email/{email.actions,email.provider,email.service,email.types,resend.provider}.ts
+│   │   └── email/{email.actions,email.provider,email.service,email.types,brevo.provider}.ts
 │   ├── i18n/{config,navigation,request,routing}.ts
 │   └── lib/
 │       ├── auth/{authorization,require-profile}.ts
@@ -121,7 +121,7 @@ Use pnpm and commit the lockfile. Production dependencies are intentionally smal
 | `zod` | authoritative input and environment validation | Phase 1 |
 | `server-only` | guard privileged modules from client bundles | Phase 1 |
 | `@react-email/body`, `container`, `head`, `html`, `preview`, `section` | email-safe report markup without the unused renderer toolchain | Phase 5 |
-| `resend` | initial email provider adapter | Phase 5 |
+| Native `fetch` | Brevo transactional-email adapter without an extra SDK | Phase 5 |
 
 Development dependencies:
 
@@ -239,13 +239,13 @@ Phase gate: standard commands plus report unit/integration tests and English/Ara
 Work items:
 
 1. Define `EmailProvider`, input/result types, and a fake provider for tests.
-2. Build React Email output from the same snapshot/renderer rules and a Resend adapter isolated to server-only code.
+2. Build React Email output from the same snapshot/renderer rules and a Brevo adapter isolated to server-only configuration.
 3. Transactionally create/reuse pending deliveries before provider calls; persist provider result, message ID, timestamps, and safe error text.
 4. Add admin-only single and bulk send actions with bounded batches and resumable failures; do not add a queue or scheduler.
 5. Display pending/sent/failed state without leaking provider internals.
 6. Test unauthorized send, missing email, provider rejection, partial bulk failure, and concurrent/retried duplicate prevention.
 
-Phase gate: standard commands plus fake-provider integration tests and an explicitly authorized Resend sandbox smoke test when credentials exist.
+Phase gate: standard commands plus fake-provider integration tests and an explicitly authorized Brevo smoke test when credentials exist.
 
 ### Phase 6 — Hardening
 

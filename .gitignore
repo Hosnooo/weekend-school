@@ -33,3 +33,4 @@ Thumbs.db
 # Superpowers execution scratch
 .superpowers/
 .worktrees/
+.vercel/

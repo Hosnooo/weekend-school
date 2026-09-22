@@ -1,7 +1,7 @@
 packages: []
 
-# Resend's React renderer is optional. We send pre-rendered HTML, so avoid
-# installing that peer and its build-only Prettier dependency.
+# Email providers receive pre-rendered HTML, so avoid installing the optional
+# React Email renderer and its build-only Prettier dependency.
 autoInstallPeers: false
 
 storeDir: .pnpm-store

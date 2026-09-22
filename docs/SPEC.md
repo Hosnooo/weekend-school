@@ -103,7 +103,7 @@ Use the same validation concepts on client and server where appropriate.
 
 ## Email
 
-* Resend
+* Brevo
 * React Email
 
 Email integration must live behind an application service interface so the provider can be replaced later.
@@ -114,9 +114,9 @@ Recommended:
 
 * Vercel — web application
 * Supabase — database/authentication
-* Resend — email
+* Brevo — email
 
-Do not tightly couple business logic to Vercel or Resend.
+Do not tightly couple business logic to Vercel or Brevo.
 
 ---
 
@@ -1061,9 +1061,9 @@ interface EmailProvider {
 }
 ```
 
-Resend is the initial implementation.
+Brevo is the initial pilot implementation so a verified Gmail sender can deliver to real recipients without a purchased domain.
 
-Do not call Resend directly from UI components.
+Do not call Brevo directly from UI components.
 
 ---
 
@@ -1684,7 +1684,7 @@ Include placeholders for:
 NEXT_PUBLIC_SUPABASE_URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY
 SUPABASE_SERVICE_ROLE_KEY
-RESEND_API_KEY
+BREVO_API_KEY
 EMAIL_FROM
 CRON_SECRET
 ```
@@ -1917,7 +1917,7 @@ Verify and commit.
 Implement:
 
 * provider abstraction
-* Resend
+* Brevo
 * React Email templates
 * send one report
 * bulk send

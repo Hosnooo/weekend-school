@@ -11,6 +11,12 @@ test('English administrator-to-report workflow', async ({page}) => {
   const studentName = `FlowStudent${token}`;
 
   await login(page, 'en', credentials.admin);
+  await expect(page.getByRole('heading', {name: 'This Week'})).toBeVisible();
+  await page.goto('/en/settings');
+  await expect(page.getByRole('heading', {name: 'Settings'})).toBeVisible();
+  await expect(page.getByLabel('Timezone')).toHaveValue('America/Edmonton');
+  await page.getByRole('button', {name: 'Save'}).click();
+  await expect(page).toHaveURL(/\/en\/settings\?saved=1$/);
 
   await page.goto('/en/teachers/new');
   await page.getByLabel('Display name').fill(teacherName);

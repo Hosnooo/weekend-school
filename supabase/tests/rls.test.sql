@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 
-select plan(14);
+select plan(15);
 
 -- A second tenant proves that knowing a valid identifier never bypasses school isolation.
 insert into public.schools (id, name_en, name_ar, timezone, default_language)
@@ -33,14 +33,25 @@ select set_config(
   true
 );
 select results_eq(
-  $$select count(*)::bigint from public.groups$$,
+  $$select count(*)::bigint from public.groups where id in (
+    'd0000000-0000-0000-0000-000000000001',
+    'd0000000-0000-0000-0000-000000000002',
+    'd0000000-0000-0000-0000-000000000003'
+  )$$,
   array[3::bigint],
-  'admin own school sees every own-school group and no other tenant'
+  'admin sees all three seeded own-school groups'
 );
 select results_eq(
-  $$select count(*)::bigint from public.students$$,
+  $$select count(*)::bigint from public.groups where id = 'd0000000-0000-0000-0000-000000000004'$$,
+  array[0::bigint],
+  'admin cannot read a group belonging to another tenant'
+);
+select results_eq(
+  $$select count(*)::bigint from public.students where id between
+    'e0000000-0000-0000-0000-000000000001'::uuid and
+    'e0000000-0000-0000-0000-000000000012'::uuid$$,
   array[12::bigint],
-  'admin own school sees every own-school student'
+  'admin sees all twelve seeded own-school students'
 );
 
 -- assigned teacher

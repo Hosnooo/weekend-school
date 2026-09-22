@@ -204,4 +204,35 @@ Final review remediation verified on 2026-09-22:
 - `pnpm build` — passed; Next.js generated all 34 routes/pages, including English and Arabic password setup.
 - `pnpm test:e2e` — all 4 serial workflows passed in 2.9 minutes from a freshly reset database.
 
-No Phase 6 verification items remain. Deployment hosting, production Supabase configuration, and a verified Resend sending domain are launch-environment tasks rather than unfinished application behavior.
+No Phase 6 verification items remain. Deployment hosting, production Supabase configuration, and production email credentials are launch-environment tasks rather than unfinished application behavior.
+
+Zero-cost pilot email update verified on 2026-09-22:
+
+- Replaced the Resend adapter and environment contract with a provider-neutral Brevo REST adapter using native server-side `fetch`.
+- Added Brevo request, sender parsing, idempotency, rejection, and malformed-response tests; the complete suite now passes 15 files and 71 tests.
+- `pnpm lint` — passed.
+- `pnpm typecheck` — passed.
+- `pnpm build` — passed; Next.js generated all 34 routes/pages.
+- A live Brevo API request from the verified pilot sender `mohssen.elshaar@gmail.com` to the unverified recipient `mostafa.kh.elghandour@gmail.com` was accepted and returned a provider message ID. The API key was consumed from the clipboard without being printed or persisted.
+
+Production deployment observations from 2026-09-22:
+
+- Created the free hosted Supabase project `tlitseincunvlnnooply` in `ca-central-1`, linked the repository, and applied all twelve migrations. The development seed was not applied.
+- Created the Vercel Hobby project `mce-school/weekend-school`; the production deployment completed with ready state and the alias `https://weekend-school-nine.vercel.app`. Both `/en/login` and `/ar/login` returned HTTP 200 with login forms.
+- Configured the production public Supabase URL/anonymous key and server-only service-role, Brevo API, and cron keys in Vercel. The Vercel environment listing confirmed all six required names without revealing secret values.
+- Set the hosted Supabase Auth Site URL and both language-specific password setup redirects. Configured Brevo custom SMTP for Auth invitations, disabled public signup, and raised the hosted minimum password length to eight characters. The SMTP credential was supplied through an environment variable and the configuration command reported it as masked.
+- Created one production school and an administrator profile for `mohssen.elshaar@gmail.com`. Created an unassigned test teacher profile for `mostafa.kh.elghandour@gmail.com`; the teacher invitation was accepted by Supabase after SMTP configuration. The administrator's initial invite email was not observed by the user, so a password recovery email was sent. The user confirmed setting the password and reaching the authenticated administrator dashboard. The test teacher's invitation acceptance remains unconfirmed.
+- `pnpm lint` — passed. `pnpm typecheck` — passed. `pnpm test` — 15 files and 71 tests passed. `pnpm build` — passed; 34 routes/pages generated. The Vercel production build also completed successfully.
+
+The purchased sending domain remains deferred for the pilot. Administrator login is user-verified; teacher invitation delivery and parent report delivery through the full production UI are not yet user-verified.
+
+Pilot usability follow-up on 2026-09-22:
+
+- The user reached the hosted administrator dashboard but saw the Phase placeholder. Implemented the specified minimal dashboard with active record counts and a school-local Monday–Sunday group-submission summary; implemented the previously placeholder school Settings page for bilingual names, timezone, and default language.
+- Corrected password-setup routing so administrators land on the dashboard while teachers land on My Groups. Added unit tests for role routing, dashboard week/count rules, and settings validation after observing relevant failing tests.
+- Moved local Supabase ports to 55320–55329 because Windows reserves the former 54320–54329 range. Local E2E now refuses a hosted Supabase URL to prevent test records from being written to production after Vercel linking changed the ignored `.env.local` file.
+- `pnpm lint` — passed. `pnpm typecheck` — passed. `pnpm test` — 18 files and 77 tests passed. `pnpm build` — passed with all 34 pages/routes generated.
+- The first rerun of the English E2E workflow reached the new dashboard successfully and completed report generation, but timed out while loading the report preview on the slow local development server. The configured per-test timeout was increased from 120 to 240 seconds; the rerun passed in 2.7 minutes, including Settings save and report preview.
+- The first post-E2E `pnpm test:db` run found that two RLS assertions assumed only the original seed rows existed. They now assert access to the explicit seed IDs and separately deny cross-school group visibility, so they remain meaningful after browser tests add local records. The rerun passed 1 file and all 15 pgTAP tests without deleting local data.
+- The ignored `.env.local` still contains Vercel-linked hosted values. An attempted credential-safe restoration to the local Docker values was rejected by the execution safety reviewer because it would serialize secrets; no file change was made. Local E2E is protected by a hard refusal of non-local Supabase URLs and explicitly injected local values in the verified run. Ordinary local development must not be used for test mutations until its environment is safely restored.
+- Published deployment `dpl_9hAraof5yo7MpQsShfg56Y44bM3R` to the same Vercel production alias `https://weekend-school-nine.vercel.app`; Vercel reported `READY` and its build generated all 34 routes/pages. Live `/en/login` and `/ar/login` returned HTTP 200. Unauthenticated `/en/dashboard` and `/en/settings` returned HTTP 307 to `/en/login`. The signed-in rendering of the new production pages awaits user confirmation because only the administrator knows the password set through recovery.

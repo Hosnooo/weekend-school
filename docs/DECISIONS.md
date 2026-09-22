@@ -126,7 +126,7 @@ The following are not product contradictions but require explicit handling:
 
 **Status:** Accepted — 2026-09-20
 
-Use the focused React Email layout packages and React's browser-compatible static renderer to produce the delivery HTML. Keep pnpm peer auto-installation disabled and explicitly declare required test peers. Resend receives HTML, so its optional `@react-email/render` peer is intentionally absent.
+Use the focused React Email layout packages and React's browser-compatible static renderer to produce the delivery HTML. Keep pnpm peer auto-installation disabled and explicitly declare required test peers. The email provider receives HTML, so the optional `@react-email/render` peer is intentionally absent.
 
 The umbrella React Email package pulled its optional renderer and build-time Prettier dependency into the Next.js production graph. On this Windows/OneDrive workspace, Turbopack then attempted to create a junction for Prettier and failed with access denied. The focused packages preserve the specified React Email template behavior without shipping an unused formatting toolchain or changing the provider interface.
 
@@ -145,3 +145,27 @@ Do not replace unavailable PostgreSQL, RLS, Auth, or browser execution with mock
 Teacher onboarding must exercise the provider-issued invitation link and let the teacher establish a password; administrative password assignment is not part of the product workflow. The E2E suite reads the local Mailpit message and follows the actual Supabase invite URL.
 
 Email provider rejection and post-acceptance persistence failure are distinct outcomes. A provider rejection may become `FAILED` and be retried. If provider acceptance cannot be persisted, the row remains `PENDING`: it may reuse the same idempotency key inside the provider's safe window, but after that window it requires reconciliation rather than risking a duplicate guardian email.
+
+## D-021 — Zero-cost pilot email uses Brevo
+
+**Status:** Accepted — 2026-09-22
+
+Use Brevo's free transactional-email API for the pilot because it can verify an individual Gmail sender and deliver to unverified parent recipients without purchasing a domain. Keep the existing `EmailProvider` boundary, submit the delivery ID as Brevo's idempotency header, and call the API with native server-side `fetch` so no provider SDK is added to the production dependency graph.
+
+The pilot sender is `mohssen.elshaar@gmail.com`; only this sender must complete Brevo's one-time verification. Parent recipients do not verify or create accounts. A purchased, authenticated school domain remains the professional-launch path for stronger sender identity and deliverability.
+
+## D-022 — Free pilot deployment and invitation delivery
+
+**Status:** Accepted — 2026-09-22
+
+Deploy the existing Next.js application to Vercel Hobby and use a hosted Supabase Free project with the twelve immutable migrations. Do not apply the development seed to production. Bootstrap the initial administrator with a controlled Auth invitation and school-scoped profile; leave public signup disabled.
+
+Supabase Auth sends teacher invitations, so it uses Brevo custom SMTP with a separate SMTP login and key. The application's Brevo REST API key sends parent reports. Production Auth redirects are limited to the deployed English and Arabic password setup routes. A custom sending domain and paid hosting remain deferred for the pilot.
+
+## D-023 — Dashboard week and school settings
+
+**Status:** Accepted — 2026-09-22
+
+The minimal administrator dashboard uses Monday through Sunday in the school's configured timezone. Its counts include active students, active teachers, and active groups; a group counts as submitted if it has at least one submitted session in that local week. Draft sessions and inactive groups do not raise the submission count. The Settings page edits the existing bilingual school names, timezone, and default language only. Both screens remain school-scoped and require an active administrator profile.
+
+Local end-to-end tests must refuse hosted Supabase URLs, because they create and mutate test records. The production deployment's local Vercel link changed the ignored environment file, so test runs explicitly inject the local stack's URL and keys.

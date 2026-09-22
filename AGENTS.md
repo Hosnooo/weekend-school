@@ -27,7 +27,7 @@
 
 - Treat server authorization and PostgreSQL RLS as separate, required layers.
 - Every school-owned row carries `school_id`; every query and mutation is scoped to the authenticated profile's school.
-- Never expose `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`, or `CRON_SECRET` through client code or a `NEXT_PUBLIC_` name.
+- Never expose `SUPABASE_SERVICE_ROLE_KEY`, `BREVO_API_KEY`, or `CRON_SECRET` through client code or a `NEXT_PUBLIC_` name.
 - Validate every mutation on the server with Zod. Normalize emails before persistence.
 - Use deactivation for teachers, students, groups, and guardians with history.
 - Reports use submitted sessions only and become immutable snapshots when generated.
