@@ -4,7 +4,7 @@ import {redirect} from 'next/navigation';
 
 import type {Profile} from '@/features/profiles/profile.types';
 import type {Locale} from '@/i18n/config';
-import {assertActiveProfile, assertRole} from '@/lib/auth/authorization';
+import {assertActiveProfile, assertRole, assertTeachingProfile} from '@/lib/auth/authorization';
 import type {AppRole} from '@/lib/auth/navigation';
 import {createServerSupabaseClient} from '@/lib/supabase/server';
 
@@ -54,4 +54,8 @@ export async function requireProfile(locale: Locale, requiredRole?: AppRole) {
   } catch {
     redirect(`/${locale}/login?reason=access`);
   }
+}
+
+export async function requireTeachingProfile(locale: Locale) {
+  return assertTeachingProfile(await requireProfile(locale));
 }

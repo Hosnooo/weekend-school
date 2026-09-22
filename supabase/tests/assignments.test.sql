@@ -1,7 +1,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
-select plan(3);
+select plan(5);
 
 set local role authenticated;
 select set_config('request.jwt.claim.role', 'authenticated', true);
@@ -39,6 +39,24 @@ select throws_ok(
   '23505',
   'duplicate key value violates unique constraint "group_teachers_one_primary_idx"',
   'database enforces one primary teacher per group'
+);
+
+select lives_ok(
+  $$select public.save_weekly_update(
+    null, (select id from public.groups where name_en = 'Admin-led class'),
+    '2026-10-01', '', '', null, '[]'::jsonb, '[]'::jsonb, false
+  )$$,
+  'assigned admin can save a draft for that group'
+);
+
+select throws_ok(
+  $$select public.save_weekly_update(
+    null, 'd0000000-0000-0000-0000-000000000003',
+    '2026-10-01', '', '', null, '[]'::jsonb, '[]'::jsonb, false
+  )$$,
+  '42501',
+  'assigned teacher access required',
+  'unassigned admin cannot save another group draft'
 );
 
 select * from finish();
