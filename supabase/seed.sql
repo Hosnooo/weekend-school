@@ -5,15 +5,20 @@
 
 insert into auth.users (
   instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
+  confirmation_token, recovery_token, email_change_token_new, email_change,
   raw_app_meta_data, raw_user_meta_data, created_at, updated_at
 ) values
-  ('00000000-0000-0000-0000-000000000000','b0000000-0000-0000-0000-000000000001','authenticated','authenticated','admin@example.test',crypt('WeekendSchool1!',gen_salt('bf')),now(),'{"provider":"email","providers":["email"]}','{"display_name":"Local Admin"}',now(),now()),
-  ('00000000-0000-0000-0000-000000000000','b0000000-0000-0000-0000-000000000002','authenticated','authenticated','teacher.en@example.test',crypt('WeekendSchool1!',gen_salt('bf')),now(),'{"provider":"email","providers":["email"]}','{"display_name":"English Teacher"}',now(),now()),
-  ('00000000-0000-0000-0000-000000000000','b0000000-0000-0000-0000-000000000003','authenticated','authenticated','teacher.ar@example.test',crypt('WeekendSchool1!',gen_salt('bf')),now(),'{"provider":"email","providers":["email"]}','{"display_name":"المعلمة العربية"}',now(),now())
+  ('00000000-0000-0000-0000-000000000000','b0000000-0000-0000-0000-000000000001','authenticated','authenticated','admin@example.test',crypt('WeekendSchool1!',gen_salt('bf')),now(),'','','','','{"provider":"email","providers":["email"]}','{"display_name":"Local Admin"}',now(),now()),
+  ('00000000-0000-0000-0000-000000000000','b0000000-0000-0000-0000-000000000002','authenticated','authenticated','teacher.en@example.test',crypt('WeekendSchool1!',gen_salt('bf')),now(),'','','','','{"provider":"email","providers":["email"]}','{"display_name":"English Teacher"}',now(),now()),
+  ('00000000-0000-0000-0000-000000000000','b0000000-0000-0000-0000-000000000003','authenticated','authenticated','teacher.ar@example.test',crypt('WeekendSchool1!',gen_salt('bf')),now(),'','','','','{"provider":"email","providers":["email"]}','{"display_name":"المعلمة العربية"}',now(),now())
 on conflict (id) do update set
   email=excluded.email,
   encrypted_password=excluded.encrypted_password,
   email_confirmed_at=excluded.email_confirmed_at,
+  confirmation_token=excluded.confirmation_token,
+  recovery_token=excluded.recovery_token,
+  email_change_token_new=excluded.email_change_token_new,
+  email_change=excluded.email_change,
   raw_app_meta_data=excluded.raw_app_meta_data,
   raw_user_meta_data=excluded.raw_user_meta_data,
   updated_at=now();
@@ -110,10 +115,10 @@ select ('90000000-0000-0000-0000-' || lpad(number::text,12,'0'))::uuid,
 from generate_series(1,12) as number
 on conflict (id) do nothing;
 
-insert into public.sessions (id,school_id,group_id,session_date,status,created_by,submitted_at) values
-  ('10000000-0000-0000-0000-000000000001','a0000000-0000-0000-0000-000000000001','d0000000-0000-0000-0000-000000000001','2026-09-06','SUBMITTED','c0000000-0000-0000-0000-000000000002','2026-09-06T18:00:00Z'),
-  ('10000000-0000-0000-0000-000000000002','a0000000-0000-0000-0000-000000000001','d0000000-0000-0000-0000-000000000002','2026-09-06','SUBMITTED','c0000000-0000-0000-0000-000000000003','2026-09-06T18:00:00Z'),
-  ('10000000-0000-0000-0000-000000000003','a0000000-0000-0000-0000-000000000001','d0000000-0000-0000-0000-000000000003','2026-09-13','SUBMITTED','c0000000-0000-0000-0000-000000000002','2026-09-13T18:00:00Z')
+insert into public.sessions (id,school_id,group_id,session_date,status,created_by) values
+  ('10000000-0000-0000-0000-000000000001','a0000000-0000-0000-0000-000000000001','d0000000-0000-0000-0000-000000000001','2026-09-06','DRAFT','c0000000-0000-0000-0000-000000000002'),
+  ('10000000-0000-0000-0000-000000000002','a0000000-0000-0000-0000-000000000001','d0000000-0000-0000-0000-000000000002','2026-09-06','DRAFT','c0000000-0000-0000-0000-000000000003'),
+  ('10000000-0000-0000-0000-000000000003','a0000000-0000-0000-0000-000000000001','d0000000-0000-0000-0000-000000000003','2026-09-13','DRAFT','c0000000-0000-0000-0000-000000000002')
 on conflict (school_id,group_id,session_date) do nothing;
 
 insert into public.group_progress (school_id,session_id,progress_en,progress_ar,default_performance) values
@@ -133,3 +138,14 @@ on conflict (school_id,session_id,student_id) do nothing;
 insert into public.student_progress (school_id,session_id,student_id,performance_override,comment_en,comment_ar)
 values ('a0000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000001','e0000000-0000-0000-0000-000000000002','EXCELLENT','Excellent participation this week.','مشاركة ممتازة هذا الأسبوع.')
 on conflict (school_id,session_id,student_id) do nothing;
+
+update public.sessions set status = 'SUBMITTED', submitted_at = case id
+  when '10000000-0000-0000-0000-000000000001' then '2026-09-06T18:00:00Z'::timestamptz
+  when '10000000-0000-0000-0000-000000000002' then '2026-09-06T18:00:00Z'::timestamptz
+  when '10000000-0000-0000-0000-000000000003' then '2026-09-13T18:00:00Z'::timestamptz
+end
+where id in (
+  '10000000-0000-0000-0000-000000000001',
+  '10000000-0000-0000-0000-000000000002',
+  '10000000-0000-0000-0000-000000000003'
+);

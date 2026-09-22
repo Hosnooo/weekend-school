@@ -1,6 +1,7 @@
 import {z} from 'zod';
 
 import {
+  databaseUuid,
   normalizedEmail,
   optionalText,
   requiredText
@@ -11,14 +12,14 @@ export const studentSchema = z.object({
   lastNameEn: requiredText,
   firstNameAr: optionalText,
   lastNameAr: optionalText,
-  groupId: z.uuid(),
+  groupId: databaseUuid,
   guardianName: requiredText,
   guardianEmail: normalizedEmail,
   reportLanguage: z.enum(['en', 'ar', 'both'])
 });
 
 export const studentUpdateSchema = z.object({
-  id: z.uuid(),
+  id: databaseUuid,
   firstNameEn: requiredText,
   lastNameEn: requiredText,
   firstNameAr: optionalText,

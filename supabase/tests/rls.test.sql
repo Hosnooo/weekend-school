@@ -74,6 +74,11 @@ select results_eq(
 
 -- inactive profile
 reset role;
+select set_config(
+  'request.jwt.claim.sub',
+  'b0000000-0000-0000-0000-000000000001',
+  true
+);
 update public.profiles
 set is_active = false
 where id = 'c0000000-0000-0000-0000-000000000003';

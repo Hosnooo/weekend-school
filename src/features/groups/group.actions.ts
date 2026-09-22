@@ -17,6 +17,7 @@ import {isLocale} from '@/i18n/config';
 import {requireProfile} from '@/lib/auth/require-profile';
 import type {ActionState} from '@/lib/validation/action-state';
 import {saveFailure, validationFailure} from '@/lib/validation/action-state';
+import {databaseUuid} from '@/lib/validation/fields';
 
 function localeFrom(formData: FormData) {
   const value = String(formData.get('locale') ?? 'en');
@@ -71,7 +72,7 @@ export async function updateGroupAction(
 export async function setGroupActiveAction(formData: FormData) {
   const locale = localeFrom(formData);
   const profile = await requireProfile(locale, 'ADMIN');
-  const parsed = z.object({id: z.uuid(), isActive: z.enum(['true', 'false'])}).safeParse({
+  const parsed = z.object({id: databaseUuid, isActive: z.enum(['true', 'false'])}).safeParse({
     id: formData.get('id'),
     isActive: formData.get('isActive')
   });
@@ -107,8 +108,8 @@ export async function endMembershipAction(formData: FormData) {
   const locale = localeFrom(formData);
   const profile = await requireProfile(locale, 'ADMIN');
   const parsed = z.object({
-    groupId: z.uuid(),
-    membershipId: z.uuid(),
+    groupId: databaseUuid,
+    membershipId: databaseUuid,
     endsOn: z.iso.date()
   }).safeParse({
     groupId: formData.get('groupId'),

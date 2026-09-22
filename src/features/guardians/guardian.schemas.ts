@@ -1,6 +1,6 @@
 import {z} from 'zod';
 
-import {normalizedEmail, requiredText} from '@/lib/validation/fields';
+import {databaseUuid, normalizedEmail, requiredText} from '@/lib/validation/fields';
 
 export const guardianSchema = z.object({
   name: requiredText,
@@ -8,6 +8,6 @@ export const guardianSchema = z.object({
   reportLanguage: z.enum(['en', 'ar', 'both'])
 });
 
-export const guardianUpdateSchema = guardianSchema.extend({id: z.uuid()});
+export const guardianUpdateSchema = guardianSchema.extend({id: databaseUuid});
 
 export type GuardianInput = z.infer<typeof guardianSchema>;

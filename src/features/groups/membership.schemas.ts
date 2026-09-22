@@ -1,11 +1,11 @@
 import {z} from 'zod';
 
-import {optionalText} from '@/lib/validation/fields';
+import {databaseUuid, optionalText} from '@/lib/validation/fields';
 
 export const membershipSchema = z
   .object({
-    groupId: z.uuid(),
-    studentId: z.uuid(),
+    groupId: databaseUuid,
+    studentId: databaseUuid,
     startsOn: z.iso.date(),
     endsOn: optionalText.pipe(z.iso.date().nullable())
   })

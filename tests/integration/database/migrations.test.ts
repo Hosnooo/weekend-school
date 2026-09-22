@@ -4,6 +4,7 @@ import {join} from 'node:path';
 import {describe, expect, it} from 'vitest';
 
 const migrationDirectory = join(process.cwd(), 'supabase', 'migrations');
+const seedPath = join(process.cwd(), 'supabase', 'seed.sql');
 
 async function readMigrations() {
   const filenames = (await readdir(migrationDirectory))
@@ -17,6 +18,17 @@ async function readMigrations() {
 }
 
 describe('migration contract', () => {
+  it('seeds session children before submitting their immutable parent sessions', async () => {
+    const seed = await readFile(seedPath, 'utf8');
+    const sessionInsert = seed.indexOf('insert into public.sessions');
+    const progressInsert = seed.indexOf('insert into public.group_progress');
+    const submissionUpdate = seed.indexOf("update public.sessions set status = 'SUBMITTED'");
+
+    expect(sessionInsert).toBeGreaterThanOrEqual(0);
+    expect(progressInsert).toBeGreaterThan(sessionInsert);
+    expect(submissionUpdate).toBeGreaterThan(progressInsert);
+  });
+
   it('keeps migrations in dependency order', async () => {
     const {filenames} = await readMigrations();
 

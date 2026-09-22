@@ -6,12 +6,14 @@ test('student exception overrides the group default in reports', async ({page}) 
   await page.setViewportSize({width: 360, height: 800});
   await login(page, 'en', credentials.englishTeacher);
   await page.goto('/en/my-groups/d0000000-0000-0000-0000-000000000001/update?date=2030-03-09');
+  await page.waitForLoadState('networkidle');
   await page.getByRole('button', {name: 'Mark all present'}).click();
   await page.getByLabel('What did the group cover? (English)').fill('Exception workflow lesson');
   await page.getByLabel('Default performance').selectOption('GOOD');
   await page.getByRole('button', {name: 'Omar Hassan'}).click();
   await page.getByLabel('Performance override').selectOption('EXCELLENT');
   await page.getByRole('button', {name: 'Submit'}).click();
+  await expect(page).toHaveURL(/\/en\/history$/);
 
   await clearSession(page);
   await page.setViewportSize({width: 1280, height: 800});
@@ -24,7 +26,7 @@ test('student exception overrides the group default in reports', async ({page}) 
   await expect(page.frameLocator('iframe[title="Report preview"]').getByText('Good', {exact: true})).toBeVisible();
   await page.getByRole('link', {name: 'Back to reports'}).click();
 
-  const omarRow = page.getByRole('row', {name: /Omar Hassan.*English/});
+  const omarRow = page.getByRole('row', {name: /Omar Hassan.*Arabic/});
   await omarRow.getByRole('link', {name: 'Preview'}).click();
-  await expect(page.frameLocator('iframe[title="Report preview"]').getByText('Excellent', {exact: true})).toBeVisible();
+  await expect(page.frameLocator('iframe[title="Report preview"]').getByText('ممتاز', {exact: true})).toBeVisible();
 });

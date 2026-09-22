@@ -42,6 +42,7 @@ test('English administrator-to-report workflow', async ({page}) => {
   const updateHref = await groupCard.getByRole('link', {name: 'Update this week'}).getAttribute('href');
   expect(updateHref).toBeTruthy();
   await page.goto(`${updateHref!.split('?')[0]}?date=2030-01-12`);
+  await page.waitForLoadState('networkidle');
   await page.getByRole('button', {name: 'Mark all present'}).click();
   await page.getByLabel('What did the group cover? (English)').fill('English end-to-end lesson');
   await page.getByLabel('Default performance').selectOption('GOOD');

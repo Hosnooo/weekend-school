@@ -67,6 +67,16 @@ pnpm dev
 
 Open `http://127.0.0.1:3000/en/login` for English or `http://127.0.0.1:3000/ar/login` for Arabic. Arabic pages set both `lang="ar"` and `dir="rtl"`.
 
+### One-click Windows launcher
+
+Install the desktop shortcut once:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/install-desktop-shortcut.ps1
+```
+
+Open Docker Desktop first and wait until its engine is running. The **Weekend School** shortcut checks Docker without trying to start it, starts the existing local Supabase data without resetting it, refreshes the ignored `.env.local` with local credentials, starts the web application in a minimized terminal, and opens the English login page. Startup errors remain visible in the launcher window.
+
 ## Testing
 
 Run the fast suite and static checks:

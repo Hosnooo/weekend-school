@@ -1,10 +1,10 @@
 # Implementation Progress
 
-Last updated: 2026-09-20
+Last updated: 2026-09-21
 
 ## Current status
 
-Phases 1–5 are implemented. Phase 6 hardening is in progress on `phase-6-hardening`: its local code, documentation, seed, RLS harness, and E2E harness are present, but the release gate remains blocked until a Docker-compatible local Supabase stack is available.
+All six implementation phases are complete on `phase-6-hardening`. The release gate includes a fresh local Supabase reset, real PostgreSQL/RLS tests, four authenticated browser workflows, the standard lint/typecheck/test/build checks, and an authorized live Resend sandbox delivery.
 
 ## Planning completed
 
@@ -66,7 +66,7 @@ Not claimed in Phase 2:
 
 ## Remaining phases
 
-- Phase 6 — run fresh migration/seed, real pgTAP RLS, the four authenticated Playwright workflows, and the explicitly authorized Resend sandbox smoke test.
+- None.
 
 ## Phase 4 — Reports
 
@@ -145,13 +145,13 @@ Not claimed in Phase 5:
 
 ## Environment limitations discovered
 
-- Node.js 24.19.0 and pnpm 11.19.0 are available.
-- The repository now pins Supabase CLI 2.117.0 and Playwright 1.63.0. This workstation still has no Docker-compatible runtime, so the CLI cannot start PostgreSQL.
-- No local or remote Supabase credentials and no explicitly authorized Resend sandbox credentials are configured. Real PostgreSQL/RLS/Auth/E2E/email checks remain mandatory before MVP completion.
+- Node.js 24.19.0, pnpm 11.19.0, Docker Desktop 29.7.2, Supabase CLI 2.117.0, and Playwright 1.63.0 are available.
+- Docker Desktop's CLI is installed outside the sandbox PATH, but invoking it from its installed location provides a healthy Linux container engine and supports the local Supabase stack.
+- Local Supabase credentials are configured in the ignored `.env.local` file and match the running stack. The Resend API key used for the authorized smoke test was consumed from the clipboard without being printed, logged, or persisted by the project.
 
 ## Phase 6 — Hardening
 
-Status: In progress; local implementation is ready, runtime verification is blocked.
+Status: Complete.
 
 Completed:
 
@@ -173,10 +173,19 @@ Verification evidence from 2026-09-20:
 - `pnpm build` with safe placeholder public Supabase values — passed; Next.js generated all 32 routes/pages.
 - `supabase test db` — attempted with the pinned CLI and failed to connect to `127.0.0.1:54322` because no local Supabase/PostgreSQL runtime is running.
 
-Required before Phase 6 can be marked complete:
+Runtime verification evidence from 2026-09-21:
 
-- Install/start a Docker-compatible runtime, run `pnpm db:start`, and run `pnpm db:reset` from zero.
-- Run `pnpm test:db` and obtain a passing real PostgreSQL/RLS matrix.
-- Populate `.env.local` from `pnpm db:status`, install Chromium, and run `pnpm test:e2e` after the fresh reset.
-- Perform the Resend sandbox smoke test only after explicit authorization and credentials are provided.
-- Repeat the standard lint, type-check, full test, and production-build gate after those runtime checks.
+- Docker Desktop 29.7.2 — healthy Linux engine.
+- `pnpm db:start` — started the pinned local Supabase stack.
+- `pnpm db:reset` — recreated PostgreSQL from zero, applied all 11 migrations in order, loaded `supabase/seed.sql`, and restarted the stack successfully.
+- `.env.local` — verified to match the running local API URL, anonymous key, and service-role key without printing credentials.
+- `pnpm test:db` — real pgTAP run passed 1 file and all 9 RLS tests.
+- `pnpm browsers:install` — Chromium installation/verification completed successfully.
+- `pnpm test:e2e` — all 4 serial workflows passed in 1.9 minutes: Arabic RTL/report, unrelated-group denial, English administrator-to-report, and student performance exception. The managed PTY retained the child development server on the first attempt; rerunning the same command in a detached host process exited cleanly and confirmed the process-lifecycle issue was confined to the PTY boundary.
+- `pnpm lint` — passed with zero warnings/errors.
+- `pnpm typecheck` — passed.
+- `pnpm test` — 14 files and 66 tests passed.
+- `pnpm build` — passed; Next.js generated all 32 routes/pages.
+- Resend sandbox smoke test — a separate live message to the authorized account owner `mohssen.elshaar@gmail.com` was accepted with a provider delivery ID. A second attempt to `mostafa.kh.elghandour@gmail.com` was rejected by Resend's expected sandbox restriction because unverified accounts may send only to their owner; no application defect or secret exposure occurred.
+
+No Phase 6 verification items remain.

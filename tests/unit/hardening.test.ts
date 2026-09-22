@@ -28,6 +28,19 @@ describe('release hardening contracts', () => {
     expect(readme).not.toMatch(/re_[A-Za-z0-9]{20,}/);
   });
 
+  it('allows the loopback hostname used by the Windows launcher in development', async () => {
+    const nextConfig = await readFile(join(process.cwd(), 'next.config.ts'), 'utf8');
+    expect(nextConfig).toContain("allowedDevOrigins: ['127.0.0.1']");
+  });
+
+  it('keeps non-function initial state out of the weekly use-server module', async () => {
+    const actions = await readFile(
+      join(process.cwd(), 'src', 'features', 'weekly-updates', 'weekly-update.actions.ts'),
+      'utf8'
+    );
+    expect(actions).not.toContain('export const initialWeeklyActionState');
+  });
+
   it('provides an idempotent bilingual seed with the specified fixture quantities', async () => {
     const seed = await readFile(join(process.cwd(), 'supabase', 'seed.sql'), 'utf8');
     expect(seed).toContain('on conflict');
@@ -53,5 +66,8 @@ describe('release hardening contracts', () => {
       'english-flow.spec.ts',
       'student-exception.spec.ts'
     ]);
+
+    const packageJson = JSON.parse(await readFile(join(process.cwd(), 'package.json'), 'utf8'));
+    expect(packageJson.scripts['test:e2e']).toContain('--env-file=.env.local');
   });
 });

@@ -1,6 +1,6 @@
 import {z} from 'zod';
 
-import {optionalText, optionalUuid, requiredText} from '@/lib/validation/fields';
+import {databaseUuid, optionalText, optionalUuid, requiredText} from '@/lib/validation/fields';
 
 export const groupSchema = z.object({
   nameEn: requiredText,
@@ -9,6 +9,6 @@ export const groupSchema = z.object({
   teacherProfileId: optionalUuid
 });
 
-export const groupUpdateSchema = groupSchema.extend({id: z.uuid()});
+export const groupUpdateSchema = groupSchema.extend({id: databaseUuid});
 
 export type GroupInput = z.infer<typeof groupSchema>;
