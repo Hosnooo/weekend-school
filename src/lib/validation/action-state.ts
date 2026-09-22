@@ -1,6 +1,6 @@
 export type ActionState = {
   status: 'idle' | 'error';
-  error: 'validation' | 'save' | 'invite' | null;
+  error: 'validation' | 'save' | 'invite' | 'conflict' | null;
 };
 
 export const initialActionState: ActionState = {status: 'idle', error: null};

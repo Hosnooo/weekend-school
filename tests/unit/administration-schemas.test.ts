@@ -4,7 +4,7 @@ import {groupSchema} from '@/features/groups/group.schemas';
 import {guardianSchema} from '@/features/guardians/guardian.schemas';
 import {membershipSchema} from '@/features/groups/membership.schemas';
 import {studentSchema} from '@/features/students/student.schemas';
-import {teacherSchema} from '@/features/teachers/teacher.schemas';
+import {teacherSchema, teacherUpdateSchema} from '@/features/teachers/teacher.schemas';
 
 const groupId = '11111111-1111-4111-8111-111111111111';
 const studentId = '22222222-2222-4222-8222-222222222222';
@@ -77,6 +77,18 @@ describe('teacher administration validation', () => {
       preferredLanguage: 'ar',
       assignedGroupIds: [groupId]
     });
+  });
+
+  it('requires explicit confirmation before an occupied group can be reassigned', () => {
+    const input = {
+      id: '33333333-3333-4333-8333-333333333333',
+      displayName: 'Fatima Ali',
+      preferredLanguage: 'en',
+      assignedGroupIds: [groupId]
+    };
+    expect(teacherUpdateSchema.parse({...input, allowReassignment: false}).allowReassignment).toBe(false);
+    expect(teacherUpdateSchema.parse({...input, allowReassignment: true}).allowReassignment).toBe(true);
+    expect(teacherUpdateSchema.safeParse({...input, allowReassignment: 'true'}).success).toBe(false);
   });
 });
 

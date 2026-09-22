@@ -47,7 +47,8 @@ describe('migration contract', () => {
       '202609200009_teacher_workflow.sql',
       '202609200010_report_generation.sql',
       '202609200011_email_delivery.sql',
-      '202609200012_delivery_identity_and_recovery.sql'
+      '202609200012_delivery_identity_and_recovery.sql',
+      '202609220013_teacher_assignment.sql'
     ]);
   });
 

@@ -151,13 +151,17 @@ export async function updateTeacherAction(
     id: formData.get('id'),
     displayName: formData.get('displayName'),
     preferredLanguage: formData.get('preferredLanguage'),
-    assignedGroupIds: formData.getAll('assignedGroupIds')
+    assignedGroupIds: formData.getAll('assignedGroupIds'),
+    allowReassignment: formData.get('allowReassignment') === 'true'
   });
   if (!parsed.success) return validationFailure();
   try {
     await updateTeacher(parsed.data);
   } catch (error) {
     console.error('Unable to update teacher', {error});
+    if (typeof error === 'object' && error !== null && 'message' in error && error.message === 'primary teacher conflict') {
+      return saveFailure('conflict');
+    }
     return saveFailure();
   }
   revalidatePath(`/${locale}/teachers`);

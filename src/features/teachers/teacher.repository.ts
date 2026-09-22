@@ -48,6 +48,19 @@ export async function listTeachers(schoolId: string) {
   return (data as unknown as TeacherRow[]).map(mapTeacher);
 }
 
+export async function listTeachingCandidates(schoolId: string) {
+  const supabase = await createServerSupabaseClient();
+  const {data, error} = await supabase
+    .from('profiles')
+    .select('id, display_name')
+    .eq('school_id', schoolId)
+    .in('role', ['ADMIN', 'TEACHER'])
+    .eq('is_active', true)
+    .order('display_name');
+  if (error) throw error;
+  return data.map((row) => ({id: row.id as string, displayName: row.display_name as string}));
+}
+
 export async function getTeacher(schoolId: string, id: string) {
   const supabase = await createServerSupabaseClient();
   const {data, error} = await supabase
@@ -67,14 +80,16 @@ export async function updateTeacher(
     displayName: string;
     preferredLanguage: 'en' | 'ar';
     assignedGroupIds: string[];
+    allowReassignment: boolean;
   }
 ) {
   const supabase = await createServerSupabaseClient();
-  const {error} = await supabase.rpc('update_teacher_administration', {
+  const {error} = await supabase.rpc('update_teacher_administration_confirmed', {
     p_teacher_profile_id: input.id,
     p_display_name: input.displayName,
     p_preferred_language: input.preferredLanguage,
-    p_group_ids: input.assignedGroupIds
+    p_group_ids: input.assignedGroupIds,
+    p_allow_reassignment: input.allowReassignment
   });
   if (error) throw error;
 }
