@@ -1,5 +1,4 @@
 import {expect, type Page} from '@playwright/test';
-import {createClient} from '@supabase/supabase-js';
 
 export const credentials = {
   admin: {email: 'admin@example.test', password: 'WeekendSchool1!'},
@@ -25,23 +24,14 @@ export async function clearSession(page: Page) {
   await page.evaluate(() => window.localStorage.clear());
 }
 
-export async function setInvitedUserPassword(email: string, password: string) {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) {
-    throw new Error('E2E requires NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.');
-  }
-
-  const client = createClient(url, key, {auth: {autoRefreshToken: false, persistSession: false}});
-  const {data, error} = await client.auth.admin.listUsers({page: 1, perPage: 1000});
-  if (error) throw error;
-  const user = data.users.find((candidate) => candidate.email === email);
-  if (!user) throw new Error(`Invited user not found: ${email}`);
-  const {error: updateError} = await client.auth.admin.updateUserById(user.id, {
-    password,
-    email_confirm: true
-  });
-  if (updateError) throw updateError;
+export async function acceptTeacherInvitation(page:Page,email:string,password:string) {
+  let invitationUrl='';
+  await expect.poll(async()=>{const listResponse=await fetch('http://127.0.0.1:54324/api/v1/messages');if(!listResponse.ok)return false;const list=await listResponse.json() as {messages:Array<{ID:string;To:Array<{Address:string}>}>};const latest=list.messages.find(({To})=>To.some(({Address})=>Address===email));if(!latest)return false;const messageResponse=await fetch(`http://127.0.0.1:54324/api/v1/message/${latest.ID}`);if(!messageResponse.ok)return false;const message=await messageResponse.json() as {HTML?:string;Text?:string};const body=`${message.HTML??''}\n${message.Text??''}`.replaceAll('&amp;','&');invitationUrl=body.match(/https?:\/\/[^\s"'<>]+\/auth\/v1\/verify\?[^\s"'<>]+/)?.[0]??'';return Boolean(invitationUrl)},{timeout:10_000,message:'invitation email should arrive in local Mailpit'}).toBe(true);
+  await page.goto(invitationUrl);
+  await expect(page).toHaveURL(/\/en\/set-password/);
+  await page.getByLabel('New password').fill(password);
+  await page.getByRole('button',{name:'Set password'}).click();
+  await expect(page).toHaveURL(/\/en\/my-groups/);
 }
 
 export async function openReportPeriod(page: Page, locale: 'en' | 'ar', month: string) {

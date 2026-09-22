@@ -1,10 +1,10 @@
 # Implementation Progress
 
-Last updated: 2026-09-21
+Last updated: 2026-09-22
 
 ## Current status
 
-All six implementation phases are complete on `phase-6-hardening`. The release gate includes a fresh local Supabase reset, real PostgreSQL/RLS tests, four authenticated browser workflows, the standard lint/typecheck/test/build checks, and an authorized live Resend sandbox delivery.
+All six implementation phases and the final review-remediation pass are complete on `phase-6-hardening`. The release gate includes a fresh local Supabase reset, real PostgreSQL/RLS tests, four authenticated browser workflows (including actual teacher invitation acceptance), the standard lint/typecheck/test/build checks, and an authorized live Resend sandbox delivery.
 
 ## Planning completed
 
@@ -188,4 +188,20 @@ Runtime verification evidence from 2026-09-21:
 - `pnpm build` — passed; Next.js generated all 32 routes/pages.
 - Resend sandbox smoke test — a separate live message to the authorized account owner `mohssen.elshaar@gmail.com` was accepted with a provider delivery ID. A second attempt to `mostafa.kh.elghandour@gmail.com` was rejected by Resend's expected sandbox restriction because unverified accounts may send only to their owner; no application defect or secret exposure occurred.
 
-No Phase 6 verification items remain.
+Final review remediation verified on 2026-09-22:
+
+- Added migration 12 so delivery uniqueness is enforced by `(school, student, reporting period, guardian)` independently of report language. Recent uncertain PENDING deliveries safely reuse the same provider idempotency key; older uncertain deliveries require reconciliation instead of an unsafe automatic resend.
+- Provider acceptance followed by a persistence failure no longer rewrites the delivery as a provider rejection.
+- Reports now represent missing optional performance as localized “Not rated” rather than blocking generation.
+- The development seed was run a second time against protected submitted sessions and completed with zero child writes and zero updates.
+- Expanded the live pgTAP suite from 9 to 14 checks, covering cross-school mutation denial, submitted-session mutation denial, immutable report snapshots, and the language-independent logical-delivery invariant.
+- Replaced the service-role E2E password shortcut with the real Supabase invitation email, local Mailpit link, invitation session establishment, and password-setting screen.
+- Bulk sending scans past ineligible reports and prioritizes READY reports before FAILED retries; failed saves retain weekly-form navigation protection.
+- `pnpm lint` — passed.
+- `pnpm typecheck` — passed.
+- `pnpm test` — 14 files and 70 tests passed.
+- `pnpm test:db` — 1 file and all 14 pgTAP tests passed against a freshly reset database.
+- `pnpm build` — passed; Next.js generated all 34 routes/pages, including English and Arabic password setup.
+- `pnpm test:e2e` — all 4 serial workflows passed in 2.9 minutes from a freshly reset database.
+
+No Phase 6 verification items remain. Deployment hosting, production Supabase configuration, and a verified Resend sending domain are launch-environment tasks rather than unfinished application behavior.

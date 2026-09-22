@@ -27,6 +27,9 @@ describe('migration contract', () => {
     expect(sessionInsert).toBeGreaterThanOrEqual(0);
     expect(progressInsert).toBeGreaterThan(sessionInsert);
     expect(submissionUpdate).toBeGreaterThan(progressInsert);
+    expect(seed).toMatch(/join public\.sessions[\s\S]*sessions\.status = 'DRAFT'/);
+    expect(seed).toMatch(/where[\s\S]*status = 'DRAFT'[\s\S]*update public\.sessions set status = 'SUBMITTED'/);
+    expect(seed).toMatch(/update public\.sessions set status = 'SUBMITTED'[\s\S]*and status = 'DRAFT'/);
   });
 
   it('keeps migrations in dependency order', async () => {
@@ -43,7 +46,8 @@ describe('migration contract', () => {
       '202609200008_administration_functions.sql',
       '202609200009_teacher_workflow.sql',
       '202609200010_report_generation.sql',
-      '202609200011_email_delivery.sql'
+      '202609200011_email_delivery.sql',
+      '202609200012_delivery_identity_and_recovery.sql'
     ]);
   });
 
@@ -54,7 +58,7 @@ describe('migration contract', () => {
   });
 
   it('inserts immutable report snapshots atomically',async()=>{const{sql}=await readMigrations();expect(sql).toMatch(/create function public\.generate_report_snapshots\b/i);expect(sql).toContain('on conflict (school_id, student_id, period_start, period_end, language) do nothing');});
-  it('reserves and completes idempotent email deliveries',async()=>{const{sql}=await readMigrations();expect(sql).toMatch(/create function public\.reserve_report_delivery\b/i);expect(sql).toMatch(/create function public\.complete_report_delivery\b/i);expect(sql).toContain("existing_delivery.status in ('SENT','DELIVERED','PENDING')");});
+  it('reserves logical deliveries across report-language changes and safely recovers recent pending attempts',async()=>{const{sql}=await readMigrations();expect(sql).toMatch(/create (or replace )?function public\.reserve_report_delivery\b/i);expect(sql).toMatch(/create function public\.complete_report_delivery\b/i);expect(sql).toContain('email_deliveries_logical_recipient_key');expect(sql).toContain("existing_delivery.status = 'PENDING'");expect(sql).toContain("interval '23 hours'");expect(sql).toMatch(/'requires_reconciliation',\s*true/);});
 
   it('provides an atomic student and guardian creation function', async () => {
     const {sql} = await readMigrations();
@@ -99,6 +103,6 @@ describe('migration contract', () => {
     expect(sql).toContain(
       'unique (school_id, student_id, period_start, period_end, language)'
     );
-    expect(sql).toContain('unique (report_id, guardian_id)');
+    expect(sql).toContain('email_deliveries_logical_recipient_key');
   });
 });

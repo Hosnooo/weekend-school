@@ -82,7 +82,7 @@ Phase 5 implements and verifies manual single and bulk sending. It exposes reusa
 
 **Status:** Accepted — 2026-09-20
 
-Use a unique delivery key for `(student, reporting period, guardian)` represented by the resolved `report_id` plus `guardian_id`, and create pending deliveries transactionally. Provider retries reuse the stored delivery; they do not create another logical send. Application checks improve messages, but the database constraint is authoritative.
+Use a unique delivery key for `(school_id, student_id, period_start, period_end, guardian_id)` and create pending deliveries transactionally. This identity is deliberately independent of a language-specific `report_id`, so changing a guardian's language cannot create a second logical delivery. Provider retries reuse the stored delivery; they do not create another logical send. Application checks improve messages, but the database constraint is authoritative.
 
 ## D-014 — Optional MVP-adjacent work is excluded
 
@@ -137,3 +137,11 @@ The umbrella React Email package pulled its optional renderer and build-time Pre
 Pin the Supabase CLI and Playwright in development dependencies, keep the real pgTAP RLS matrix in `supabase/tests/`, and keep exactly the four required workflows in `tests/e2e/`. The browser suite runs serially against one reset seed and uses separate future reporting periods so immutable report identities cannot collide across workflows.
 
 Do not replace unavailable PostgreSQL, RLS, Auth, or browser execution with mocks at the Phase 6 gate. A missing container runtime or local credentials is reported as a release blocker. Static contracts and test discovery remain useful, but they are not evidence that migrations, RLS, Auth, or end-to-end behavior passed.
+
+## D-020 — Invitation acceptance and uncertain email outcomes
+
+**Status:** Accepted — 2026-09-22
+
+Teacher onboarding must exercise the provider-issued invitation link and let the teacher establish a password; administrative password assignment is not part of the product workflow. The E2E suite reads the local Mailpit message and follows the actual Supabase invite URL.
+
+Email provider rejection and post-acceptance persistence failure are distinct outcomes. A provider rejection may become `FAILED` and be retried. If provider acceptance cannot be persisted, the row remains `PENDING`: it may reuse the same idempotency key inside the provider's safe window, but after that window it requires reconciliation rather than risking a duplicate guardian email.

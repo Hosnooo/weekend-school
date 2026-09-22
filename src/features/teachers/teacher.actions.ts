@@ -1,6 +1,7 @@
 'use server';
 
 import {revalidatePath} from 'next/cache';
+import {headers} from 'next/headers';
 import {redirect} from 'next/navigation';
 import {z} from 'zod';
 
@@ -34,7 +35,7 @@ function teacherInput(formData: FormData) {
   };
 }
 
-function createInvitationDependencies(): TeacherInvitationDependencies {
+function createInvitationDependencies(redirectTo: string): TeacherInvitationDependencies {
   const supabase = createServiceRoleSupabaseClient();
   return {
     async validateAssignments(input) {
@@ -62,7 +63,8 @@ function createInvitationDependencies(): TeacherInvitationDependencies {
     },
     async inviteAuthUser(input) {
       const {data, error} = await supabase.auth.admin.inviteUserByEmail(input.email, {
-        data: {display_name: input.displayName, preferred_language: input.preferredLanguage}
+        data: {display_name: input.displayName, preferred_language: input.preferredLanguage},
+        redirectTo
       });
       if (error || !data.user) throw error ?? new Error('Invitation returned no user');
       return data.user.id;
@@ -122,9 +124,14 @@ export async function createTeacherAction(
   const parsed = teacherSchema.safeParse(teacherInput(formData));
   if (!parsed.success) return validationFailure();
   try {
+    const requestHeaders = await headers();
+    const host = requestHeaders.get('x-forwarded-host') ?? requestHeaders.get('host');
+    if (!host) throw new Error('Invitation host is unavailable');
+    const protocol = requestHeaders.get('x-forwarded-proto') ?? (host.startsWith('localhost') || host.startsWith('127.0.0.1') ? 'http' : 'https');
+    const redirectTo = new URL(`/${parsed.data.preferredLanguage}/set-password`, `${protocol}://${host}`).toString();
     await inviteTeacher(
       {...parsed.data, schoolId: profile.schoolId},
-      createInvitationDependencies()
+      createInvitationDependencies(redirectTo)
     );
   } catch (error) {
     console.error('Unable to invite teacher', {error});

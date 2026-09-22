@@ -1,6 +1,6 @@
 import {expect, test} from '@playwright/test';
 
-import {clearSession, credentials, login, openReportPeriod, setInvitedUserPassword} from './helpers';
+import {acceptTeacherInvitation,clearSession, credentials, login, openReportPeriod} from './helpers';
 
 test('English administrator-to-report workflow', async ({page}) => {
   const token = Date.now().toString();
@@ -33,9 +33,8 @@ test('English administrator-to-report workflow', async ({page}) => {
   await page.getByRole('button', {name: 'Save'}).click();
   await expect(page).toHaveURL(/\/en\/students$/);
 
-  await setInvitedUserPassword(teacherEmail, teacherPassword);
   await clearSession(page);
-  await login(page, 'en', {email: teacherEmail, password: teacherPassword});
+  await acceptTeacherInvitation(page,teacherEmail,teacherPassword);
   await page.setViewportSize({width: 360, height: 800});
   await page.goto('/en/my-groups');
   const groupCard = page.getByRole('heading', {name: groupName}).locator('..');

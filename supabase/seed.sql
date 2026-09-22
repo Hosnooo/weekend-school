@@ -121,10 +121,21 @@ insert into public.sessions (id,school_id,group_id,session_date,status,created_b
   ('10000000-0000-0000-0000-000000000003','a0000000-0000-0000-0000-000000000001','d0000000-0000-0000-0000-000000000003','2026-09-13','DRAFT','c0000000-0000-0000-0000-000000000002')
 on conflict (school_id,group_id,session_date) do nothing;
 
-insert into public.group_progress (school_id,session_id,progress_en,progress_ar,default_performance) values
+insert into public.group_progress (school_id,session_id,progress_en,progress_ar,default_performance)
+select values_to_insert.school_id::uuid,
+       values_to_insert.session_id::uuid,
+       values_to_insert.progress_en,
+       values_to_insert.progress_ar,
+       values_to_insert.default_performance::public.performance_level
+from (values
   ('a0000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000001','Reviewed Arabic letters and short vowels.','راجعنا الحروف العربية والحركات القصيرة.','GOOD'),
   ('a0000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000002','Practised reading short sentences.','تدربنا على قراءة الجمل القصيرة.','GOOD'),
   ('a0000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000003','Discussed a bilingual story.','ناقشنا قصة باللغتين.','DEVELOPING')
+) as values_to_insert(school_id,session_id,progress_en,progress_ar,default_performance)
+join public.sessions sessions
+  on sessions.school_id = values_to_insert.school_id::uuid
+ and sessions.id = values_to_insert.session_id::uuid
+ and sessions.status = 'DRAFT'
 on conflict (school_id,session_id) do nothing;
 
 insert into public.attendance (school_id,session_id,student_id,status)
@@ -133,10 +144,27 @@ select 'a0000000-0000-0000-0000-000000000001',
        ('e0000000-0000-0000-0000-' || lpad(number::text,12,'0'))::uuid,
        case when number in (4,8) then 'ABSENT'::public.attendance_status else 'PRESENT'::public.attendance_status end
 from generate_series(1,12) as number
+where exists (
+  select 1
+  from public.sessions sessions
+  where sessions.id = case when number<=4 then '10000000-0000-0000-0000-000000000001'::uuid when number<=8 then '10000000-0000-0000-0000-000000000002'::uuid else '10000000-0000-0000-0000-000000000003'::uuid end
+    and sessions.status = 'DRAFT'
+)
 on conflict (school_id,session_id,student_id) do nothing;
 
 insert into public.student_progress (school_id,session_id,student_id,performance_override,comment_en,comment_ar)
-values ('a0000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000001','e0000000-0000-0000-0000-000000000002','EXCELLENT','Excellent participation this week.','مشاركة ممتازة هذا الأسبوع.')
+select values_to_insert.school_id::uuid,
+       values_to_insert.session_id::uuid,
+       values_to_insert.student_id::uuid,
+       values_to_insert.performance_override::public.performance_level,
+       values_to_insert.comment_en,
+       values_to_insert.comment_ar
+from (values ('a0000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000001','e0000000-0000-0000-0000-000000000002','EXCELLENT','Excellent participation this week.','مشاركة ممتازة هذا الأسبوع.'))
+  as values_to_insert(school_id,session_id,student_id,performance_override,comment_en,comment_ar)
+join public.sessions sessions
+  on sessions.school_id = values_to_insert.school_id::uuid
+ and sessions.id = values_to_insert.session_id::uuid
+ and sessions.status = 'DRAFT'
 on conflict (school_id,session_id,student_id) do nothing;
 
 update public.sessions set status = 'SUBMITTED', submitted_at = case id
@@ -148,4 +176,5 @@ where id in (
   '10000000-0000-0000-0000-000000000001',
   '10000000-0000-0000-0000-000000000002',
   '10000000-0000-0000-0000-000000000003'
-);
+)
+and status = 'DRAFT';
