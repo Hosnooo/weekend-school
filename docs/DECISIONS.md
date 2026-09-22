@@ -169,3 +169,11 @@ Supabase Auth sends teacher invitations, so it uses Brevo custom SMTP with a sep
 The minimal administrator dashboard uses Monday through Sunday in the school's configured timezone. Its counts include active students, active teachers, and active groups; a group counts as submitted if it has at least one submitted session in that local week. Draft sessions and inactive groups do not raise the submission count. The Settings page edits the existing bilingual school names, timezone, and default language only. Both screens remain school-scoped and require an active administrator profile.
 
 Local end-to-end tests must refuse hosted Supabase URLs, because they create and mutate test records. The production deployment's local Vercel link changed the ignored environment file, so test runs explicitly inject the local stack's URL and keys.
+
+## D-024 — Approved admin workflow extension and release sequence
+
+**Status:** Accepted — 2026-09-22
+
+Keep a single `ADMIN` profile for an administrator who teaches; explicit same-school group assignment grants teacher workflow access. Preserve one primary teacher per group and one effective current group per student. Assignment changes must be atomic and visible, with historical sessions and memberships preserved. Password recovery uses Supabase Auth and the configured Auth SMTP service, not application-managed passwords. The extension ships in this order: assignments/account access, student CSV import, then reusable report wording and teacher read-only preview. The full approved contract is in `docs/SPEC.md` section 57 and the linked design document.
+
+Develop on a GitHub feature branch and verify its Vercel preview before merging to the production branch. Apply forward-only production Supabase migrations before deploying code that requires them; Vercel's Git deployment does not apply database migrations.

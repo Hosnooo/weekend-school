@@ -1,6 +1,6 @@
 # Administrator workflows and parent reports: design review
 
-**Status:** Proposed for user review, 2026-09-22. This document records agreed direction; implementation has not begun. After approval, incorporate the product changes into `docs/SPEC.md`, record interpretations in `docs/DECISIONS.md`, and plan one implementation phase at a time.
+**Status:** Approved by the user, 2026-09-22. Implementation has not begun. Incorporate the product changes into `docs/SPEC.md`, record interpretations in `docs/DECISIONS.md`, and plan one implementation phase at a time.
 
 ## Intent and success criteria
 
