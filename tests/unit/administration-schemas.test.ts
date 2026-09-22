@@ -3,7 +3,7 @@ import {describe, expect, it} from 'vitest';
 import {groupSchema} from '@/features/groups/group.schemas';
 import {guardianSchema} from '@/features/guardians/guardian.schemas';
 import {membershipSchema} from '@/features/groups/membership.schemas';
-import {studentSchema} from '@/features/students/student.schemas';
+import {studentSchema, studentTransferSchema} from '@/features/students/student.schemas';
 import {teacherSchema, teacherUpdateSchema} from '@/features/teachers/teacher.schemas';
 
 const groupId = '11111111-1111-4111-8111-111111111111';
@@ -32,6 +32,12 @@ describe('student administration validation', () => {
       guardianEmail: 'parent@example.com',
       reportLanguage: 'both'
     });
+  });
+
+  it('requires a valid target group and transfer date', () => {
+    expect(studentTransferSchema.safeParse({studentId, groupId, startsOn: '2026-09-22'}).success).toBe(true);
+    expect(studentTransferSchema.safeParse({studentId, groupId, startsOn: '2026-02-30'}).success).toBe(false);
+    expect(studentTransferSchema.safeParse({studentId, groupId: '', startsOn: '2026-09-22'}).success).toBe(false);
   });
 });
 
@@ -90,6 +96,7 @@ describe('teacher administration validation', () => {
     expect(teacherUpdateSchema.parse({...input, allowReassignment: true}).allowReassignment).toBe(true);
     expect(teacherUpdateSchema.safeParse({...input, allowReassignment: 'true'}).success).toBe(false);
   });
+
 });
 
 describe('membership administration validation', () => {

@@ -26,5 +26,12 @@ export const studentUpdateSchema = z.object({
   lastNameAr: optionalText
 });
 
+export const studentTransferSchema = z.object({
+  studentId: databaseUuid,
+  groupId: databaseUuid,
+  startsOn: z.iso.date()
+});
+
 export type StudentInput = z.infer<typeof studentSchema>;
 export type StudentUpdateInput = z.infer<typeof studentUpdateSchema>;
+export type StudentTransferInput = z.infer<typeof studentTransferSchema>;

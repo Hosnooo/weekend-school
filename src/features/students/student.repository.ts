@@ -1,7 +1,9 @@
 import 'server-only';
 
 import type {StudentUpdateInput} from '@/features/students/student.schemas';
+import {currentGroupForDate} from '@/features/students/student.model';
 import type {StudentListItem} from '@/features/students/student.types';
+import {todayInTimeZone} from '@/features/weekly-updates/weekly-update.model';
 import {createServerSupabaseClient} from '@/lib/supabase/server';
 
 type StudentRow = {
@@ -12,13 +14,22 @@ type StudentRow = {
   last_name_ar: string | null;
   is_active: boolean;
   group_memberships: Array<{
+    starts_on: string;
     ends_on: string | null;
     groups: {id: string; name_en: string; name_ar: string | null} | null;
   }>;
 };
 
-function mapStudent(row: StudentRow): StudentListItem {
-  const membership = row.group_memberships.find(({ends_on}) => ends_on === null);
+function mapStudent(row: StudentRow, today: string): StudentListItem {
+  const currentGroup = currentGroupForDate(row.group_memberships.map((membership) => ({
+    startsOn: membership.starts_on,
+    endsOn: membership.ends_on,
+    group: membership.groups ? {
+      id: membership.groups.id,
+      nameEn: membership.groups.name_en,
+      nameAr: membership.groups.name_ar
+    } : null
+  })), today);
   return {
     id: row.id,
     firstNameEn: row.first_name_en,
@@ -26,13 +37,7 @@ function mapStudent(row: StudentRow): StudentListItem {
     firstNameAr: row.first_name_ar,
     lastNameAr: row.last_name_ar,
     isActive: row.is_active,
-    currentGroup: membership?.groups
-      ? {
-          id: membership.groups.id,
-          nameEn: membership.groups.name_en,
-          nameAr: membership.groups.name_ar
-        }
-      : null
+    currentGroup
   };
 }
 
@@ -43,31 +48,44 @@ const studentSelect = `
   first_name_ar,
   last_name_ar,
   is_active,
-  group_memberships(ends_on, groups(id, name_en, name_ar))
+  group_memberships(starts_on, ends_on, groups(id, name_en, name_ar))
 `;
 
 export async function listStudents(schoolId: string) {
   const supabase = await createServerSupabaseClient();
-  const {data, error} = await supabase
+  const [{data, error}, {data: school, error: schoolError}] = await Promise.all([supabase
     .from('students')
     .select(studentSelect)
     .eq('school_id', schoolId)
     .order('last_name_en')
-    .order('first_name_en');
+    .order('first_name_en'), supabase.from('schools').select('timezone').eq('id', schoolId).single()]);
   if (error) throw error;
-  return (data as unknown as StudentRow[]).map(mapStudent);
+  if (schoolError) throw schoolError;
+  const today = todayInTimeZone(school.timezone);
+  return (data as unknown as StudentRow[]).map((row) => mapStudent(row, today));
 }
 
 export async function getStudent(schoolId: string, id: string) {
   const supabase = await createServerSupabaseClient();
-  const {data, error} = await supabase
+  const [{data, error}, {data: school, error: schoolError}] = await Promise.all([supabase
     .from('students')
     .select(studentSelect)
     .eq('school_id', schoolId)
     .eq('id', id)
-    .maybeSingle();
+    .maybeSingle(), supabase.from('schools').select('timezone').eq('id', schoolId).single()]);
   if (error) throw error;
-  return data ? mapStudent(data as unknown as StudentRow) : null;
+  if (schoolError) throw schoolError;
+  return data ? mapStudent(data as unknown as StudentRow, todayInTimeZone(school.timezone)) : null;
+}
+
+export async function moveStudentGroup(input: {studentId: string; groupId: string; startsOn: string}) {
+  const supabase = await createServerSupabaseClient();
+  const {error} = await supabase.rpc('move_student_group', {
+    p_student_id: input.studentId,
+    p_target_group_id: input.groupId,
+    p_starts_on: input.startsOn
+  });
+  if (error) throw error;
 }
 
 export async function createStudentWithGuardian(
