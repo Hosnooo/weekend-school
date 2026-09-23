@@ -31,6 +31,13 @@ jobs:
       - name: Unit and contract tests
         run: pnpm test
       - name: Production build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://example.invalid
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-build-placeholder
+          SUPABASE_SERVICE_ROLE_KEY: ci-build-placeholder
+          BREVO_API_KEY: ci-build-placeholder
+          EMAIL_FROM: ci@example.invalid
+          CRON_SECRET: ci-build-placeholder
         run: pnpm build
 
   database:
