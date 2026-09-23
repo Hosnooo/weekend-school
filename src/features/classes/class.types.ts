@@ -19,6 +19,7 @@ export type ClassSubjectSummary = {
   subjectNameAr: string | null;
   isActive: boolean;
   defaultGroupId: string | null;
+  teacherCount: number;
   groups: SubjectGroupSummary[];
 };
 
@@ -27,6 +28,7 @@ export type ClassSummary = {
   nameEn: string;
   nameAr: string | null;
   isActive: boolean;
+  activeStudentCount: number;
   subjectCount: number;
 };
 
