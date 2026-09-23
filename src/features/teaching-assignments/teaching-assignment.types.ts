@@ -7,6 +7,7 @@ export type TeachingGroup = {
 
 export type TeachingClassSubject = {
   id: string;
+  classId?: string;
   classNameEn: string;
   classNameAr: string | null;
   subjectNameEn: string;
