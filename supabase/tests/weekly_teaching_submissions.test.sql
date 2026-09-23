@@ -1,10 +1,22 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
-select plan(10);
+select plan(15);
 
 select has_table('public', 'weekly_submissions', 'independent weekly submissions table exists');
 select has_table('public', 'weekly_submission_students', 'per-student weekly observations table exists');
+select has_function(
+  'public',
+  'get_weekly_submission_roster',
+  array['uuid','uuid','date'],
+  'authorized weekly roster function exists'
+);
+select has_function(
+  'public',
+  'save_weekly_submission',
+  array['uuid','uuid','uuid','date','text','text','public.performance_level','jsonb','jsonb','boolean'],
+  'atomic weekly submission save function exists'
+);
 
 -- Dedicated Class/Subject/Group fixtures for independent teacher-authored submissions.
 insert into public.classes (id, school_id, name_en, name_ar) values
@@ -122,5 +134,45 @@ select throws_ok($excused$
   );
 $excused$, '23514', null, 'Excused cannot be stored in the new weekly attendance observation');
 
+set local role authenticated;
+select set_config('request.jwt.claim.role', 'authenticated', true);
+select set_config('request.jwt.claim.sub', 'b0000000-0000-0000-0000-000000000002', true);
+
+select results_eq(
+  $$select student_id from public.get_weekly_submission_roster(
+    'a3000000-0000-0000-0000-000000000001',
+    'a4000000-0000-0000-0000-000000000001',
+    date '2026-10-04'
+  ) order by student_id$$,
+  array['e0000000-0000-0000-0000-000000000001'::uuid],
+  'authorized teacher receives only the dated roster for the teaching context'
+);
+
+select lives_ok($save_submission$
+  select public.save_weekly_submission(
+    null,
+    'a3000000-0000-0000-0000-000000000001',
+    'a4000000-0000-0000-0000-000000000001',
+    date '2026-10-04',
+    'Reviewed memorization',
+    null,
+    'GOOD'::public.performance_level,
+    '[{"student_id":"e0000000-0000-0000-0000-000000000001","status":"PRESENT"}]'::jsonb,
+    '[{"student_id":"e0000000-0000-0000-0000-000000000001","performance_override":"EXCELLENT","comment_en":"Strong work","comment_ar":null}]'::jsonb,
+    true
+  );
+$save_submission$, 'authorized teacher can atomically submit a complete weekly update');
+
+select results_eq(
+  $$select ws.status::text from public.weekly_submissions ws
+    where ws.teacher_profile_id = 'c0000000-0000-0000-0000-000000000002'
+      and ws.class_subject_id = 'a3000000-0000-0000-0000-000000000001'
+      and ws.subject_group_id = 'a4000000-0000-0000-0000-000000000001'
+      and ws.week_start = date '2026-10-04'$$,
+  array['SUBMITTED'::text],
+  'atomic save finalizes the teacher-owned submission'
+);
+
+reset role;
 select * from finish();
 rollback;
