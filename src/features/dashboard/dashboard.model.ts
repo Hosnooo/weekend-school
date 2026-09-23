@@ -19,6 +19,17 @@ export type DashboardTeachingUpdate = TeachingUpdateContext & {
   status: 'MISSING' | 'DRAFT' | 'SUBMITTED';
 };
 
+type AttendanceConflictContext = {
+  classSubjectId: string;
+  subjectGroupId: string | null;
+  weekStart: string;
+  studentId: string;
+};
+
+type AttendanceObservation = AttendanceConflictContext & {
+  status: 'PRESENT' | 'ABSENT';
+};
+
 export function summarizeReportDelivery(
   reports: Array<{status: string}>,
   deliveries: Array<{status: string}>
@@ -82,4 +93,26 @@ export function summarizeTeachingUpdates(
     missingCount: contexts.filter(({status}) => status === 'MISSING').length,
     contexts
   };
+}
+
+function attendanceConflictKey(context: AttendanceConflictContext) {
+  return `${context.classSubjectId}:${context.subjectGroupId ?? 'whole'}:${context.weekStart}:${context.studentId}`;
+}
+
+export function countUnresolvedAttendanceConflicts(
+  observations: AttendanceObservation[],
+  resolutions: AttendanceConflictContext[]
+) {
+  const statusesByKey = new Map<string, Set<'PRESENT' | 'ABSENT'>>();
+  for (const observation of observations) {
+    const key = attendanceConflictKey(observation);
+    const statuses = statusesByKey.get(key) ?? new Set<'PRESENT' | 'ABSENT'>();
+    statuses.add(observation.status);
+    statusesByKey.set(key, statuses);
+  }
+
+  const resolvedKeys = new Set(resolutions.map(attendanceConflictKey));
+  return [...statusesByKey.entries()].filter(
+    ([key, statuses]) => statuses.size > 1 && !resolvedKeys.has(key)
+  ).length;
 }
