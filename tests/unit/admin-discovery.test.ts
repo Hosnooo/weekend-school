@@ -5,8 +5,8 @@ import {filterStudents} from '@/features/students/student.model';
 import type {StudentListItem} from '@/features/students/student.types';
 
 const students: StudentListItem[] = [
-  {id: '1', firstNameEn: 'Amina', lastNameEn: 'Hassan', firstNameAr: 'أمينة', lastNameAr: 'حسن', isActive: true, currentGroup: null},
-  {id: '2', firstNameEn: 'Omar', lastNameEn: 'Saleh', firstNameAr: null, lastNameAr: null, isActive: true, currentGroup: null}
+  {id: '1', firstNameEn: 'Amina', lastNameEn: 'Hassan', firstNameAr: 'أمينة', lastNameAr: 'حسن', isActive: true, currentClass: null},
+  {id: '2', firstNameEn: 'Omar', lastNameEn: 'Saleh', firstNameAr: null, lastNameAr: null, isActive: true, currentClass: null}
 ];
 
 describe('admin discovery', () => {
