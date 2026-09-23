@@ -10,8 +10,9 @@ type TeacherRow = {
   display_name: string;
   preferred_language: 'en' | 'ar';
   is_active: boolean;
-  group_teachers: Array<{
-    groups: {id: string; name_en: string; name_ar: string | null} | null;
+  teaching_assignments: Array<{
+    starts_on: string;
+    ends_on: string | null;
   }>;
 };
 
@@ -21,19 +22,20 @@ const teacherSelect = `
   display_name,
   preferred_language,
   is_active,
-  group_teachers(groups(id, name_en, name_ar))
+  teaching_assignments(starts_on, ends_on)
 `;
 
 function mapTeacher(row: TeacherRow): TeacherListItem {
+  const today = new Date().toISOString().slice(0, 10);
   return {
     id: row.id,
     authUserId: row.auth_user_id,
     displayName: row.display_name,
     preferredLanguage: row.preferred_language,
     isActive: row.is_active,
-    assignedGroups: row.group_teachers.flatMap(({groups}) =>
-      groups ? [{id: groups.id, nameEn: groups.name_en, nameAr: groups.name_ar}] : []
-    )
+    assignmentCount: row.teaching_assignments.filter(({starts_on, ends_on}) =>
+      starts_on <= today && (ends_on === null || ends_on >= today)
+    ).length
   };
 }
 
@@ -86,22 +88,20 @@ export async function getTeacher(schoolId: string, id: string) {
 }
 
 export async function updateTeacher(
+  schoolId: string,
   input: {
     id: string;
     displayName: string;
     preferredLanguage: 'en' | 'ar';
-    assignedGroupIds: string[];
-    allowReassignment: boolean;
   }
 ) {
   const supabase = await createServerSupabaseClient();
-  const {error} = await supabase.rpc('update_teacher_administration_confirmed', {
-    p_teacher_profile_id: input.id,
-    p_display_name: input.displayName,
-    p_preferred_language: input.preferredLanguage,
-    p_group_ids: input.assignedGroupIds,
-    p_allow_reassignment: input.allowReassignment
-  });
+  const {error} = await supabase
+    .from('profiles')
+    .update({display_name: input.displayName, preferred_language: input.preferredLanguage})
+    .eq('school_id', schoolId)
+    .eq('id', input.id)
+    .eq('role', 'TEACHER');
   if (error) throw error;
 }
 
