@@ -24,7 +24,7 @@ type AssignmentRow = {
 type ClassSubjectRow = {
   id: string;
   is_active: boolean;
-  classes: {name_en: string; name_ar: string | null; is_active: boolean} | null;
+  classes: {id: string; name_en: string; name_ar: string | null; is_active: boolean} | null;
   subjects: {name_en: string; name_ar: string | null; is_active: boolean} | null;
   subject_groups: Array<{
     id: string;
@@ -41,7 +41,7 @@ export async function listTeachingClassSubjects(schoolId: string): Promise<Teach
     .select(`
       id,
       is_active,
-      classes(name_en, name_ar, is_active),
+      classes(id, name_en, name_ar, is_active),
       subjects(name_en, name_ar, is_active),
       subject_groups(id, name_en, name_ar, is_active)
     `)
@@ -53,6 +53,7 @@ export async function listTeachingClassSubjects(schoolId: string): Promise<Teach
     if (!row.classes?.is_active || !row.subjects?.is_active) return [];
     return [{
       id: row.id,
+      classId: row.classes.id,
       classNameEn: row.classes.name_en,
       classNameAr: row.classes.name_ar,
       subjectNameEn: row.subjects.name_en,
