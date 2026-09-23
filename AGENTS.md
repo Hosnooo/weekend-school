@@ -10,10 +10,10 @@
 ## Required workflow
 
 - Use test-driven development for business rules, authorization helpers, validation, and regressions: observe a relevant failing test before adding production behavior.
-- Before declaring a phase complete, run `pnpm lint`, `pnpm typecheck`, `pnpm test`, and `pnpm build` and record the results in `docs/PROGRESS.md`.
+- Before declaring a phase complete, run `pnpm lint`, `pnpm typecheck`, `pnpm test`, and `pnpm build` and record the results in `docs/PROGRESS.md`. Database/RLS changes also require real `pnpm test:db`; release gates that change user workflows require the relevant `pnpm test:e2e` coverage.
 - Keep applied Supabase migrations immutable. Correct an applied schema with a new migration.
 - Prefer small, reviewable commits at working checkpoints. Never weaken authorization or RLS to make a test pass.
-- Preserve unrelated user changes. Do not hard-delete historical school records.
+- Preserve unrelated user changes. Use archive/restore for normal lifecycle changes. Permanent deletion is an explicit admin-only workflow for archived records, must show dependent-data impact, may offer export first, and must be school-scoped and transactional.
 
 ## Architecture boundaries
 
@@ -29,8 +29,8 @@
 - Every school-owned row carries `school_id`; every query and mutation is scoped to the authenticated profile's school.
 - Never expose `SUPABASE_SERVICE_ROLE_KEY`, `BREVO_API_KEY`, or `CRON_SECRET` through client code or a `NEXT_PUBLIC_` name.
 - Validate every mutation on the server with Zod. Normalize emails before persistence.
-- Use deactivation for teachers, students, groups, and guardians with history.
-- Reports use submitted sessions only and become immutable snapshots when generated.
+- Use archive/restore for teachers, students, Classes, Subjects, Groups, guardians, and other school records in normal workflows. Permanent deletion is admin-only, requires an archived target when meaningful history exists, must preview dependent-data impact, and may remove dependent history only inside the same-school confirmed transaction.
+- Reports use only submitted teacher sources and official attendance resolution. Finalized reports are immutable snapshots; corrections create revisions rather than silently mutating a finalized report.
 
 ## English and Arabic
 
@@ -44,8 +44,8 @@
 
 - TypeScript strict mode is mandatory. Prefer named domain types and explicit service interfaces over untyped objects.
 - Keep files focused; colocate feature components, schemas, services, repositories, and tests where they change together.
-- Unit-test pure rules. Integration-test database constraints, RLS, and server authorization. End-to-end-test the four workflows listed in the spec.
-- Phase 1 may use static SQL contract tests when a local Supabase runtime is unavailable, but Phase 6 must run real PostgreSQL/RLS integration tests before MVP completion.
+- Unit-test pure rules. Integration-test database constraints, RLS, and server authorization. End-to-end-test the approved workflows in the current specification.
+- Static SQL contract tests are never a substitute for the real PostgreSQL/RLS gate when database behavior changes.
 - Teacher workflows are mobile-first at 360px and must be checked in both LTR and RTL.
 
 ## Standard commands
@@ -55,6 +55,7 @@ pnpm dev
 pnpm lint
 pnpm typecheck
 pnpm test
+pnpm test:db
 pnpm test:e2e
 pnpm build
 ```
