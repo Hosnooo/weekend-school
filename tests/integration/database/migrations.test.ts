@@ -1,3 +1,4 @@
+import {createHash} from 'node:crypto';
 import {readdir, readFile} from 'node:fs/promises';
 import {join} from 'node:path';
 
@@ -5,6 +6,27 @@ import {describe, expect, it} from 'vitest';
 
 const migrationDirectory = join(process.cwd(), 'supabase', 'migrations');
 const seedPath = join(process.cwd(), 'supabase', 'seed.sql');
+
+const appliedMigrationBlobs: Record<string, string> = {
+  '202609200001_extensions_and_enums.sql': '5291e951b91b84727a121e5c11f69a958c2c30d3',
+  '202609200002_identity_and_school.sql': 'e61167f57bfa29dda754b9d79018d7309f6a21c3',
+  '202609200003_administration.sql': 'd5223b5131e6f8248d5e77bdc27f715d7ab6bcf1',
+  '202609200004_weekly_updates.sql': '5ac5b0696a3f2273fd299970ccb5afaa99939700',
+  '202609200005_reports_and_delivery.sql': 'f393b258f7258c6f19a783e873ddad972fa44187',
+  '202609200006_integrity_functions_and_indexes.sql': 'fe2034206157819968c7e4b33e07f8644c9a65a3',
+  '202609200007_row_level_security.sql': '1b3e1da5b82f0ee2031ff44181021710f272e412',
+  '202609200008_administration_functions.sql': '532e7cf948b1976aa685362c4cc816d024d2c6be',
+  '202609200009_teacher_workflow.sql': 'acc251e7be2976cf5f95f0c293bd45123bc770e3',
+  '202609200010_report_generation.sql': 'bea6ed0900b1252406c465127611163f190173a8',
+  '202609200011_email_delivery.sql': '26d43784dadb196b5f973130e68e5a6be959198c',
+  '202609200012_delivery_identity_and_recovery.sql': 'ae75c7e26102d248a242b8ce52a2b42ec6eee775',
+  '202609220013_teacher_assignment.sql': '4088410f5d1dab66f8580fbefb02db142d5c0d48',
+  '202609220014_student_transfer.sql': 'd976e88edc210bcb5b9c5b7a1b89ac52f6e11b9e',
+  '202609220015_protect_submitted_rosters.sql': '27d5d8df9e43f680a634149a6089d3cbed930eb1',
+  '202609220016_protect_membership_history.sql': 'a4d1425a03b793fa273c3eac7147f5f3debed88c',
+  '202609220017_confirm_group_reassignment.sql': '0084ce5144bc0fb0023f476cfe0e478d9f596a8b',
+  '202609220018_revoke_anon_security_definer_execution.sql': '89fb2928399b1a89261c5edfcfa856066c856da4'
+};
 
 async function readMigrations() {
   const filenames = (await readdir(migrationDirectory))
@@ -15,6 +37,11 @@ async function readMigrations() {
   );
 
   return {filenames, sql: contents.join('\n')};
+}
+
+function gitBlobSha(content: Buffer) {
+  const header = Buffer.from(`blob ${content.byteLength}\0`, 'utf8');
+  return createHash('sha1').update(header).update(content).digest('hex');
 }
 
 describe('migration contract', () => {
@@ -53,8 +80,41 @@ describe('migration contract', () => {
       '202609220015_protect_submitted_rosters.sql',
       '202609220016_protect_membership_history.sql',
       '202609220017_confirm_group_reassignment.sql',
-      '202609220018_revoke_anon_security_definer_execution.sql'
+      '202609220018_revoke_anon_security_definer_execution.sql',
+      '202609220019_class_subject_group_foundation.sql'
     ]);
+  });
+
+  it('keeps applied migrations 1-18 byte-for-byte immutable', async () => {
+    for (const [filename, expectedSha] of Object.entries(appliedMigrationBlobs)) {
+      const content = await readFile(join(migrationDirectory, filename));
+      expect(gitBlobSha(content), filename).toBe(expectedSha);
+    }
+  });
+
+  it('defines the explicit Class Subject Group foundation in migration 19', async () => {
+    const {sql} = await readMigrations();
+    const tables = [
+      'classes',
+      'subjects',
+      'class_subjects',
+      'subject_groups',
+      'class_enrollments',
+      'subject_exclusions',
+      'subject_group_memberships',
+      'teaching_assignments'
+    ];
+
+    for (const table of tables) {
+      expect(sql).toMatch(new RegExp(`create table public\\.${table}\\b`, 'i'));
+    }
+
+    expect(sql).toMatch(/create function public\.create_subject_group\b/i);
+    expect(sql).toMatch(/create function public\.student_participates_in_class_subject\b/i);
+    expect(sql).toMatch(/create function public\.teacher_can_teach_context\b/i);
+    expect(sql).toContain('class_enrollments_one_active_class_per_student');
+    expect(sql).toContain('subject_group_memberships_one_group_per_class_subject');
+    expect(sql).toContain('teaching_assignments_no_duplicate_overlap');
   });
 
   it('revokes anonymous execution from security definer functions and future defaults', async () => {
@@ -86,7 +146,7 @@ describe('migration contract', () => {
     expect(sql).toMatch(/create function public\.update_teacher_administration\b/i);
   });
 
-  it('defines every MVP table and enables row-level security', async () => {
+  it('defines every legacy MVP table and enables row-level security', async () => {
     const {sql} = await readMigrations();
     const tables = [
       'schools',
@@ -113,7 +173,7 @@ describe('migration contract', () => {
     }
   });
 
-  it('pins duplicate sessions, report identity, and logical deliveries', async () => {
+  it('pins legacy duplicate sessions, report identity, and logical deliveries', async () => {
     const {sql} = await readMigrations();
 
     expect(sql).toContain('unique (school_id, group_id, session_date)');
