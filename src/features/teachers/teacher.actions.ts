@@ -6,6 +6,14 @@ import {redirect} from 'next/navigation';
 import {z} from 'zod';
 
 import {buildPasswordRecoveryRedirect} from '@/features/auth/password-recovery.service';
+import {
+  assignTeacher,
+  endTeacherAssignment
+} from '@/features/teaching-assignments/teaching-assignment.repository';
+import {
+  endTeachingAssignmentSchema,
+  teachingAssignmentSchema
+} from '@/features/teaching-assignments/teaching-assignment.schemas';
 import {setTeacherActive, updateTeacher} from '@/features/teachers/teacher.repository';
 import {teacherSchema, teacherUpdateSchema} from '@/features/teachers/teacher.schemas';
 import {
@@ -17,7 +25,7 @@ import {isLocale} from '@/i18n/config';
 import {requireProfile} from '@/lib/auth/require-profile';
 import {createServiceRoleSupabaseClient} from '@/lib/supabase/service-role';
 import type {ActionState} from '@/lib/validation/action-state';
-import {saveFailure, validationFailure} from '@/lib/validation/action-state';
+import {initialActionState, saveFailure, validationFailure} from '@/lib/validation/action-state';
 import {databaseUuid} from '@/lib/validation/fields';
 
 function localeFrom(formData: FormData) {
@@ -143,6 +151,49 @@ export async function updateTeacherAction(
   }
   revalidatePath(`/${locale}/teachers`);
   redirect(`/${locale}/teachers`);
+}
+
+export async function assignTeacherAction(
+  _state: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const locale = localeFrom(formData);
+  const profile = await requireProfile(locale, 'ADMIN');
+  const parsed = teachingAssignmentSchema.safeParse({
+    teacherProfileId: formData.get('teacherProfileId'),
+    classSubjectId: formData.get('classSubjectId'),
+    subjectGroupId: formData.get('subjectGroupId'),
+    startsOn: formData.get('startsOn')
+  });
+  if (!parsed.success) return validationFailure();
+  try {
+    await assignTeacher(profile.schoolId, parsed.data);
+  } catch (error) {
+    console.error('Unable to add teaching assignment', {error});
+    return saveFailure();
+  }
+  revalidatePath(`/${locale}/teachers`);
+  revalidatePath(`/${locale}/teachers/${parsed.data.teacherProfileId}/edit`);
+  return initialActionState;
+}
+
+export async function endTeacherAssignmentAction(formData: FormData) {
+  const locale = localeFrom(formData);
+  const profile = await requireProfile(locale, 'ADMIN');
+  const teacherProfileId = databaseUuid.safeParse(formData.get('teacherProfileId'));
+  const parsed = endTeachingAssignmentSchema.safeParse({
+    assignmentId: formData.get('assignmentId'),
+    endsOn: formData.get('endsOn')
+  });
+  if (!teacherProfileId.success || !parsed.success) return;
+  try {
+    await endTeacherAssignment(profile.schoolId, teacherProfileId.data, parsed.data);
+  } catch (error) {
+    console.error('Unable to end teaching assignment', {error});
+    return;
+  }
+  revalidatePath(`/${locale}/teachers`);
+  revalidatePath(`/${locale}/teachers/${teacherProfileId.data}/edit`);
 }
 
 export async function setTeacherActiveAction(formData: FormData) {
