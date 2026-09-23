@@ -95,6 +95,6 @@ export type ReportListItem = {
   periodStart: string;
   periodEnd: string;
   generatedAt: string;
-  snapshot: ReportSnapshot;
+  snapshot: ReportSnapshot | ReportSnapshotV2;
   deliveryStatuses: Array<'PENDING' | 'SENT' | 'DELIVERED' | 'FAILED' | 'BOUNCED'>;
 };

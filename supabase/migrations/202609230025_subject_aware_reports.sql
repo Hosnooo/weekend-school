@@ -233,3 +233,340 @@ grant select, insert, update on table public.report_batches to authenticated;
 grant select, insert, update on table public.report_section_approvals to authenticated;
 grant select, insert, update on table public.report_section_sources to authenticated;
 grant select, insert, update on table public.report_student_overrides to authenticated;
+
+-- Finalized v2 report snapshots may update delivery state, but their report content and
+-- identity are immutable. Corrections create a new finalized revision instead.
+create function public.protect_finalized_report_snapshot()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if old.finalized_at is not null and (
+    new.school_id is distinct from old.school_id
+    or new.student_id is distinct from old.student_id
+    or new.period_start is distinct from old.period_start
+    or new.period_end is distinct from old.period_end
+    or new.language is distinct from old.language
+    or new.snapshot_json is distinct from old.snapshot_json
+    or new.generated_at is distinct from old.generated_at
+    or new.created_at is distinct from old.created_at
+    or new.batch_id is distinct from old.batch_id
+    or new.revision is distinct from old.revision
+    or new.supersedes_report_id is distinct from old.supersedes_report_id
+    or new.snapshot_version is distinct from old.snapshot_version
+    or new.finalized_at is distinct from old.finalized_at
+  ) then
+    raise exception 'finalized report snapshots are immutable' using errcode = '55000';
+  end if;
+  return new;
+end;
+$$;
+
+revoke all on function public.protect_finalized_report_snapshot() from public;
+revoke execute on function public.protect_finalized_report_snapshot() from anon;
+revoke execute on function public.protect_finalized_report_snapshot() from authenticated;
+
+create trigger reports_finalized_snapshot_immutable
+before update on public.reports
+for each row execute function public.protect_finalized_report_snapshot();
+
+create function public.finalize_report_batch(
+  p_batch_id uuid,
+  p_reports jsonb
+)
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  target_school_id uuid := public.current_school_id();
+  target_batch public.report_batches%rowtype;
+  inserted_count integer;
+begin
+  if target_school_id is null or not public.is_admin() then
+    raise exception 'administrator access required' using errcode = '42501';
+  end if;
+
+  select * into target_batch
+  from public.report_batches
+  where school_id = target_school_id
+    and id = p_batch_id
+  for update;
+
+  if not found then
+    raise exception 'report batch not found' using errcode = 'P0002';
+  end if;
+  if target_batch.status <> 'REVIEW' then
+    raise exception 'report batch must be in review before finalization' using errcode = '23514';
+  end if;
+  if jsonb_typeof(coalesce(p_reports, 'null'::jsonb)) <> 'array'
+    or jsonb_array_length(p_reports) = 0
+  then
+    raise exception 'finalized reports must be a non-empty array' using errcode = '22023';
+  end if;
+
+  if exists (
+    select 1
+    from jsonb_to_recordset(p_reports) as item(
+      student_id uuid,
+      language public.report_language,
+      snapshot_json jsonb
+    )
+    where item.student_id is null
+      or item.language is null
+      or coalesce(jsonb_typeof(item.snapshot_json), '') <> 'object'
+      or item.snapshot_json ->> 'version' <> '2'
+      or not exists (
+        select 1
+        from public.students student
+        where student.school_id = target_school_id
+          and student.id = item.student_id
+      )
+  ) then
+    raise exception 'invalid finalized report snapshot input' using errcode = '23514';
+  end if;
+
+  if (
+    select count(*)
+    from jsonb_to_recordset(p_reports) as item(
+      student_id uuid,
+      language public.report_language,
+      snapshot_json jsonb
+    )
+  ) <> (
+    select count(distinct (item.student_id, item.language))
+    from jsonb_to_recordset(p_reports) as item(
+      student_id uuid,
+      language public.report_language,
+      snapshot_json jsonb
+    )
+  ) then
+    raise exception 'duplicate student report language in batch' using errcode = '23505';
+  end if;
+
+  if exists (
+    select 1
+    from public.weekly_submission_students wss
+    join public.weekly_submissions ws
+      on ws.school_id = wss.school_id
+     and ws.id = wss.submission_id
+    join public.class_subjects cs
+      on cs.school_id = ws.school_id
+     and cs.id = ws.class_subject_id
+    where ws.school_id = target_school_id
+      and ws.status = 'SUBMITTED'
+      and ws.week_start between target_batch.period_start and target_batch.period_end
+      and cs.class_id = target_batch.class_id
+      and (
+        target_batch.scope_type = 'CLASS'
+        or (
+          target_batch.scope_type = 'SUBJECT'
+          and ws.class_subject_id = target_batch.class_subject_id
+        )
+        or (
+          target_batch.scope_type = 'GROUP'
+          and ws.class_subject_id = target_batch.class_subject_id
+          and ws.subject_group_id is not distinct from target_batch.subject_group_id
+        )
+      )
+    group by ws.class_subject_id, ws.subject_group_id, ws.week_start, wss.student_id
+    having count(distinct wss.attendance_status) > 1
+      and not exists (
+        select 1
+        from public.attendance_resolutions resolution
+        where resolution.school_id = target_school_id
+          and resolution.class_subject_id = ws.class_subject_id
+          and resolution.subject_group_id is not distinct from ws.subject_group_id
+          and resolution.week_start = ws.week_start
+          and resolution.student_id = wss.student_id
+      )
+  ) then
+    raise exception 'unresolved attendance conflicts block report finalization' using errcode = '23514';
+  end if;
+
+  insert into public.reports (
+    school_id,
+    student_id,
+    period_start,
+    period_end,
+    language,
+    status,
+    snapshot_json,
+    batch_id,
+    revision,
+    supersedes_report_id,
+    snapshot_version,
+    finalized_at
+  )
+  select
+    target_school_id,
+    item.student_id,
+    target_batch.period_start,
+    target_batch.period_end,
+    item.language,
+    'READY',
+    item.snapshot_json,
+    target_batch.id,
+    coalesce(previous.revision, 0) + 1,
+    previous.id,
+    2,
+    now()
+  from jsonb_to_recordset(p_reports) as item(
+    student_id uuid,
+    language public.report_language,
+    snapshot_json jsonb
+  )
+  left join lateral (
+    select report.id, report.revision
+    from public.reports report
+    where report.school_id = target_school_id
+      and report.student_id = item.student_id
+      and report.period_start = target_batch.period_start
+      and report.period_end = target_batch.period_end
+      and report.language = item.language
+    order by report.revision desc
+    limit 1
+  ) previous on true;
+
+  get diagnostics inserted_count = row_count;
+
+  update public.report_batches
+  set status = 'FINALIZED',
+      finalized_at = now()
+  where school_id = target_school_id
+    and id = target_batch.id;
+
+  return inserted_count;
+end;
+$$;
+
+revoke all on function public.finalize_report_batch(uuid, jsonb) from public;
+revoke execute on function public.finalize_report_batch(uuid, jsonb) from anon;
+grant execute on function public.finalize_report_batch(uuid, jsonb) to authenticated;
+
+create function public.create_report_revision(
+  p_report_id uuid,
+  p_snapshot_json jsonb
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  target_school_id uuid := public.current_school_id();
+  source_report public.reports%rowtype;
+  new_report_id uuid;
+begin
+  if target_school_id is null or not public.is_admin() then
+    raise exception 'administrator access required' using errcode = '42501';
+  end if;
+
+  select * into source_report
+  from public.reports
+  where school_id = target_school_id
+    and id = p_report_id
+  for update;
+
+  if not found then
+    raise exception 'report not found' using errcode = 'P0002';
+  end if;
+  if source_report.finalized_at is null or source_report.snapshot_version <> 2 then
+    raise exception 'only finalized v2 reports can be revised' using errcode = '23514';
+  end if;
+  if coalesce(jsonb_typeof(p_snapshot_json), '') <> 'object'
+    or p_snapshot_json ->> 'version' <> '2'
+  then
+    raise exception 'revision snapshot must be a v2 object' using errcode = '23514';
+  end if;
+
+  if exists (
+    select 1
+    from public.reports newer
+    where newer.school_id = target_school_id
+      and newer.student_id = source_report.student_id
+      and newer.period_start = source_report.period_start
+      and newer.period_end = source_report.period_end
+      and newer.language = source_report.language
+      and newer.revision > source_report.revision
+  ) then
+    raise exception 'corrections must supersede the latest report revision' using errcode = '23514';
+  end if;
+
+  insert into public.reports (
+    school_id,
+    student_id,
+    period_start,
+    period_end,
+    language,
+    status,
+    snapshot_json,
+    batch_id,
+    revision,
+    supersedes_report_id,
+    snapshot_version,
+    finalized_at
+  ) values (
+    target_school_id,
+    source_report.student_id,
+    source_report.period_start,
+    source_report.period_end,
+    source_report.language,
+    'READY',
+    p_snapshot_json,
+    source_report.batch_id,
+    source_report.revision + 1,
+    source_report.id,
+    2,
+    now()
+  )
+  returning id into new_report_id;
+
+  return new_report_id;
+end;
+$$;
+
+revoke all on function public.create_report_revision(uuid, jsonb) from public;
+revoke execute on function public.create_report_revision(uuid, jsonb) from anon;
+grant execute on function public.create_report_revision(uuid, jsonb) to authenticated;
+
+-- Migration 025 made logical report identity revision-aware. Keep the legacy v1
+-- generator callable until the admin page is fully switched to the v2 batch flow.
+create or replace function public.generate_report_snapshots(p_reports jsonb)
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  target_school_id uuid := public.current_school_id();
+  inserted_count integer;
+begin
+  if target_school_id is null or not public.is_admin() then
+    raise exception 'administrator access required' using errcode = '42501';
+  end if;
+  if jsonb_typeof(coalesce(p_reports,'[]'::jsonb)) <> 'array' then
+    raise exception 'reports must be an array' using errcode = '22023';
+  end if;
+  if exists (
+    select 1
+    from jsonb_to_recordset(coalesce(p_reports,'[]'::jsonb)) as item(student_id uuid,period_start date,period_end date,language public.report_language,snapshot_json jsonb)
+    where not exists (select 1 from public.students where students.school_id=target_school_id and students.id=item.student_id)
+      or item.period_end < item.period_start
+      or jsonb_typeof(item.snapshot_json) <> 'object'
+  ) then raise exception 'invalid report snapshot input' using errcode = '23514'; end if;
+
+  insert into public.reports (school_id,student_id,period_start,period_end,language,status,snapshot_json,revision,snapshot_version)
+  select target_school_id,item.student_id,item.period_start,item.period_end,item.language,'READY',item.snapshot_json,1,1
+  from jsonb_to_recordset(coalesce(p_reports,'[]'::jsonb)) as item(student_id uuid,period_start date,period_end date,language public.report_language,snapshot_json jsonb)
+  on conflict (school_id, student_id, period_start, period_end, language, revision) do nothing;
+  get diagnostics inserted_count = row_count;
+  return inserted_count;
+end;
+$$;
+
+revoke all on function public.generate_report_snapshots(jsonb) from public;
+revoke execute on function public.generate_report_snapshots(jsonb) from anon;
+grant execute on function public.generate_report_snapshots(jsonb) to authenticated;

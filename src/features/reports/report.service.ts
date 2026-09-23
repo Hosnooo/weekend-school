@@ -34,6 +34,7 @@ type ReportScope =
   | {type: 'CLASS'}
   | {type: 'SUBJECT'; classSubjectId: string}
   | {type: 'GROUP'; classSubjectId: string; subjectGroupId: string};
+type ReportBatchStatus = 'DRAFT' | 'REVIEW' | 'FINALIZED';
 
 type ScopedReportSection = {
   classSubjectId: string;
@@ -93,6 +94,32 @@ export function selectReportSectionsForScope<T extends ScopedReportSection>(
     ({classSubjectId, subjectGroupId}) =>
       classSubjectId === scope.classSubjectId && subjectGroupId === scope.subjectGroupId
   );
+}
+
+export function transitionReportBatchStatus(
+  current: ReportBatchStatus,
+  next: ReportBatchStatus
+): ReportBatchStatus {
+  if (current === 'FINALIZED') {
+    throw new Error('A finalized report batch cannot be reopened');
+  }
+  if (current === 'DRAFT' && next === 'REVIEW') return next;
+  if (current === 'REVIEW' && next === 'FINALIZED') return next;
+  if (current === 'DRAFT' && next === 'FINALIZED') {
+    throw new Error('Report batches must be reviewed before finalization');
+  }
+  throw new Error(`Invalid report batch transition: ${current} -> ${next}`);
+}
+
+export function buildReportRevisionMetadata(input: {
+  id: string;
+  revision: number;
+  snapshot: ReportSnapshotV2;
+}) {
+  if (!Number.isInteger(input.revision) || input.revision < 1) {
+    throw new Error('Report revision must be a positive integer');
+  }
+  return {revision: input.revision + 1, supersedesReportId: input.id};
 }
 
 export function buildReportSnapshot(
