@@ -1,3 +1,29 @@
-import {getTranslations} from 'next-intl/server'; import {notFound} from 'next/navigation';
-import {AdminPage} from '@/components/ui/admin-page'; import {listGroups} from '@/features/groups/group.repository'; import {StudentForm} from '@/features/students/student-form'; import {isLocale} from '@/i18n/config'; import {requireProfile} from '@/lib/auth/require-profile';
-export default async function NewStudentPage({params}:{params:Promise<{locale:string}>}){const{locale}=await params;if(!isLocale(locale))notFound();const profile=await requireProfile(locale,'ADMIN');const groups=(await listGroups(profile.schoolId)).filter(({isActive})=>isActive);const t=await getTranslations({locale,namespace:'students'});return <AdminPage title={t('newTitle')} description={t('description')}><StudentForm groups={groups} locale={locale} today={new Date().toISOString().slice(0,10)}/></AdminPage>}
+import {getTranslations} from 'next-intl/server';
+import {notFound} from 'next/navigation';
+
+import {AdminPage} from '@/components/ui/admin-page';
+import {listEnrollmentClasses} from '@/features/enrollment/enrollment.repository';
+import {StudentForm} from '@/features/students/student-form';
+import {todayInTimeZone} from '@/features/weekly-updates/weekly-update.model';
+import {getSchoolTimezone} from '@/features/weekly-updates/weekly-update.repository';
+import {isLocale} from '@/i18n/config';
+import {requireProfile} from '@/lib/auth/require-profile';
+
+export default async function NewStudentPage({params}: {params: Promise<{locale: string}>}) {
+  const {locale} = await params;
+  if (!isLocale(locale)) notFound();
+  const profile = await requireProfile(locale, 'ADMIN');
+  const [classes, timeZone, t] = await Promise.all([
+    listEnrollmentClasses(profile.schoolId),
+    getSchoolTimezone(profile.schoolId),
+    getTranslations({locale, namespace: 'students'})
+  ]);
+
+  return <AdminPage title={t('newTitle')} description={t('description')}>
+    <StudentForm
+      classes={classes}
+      locale={locale}
+      today={todayInTimeZone(timeZone)}
+    />
+  </AdminPage>;
+}
