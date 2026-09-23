@@ -1,7 +1,6 @@
 import 'server-only';
 
 import type {StudentUpdateInput} from '@/features/students/student.schemas';
-import {currentGroupForDate} from '@/features/students/student.model';
 import type {StudentListItem} from '@/features/students/student.types';
 import {todayInTimeZone} from '@/features/weekly-updates/weekly-update.model';
 import {createServerSupabaseClient} from '@/lib/supabase/server';
@@ -13,23 +12,29 @@ type StudentRow = {
   first_name_ar: string | null;
   last_name_ar: string | null;
   is_active: boolean;
-  group_memberships: Array<{
+  class_enrollments: Array<{
     starts_on: string;
     ends_on: string | null;
-    groups: {id: string; name_en: string; name_ar: string | null} | null;
+    classes: {id: string; name_en: string; name_ar: string | null} | null;
   }>;
 };
 
 function mapStudent(row: StudentRow, today: string): StudentListItem {
-  const currentGroup = currentGroupForDate(row.group_memberships.map((membership) => ({
-    startsOn: membership.starts_on,
-    endsOn: membership.ends_on,
-    group: membership.groups ? {
-      id: membership.groups.id,
-      nameEn: membership.groups.name_en,
-      nameAr: membership.groups.name_ar
-    } : null
-  })), today);
+  const effective = row.class_enrollments.filter((enrollment) =>
+    enrollment.starts_on <= today &&
+    (enrollment.ends_on === null || enrollment.ends_on >= today)
+  );
+  if (effective.length > 1) {
+    throw new Error('A student has overlapping Class enrollments');
+  }
+  const currentClass = effective[0]?.classes
+    ? {
+        id: effective[0].classes.id,
+        nameEn: effective[0].classes.name_en,
+        nameAr: effective[0].classes.name_ar
+      }
+    : null;
+
   return {
     id: row.id,
     firstNameEn: row.first_name_en,
@@ -37,7 +42,7 @@ function mapStudent(row: StudentRow, today: string): StudentListItem {
     firstNameAr: row.first_name_ar,
     lastNameAr: row.last_name_ar,
     isActive: row.is_active,
-    currentGroup
+    currentClass
   };
 }
 
@@ -48,7 +53,7 @@ const studentSelect = `
   first_name_ar,
   last_name_ar,
   is_active,
-  group_memberships(starts_on, ends_on, groups(id, name_en, name_ar))
+  class_enrollments(starts_on, ends_on, classes(id, name_en, name_ar))
 `;
 
 export async function listStudents(schoolId: string) {
