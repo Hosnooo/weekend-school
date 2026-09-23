@@ -75,9 +75,5 @@ export function expandEffectiveTeachingContexts({
     });
   }
 
-  return [...contexts.values()].sort((left, right) =>
-    left.classNameEn.localeCompare(right.classNameEn) ||
-    left.subjectNameEn.localeCompare(right.subjectNameEn) ||
-    (left.groupNameEn ?? '').localeCompare(right.groupNameEn ?? '')
-  );
+  return [...contexts.values()];
 }
