@@ -34,6 +34,7 @@ export default async function ClassesPage({
             <thead>
               <tr>
                 <th>{t('name')}</th>
+                <th>{t('activeStudents')}</th>
                 <th>{t('subjects')}</th>
                 <th>{common('status')}</th>
                 <th>{common('actions')}</th>
@@ -47,6 +48,7 @@ export default async function ClassesPage({
                       {locale === 'ar' && item.nameAr ? item.nameAr : item.nameEn}
                     </strong>
                   </td>
+                  <td>{item.activeStudentCount}</td>
                   <td>{item.subjectCount}</td>
                   <td>
                     <span
