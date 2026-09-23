@@ -39,23 +39,32 @@ export async function inviteTeacher(
   input: TeacherInvitationInput,
   dependencies: TeacherInvitationDependencies
 ) {
-  await dependencies.validateAssignments(input);
-  let authUserId: string;
-  let newAuthUser = true;
-  try {
-    authUserId = await dependencies.inviteAuthUser(input);
-  } catch (error) {
-    const existingAuthUserId = await dependencies.findUnclaimedAuthUser(input.email, input.schoolId);
-    if (!existingAuthUserId) throw error;
-    authUserId = existingAuthUserId;
-    newAuthUser = false;
-  }
-  let profileId: string | null = null;
+  const normalizedInput = {...input, email: input.email.trim().toLowerCase()};
+  await dependencies.validateAssignments(normalizedInput);
 
+  let authUserId: string;
+  let newAuthUser = false;
+  const existingAuthUserId = await dependencies.findUnclaimedAuthUser(
+    normalizedInput.email,
+    normalizedInput.schoolId
+  );
+
+  if (existingAuthUserId) {
+    authUserId = existingAuthUserId;
+  } else {
+    authUserId = await dependencies.inviteAuthUser(normalizedInput);
+    newAuthUser = true;
+  }
+
+  let profileId: string | null = null;
   try {
-    profileId = await dependencies.createProfile(input, authUserId);
-    await dependencies.assignGroups(input.schoolId, profileId, input.assignedGroupIds);
-    if (!newAuthUser) await dependencies.sendExistingAccessLink(input.email);
+    profileId = await dependencies.createProfile(normalizedInput, authUserId);
+    await dependencies.assignGroups(
+      normalizedInput.schoolId,
+      profileId,
+      normalizedInput.assignedGroupIds
+    );
+    if (!newAuthUser) await dependencies.sendExistingAccessLink(normalizedInput.email);
     return profileId;
   } catch (error) {
     if (profileId) {
