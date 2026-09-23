@@ -1,2 +1,20 @@
-import {notFound} from 'next/navigation';import {AdminPage} from '@/components/ui/admin-page';import {WeeklyUpdateForm} from '@/features/weekly-updates/weekly-update-form';import {getWeeklySessionById} from '@/features/weekly-updates/weekly-update.repository';import {isLocale} from '@/i18n/config';import {requireTeachingProfile} from '@/lib/auth/require-profile';
-export default async function HistoryDetail({params}:{params:Promise<{locale:string;id:string}>}){const{locale,id}=await params;if(!isLocale(locale))notFound();const profile=await requireTeachingProfile(locale);const session=await getWeeklySessionById(profile.schoolId,profile.id,id);if(!session||session.status!=='SUBMITTED')notFound();return <AdminPage title={locale==='ar'&&session.groupNameAr?session.groupNameAr:session.groupNameEn} description={new Intl.DateTimeFormat(locale,{dateStyle:'long'}).format(new Date(`${session.sessionDate}T12:00:00`))}><WeeklyUpdateForm locale={locale} readOnly session={session}/></AdminPage>}
+import {getTranslations} from 'next-intl/server';
+import {notFound} from 'next/navigation';
+import {AdminPage} from '@/components/ui/admin-page';
+import {WeeklyUpdateForm} from '@/features/weekly-updates/weekly-update-form';
+import {getWeeklySubmissionById} from '@/features/weekly-updates/weekly-update.repository';
+import {isLocale} from '@/i18n/config';
+import {requireTeachingProfile} from '@/lib/auth/require-profile';
+
+export default async function HistoryDetail({params}:{params:Promise<{locale:string;id:string}>}){
+  const{locale,id}=await params;
+  if(!isLocale(locale))notFound();
+  const profile=await requireTeachingProfile(locale);
+  const submission=await getWeeklySubmissionById(profile.schoolId,profile.id,id);
+  if(!submission||submission.status!=='SUBMITTED')notFound();
+  const t=await getTranslations({locale,namespace:'weekly'});
+  const localName=(en:string,ar:string|null)=>locale==='ar'&&ar?ar:en;
+  const title=[localName(submission.classNameEn,submission.classNameAr),localName(submission.subjectNameEn,submission.subjectNameAr),submission.subjectGroupId?localName(submission.groupNameEn??'',submission.groupNameAr):t('wholeClass')].join(' · ');
+  const weekLabel=new Intl.DateTimeFormat(locale,{dateStyle:'long'}).format(new Date(`${submission.weekStart}T12:00:00Z`));
+  return <AdminPage title={title} description={t('weekOf',{date:weekLabel})}><WeeklyUpdateForm locale={locale} readOnly submission={submission}/></AdminPage>;
+}
