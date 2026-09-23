@@ -44,6 +44,20 @@ type ComposeReportSectionApprovalInput = {
   studentOverrides: StudentSectionOverride[];
 };
 
+export type ReportBatchStudentReadiness = {
+  studentId: string;
+  hasPersonalizedContent: boolean;
+  attendanceConflictCount: number;
+  missingDataCount: number;
+};
+
+export type ReportBatchReadinessSummary = {
+  readyAutomatically: number;
+  personalizedComments: number;
+  attendanceConflicts: number;
+  missingData: number;
+};
+
 function clean(value: string | null | undefined) {
   const trimmed = value?.trim();
   return trimmed ? trimmed : null;
@@ -111,6 +125,40 @@ export function resolveStudentSectionApproval(
     commentEn: appendText(composition.shared.commentEn, override.commentEn),
     commentAr: appendText(composition.shared.commentAr, override.commentAr)
   };
+}
+
+export function summarizeReportBatchReadiness(
+  students: ReportBatchStudentReadiness[]
+): ReportBatchReadinessSummary {
+  return students.reduce<ReportBatchReadinessSummary>(
+    (summary, student) => {
+      const hasAttendanceConflict = student.attendanceConflictCount > 0;
+      const hasMissingData = student.missingDataCount > 0;
+
+      if (!student.hasPersonalizedContent && !hasAttendanceConflict && !hasMissingData) {
+        summary.readyAutomatically += 1;
+      }
+      if (student.hasPersonalizedContent) summary.personalizedComments += 1;
+      if (hasAttendanceConflict) summary.attendanceConflicts += 1;
+      if (hasMissingData) summary.missingData += 1;
+
+      return summary;
+    },
+    {readyAutomatically: 0, personalizedComments: 0, attendanceConflicts: 0, missingData: 0}
+  );
+}
+
+export function ReportBatchSummary({students}: {students: ReportBatchStudentReadiness[]}) {
+  const summary = summarizeReportBatchReadiness(students);
+
+  return (
+    <div className="report-batch-summary" aria-label="Report batch readiness">
+      <span>{summary.readyAutomatically} ready automatically</span>
+      <span>{summary.personalizedComments} personalized comments</span>
+      <span>{summary.attendanceConflicts} attendance conflicts</span>
+      <span>{summary.missingData} missing data</span>
+    </div>
+  );
 }
 
 export function ReportComposer({sources}: {sources: ReportComposerSource[]}) {
