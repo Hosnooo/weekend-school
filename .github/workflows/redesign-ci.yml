@@ -30,6 +30,8 @@ jobs:
         run: pnpm typecheck
       - name: Unit and contract tests
         run: pnpm test
+      - name: Production build
+        run: pnpm build
 
   database:
     runs-on: ubuntu-latest
