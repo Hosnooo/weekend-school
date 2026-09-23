@@ -2,7 +2,9 @@ import {describe, expect, it} from 'vitest';
 
 import {
   authorizeExportDownload,
+  authorizeStoredExportDownload,
   planExportFiles,
+  recordMatchesExportRequest,
   validateExportRequest
 } from '@/features/exports/export.service';
 
@@ -27,6 +29,42 @@ describe('protected exports', () => {
         scope: {type: 'GROUP', classId: 'class-5', classSubjectId: 'quran'}
       })
     ).toThrow(/group/i);
+  });
+
+  it('supports school, student, teacher, and all-history export requests', () => {
+    expect(validateExportRequest({
+      ...request,
+      periodStart: null,
+      periodEnd: null,
+      scope: {type: 'SCHOOL'}
+    })).toMatchObject({periodStart: null, periodEnd: null, scope: {type: 'SCHOOL'}});
+
+    expect(validateExportRequest({
+      ...request,
+      scope: {type: 'STUDENT', studentId: 'student-1'}
+    }).scope).toEqual({type: 'STUDENT', studentId: 'student-1'});
+
+    expect(validateExportRequest({
+      ...request,
+      scope: {type: 'TEACHER', teacherProfileId: 'teacher-1'}
+    }).scope).toEqual({type: 'TEACHER', teacherProfileId: 'teacher-1'});
+  });
+
+  it('filters student and teacher exports without leaking unrelated rows', () => {
+    const studentRequest = validateExportRequest({
+      ...request,
+      scope: {type: 'STUDENT', studentId: 'student-1'}
+    });
+    expect(recordMatchesExportRequest({studentId: 'student-1', occurredOn: '2026-09-12'}, studentRequest)).toBe(true);
+    expect(recordMatchesExportRequest({studentId: 'student-2', occurredOn: '2026-09-12'}, studentRequest)).toBe(false);
+
+    const teacherRequest = validateExportRequest({
+      ...request,
+      scope: {type: 'TEACHER', teacherProfileId: 'teacher-1'}
+    });
+    expect(recordMatchesExportRequest({teacherProfileId: 'teacher-1', occurredOn: '2026-09-12'}, teacherRequest)).toBe(true);
+    expect(recordMatchesExportRequest({teacherProfileId: 'teacher-2', occurredOn: '2026-09-12'}, teacherRequest)).toBe(false);
+    expect(recordMatchesExportRequest({studentId: 'student-1', occurredOn: '2026-09-12'}, teacherRequest)).toBe(false);
   });
 
   it('always plans an XLSX workbook, adds optional CSV/PDF files, and ZIPs multiple files', () => {
@@ -98,5 +136,25 @@ describe('protected exports', () => {
         exportSchoolId: 'school-a'
       })
     ).toBe(true);
+  });
+
+  it('rejects expired stored export requests even for the owning admin', () => {
+    expect(() => authorizeStoredExportDownload({
+      actorRole: 'ADMIN',
+      actorActive: true,
+      actorSchoolId: 'school-a',
+      exportSchoolId: 'school-a',
+      expiresAt: '2026-09-23T20:00:00.000Z',
+      now: '2026-09-23T20:00:01.000Z'
+    })).toThrow(/expired/i);
+
+    expect(authorizeStoredExportDownload({
+      actorRole: 'ADMIN',
+      actorActive: true,
+      actorSchoolId: 'school-a',
+      exportSchoolId: 'school-a',
+      expiresAt: '2026-09-23T20:15:00.000Z',
+      now: '2026-09-23T20:00:00.000Z'
+    })).toBe(true);
   });
 });
