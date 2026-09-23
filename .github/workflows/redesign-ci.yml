@@ -24,10 +24,17 @@ jobs:
           corepack prepare pnpm@11.19.0 --activate
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      - name: Inspect installed Next.js documentation
+      - name: Read installed Next.js App Router guides
         run: |
-          echo '--- NEXT DOC INVENTORY ---'
-          find node_modules/next/dist/docs -type f | sort | head -80
+          for file in \
+            node_modules/next/dist/docs/01-app/01-getting-started/03-layouts-and-pages.md \
+            node_modules/next/dist/docs/01-app/01-getting-started/07-mutating-data.md \
+            node_modules/next/dist/docs/01-app/01-getting-started/09-revalidating.md \
+            node_modules/next/dist/docs/01-app/02-guides/forms.md \
+            node_modules/next/dist/docs/01-app/02-guides/server-actions.md; do
+            echo "===== $file ====="
+            sed -n '1,240p' "$file"
+          done
       - name: Run migration contract
         run: pnpm test -- tests/integration/database/migrations.test.ts
 
