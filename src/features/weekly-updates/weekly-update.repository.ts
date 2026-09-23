@@ -33,6 +33,35 @@ async function loadRoster(classSubjectId:string,subjectGroupId:string|null,onDat
   return(data as Array<{student_id:string;first_name_en:string;last_name_en:string;first_name_ar:string|null;last_name_ar:string|null}>).map((row)=>({id:row.student_id,nameEn:`${row.first_name_en} ${row.last_name_en}`,nameAr:row.first_name_ar&&row.last_name_ar?`${row.first_name_ar} ${row.last_name_ar}`:null}));
 }
 
+type HistoricalContextRow={
+  class_subject_id:string;
+  subject_group_id:string|null;
+  class_name_en:string;
+  class_name_ar:string|null;
+  subject_name_en:string;
+  subject_name_ar:string|null;
+  group_name_en:string|null;
+  group_name_ar:string|null;
+};
+
+async function loadHistoricalContext(submissionId:string):Promise<TeachingContext|null>{
+  const db=await createServerSupabaseClient();
+  const{data,error}=await db.rpc('get_weekly_submission_context',{p_submission_id:submissionId});
+  if(error)throw error;
+  const row=(data as HistoricalContextRow[]|null)?.[0];
+  if(!row)return null;
+  return{
+    classSubjectId:row.class_subject_id,
+    subjectGroupId:row.subject_group_id,
+    classNameEn:row.class_name_en,
+    classNameAr:row.class_name_ar,
+    subjectNameEn:row.subject_name_en,
+    subjectNameAr:row.subject_name_ar,
+    groupNameEn:row.group_name_en,
+    groupNameAr:row.group_name_ar
+  };
+}
+
 export async function getSchoolTimezone(schoolId:string){
   const db=await createServerSupabaseClient();
   const{data,error}=await db.from('schools').select('timezone').eq('id',schoolId).single();
@@ -61,16 +90,14 @@ export async function listMyTeaching(schoolId:string,profileId:string,onDate:str
 
 export async function listTeacherHistory(schoolId:string,profileId:string):Promise<HistoryItem[]>{
   const db=await createServerSupabaseClient();
-  const{data,error}=await db.from('weekly_submissions').select('id,class_subject_id,subject_group_id,week_start,submitted_at').eq('school_id',schoolId).eq('teacher_profile_id',profileId).eq('status','SUBMITTED').order('week_start',{ascending:false});
+  const{data,error}=await db.from('weekly_submissions').select('id,week_start,submitted_at').eq('school_id',schoolId).eq('teacher_profile_id',profileId).eq('status','SUBMITTED').order('week_start',{ascending:false});
   if(error)throw error;
-  if(data.length===0)return[];
-  const classSubjects=await listTeachingClassSubjects(schoolId);
-  const contexts=new Map<string,TeachingContext>();
-  for(const item of classSubjects){
-    if(item.groups.length===0){contexts.set(contextKey(item.id,null),{classSubjectId:item.id,subjectGroupId:null,classNameEn:item.classNameEn,classNameAr:item.classNameAr,subjectNameEn:item.subjectNameEn,subjectNameAr:item.subjectNameAr,groupNameEn:null,groupNameAr:null});}
-    for(const group of item.groups){contexts.set(contextKey(item.id,group.id),{classSubjectId:item.id,subjectGroupId:group.id,classNameEn:item.classNameEn,classNameAr:item.classNameAr,subjectNameEn:item.subjectNameEn,subjectNameAr:item.subjectNameAr,groupNameEn:group.nameEn,groupNameAr:group.nameAr});}
-  }
-  return(data as Array<{id:string;class_subject_id:string;subject_group_id:string|null;week_start:string;submitted_at:string|null}>).flatMap((row)=>{const context=contexts.get(contextKey(row.class_subject_id,row.subject_group_id));return context?[{...context,id:row.id,weekStart:row.week_start,submittedAt:row.submitted_at}]:[];});
+  if(!data||data.length===0)return[];
+  const history=await Promise.all((data as Array<{id:string;week_start:string;submitted_at:string|null}>).map(async(row):Promise<HistoryItem|null>=>{
+    const context=await loadHistoricalContext(row.id);
+    return context?{...context,id:row.id,weekStart:row.week_start,submittedAt:row.submitted_at}:null;
+  }));
+  return history.filter((item):item is HistoryItem=>item!==null);
 }
 
 export async function getWeeklySubmission(schoolId:string,profileId:string,classSubjectId:string,subjectGroupId:string|null,weekStart:string):Promise<WeeklySubmission|null>{
