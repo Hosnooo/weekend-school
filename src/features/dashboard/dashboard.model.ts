@@ -116,3 +116,20 @@ export function countUnresolvedAttendanceConflicts(
     ([key, statuses]) => statuses.size > 1 && !resolvedKeys.has(key)
   ).length;
 }
+
+export function summarizeActionableDashboard({
+  expectedContexts,
+  submissions,
+  observations,
+  resolutions
+}: {
+  expectedContexts: TeachingUpdateContext[];
+  submissions: TeachingUpdateSubmission[];
+  observations: AttendanceObservation[];
+  resolutions: AttendanceConflictContext[];
+}) {
+  return {
+    ...summarizeTeachingUpdates(expectedContexts, submissions),
+    unresolvedAttendanceConflicts: countUnresolvedAttendanceConflicts(observations, resolutions)
+  };
+}
