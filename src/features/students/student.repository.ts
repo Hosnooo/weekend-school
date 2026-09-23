@@ -58,12 +58,15 @@ const studentSelect = `
 
 export async function listStudents(schoolId: string) {
   const supabase = await createServerSupabaseClient();
-  const [{data, error}, {data: school, error: schoolError}] = await Promise.all([supabase
-    .from('students')
-    .select(studentSelect)
-    .eq('school_id', schoolId)
-    .order('last_name_en')
-    .order('first_name_en'), supabase.from('schools').select('timezone').eq('id', schoolId).single()]);
+  const [{data, error}, {data: school, error: schoolError}] = await Promise.all([
+    supabase
+      .from('students')
+      .select(studentSelect)
+      .eq('school_id', schoolId)
+      .order('last_name_en')
+      .order('first_name_en'),
+    supabase.from('schools').select('timezone').eq('id', schoolId).single()
+  ]);
   if (error) throw error;
   if (schoolError) throw schoolError;
   const today = todayInTimeZone(school.timezone);
@@ -72,56 +75,18 @@ export async function listStudents(schoolId: string) {
 
 export async function getStudent(schoolId: string, id: string) {
   const supabase = await createServerSupabaseClient();
-  const [{data, error}, {data: school, error: schoolError}] = await Promise.all([supabase
-    .from('students')
-    .select(studentSelect)
-    .eq('school_id', schoolId)
-    .eq('id', id)
-    .maybeSingle(), supabase.from('schools').select('timezone').eq('id', schoolId).single()]);
+  const [{data, error}, {data: school, error: schoolError}] = await Promise.all([
+    supabase
+      .from('students')
+      .select(studentSelect)
+      .eq('school_id', schoolId)
+      .eq('id', id)
+      .maybeSingle(),
+    supabase.from('schools').select('timezone').eq('id', schoolId).single()
+  ]);
   if (error) throw error;
   if (schoolError) throw schoolError;
   return data ? mapStudent(data as unknown as StudentRow, todayInTimeZone(school.timezone)) : null;
-}
-
-export async function moveStudentGroup(input: {studentId: string; groupId: string; startsOn: string}) {
-  const supabase = await createServerSupabaseClient();
-  const {error} = await supabase.rpc('move_student_group', {
-    p_student_id: input.studentId,
-    p_target_group_id: input.groupId,
-    p_starts_on: input.startsOn
-  });
-  if (error) throw error;
-}
-
-export async function createStudentWithGuardian(
-  schoolId: string,
-  input: {
-    firstNameEn: string;
-    lastNameEn: string;
-    firstNameAr: string | null;
-    lastNameAr: string | null;
-    groupId: string;
-    guardianName: string;
-    guardianEmail: string;
-    reportLanguage: 'en' | 'ar' | 'both';
-    startsOn: string;
-  }
-) {
-  const supabase = await createServerSupabaseClient();
-  const {data, error} = await supabase.rpc('create_student_with_guardian', {
-    p_first_name_en: input.firstNameEn,
-    p_last_name_en: input.lastNameEn,
-    p_first_name_ar: input.firstNameAr ?? '',
-    p_last_name_ar: input.lastNameAr ?? '',
-    p_group_id: input.groupId,
-    p_guardian_name: input.guardianName,
-    p_guardian_email: input.guardianEmail,
-    p_report_language: input.reportLanguage,
-    p_starts_on: input.startsOn
-  });
-  if (error) throw error;
-  if (!data) throw new Error(`Student creation returned no id for school ${schoolId}`);
-  return data as string;
 }
 
 export async function updateStudent(schoolId: string, input: StudentUpdateInput) {
