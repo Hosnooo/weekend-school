@@ -13,12 +13,12 @@ describe('AppNavigation', () => {
       </NextIntlClientProvider>
     );
 
-    expect(screen.getByRole('link', {name: 'My Groups'})).toBeInTheDocument();
+    expect(screen.getByRole('link', {name: 'My Teaching'})).toBeInTheDocument();
     expect(screen.getByRole('link', {name: 'History'})).toBeInTheDocument();
     expect(screen.queryByRole('link', {name: 'Students'})).not.toBeInTheDocument();
   });
 
-  it('labels the admin navigation for assistive technology', () => {
+  it('renders exactly the approved admin navigation in order', () => {
     render(
       <NextIntlClientProvider locale="en" messages={englishMessages}>
         <AppNavigation role="ADMIN" />
@@ -26,8 +26,13 @@ describe('AppNavigation', () => {
     );
 
     expect(screen.getByRole('navigation', {name: 'Main navigation'})).toBeInTheDocument();
-    expect(screen.getByRole('link', {name: 'My Groups'})).toBeInTheDocument();
-    expect(screen.getByRole('link', {name: 'History'})).toBeInTheDocument();
-    expect(screen.getAllByRole('link')).toHaveLength(8);
+    expect(screen.getAllByRole('link').map((link) => link.textContent)).toEqual([
+      'Dashboard',
+      'Classes',
+      'Students',
+      'Teachers',
+      'Reports',
+      'Settings'
+    ]);
   });
 });
