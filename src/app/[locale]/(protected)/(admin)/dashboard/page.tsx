@@ -26,6 +26,8 @@ export default async function DashboardPage({params}: {params: Promise<{locale: 
       <div className="dashboard-stat"><span>{t('students')}</span><strong>{summary.studentCount}</strong></div>
       <div className="dashboard-stat"><span>{t('teachers')}</span><strong>{summary.teacherCount}</strong></div>
       <div className="dashboard-stat"><span>{t('groups')}</span><strong>{summary.groupCount}</strong></div>
+      <div className="dashboard-stat"><span>{t('readyReports')}</span><strong>{summary.readyReports}</strong></div>
+      <div className="dashboard-stat"><span>{t('failedDeliveries')}</span><strong>{summary.failedDeliveries}</strong></div>
     </div>
     <section className="subsection dashboard-week" aria-labelledby="dashboard-week-heading">
       <div className="dashboard-week-heading">

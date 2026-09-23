@@ -2,6 +2,7 @@ import 'server-only';
 
 import type {TeacherListItem} from '@/features/teachers/teacher.types';
 import {createServerSupabaseClient} from '@/lib/supabase/server';
+import {createServiceRoleSupabaseClient} from '@/lib/supabase/service-role';
 
 type TeacherRow = {
   id: string;
@@ -46,6 +47,16 @@ export async function listTeachers(schoolId: string) {
     .order('display_name');
   if (error) throw error;
   return (data as unknown as TeacherRow[]).map(mapTeacher);
+}
+
+export async function getTeacherAccessStates(teachers: TeacherListItem[]): Promise<Record<string, 'signedIn' | 'linkSent' | 'unknown'>> {
+  const supabase = createServiceRoleSupabaseClient();
+  const entries = await Promise.all(teachers.map(async (teacher) => {
+    const {data, error} = await supabase.auth.admin.getUserById(teacher.authUserId);
+    if (error || !data.user) return [teacher.id, 'unknown'] as const;
+    return [teacher.id, data.user.last_sign_in_at ? 'signedIn' : data.user.invited_at ? 'linkSent' : 'unknown'] as const;
+  }));
+  return Object.fromEntries(entries);
 }
 
 export async function listTeachingCandidates(schoolId: string) {

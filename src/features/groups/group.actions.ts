@@ -57,12 +57,13 @@ export async function updateGroupAction(
 ): Promise<ActionState> {
   const locale = localeFrom(formData);
   await requireProfile(locale, 'ADMIN');
-  const parsed = groupUpdateSchema.safeParse({id: formData.get('id'), ...groupInput(formData)});
+  const parsed = groupUpdateSchema.safeParse({id: formData.get('id'), ...groupInput(formData), allowReassignment: formData.get('allowReassignment') === 'true'});
   if (!parsed.success) return validationFailure();
   try {
     await updateGroup(parsed.data.id, parsed.data);
   } catch (error) {
     console.error('Unable to update group', {error});
+    if (typeof error === 'object' && error !== null && 'message' in error && error.message === 'primary teacher conflict') return saveFailure('conflict');
     return saveFailure();
   }
   revalidatePath(`/${locale}/groups`);

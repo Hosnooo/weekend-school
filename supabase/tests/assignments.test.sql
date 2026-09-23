@@ -1,7 +1,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
-select plan(5);
+select plan(6);
 
 set local role authenticated;
 select set_config('request.jwt.claim.role', 'authenticated', true);
@@ -18,6 +18,17 @@ select throws_ok(
   '23505',
   'primary teacher conflict',
   'occupied group requires explicit reassignment'
+);
+
+select throws_ok(
+  $$select public.update_group_with_teacher(
+    'd0000000-0000-0000-0000-000000000002',
+    'Intermediate', '', null,
+    'c0000000-0000-0000-0000-000000000002'
+  )$$,
+  '23505',
+  'primary teacher conflict',
+  'group form cannot silently replace an occupied primary teacher'
 );
 
 select lives_ok(

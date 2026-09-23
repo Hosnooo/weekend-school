@@ -5,6 +5,16 @@ export type DashboardGroup = {
   submitted: boolean;
 };
 
+export function summarizeReportDelivery(
+  reports: Array<{status: string}>,
+  deliveries: Array<{status: string}>
+): {readyReports: number; failedDeliveries: number} {
+  return {
+    readyReports: reports.filter((report) => report.status === 'READY').length,
+    failedDeliveries: deliveries.filter((delivery) => delivery.status === 'FAILED').length
+  };
+}
+
 export function schoolWeekForDate(localDate: string) {
   const date = new Date(`${localDate}T12:00:00Z`);
   const daysSinceMonday = (date.getUTCDay() + 6) % 7;

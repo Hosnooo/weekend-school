@@ -1,6 +1,6 @@
 import {describe, expect, it} from 'vitest';
 
-import {groupSchema} from '@/features/groups/group.schemas';
+import {groupSchema, groupUpdateSchema} from '@/features/groups/group.schemas';
 import {guardianSchema} from '@/features/guardians/guardian.schemas';
 import {membershipSchema} from '@/features/groups/membership.schemas';
 import {studentSchema, studentTransferSchema} from '@/features/students/student.schemas';
@@ -51,6 +51,11 @@ describe('guardian administration validation', () => {
 });
 
 describe('group administration validation', () => {
+  it('requires a boolean confirmation choice on group edits', () => {
+    const input = {id: groupId, nameEn: 'Level 2', nameAr: '', parentGroupId: '', teacherProfileId: ''};
+    expect(groupUpdateSchema.parse({...input, allowReassignment: false}).allowReassignment).toBe(false);
+    expect(groupUpdateSchema.safeParse({...input, allowReassignment: 'true'}).success).toBe(false);
+  });
   it('normalizes optional relationships to null', () => {
     expect(
       groupSchema.parse({

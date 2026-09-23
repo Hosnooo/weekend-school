@@ -51,7 +51,8 @@ describe('migration contract', () => {
       '202609220013_teacher_assignment.sql',
       '202609220014_student_transfer.sql',
       '202609220015_protect_submitted_rosters.sql',
-      '202609220016_protect_membership_history.sql'
+      '202609220016_protect_membership_history.sql',
+      '202609220017_confirm_group_reassignment.sql'
     ]);
   });
 
