@@ -29,6 +29,72 @@ export function monthPeriod(date: string) {
   };
 }
 
+type ReportPeriodPreset = 'THIS_WEEK' | 'LAST_WEEK' | 'THIS_MONTH' | 'LAST_MONTH' | 'CUSTOM';
+type ReportScope =
+  | {type: 'CLASS'}
+  | {type: 'SUBJECT'; classSubjectId: string}
+  | {type: 'GROUP'; classSubjectId: string; subjectGroupId: string};
+
+type ScopedReportSection = {
+  classSubjectId: string;
+  subjectGroupId: string | null;
+};
+
+function isoDate(date: Date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function parseIsoDate(date: string) {
+  const [year, month, day] = date.split('-').map(Number);
+  return new Date(Date.UTC(year, month - 1, day));
+}
+
+export function resolveReportPeriod(input: {
+  preset: ReportPeriodPreset;
+  today: string;
+  customStart?: string;
+  customEnd?: string;
+}) {
+  if (input.preset === 'CUSTOM') {
+    if (!input.customStart || !input.customEnd || input.customEnd < input.customStart) {
+      throw new Error('A valid custom report period is required');
+    }
+    return {start: input.customStart, end: input.customEnd};
+  }
+
+  const today = parseIsoDate(input.today);
+  if (input.preset === 'THIS_WEEK' || input.preset === 'LAST_WEEK') {
+    const mondayOffset = (today.getUTCDay() + 6) % 7;
+    const start = new Date(today);
+    start.setUTCDate(today.getUTCDate() - mondayOffset - (input.preset === 'LAST_WEEK' ? 7 : 0));
+    const end = new Date(start);
+    end.setUTCDate(start.getUTCDate() + 6);
+    return {start: isoDate(start), end: isoDate(end)};
+  }
+
+  const monthOffset = input.preset === 'LAST_MONTH' ? -1 : 0;
+  const year = today.getUTCFullYear();
+  const month = today.getUTCMonth() + monthOffset;
+  return {
+    start: isoDate(new Date(Date.UTC(year, month, 1))),
+    end: isoDate(new Date(Date.UTC(year, month + 1, 0)))
+  };
+}
+
+export function selectReportSectionsForScope<T extends ScopedReportSection>(
+  sections: readonly T[],
+  scope: ReportScope
+): T[] {
+  if (scope.type === 'CLASS') return [...sections];
+  if (scope.type === 'SUBJECT') {
+    return sections.filter(({classSubjectId}) => classSubjectId === scope.classSubjectId);
+  }
+  return sections.filter(
+    ({classSubjectId, subjectGroupId}) =>
+      classSubjectId === scope.classSubjectId && subjectGroupId === scope.subjectGroupId
+  );
+}
+
 export function buildReportSnapshot(
   input: BuildReportInput
 ): {snapshot: ReportSnapshot | null; issues: ReportIssue[]} {
