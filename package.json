@@ -22,14 +22,17 @@
     "db:reset": "supabase db reset"
   },
   "dependencies": {
+    "@fontsource/noto-sans-arabic": "5.3.0",
     "@react-email/body": "0.3.0",
     "@react-email/container": "0.0.16",
     "@react-email/head": "0.0.13",
     "@react-email/html": "0.0.12",
     "@react-email/preview": "0.0.14",
     "@react-email/section": "0.0.17",
+    "@react-pdf/renderer": "4.9.0",
     "@supabase/ssr": "0.12.7",
     "@supabase/supabase-js": "2.116.0",
+    "fflate": "0.8.3",
     "next": "16.3.5",
     "next-intl": "4.13.7",
     "react": "19.2.0",
