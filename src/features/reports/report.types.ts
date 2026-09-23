@@ -1,7 +1,100 @@
-export type ReportLanguage='en'|'ar'|'both';
-export type ReportPerformance='EXCELLENT'|'GOOD'|'DEVELOPING'|'NEEDS_SUPPORT';
-export type ReportIssue='NO_SUBMITTED_SESSIONS'|'INCOMPLETE_ATTENDANCE'|'MISSING_PROGRESS'|'MISSING_PERFORMANCE';
-export type ReportSourceSession={id:string;status:'DRAFT'|'SUBMITTED';date:string;group:{id:string;nameEn:string;nameAr:string|null};attendance:'PRESENT'|'ABSENT'|'LATE'|'EXCUSED'|null;progressEn:string|null;progressAr:string|null;defaultPerformance:ReportPerformance|null;performanceOverride:ReportPerformance|null;commentEn:string|null;commentAr:string|null};
-export type ReportSnapshot={version:1;school:{nameEn:string;nameAr:string};student:{id:string;nameEn:string;nameAr:string|null};period:{start:string;end:string};language:ReportLanguage;groups:Array<{id:string;nameEn:string;nameAr:string|null}>;attendance:{present:number;absent:number;late:number;excused:number;sessions:number};progress:Array<{sessionDate:string;groupNameEn:string;groupNameAr:string|null;textEn:string|null;textAr:string|null}>;currentPerformance:ReportPerformance|null;comments:Array<{sessionDate:string;textEn:string|null;textAr:string|null}>;generatedAt:string};
-export type BuildReportInput={school:ReportSnapshot['school'];student:ReportSnapshot['student'];period:ReportSnapshot['period'];language:ReportLanguage;generatedAt:string;sessions:ReportSourceSession[]};
-export type ReportListItem={id:string;studentId:string;studentNameEn:string;studentNameAr:string|null;language:ReportLanguage;status:'DRAFT'|'READY'|'SENT'|'FAILED';periodStart:string;periodEnd:string;generatedAt:string;snapshot:ReportSnapshot;deliveryStatuses:Array<'PENDING'|'SENT'|'DELIVERED'|'FAILED'|'BOUNCED'>};
+export type ReportLanguage = 'en' | 'ar' | 'both';
+export type ReportPerformance = 'EXCELLENT' | 'GOOD' | 'DEVELOPING' | 'NEEDS_SUPPORT';
+export type ReportIssue = 'NO_SUBMITTED_SESSIONS' | 'INCOMPLETE_ATTENDANCE' | 'MISSING_PROGRESS' | 'MISSING_PERFORMANCE';
+
+export type ReportSourceSession = {
+  id: string;
+  status: 'DRAFT' | 'SUBMITTED';
+  date: string;
+  group: {id: string; nameEn: string; nameAr: string | null};
+  attendance: 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED' | null;
+  progressEn: string | null;
+  progressAr: string | null;
+  defaultPerformance: ReportPerformance | null;
+  performanceOverride: ReportPerformance | null;
+  commentEn: string | null;
+  commentAr: string | null;
+};
+
+export type ReportSnapshot = {
+  version: 1;
+  school: {nameEn: string; nameAr: string};
+  student: {id: string; nameEn: string; nameAr: string | null};
+  period: {start: string; end: string};
+  language: ReportLanguage;
+  groups: Array<{id: string; nameEn: string; nameAr: string | null}>;
+  attendance: {present: number; absent: number; late: number; excused: number; sessions: number};
+  progress: Array<{sessionDate: string; groupNameEn: string; groupNameAr: string | null; textEn: string | null; textAr: string | null}>;
+  currentPerformance: ReportPerformance | null;
+  comments: Array<{sessionDate: string; textEn: string | null; textAr: string | null}>;
+  generatedAt: string;
+};
+
+export type BuildReportInput = {
+  school: ReportSnapshot['school'];
+  student: ReportSnapshot['student'];
+  period: ReportSnapshot['period'];
+  language: ReportLanguage;
+  generatedAt: string;
+  sessions: ReportSourceSession[];
+};
+
+export type ReportSnapshotV2Section = {
+  classSubjectId: string;
+  subjectNameEn: string;
+  subjectNameAr: string | null;
+  groupNameEn: string | null;
+  groupNameAr: string | null;
+  approvedProgressEn: string | null;
+  approvedProgressAr: string | null;
+  performance: ReportPerformance | null;
+  attendance: {present: number; absent: number; sessions: number};
+  commentEn: string | null;
+  commentAr: string | null;
+};
+
+export type ReportSnapshotV2 = {
+  version: 2;
+  school: {nameEn: string; nameAr: string};
+  student: {id: string; nameEn: string; nameAr: string | null};
+  class: {id: string; nameEn: string; nameAr: string | null};
+  period: {start: string; end: string};
+  language: ReportLanguage;
+  sections: ReportSnapshotV2Section[];
+  template: {
+    introEn: string | null;
+    introAr: string | null;
+    closingEn: string | null;
+    closingAr: string | null;
+  };
+  author: 'MCE Weekend School';
+  generatedAt: string;
+};
+
+export type ApprovedReportSectionInput = ReportSnapshotV2Section & {
+  sourceTeacherNames: string[];
+  unresolvedAttendanceConflicts: number;
+};
+
+export type BuildReportV2Input = Omit<ReportSnapshotV2, 'version' | 'sections' | 'author'> & {
+  sections: ApprovedReportSectionInput[];
+};
+
+export type ReportV2Issue = {
+  code: 'UNRESOLVED_ATTENDANCE_CONFLICT';
+  classSubjectId: string;
+};
+
+export type ReportListItem = {
+  id: string;
+  studentId: string;
+  studentNameEn: string;
+  studentNameAr: string | null;
+  language: ReportLanguage;
+  status: 'DRAFT' | 'READY' | 'SENT' | 'FAILED';
+  periodStart: string;
+  periodEnd: string;
+  generatedAt: string;
+  snapshot: ReportSnapshot;
+  deliveryStatuses: Array<'PENDING' | 'SENT' | 'DELIVERED' | 'FAILED' | 'BOUNCED'>;
+};
