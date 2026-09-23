@@ -139,8 +139,10 @@ alter table public.reports
   add constraint reports_revision_positive_check check (revision > 0),
   add constraint reports_snapshot_version_check check (snapshot_version in (1, 2));
 
+-- PostgreSQL truncates the original auto-generated 65-character unique
+-- constraint name to 63 characters.
 alter table public.reports
-  drop constraint reports_school_id_student_id_period_start_period_end_language_key;
+  drop constraint reports_school_id_student_id_period_start_period_end_language_k;
 
 alter table public.reports
   add constraint reports_student_period_language_revision_key
