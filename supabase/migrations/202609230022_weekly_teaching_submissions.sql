@@ -85,6 +85,18 @@ security definer
 set search_path = ''
 as $$
 begin
+  -- Structural context validity belongs to the composite foreign key. Do not mask
+  -- its 23503 result with an authorization error for a mismatched Group.
+  if new.subject_group_id is not null and not exists (
+    select 1
+    from public.subject_groups sg
+    where sg.school_id = new.school_id
+      and sg.class_subject_id = new.class_subject_id
+      and sg.id = new.subject_group_id
+  ) then
+    return new;
+  end if;
+
   if not public.teacher_can_teach_context(
     new.teacher_profile_id,
     new.class_subject_id,
