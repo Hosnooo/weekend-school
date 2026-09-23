@@ -84,7 +84,8 @@ describe('migration contract', () => {
       '202609220019_class_subject_group_foundation.sql',
       '202609220020_class_subject_group_rls.sql',
       '202609230021_enrollment_atomic_operations.sql',
-      '202609230022_weekly_teaching_submissions.sql'
+      '202609230022_weekly_teaching_submissions.sql',
+      '202609230023_weekly_submission_history_context.sql'
     ]);
   });
 
