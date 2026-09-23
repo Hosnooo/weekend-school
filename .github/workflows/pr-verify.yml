@@ -1,0 +1,67 @@
+name: PR Verification
+
+on:
+  push:
+    branches:
+      - codex/implement-weekend-school-redesign
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  static:
+    runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:55321
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: test-anon-key
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: corepack enable
+      - run: corepack prepare pnpm@11.19.0 --activate
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+
+  database-and-browser:
+    runs-on: ubuntu-latest
+    env:
+      OPENAI_API_KEY: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: corepack enable
+      - run: corepack prepare pnpm@11.19.0 --activate
+      - run: pnpm install --frozen-lockfile
+      - name: Start local Supabase in CI
+        run: pnpm db:start
+      - name: Reset schema and local-only seed
+        run: pnpm db:reset
+      - name: Configure app from ephemeral CI Supabase
+        shell: bash
+        run: |
+          eval "$(pnpm exec supabase status -o env)"
+          cat > .env.local <<EOF
+          NEXT_PUBLIC_SUPABASE_URL=${API_URL}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY=${ANON_KEY}
+          SUPABASE_SERVICE_ROLE_KEY=${SERVICE_ROLE_KEY}
+          BREVO_API_KEY=test
+          EMAIL_FROM=Weekend School <test@example.test>
+          CRON_SECRET=test
+          MAILPIT_URL=http://127.0.0.1:55324
+          EOF
+      - name: PostgreSQL and RLS tests
+        run: pnpm test:db
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Browser workflows
+        run: pnpm test:e2e
