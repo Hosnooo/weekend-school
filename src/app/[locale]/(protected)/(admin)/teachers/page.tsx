@@ -28,10 +28,10 @@ export default async function TeachersPage({params, searchParams}: {
     {access === 'sent' ? <p role="status">{t('accessSent')}</p> : null}
     {access === 'failed' ? <p className="form-error" role="alert">{t('accessFailed')}</p> : null}
     {teachers.length === 0 ? <p className="empty-state">{t('empty')}</p> : <div className="table-wrap"><table>
-      <thead><tr><th>{t('name')}</th><th>{t('groups')}</th><th>{t('preferredLanguage')}</th><th>{t('accessState')}</th><th>{common('status')}</th><th>{common('actions')}</th></tr></thead>
+      <thead><tr><th>{t('name')}</th><th>{t('assignments')}</th><th>{t('preferredLanguage')}</th><th>{t('accessState')}</th><th>{common('status')}</th><th>{common('actions')}</th></tr></thead>
       <tbody>{teachers.map((teacher) => <tr key={teacher.id}>
         <td><strong>{teacher.displayName}</strong></td>
-        <td>{teacher.assignedGroups.map((group) => locale === 'ar' && group.nameAr ? group.nameAr : group.nameEn).join(', ') || common('notAssigned')}</td>
+        <td>{teacher.assignmentCount}</td>
         <td>{language(teacher.preferredLanguage === 'ar' ? 'arabic' : 'english')}</td>
         <td>{t(accessStates[teacher.id] ?? 'unknown')}</td>
         <td><span className={`status-badge ${teacher.isActive ? 'status-active' : 'status-inactive'}`}>{teacher.isActive ? common('active') : common('inactive')}</span></td>
