@@ -21,6 +21,59 @@ type AssignmentRow = {
   ends_on: string | null;
 };
 
+type ClassSubjectRow = {
+  id: string;
+  is_active: boolean;
+  classes: {name_en: string; name_ar: string | null; is_active: boolean} | null;
+  subjects: {name_en: string; name_ar: string | null; is_active: boolean} | null;
+  subject_groups: Array<{
+    id: string;
+    name_en: string;
+    name_ar: string | null;
+    is_active: boolean;
+  }>;
+};
+
+export async function listTeachingClassSubjects(schoolId: string): Promise<TeachingClassSubject[]> {
+  const supabase = await createServerSupabaseClient();
+  const {data, error} = await supabase
+    .from('class_subjects')
+    .select(`
+      id,
+      is_active,
+      classes(name_en, name_ar, is_active),
+      subjects(name_en, name_ar, is_active),
+      subject_groups(id, name_en, name_ar, is_active)
+    `)
+    .eq('school_id', schoolId)
+    .eq('is_active', true);
+  if (error) throw error;
+
+  return (data as unknown as ClassSubjectRow[]).flatMap((row) => {
+    if (!row.classes?.is_active || !row.subjects?.is_active) return [];
+    return [{
+      id: row.id,
+      classNameEn: row.classes.name_en,
+      classNameAr: row.classes.name_ar,
+      subjectNameEn: row.subjects.name_en,
+      subjectNameAr: row.subjects.name_ar,
+      isActive: row.is_active,
+      groups: row.subject_groups
+        .filter(({is_active}) => is_active)
+        .map((group) => ({
+          id: group.id,
+          nameEn: group.name_en,
+          nameAr: group.name_ar,
+          isActive: group.is_active
+        }))
+        .sort((left, right) => left.nameEn.localeCompare(right.nameEn))
+    }];
+  }).sort((left, right) =>
+    left.classNameEn.localeCompare(right.classNameEn) ||
+    left.subjectNameEn.localeCompare(right.subjectNameEn)
+  );
+}
+
 export async function listTeachingAssignments(
   schoolId: string,
   teacherProfileId: string
