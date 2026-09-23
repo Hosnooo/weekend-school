@@ -3,18 +3,11 @@ export type TeacherInvitationInput = {
   displayName: string;
   email: string;
   preferredLanguage: 'en' | 'ar';
-  assignedGroupIds: string[];
 };
 
 export type TeacherInvitationDependencies = {
-  validateAssignments(input: TeacherInvitationInput): Promise<void>;
   inviteAuthUser(input: TeacherInvitationInput): Promise<string>;
   createProfile(input: TeacherInvitationInput, authUserId: string): Promise<string>;
-  assignGroups(
-    schoolId: string,
-    profileId: string,
-    groupIds: string[]
-  ): Promise<void>;
   deleteProfile(profileId: string): Promise<void>;
   deleteAuthUser(authUserId: string): Promise<void>;
   findUnclaimedAuthUser(email: string, schoolId: string): Promise<string | null>;
@@ -40,7 +33,6 @@ export async function inviteTeacher(
   dependencies: TeacherInvitationDependencies
 ) {
   const normalizedInput = {...input, email: input.email.trim().toLowerCase()};
-  await dependencies.validateAssignments(normalizedInput);
 
   let authUserId: string;
   let newAuthUser = false;
@@ -59,11 +51,6 @@ export async function inviteTeacher(
   let profileId: string | null = null;
   try {
     profileId = await dependencies.createProfile(normalizedInput, authUserId);
-    await dependencies.assignGroups(
-      normalizedInput.schoolId,
-      profileId,
-      normalizedInput.assignedGroupIds
-    );
     if (!newAuthUser) await dependencies.sendExistingAccessLink(normalizedInput.email);
     return profileId;
   } catch (error) {
