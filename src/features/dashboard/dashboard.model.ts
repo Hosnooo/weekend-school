@@ -32,3 +32,7 @@ export function summarizeGroupSubmissions(
   const groups = activeGroups.map((group) => ({...group, submitted: submittedIds.has(group.id)}));
   return {submittedCount: groups.filter((group) => group.submitted).length, groups};
 }
+
+export function summarizeTeachingUpdates() {
+  return {expectedCount: 0, submittedCount: 0, draftCount: 0, missingCount: 0, contexts: []};
+}
