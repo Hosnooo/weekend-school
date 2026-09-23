@@ -5,5 +5,5 @@ export type StudentListItem = {
   firstNameAr: string | null;
   lastNameAr: string | null;
   isActive: boolean;
-  currentGroup: {id: string; nameEn: string; nameAr: string | null} | null;
+  currentClass: {id: string; nameEn: string; nameAr: string | null} | null;
 };
