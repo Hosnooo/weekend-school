@@ -5,6 +5,7 @@ import {useActionState} from 'react';
 import {useTranslations} from 'next-intl';
 
 import {Button} from '@/components/ui/button';
+import {TextInput} from '@/components/ui/text-input';
 import type {LoginState} from '@/features/auth/auth.types';
 import type {Locale} from '@/i18n/config';
 
@@ -19,18 +20,18 @@ export function LoginForm({locale}: {locale: Locale}) {
   return (
     <form action={formAction} className="login-form">
       <input name="locale" type="hidden" value={locale} />
-      <label htmlFor="email">{translations('email')}</label>
-      <input
+      <TextInput
         autoComplete="email"
         id="email"
+        label={translations('email')}
         name="email"
         required
         type="email"
       />
-      <label htmlFor="password">{translations('password')}</label>
-      <input
+      <TextInput
         autoComplete="current-password"
         id="password"
+        label={translations('password')}
         name="password"
         required
         type="password"

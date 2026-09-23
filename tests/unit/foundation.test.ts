@@ -50,9 +50,9 @@ describe('locale configuration', () => {
 
 describe('language preference validation', () => {
   it('accepts an application path and supported target locale', () => {
-    expect(languagePreferenceSchema.parse({locale: 'ar', pathname: '/my-groups'})).toEqual({
+    expect(languagePreferenceSchema.parse({locale: 'ar', pathname: '/my-teaching'})).toEqual({
       locale: 'ar',
-      pathname: '/my-groups'
+      pathname: '/my-teaching'
     });
   });
 
@@ -83,7 +83,7 @@ describe('login validation', () => {
 describe('role navigation', () => {
   it('exposes only the two teacher destinations', () => {
     expect(getNavigationItems('TEACHER').map((item) => item.href)).toEqual([
-      '/my-groups',
+      '/my-teaching',
       '/history'
     ]);
   });
@@ -91,13 +91,11 @@ describe('role navigation', () => {
   it('includes assigned teaching views in administrator navigation', () => {
     expect(getNavigationItems('ADMIN').map((item) => item.href)).toEqual([
       '/dashboard',
-      '/groups',
+      '/classes',
       '/students',
       '/teachers',
       '/reports',
-      '/settings',
-      '/my-groups',
-      '/history'
+      '/settings'
     ]);
   });
 });

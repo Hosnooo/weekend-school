@@ -53,7 +53,13 @@ describe('migration contract', () => {
       '202609220015_protect_submitted_rosters.sql',
       '202609220016_protect_membership_history.sql',
       '202609220017_confirm_group_reassignment.sql',
-      '202609220018_revoke_anon_security_definer_execution.sql'
+      '202609220018_revoke_anon_security_definer_execution.sql',
+      '202609220019_class_subject_group_foundation.sql',
+      '202609220020_class_subject_group_rls.sql',
+      '202609220021_weekly_teaching_submissions.sql',
+      '202609220022_attendance_resolution.sql',
+      '202609220023_subject_aware_reports.sql',
+      '202609220024_archives_and_delete.sql'
     ]);
   });
 

@@ -247,3 +247,22 @@ Pilot usability follow-up on 2026-09-22:
 - The first browser run encountered a previously submitted local seed session and correctly rendered that update read-only; after resetting only local Docker Supabase, all four workflows passed. A concurrent typecheck saw a partially rewritten generated `.next/dev/types` file; deleting only that generated directory, restoring generated `next-env.d.ts`, and regenerating types resolved it. Neither issue involved hosted data.
 - GitHub branch was pushed and draft PR #1 opened. GitHub reports the first Vercel Preview deployment as failed, while its status exposes no build-log detail. Browser access to the private Vercel log was blocked by automatic approval review when it attempted a separate Google sign-in. The production site remains on the earlier `main` deployment; hosted migrations 13–17 were not applied.
 - Next release steps: inspect/fix the Vercel preview, apply migrations 13–17 to hosted Supabase, merge the PR to `main`, then verify the live admin flows and invitation email. Student/guardian/group CSV import and reusable report wording with teacher read-only preview remain Phases 2 and 3, in that order.
+
+## Architecture correction — 2026-09-23
+
+- Approved redesign authority synchronized; D-025 supersedes group-centric cardinalities.
+- Forward-only migrations 19-24 added for academic structure/RLS, independent weekly submissions, attendance resolution, subject-aware report workflow, and archive/export metadata.
+- Current navigation and shared auth controls updated for Classes/My Teaching and consistent password-field styling.
+- Phase 2 CSV remains blocked pending full local database/browser gates and hosted production smoke verification.
+- Local `pnpm db:reset`: unavailable (`LegacyLocalDbRunningError: failed to inspect service`); no hosted database was touched.
+
+### Local gate observed 2026-09-23
+
+- `pnpm lint`: passed (0 errors, 0 warnings).
+- `pnpm typecheck`: passed.
+- `pnpm test`: passed, 21 files / 95 tests.
+- `pnpm db:reset`: could not run because the cloud local database service inspection failed (`LegacyLocalDbRunningError`).
+- `pnpm test:db`: could not connect to local PostgreSQL at `127.0.0.1:55322` because Docker/Supabase was unavailable.
+- `pnpm test:e2e`: could not start because `.env.local` is not provisioned in this cloud checkout.
+- `pnpm build`: compiled and typechecked, then prerendering stopped because required public Supabase environment variables are not provisioned.
+- Hosted migration, deployment, and production smoke steps were not run; Phase 2 remains blocked.

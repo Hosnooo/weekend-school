@@ -13,7 +13,7 @@ describe('AppNavigation', () => {
       </NextIntlClientProvider>
     );
 
-    expect(screen.getByRole('link', {name: 'My Groups'})).toBeInTheDocument();
+    expect(screen.getByRole('link', {name: 'My Teaching'})).toBeInTheDocument();
     expect(screen.getByRole('link', {name: 'History'})).toBeInTheDocument();
     expect(screen.queryByRole('link', {name: 'Students'})).not.toBeInTheDocument();
   });
@@ -26,8 +26,8 @@ describe('AppNavigation', () => {
     );
 
     expect(screen.getByRole('navigation', {name: 'Main navigation'})).toBeInTheDocument();
-    expect(screen.getByRole('link', {name: 'My Groups'})).toBeInTheDocument();
-    expect(screen.getByRole('link', {name: 'History'})).toBeInTheDocument();
-    expect(screen.getAllByRole('link')).toHaveLength(8);
+    expect(screen.getByRole('link', {name: 'Classes'})).toBeInTheDocument();
+    expect(screen.queryByRole('link', {name: 'History'})).not.toBeInTheDocument();
+    expect(screen.getAllByRole('link')).toHaveLength(6);
   });
 });

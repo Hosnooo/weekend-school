@@ -2010,3 +2010,22 @@ The approved design in `docs/superpowers/specs/2026-09-22-admin-workflows-and-re
 - A teacher can read a generated parent-report preview for a student currently in one of their assigned groups. The preview is read-only and excludes guardian contact details, delivery diagnostics, and admin controls. Server authorization and RLS enforce current same-school assignment. Generation and sending remain administrator-only.
 
 Each extension phase passes lint, typecheck, tests, build, real PostgreSQL/RLS tests for database changes, and focused bilingual browser checks before release. New migrations are forward-only and precede dependent production code. The four original end-to-end workflows remain passing. See the approved design for detailed edge cases and exclusions.
+# 58. Class-Subject-Group architecture correction (2026-09-22)
+
+This section supersedes conflicting requirements in sections 5, 8-12, 15-18, 21-24, 31-39, 44, 51-55, and 57. The approved detailed design is `docs/superpowers/specs/2026-09-22-class-subject-group-reporting-redesign.md`.
+
+## 58.1 Academic structure and enrollment
+
+The current model is **Class -> Subject -> optional Group**; subgroups do not exist. Each student has at most one active Class enrollment. Students participate automatically in every active Subject attached to that Class unless an explicit dated exclusion exists. For a grouped Subject, a participating student has at most one active Group. The first Group becomes the default; changing the default never moves existing students.
+
+## 58.2 Teaching and weekly submissions
+
+Any number of teachers may teach a whole Subject or a specific Group, and a teacher may teach any number of contexts. There is no PRIMARY/ASSISTANT distinction or primary-teacher constraint. Whole-Subject access covers its Groups and overlaps are deduplicated. Each teacher submits independently for each context/week and may edit only their own draft. Attendance observations are exactly PRESENT or ABSENT. Agreement is counted once; disagreement is an admin conflict whose official value requires an admin resolution.
+
+## 58.3 Reports
+
+Reports are Subject-aware and support week, multiple-week/month, and custom periods at Class, Subject, or Group scope. Admins select, combine, or edit submitted teacher source material into reusable official wording and optional student exceptions. Parent output never contains teacher names and identifies MCE Weekend School as its author. The workflow is Draft -> Review -> Finalize -> Send. Finalization creates an immutable snapshot; corrections create revisions.
+
+## 58.4 Lifecycle, export, security, and interface
+
+The lifecycle is Active -> Archived -> Restore or Permanently Delete. Permanent deletion is admin-only, school-scoped, transactional, limited to archived records, requires explicit confirmation, shows dependent-history impact, and offers a protected period/scope export first. Current navigation uses Classes and My Teaching. Teacher work is mobile-first at 360px; all screens use true English LTR and Arabic RTL, shared visible form controls, and accessible action hierarchy. Server authorization and RLS remain independent mandatory layers. Migrations 1-18 remain immutable and new work begins at migration 19. Phase 2 CSV remains blocked through production smoke verification.

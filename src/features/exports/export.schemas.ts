@@ -1,0 +1,2 @@
+import {z} from 'zod';
+export const exportRequestSchema=z.object({period:z.discriminatedUnion('kind',[z.object({kind:z.literal('ALL')}),z.object({kind:z.literal('RANGE'),start:z.iso.date(),end:z.iso.date()})]),scope:z.object({type:z.enum(['SCHOOL','CLASS','SUBJECT','GROUP','STUDENT','TEACHER']),id:z.uuid().nullable()}),datasets:z.array(z.enum(['STUDENTS','ATTENDANCE','SUBMISSIONS','REPORTS'])).min(1)}).refine(v=>v.period.kind==='ALL'||v.period.end>=v.period.start,{message:'Invalid period'});

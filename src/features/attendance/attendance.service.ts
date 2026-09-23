@@ -1,0 +1,2 @@
+import type {AttendanceObservation,AttendanceStatus,EffectiveAttendance} from './attendance.types';
+export function getEffectiveAttendance(observations:AttendanceObservation[],resolution:AttendanceStatus|null=null):EffectiveAttendance{if(resolution)return{status:resolution,conflict:false,source:'RESOLUTION'};const statuses=new Set(observations.map(item=>item.status));if(statuses.size===1&&observations.length)return{status:observations[0]!.status,conflict:false,source:'CONSENSUS'};return{status:null,conflict:statuses.size>1,source:'NONE'}}

@@ -11,9 +11,9 @@
 
 - Use test-driven development for business rules, authorization helpers, validation, and regressions: observe a relevant failing test before adding production behavior.
 - Before declaring a phase complete, run `pnpm lint`, `pnpm typecheck`, `pnpm test`, and `pnpm build` and record the results in `docs/PROGRESS.md`.
-- Keep applied Supabase migrations immutable. Correct an applied schema with a new migration.
+- Keep applied Supabase migrations immutable. Correct an applied schema with a new migration; redesign schema starts at migration 19.
 - Prefer small, reviewable commits at working checkpoints. Never weaken authorization or RLS to make a test pass.
-- Preserve unrelated user changes. Do not hard-delete historical school records.
+- Preserve unrelated user changes. Use archive/restore for normal lifecycle changes. Permanent deletion is an explicit admin-only workflow for archived records, must show dependent-data impact, offer export first, and be school-scoped and transactional.
 
 ## Architecture boundaries
 
@@ -29,7 +29,7 @@
 - Every school-owned row carries `school_id`; every query and mutation is scoped to the authenticated profile's school.
 - Never expose `SUPABASE_SERVICE_ROLE_KEY`, `BREVO_API_KEY`, or `CRON_SECRET` through client code or a `NEXT_PUBLIC_` name.
 - Validate every mutation on the server with Zod. Normalize emails before persistence.
-- Use deactivation for teachers, students, groups, and guardians with history.
+- Use archive/restore for teachers, students, classes, groups, and guardians with history; permanent deletion follows the protected workflow above.
 - Reports use submitted sessions only and become immutable snapshots when generated.
 
 ## English and Arabic

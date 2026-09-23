@@ -1,0 +1,2 @@
+export type DeleteImpact={memberships:number;observations:number;resolutions:number;reports:number;deliveries:number};
+export function assertPermanentDeletionAllowed(input:{archived:boolean;confirmation:string;expectedConfirmation:string;impact:DeleteImpact}){if(!input.archived)throw new Error('Only archived records may be permanently deleted');if(input.confirmation!==input.expectedConfirmation)throw new Error('Explicit confirmation is required');return input.impact;}

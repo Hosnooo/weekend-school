@@ -294,3 +294,7 @@ Phase gate: all unit/component/integration/RLS/E2E tests pass; migrations reprod
 ## 7. Phase completion rule
 
 A phase is complete only when its listed behavior exists, its required automated and manual checks have observed evidence, the standard four commands pass, migrations remain forward-only, and `docs/PROGRESS.md` records completed work, limitations, and the next phase. A build that passes with placeholder environment values does not prove live Supabase or email connectivity; those checks must be reported separately and never implied.
+
+## Active architecture correction (2026-09-22)
+
+The approved Class -> Subject -> optional Group correction is the active implementation phase. It supersedes the group-centric Phase 1 workflow. Phase 2 CSV is blocked until migrations 19-24, application gates, preview verification, hosted forward migration, and production smoke checks complete.

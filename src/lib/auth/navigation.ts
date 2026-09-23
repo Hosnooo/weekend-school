@@ -4,28 +4,26 @@ export type NavigationItem = {
   href: string;
   messageKey:
     | 'dashboard'
-    | 'groups'
+    | 'classes'
     | 'students'
     | 'teachers'
     | 'reports'
     | 'settings'
-    | 'myGroups'
+    | 'myTeaching'
     | 'history';
 };
 
 const adminNavigation: readonly NavigationItem[] = [
   {href: '/dashboard', messageKey: 'dashboard'},
-  {href: '/groups', messageKey: 'groups'},
+  {href: '/classes', messageKey: 'classes'},
   {href: '/students', messageKey: 'students'},
   {href: '/teachers', messageKey: 'teachers'},
   {href: '/reports', messageKey: 'reports'},
   {href: '/settings', messageKey: 'settings'},
-  {href: '/my-groups', messageKey: 'myGroups'},
-  {href: '/history', messageKey: 'history'}
 ];
 
 const teacherNavigation: readonly NavigationItem[] = [
-  {href: '/my-groups', messageKey: 'myGroups'},
+  {href: '/my-teaching', messageKey: 'myTeaching'},
   {href: '/history', messageKey: 'history'}
 ];
 

@@ -525,3 +525,4 @@ tbody tr:last-child td {
     padding: 0.75rem;
   }
 }
+.form-field{display:grid;gap:.4rem;font-weight:600}.text-input,.select-field{inline-size:100%;min-block-size:3rem;padding-inline:.875rem;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:.5rem}.button-danger{color:#fff;background:var(--danger)}.status-success{color:#166534;background:#dcfce7}.status-warning{color:#854d0e;background:#fef9c3}.status-danger{color:#991b1b;background:#fee2e2}.status-neutral{color:var(--text);background:#eef2f6}@media(max-width:480px){.form-grid{grid-template-columns:1fr}.button{min-block-size:3rem}.attendance-list label{grid-template-columns:1fr}.app-navigation{overflow-x:auto}}
