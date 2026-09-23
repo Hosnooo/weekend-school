@@ -83,7 +83,8 @@ describe('migration contract', () => {
       '202609220018_revoke_anon_security_definer_execution.sql',
       '202609220019_class_subject_group_foundation.sql',
       '202609220020_class_subject_group_rls.sql',
-      '202609230021_enrollment_atomic_operations.sql'
+      '202609230021_enrollment_atomic_operations.sql',
+      '202609230022_weekly_teaching_submissions.sql'
     ]);
   });
 
@@ -117,6 +118,15 @@ describe('migration contract', () => {
     expect(sql).toContain('class_enrollments_one_active_class_per_student');
     expect(sql).toContain('subject_group_memberships_one_group_per_class_subject');
     expect(sql).toContain('teaching_assignments_no_duplicate_overlap');
+  });
+
+  it('defines independent teacher-authored weekly submissions in migration 22', async () => {
+    const {sql} = await readMigrations();
+    expect(sql).toMatch(/create table public\.weekly_submissions\b/i);
+    expect(sql).toMatch(/create table public\.weekly_submission_students\b/i);
+    expect(sql).toContain('weekly_submissions_one_teacher_context_week');
+    expect(sql).toContain('weekly_submission_students_attendance_check');
+    expect(sql).toMatch(/create function public\.validate_weekly_submission_context\b/i);
   });
 
   it('revokes anonymous execution from security definer functions and future defaults', async () => {
