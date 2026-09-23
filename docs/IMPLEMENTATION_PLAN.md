@@ -294,3 +294,13 @@ Phase gate: all unit/component/integration/RLS/E2E tests pass; migrations reprod
 ## 7. Phase completion rule
 
 A phase is complete only when its listed behavior exists, its required automated and manual checks have observed evidence, the standard four commands pass, migrations remain forward-only, and `docs/PROGRESS.md` records completed work, limitations, and the next phase. A build that passes with placeholder environment values does not prove live Supabase or email connectivity; those checks must be reported separately and never implied.
+
+## 8. Active architecture correction — 2026-09-22
+
+The original six MVP phases were implemented and released, but the deployed group-centric cardinalities are superseded by `docs/SPEC.md` section 58 and D-025. The active work is now the Class/Subject/optional-Group architecture correction described in `docs/superpowers/specs/2026-09-22-class-subject-group-reporting-redesign.md` and executed through `docs/superpowers/plans/2026-09-22-class-subject-group-reporting-redesign.md`.
+
+The correction replaces the one-primary-teacher rule, the one-global-current-group student rule, subgroup-oriented modeling, one-session-per-group/date semantics, Late/Excused attendance in the new teaching model, group-only dashboard/report assumptions, and the former prohibition on deleting historical archived records. Authentication, school isolation, RLS, bilingual routing/content rules, recovery, Brevo delivery, and forward-only migration safety remain in force.
+
+Forward-only correction migrations begin at migration 19. Applied migrations 1-18 remain immutable. The correction must pass real database/RLS tests, English/Arabic browser flows, lint, strict typecheck, the complete unit suite, and production build before release.
+
+**Phase 2 roster CSV is blocked.** Do not implement the section 57 CSV phase against the legacy group model. CSV work resumes only after the architecture correction has passed its hosted migration, production deployment, runtime-error review, and production smoke gate; the CSV contract will then target Class/Subject/Group semantics.
