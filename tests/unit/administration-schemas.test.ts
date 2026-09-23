@@ -62,34 +62,31 @@ describe('group administration validation', () => {
 });
 
 describe('teacher administration validation', () => {
-  it('deduplicates assigned groups and normalizes the invitation email', () => {
+  it('normalizes the invitation email without coupling onboarding to assignments', () => {
     expect(
       teacherSchema.parse({
         displayName: ' Fatima Ali ',
         email: ' TEACHER@example.com ',
-        preferredLanguage: 'ar',
-        assignedGroupIds: [groupId, groupId]
+        preferredLanguage: 'ar'
       })
     ).toEqual({
       displayName: 'Fatima Ali',
       email: 'teacher@example.com',
-      preferredLanguage: 'ar',
-      assignedGroupIds: [groupId]
+      preferredLanguage: 'ar'
     });
   });
 
-  it('requires explicit confirmation before an occupied group can be reassigned', () => {
-    const input = {
+  it('updates teacher identity independently from teaching assignments', () => {
+    expect(teacherUpdateSchema.parse({
+      id: '33333333-3333-4333-8333-333333333333',
+      displayName: ' Fatima Ali ',
+      preferredLanguage: 'en'
+    })).toEqual({
       id: '33333333-3333-4333-8333-333333333333',
       displayName: 'Fatima Ali',
-      preferredLanguage: 'en',
-      assignedGroupIds: [groupId]
-    };
-    expect(teacherUpdateSchema.parse({...input, allowReassignment: false}).allowReassignment).toBe(false);
-    expect(teacherUpdateSchema.parse({...input, allowReassignment: true}).allowReassignment).toBe(true);
-    expect(teacherUpdateSchema.safeParse({...input, allowReassignment: 'true'}).success).toBe(false);
+      preferredLanguage: 'en'
+    });
   });
-
 });
 
 describe('membership administration validation', () => {
