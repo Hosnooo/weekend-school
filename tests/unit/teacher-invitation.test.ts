@@ -58,6 +58,7 @@ describe('teacher invitation', () => {
       async findTeacher() { return null; }, async getAuthEmail() { return input.email; }, sendAccessLink
     })).rejects.toThrow('Teacher account unavailable');
   });
+
   it('validates assignments before sending an invitation', async () => {
     const {state, dependencies} = createFakeDependencies();
     dependencies.validateAssignments = async () => {
@@ -93,6 +94,27 @@ describe('teacher invitation', () => {
 
     await expect(inviteTeacher(input, dependencies)).rejects.toThrow('assignment failed');
     expect(state).toEqual({authUsers: [], profiles: []});
+  });
+
+  it('reuses a normalized unclaimed Auth identity before calling inviteUserByEmail again', async () => {
+    const {state, dependencies} = createFakeDependencies();
+    state.authUsers.push('auth-existing');
+    let inviteCalls = 0;
+    let lookedUpEmail = '';
+    dependencies.inviteAuthUser = async () => {
+      inviteCalls += 1;
+      throw new Error('email_exists');
+    };
+    dependencies.findUnclaimedAuthUser = async (email) => {
+      lookedUpEmail = email;
+      return 'auth-existing';
+    };
+    dependencies.sendExistingAccessLink = async () => {};
+
+    await expect(inviteTeacher({...input, email: '  Fatima@Example.COM  '}, dependencies)).resolves.toBe('profile-1');
+    expect(inviteCalls).toBe(0);
+    expect(lookedUpEmail).toBe('fatima@example.com');
+    expect(state).toEqual({authUsers: ['auth-existing'], profiles: ['profile-1']});
   });
 
   it('reconciles an existing unclaimed Auth identity without deleting it', async () => {
