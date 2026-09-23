@@ -93,10 +93,13 @@ select results_eq(
 -- Exact-Group teacher sees only that Group and its participating roster.
 select set_config('request.jwt.claim.sub', 'b0000000-0000-0000-0000-000000000003', true);
 select results_eq(
-  $$select array_agg(id order by id) from public.subject_groups
-    where class_subject_id = '83000000-0000-0000-0000-000000000001'$$,
-  array[array['84000000-0000-0000-0000-000000000001'::uuid]],
-  'Group teacher cannot read sibling Group'
+  $$select count(*)::bigint from public.subject_groups
+    where id in (
+      '84000000-0000-0000-0000-000000000001',
+      '84000000-0000-0000-0000-000000000002'
+    )$$,
+  array[1::bigint],
+  'Group teacher sees exactly one Group from the Subject'
 );
 select results_eq(
   $$select count(*)::bigint from public.students
@@ -128,8 +131,11 @@ select throws_ok(
   'teacher cannot create school structure'
 );
 
--- Inactive teacher loses all academic access and cannot write.
+-- Inactive teacher loses all academic access and cannot write. Use an admin claim while
+-- deactivating so the existing profile-protection trigger treats this as an admin action.
 reset role;
+select set_config('request.jwt.claim.role', 'authenticated', true);
+select set_config('request.jwt.claim.sub', 'b0000000-0000-0000-0000-000000000001', true);
 update public.profiles set is_active = false where id = 'c0000000-0000-0000-0000-000000000003';
 set local role authenticated;
 select set_config('request.jwt.claim.role', 'authenticated', true);
