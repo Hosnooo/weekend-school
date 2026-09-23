@@ -72,6 +72,11 @@ select lives_ok(
   $$select public.permanently_delete_archived_entity('STUDENT','e0000000-0000-0000-0000-000000000001','DELETE e0000000-0000-0000-0000-000000000001')$$,
   'confirmed archived student deletion succeeds transactionally'
 );
+
+-- Final existence checks run as the test owner so cross-school rows are not hidden by
+-- School A's RLS policy. The permanent-delete RPC itself was exercised as authenticated.
+reset role;
+
 select results_eq(
   $$select count(*)::bigint from public.students where id='e0000000-0000-0000-0000-000000000001'$$,
   array[0::bigint],

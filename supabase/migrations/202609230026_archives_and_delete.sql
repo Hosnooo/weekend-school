@@ -41,6 +41,47 @@ revoke all on function public.protect_submitted_weekly_submission_student() from
 revoke execute on function public.protect_submitted_weekly_submission_student() from anon;
 revoke execute on function public.protect_submitted_weekly_submission_student() from authenticated;
 
+-- Legacy session attendance/progress has its own immutability trigger. Allow only the
+-- explicitly confirmed permanent-delete transaction to remove the matching student's rows.
+create or replace function public.prevent_submitted_session_child_change()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+declare
+  target_session_id uuid;
+begin
+  if tg_op = 'DELETE' then
+    target_session_id := old.session_id;
+
+    if tg_table_name in ('attendance', 'student_progress') then
+      if current_setting('app.permanent_delete_student_id', true) = old.student_id::text then
+        return old;
+      end if;
+    end if;
+  else
+    target_session_id := new.session_id;
+  end if;
+
+  if exists (
+    select 1
+    from public.sessions
+    where sessions.id = target_session_id
+      and sessions.status = 'SUBMITTED'
+  ) then
+    raise exception 'submitted session data is immutable' using errcode = '55000';
+  end if;
+
+  if tg_op = 'DELETE' then
+    return old;
+  end if;
+
+  return new;
+end;
+$$;
+
+revoke all on function public.prevent_submitted_session_child_change() from public;
+
 create function public.archive_entity(
   p_entity_type text,
   p_entity_id uuid
