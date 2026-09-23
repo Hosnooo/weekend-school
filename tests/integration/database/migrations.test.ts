@@ -82,7 +82,8 @@ describe('migration contract', () => {
       '202609220017_confirm_group_reassignment.sql',
       '202609220018_revoke_anon_security_definer_execution.sql',
       '202609220019_class_subject_group_foundation.sql',
-      '202609220020_class_subject_group_rls.sql'
+      '202609220020_class_subject_group_rls.sql',
+      '202609230021_enrollment_atomic_operations.sql'
     ]);
   });
 
