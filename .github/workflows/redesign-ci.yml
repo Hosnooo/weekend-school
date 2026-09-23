@@ -24,6 +24,10 @@ jobs:
           corepack prepare pnpm@11.19.0 --activate
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      - name: Inspect installed Next.js documentation
+        run: |
+          echo '--- NEXT DOC INVENTORY ---'
+          find node_modules/next/dist/docs -type f | sort | head -80
       - name: Run migration contract
         run: pnpm test -- tests/integration/database/migrations.test.ts
 
