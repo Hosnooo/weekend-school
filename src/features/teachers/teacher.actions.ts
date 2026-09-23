@@ -6,10 +6,7 @@ import {redirect} from 'next/navigation';
 import {z} from 'zod';
 
 import {buildPasswordRecoveryRedirect} from '@/features/auth/password-recovery.service';
-import {
-  setTeacherActive,
-  updateTeacher
-} from '@/features/teachers/teacher.repository';
+import {setTeacherActive, updateTeacher} from '@/features/teachers/teacher.repository';
 import {teacherSchema, teacherUpdateSchema} from '@/features/teachers/teacher.schemas';
 import {
   inviteTeacher,
@@ -32,37 +29,13 @@ function teacherInput(formData: FormData) {
   return {
     displayName: formData.get('displayName'),
     email: formData.get('email'),
-    preferredLanguage: formData.get('preferredLanguage'),
-    assignedGroupIds: formData.getAll('assignedGroupIds')
+    preferredLanguage: formData.get('preferredLanguage')
   };
 }
 
 function createInvitationDependencies(redirectTo: string): TeacherInvitationDependencies {
   const supabase = createServiceRoleSupabaseClient();
   return {
-    async validateAssignments(input) {
-      if (input.assignedGroupIds.length === 0) return;
-      const {data: groups, error} = await supabase
-        .from('groups')
-        .select('id, group_teachers!inner(assignment_type)')
-        .eq('school_id', input.schoolId)
-        .eq('is_active', true)
-        .in('id', input.assignedGroupIds)
-        .eq('group_teachers.assignment_type', 'PRIMARY');
-      if (error) throw error;
-      if (groups.length > 0) throw new Error('A selected group already has a primary teacher');
-
-      const {data: validGroups, error: validError} = await supabase
-        .from('groups')
-        .select('id')
-        .eq('school_id', input.schoolId)
-        .eq('is_active', true)
-        .in('id', input.assignedGroupIds);
-      if (validError) throw validError;
-      if (validGroups.length !== input.assignedGroupIds.length) {
-        throw new Error('Invalid group assignment');
-      }
-    },
     async inviteAuthUser(input) {
       const {data, error} = await supabase.auth.admin.inviteUserByEmail(input.email, {
         data: {display_name: input.displayName, preferred_language: input.preferredLanguage},
@@ -85,26 +58,6 @@ function createInvitationDependencies(redirectTo: string): TeacherInvitationDepe
         .single();
       if (error) throw error;
       return data.id as string;
-    },
-    async assignGroups(schoolId, profileId, groupIds) {
-      if (groupIds.length === 0) return;
-      const {data: groups, error: groupError} = await supabase
-        .from('groups')
-        .select('id')
-        .eq('school_id', schoolId)
-        .eq('is_active', true)
-        .in('id', groupIds);
-      if (groupError) throw groupError;
-      if (groups.length !== groupIds.length) throw new Error('Invalid group assignment');
-      const {error} = await supabase.from('group_teachers').insert(
-        groupIds.map((groupId) => ({
-          school_id: schoolId,
-          group_id: groupId,
-          teacher_profile_id: profileId,
-          assignment_type: 'PRIMARY'
-        }))
-      );
-      if (error) throw error;
     },
     async deleteProfile(profileId) {
       const {error} = await supabase.from('profiles').delete().eq('id', profileId);
@@ -175,22 +128,17 @@ export async function updateTeacherAction(
   formData: FormData
 ): Promise<ActionState> {
   const locale = localeFrom(formData);
-  await requireProfile(locale, 'ADMIN');
+  const profile = await requireProfile(locale, 'ADMIN');
   const parsed = teacherUpdateSchema.safeParse({
     id: formData.get('id'),
     displayName: formData.get('displayName'),
-    preferredLanguage: formData.get('preferredLanguage'),
-    assignedGroupIds: formData.getAll('assignedGroupIds'),
-    allowReassignment: formData.get('allowReassignment') === 'true'
+    preferredLanguage: formData.get('preferredLanguage')
   });
   if (!parsed.success) return validationFailure();
   try {
-    await updateTeacher(parsed.data);
+    await updateTeacher(profile.schoolId, parsed.data);
   } catch (error) {
     console.error('Unable to update teacher', {error});
-    if (typeof error === 'object' && error !== null && 'message' in error && error.message === 'primary teacher conflict') {
-      return saveFailure('conflict');
-    }
     return saveFailure();
   }
   revalidatePath(`/${locale}/teachers`);
