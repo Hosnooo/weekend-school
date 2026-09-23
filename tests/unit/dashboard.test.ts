@@ -1,7 +1,29 @@
 import {describe, expect, it} from 'vitest';
 
-import * as dashboardModel from '@/features/dashboard/dashboard.model';
-import {schoolWeekForDate, summarizeGroupSubmissions} from '@/features/dashboard/dashboard.model';
+import {
+  schoolWeekForDate,
+  summarizeGroupSubmissions,
+  summarizeTeachingUpdates
+} from '@/features/dashboard/dashboard.model';
+
+type TeachingContext = {
+  teacherProfileId: string;
+  classSubjectId: string;
+  subjectGroupId: string | null;
+};
+
+type Submission = TeachingContext & {status: 'DRAFT' | 'SUBMITTED'};
+
+const summarize = summarizeTeachingUpdates as unknown as (
+  expectedContexts: TeachingContext[],
+  submissions: Submission[]
+) => {
+  expectedCount: number;
+  submittedCount: number;
+  draftCount: number;
+  missingCount: number;
+  contexts: Array<TeachingContext & {status: 'MISSING' | 'DRAFT' | 'SUBMITTED'}>;
+};
 
 describe('dashboard summary rules', () => {
   it('uses the Monday-through-Sunday week containing the school-local date', () => {
@@ -20,11 +42,27 @@ describe('dashboard summary rules', () => {
     ]});
   });
 
-  it('provides teacher-context update summarization instead of group-only completion', () => {
-    const summarizeTeachingUpdates = (dashboardModel as unknown as {
-      summarizeTeachingUpdates?: unknown;
-    }).summarizeTeachingUpdates;
+  it('counts co-teachers as separate expected updates for the same context', () => {
+    const teacherOne = {teacherProfileId: 't1', classSubjectId: 'cs1', subjectGroupId: 'g1'};
+    const teacherTwo = {teacherProfileId: 't2', classSubjectId: 'cs1', subjectGroupId: 'g1'};
+    const wholeClass = {teacherProfileId: 't1', classSubjectId: 'cs2', subjectGroupId: null};
 
-    expect(summarizeTeachingUpdates).toBeTypeOf('function');
+    expect(summarize(
+      [teacherOne, teacherTwo, wholeClass, teacherOne],
+      [
+        {...teacherOne, status: 'SUBMITTED'},
+        {...wholeClass, status: 'DRAFT'}
+      ]
+    )).toEqual({
+      expectedCount: 3,
+      submittedCount: 1,
+      draftCount: 1,
+      missingCount: 1,
+      contexts: [
+        {...teacherOne, status: 'SUBMITTED'},
+        {...teacherTwo, status: 'MISSING'},
+        {...wholeClass, status: 'DRAFT'}
+      ]
+    });
   });
 });
