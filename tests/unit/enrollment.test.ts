@@ -1,10 +1,21 @@
 import {describe, expect, it} from 'vitest';
 
 import {
+  changeStudentClassSchema,
+  createStudentEnrollmentSchema,
+  moveStudentSubjectGroupSchema,
+  setSubjectExcludedSchema
+} from '@/features/enrollment/enrollment.schemas';
+import {
   deriveSubjectParticipation,
   moveSubjectGroupMembership,
   planClassChange
 } from '@/features/enrollment/enrollment.service';
+
+const classId = '11111111-1111-4111-8111-111111111111';
+const classSubjectId = '22222222-2222-4222-8222-222222222222';
+const groupId = '33333333-3333-4333-8333-333333333333';
+const studentId = '44444444-4444-4444-8444-444444444444';
 
 const quran = {
   id: 'subject-quran',
@@ -124,5 +135,44 @@ describe('student enrollment redesign', () => {
     expect(plan.newMemberships).toEqual([
       {classSubjectId: quran.id, subjectGroupId: 'quran-a', startsOn: '2026-10-01', endsOn: null}
     ]);
+  });
+
+  it('validates and normalizes atomic student enrollment creation input', () => {
+    expect(createStudentEnrollmentSchema.parse({
+      firstNameEn: '  Sara ',
+      lastNameEn: ' Mohammed ',
+      firstNameAr: '',
+      lastNameAr: ' ',
+      guardianName: ' Amina Mohammed ',
+      guardianEmail: ' Parent@Example.COM ',
+      reportLanguage: 'both',
+      classId,
+      startsOn: '2026-09-23',
+      subjects: [
+        {classSubjectId, included: true, groupId},
+        {classSubjectId: '55555555-5555-4555-8555-555555555555', included: false, groupId: ''}
+      ]
+    })).toEqual({
+      firstNameEn: 'Sara',
+      lastNameEn: 'Mohammed',
+      firstNameAr: null,
+      lastNameAr: null,
+      guardianName: 'Amina Mohammed',
+      guardianEmail: 'parent@example.com',
+      reportLanguage: 'both',
+      classId,
+      startsOn: '2026-09-23',
+      subjects: [
+        {classSubjectId, included: true, groupId},
+        {classSubjectId: '55555555-5555-4555-8555-555555555555', included: false, groupId: null}
+      ]
+    });
+  });
+
+  it('validates Class, Subject inclusion, and per-Subject Group mutations', () => {
+    expect(changeStudentClassSchema.safeParse({studentId, targetClassId: classId, startsOn: '2026-10-01'}).success).toBe(true);
+    expect(setSubjectExcludedSchema.safeParse({studentId, classSubjectId, excluded: true, effectiveOn: '2026-09-23'}).success).toBe(true);
+    expect(moveStudentSubjectGroupSchema.safeParse({studentId, classSubjectId, targetGroupId: groupId, startsOn: '2026-09-23'}).success).toBe(true);
+    expect(moveStudentSubjectGroupSchema.safeParse({studentId, classSubjectId, targetGroupId: '', startsOn: '2026-09-23'}).success).toBe(false);
   });
 });
