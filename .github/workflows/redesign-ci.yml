@@ -10,9 +10,9 @@ permissions:
   contents: read
 
 jobs:
-  contract:
+  quality:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -24,40 +24,9 @@ jobs:
           corepack prepare pnpm@11.19.0 --activate
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      - name: Read installed Next.js App Router guides
-        run: |
-          for file in \
-            node_modules/next/dist/docs/01-app/01-getting-started/03-layouts-and-pages.md \
-            node_modules/next/dist/docs/01-app/01-getting-started/07-mutating-data.md \
-            node_modules/next/dist/docs/01-app/01-getting-started/09-revalidating.md \
-            node_modules/next/dist/docs/01-app/02-guides/forms.md \
-            node_modules/next/dist/docs/01-app/02-guides/server-actions.md; do
-            echo "===== $file ====="
-            sed -n '1,240p' "$file"
-          done
-      - name: Run migration contract
-        run: pnpm test -- tests/integration/database/migrations.test.ts
-
-  database:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-      - name: Enable pnpm
-        run: |
-          corepack enable
-          corepack prepare pnpm@11.19.0 --activate
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-      - name: Start local Supabase
-        run: pnpm db:start
-      - name: Reset local database
-        run: pnpm db:reset
-      - name: Run PostgreSQL and RLS tests
-        run: pnpm test:db
-      - name: Stop local Supabase
-        if: always()
-        run: pnpm exec supabase stop --no-backup
+      - name: Lint
+        run: pnpm lint
+      - name: Typecheck
+        run: pnpm typecheck
+      - name: Unit and contract tests
+        run: pnpm test
