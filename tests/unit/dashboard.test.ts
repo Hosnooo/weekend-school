@@ -1,6 +1,7 @@
 import {describe, expect, it} from 'vitest';
 
 import {
+  countUnresolvedAttendanceConflicts,
   schoolWeekForDate,
   summarizeGroupSubmissions,
   summarizeTeachingUpdates
@@ -64,5 +65,21 @@ describe('dashboard summary rules', () => {
         {...wholeClass, status: 'DRAFT'}
       ]
     });
+  });
+
+  it('counts only unresolved mixed-status attendance conflicts once per context and student', () => {
+    const observations = [
+      {classSubjectId: 'cs1', subjectGroupId: 'g1', weekStart: '2026-09-21', studentId: 's1', status: 'PRESENT' as const},
+      {classSubjectId: 'cs1', subjectGroupId: 'g1', weekStart: '2026-09-21', studentId: 's1', status: 'ABSENT' as const},
+      {classSubjectId: 'cs2', subjectGroupId: null, weekStart: '2026-09-21', studentId: 's2', status: 'PRESENT' as const},
+      {classSubjectId: 'cs2', subjectGroupId: null, weekStart: '2026-09-21', studentId: 's2', status: 'PRESENT' as const},
+      {classSubjectId: 'cs3', subjectGroupId: 'g3', weekStart: '2026-09-21', studentId: 's3', status: 'PRESENT' as const},
+      {classSubjectId: 'cs3', subjectGroupId: 'g3', weekStart: '2026-09-21', studentId: 's3', status: 'ABSENT' as const}
+    ];
+    const resolutions = [
+      {classSubjectId: 'cs3', subjectGroupId: 'g3', weekStart: '2026-09-21', studentId: 's3'}
+    ];
+
+    expect(countUnresolvedAttendanceConflicts(observations, resolutions)).toBe(1);
   });
 });
