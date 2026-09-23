@@ -19,7 +19,9 @@ const adminNavigation: readonly NavigationItem[] = [
   {href: '/students', messageKey: 'students'},
   {href: '/teachers', messageKey: 'teachers'},
   {href: '/reports', messageKey: 'reports'},
-  {href: '/settings', messageKey: 'settings'}
+  {href: '/settings', messageKey: 'settings'},
+  {href: '/my-groups', messageKey: 'myGroups'},
+  {href: '/history', messageKey: 'history'}
 ];
 
 const teacherNavigation: readonly NavigationItem[] = [

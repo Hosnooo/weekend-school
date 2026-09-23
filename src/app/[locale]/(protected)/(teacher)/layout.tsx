@@ -1,5 +1,5 @@
 import {isLocale} from '@/i18n/config';
-import {requireProfile} from '@/lib/auth/require-profile';
+import {requireTeachingProfile} from '@/lib/auth/require-profile';
 import {notFound} from 'next/navigation';
 
 export default async function TeacherLayout({
@@ -11,6 +11,6 @@ export default async function TeacherLayout({
 }>) {
   const {locale} = await params;
   if (!isLocale(locale)) notFound();
-  await requireProfile(locale, 'TEACHER');
+  await requireTeachingProfile(locale);
   return children;
 }

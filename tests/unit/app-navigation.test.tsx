@@ -26,6 +26,8 @@ describe('AppNavigation', () => {
     );
 
     expect(screen.getByRole('navigation', {name: 'Main navigation'})).toBeInTheDocument();
-    expect(screen.getAllByRole('link')).toHaveLength(6);
+    expect(screen.getByRole('link', {name: 'My Groups'})).toBeInTheDocument();
+    expect(screen.getByRole('link', {name: 'History'})).toBeInTheDocument();
+    expect(screen.getAllByRole('link')).toHaveLength(8);
   });
 });

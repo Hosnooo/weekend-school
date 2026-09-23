@@ -23,3 +23,7 @@ export function assertRole(profile: Profile, requiredRole: AppRole): Profile {
 
   return profile;
 }
+
+export function assertTeachingProfile(profile: Profile): Profile {
+  return assertActiveProfile(profile);
+}

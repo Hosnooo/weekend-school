@@ -3,7 +3,8 @@ import {describe, expect, it} from 'vitest';
 import {
   AuthorizationError,
   assertActiveProfile,
-  assertRole
+  assertRole,
+  assertTeachingProfile
 } from '@/lib/auth/authorization';
 
 const activeTeacher = {
@@ -32,5 +33,10 @@ describe('authorization', () => {
 
   it('denies a teacher from an admin-only boundary', () => {
     expect(() => assertRole(activeTeacher, 'ADMIN')).toThrow(AuthorizationError);
+  });
+
+  it('permits an active administrator to enter assigned teaching routes', () => {
+    expect(assertTeachingProfile({...activeTeacher, role: 'ADMIN'}).role).toBe('ADMIN');
+    expect(() => assertTeachingProfile({...activeTeacher, role: 'ADMIN', isActive: false})).toThrow(AuthorizationError);
   });
 });

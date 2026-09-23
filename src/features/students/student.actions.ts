@@ -6,10 +6,11 @@ import {z} from 'zod';
 
 import {
   createStudentWithGuardian,
+  moveStudentGroup,
   setStudentActive,
   updateStudent
 } from '@/features/students/student.repository';
-import {studentSchema, studentUpdateSchema} from '@/features/students/student.schemas';
+import {studentSchema, studentTransferSchema, studentUpdateSchema} from '@/features/students/student.schemas';
 import {isLocale} from '@/i18n/config';
 import {requireProfile} from '@/lib/auth/require-profile';
 import type {ActionState} from '@/lib/validation/action-state';
@@ -89,4 +90,31 @@ export async function setStudentActiveAction(formData: FormData) {
   if (!parsed.success) return;
   await setStudentActive(profile.schoolId, parsed.data.id, parsed.data.isActive === 'true');
   revalidatePath(`/${locale}/students`);
+}
+
+export async function moveStudentGroupAction(
+  _state: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const locale = localeFrom(formData);
+  await requireProfile(locale, 'ADMIN');
+  const parsed = studentTransferSchema.safeParse({
+    studentId: formData.get('studentId'),
+    groupId: formData.get('groupId'),
+    startsOn: formData.get('startsOn')
+  });
+  if (!parsed.success) return validationFailure();
+  try {
+    await moveStudentGroup(parsed.data);
+  } catch (error) {
+    console.error('Unable to move student group', {error});
+    if (typeof error === 'object' && error !== null && 'code' in error &&
+      ['23P01', '55000', '22023'].includes(String(error.code))) {
+      return saveFailure('transferConflict');
+    }
+    return saveFailure();
+  }
+  revalidatePath(`/${locale}/students`);
+  revalidatePath(`/${locale}/groups`);
+  redirect(`/${locale}/students/${parsed.data.studentId}/edit`);
 }

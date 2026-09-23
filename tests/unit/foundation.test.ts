@@ -88,14 +88,16 @@ describe('role navigation', () => {
     ]);
   });
 
-  it('exposes exactly the six specified admin destinations', () => {
+  it('includes assigned teaching views in administrator navigation', () => {
     expect(getNavigationItems('ADMIN').map((item) => item.href)).toEqual([
       '/dashboard',
       '/groups',
       '/students',
       '/teachers',
       '/reports',
-      '/settings'
+      '/settings',
+      '/my-groups',
+      '/history'
     ]);
   });
 });

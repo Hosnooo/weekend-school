@@ -81,14 +81,15 @@ export async function createGroup(input: GroupInput) {
   return data as string;
 }
 
-export async function updateGroup(id: string, input: GroupInput) {
+export async function updateGroup(id: string, input: GroupInput & {allowReassignment: boolean}) {
   const supabase = await createServerSupabaseClient();
-  const {error} = await supabase.rpc('update_group_with_teacher', {
+  const {error} = await supabase.rpc('update_group_with_teacher_confirmed', {
     p_group_id: id,
     p_name_en: input.nameEn,
     p_name_ar: input.nameAr ?? '',
     p_parent_group_id: input.parentGroupId,
-    p_teacher_profile_id: input.teacherProfileId
+    p_teacher_profile_id: input.teacherProfileId,
+    p_allow_reassignment: input.allowReassignment
   });
   if (error) throw error;
 }

@@ -2,6 +2,7 @@ import 'server-only';
 
 import type {TeacherListItem} from '@/features/teachers/teacher.types';
 import {createServerSupabaseClient} from '@/lib/supabase/server';
+import {createServiceRoleSupabaseClient} from '@/lib/supabase/service-role';
 
 type TeacherRow = {
   id: string;
@@ -48,6 +49,29 @@ export async function listTeachers(schoolId: string) {
   return (data as unknown as TeacherRow[]).map(mapTeacher);
 }
 
+export async function getTeacherAccessStates(teachers: TeacherListItem[]): Promise<Record<string, 'signedIn' | 'linkSent' | 'unknown'>> {
+  const supabase = createServiceRoleSupabaseClient();
+  const entries = await Promise.all(teachers.map(async (teacher) => {
+    const {data, error} = await supabase.auth.admin.getUserById(teacher.authUserId);
+    if (error || !data.user) return [teacher.id, 'unknown'] as const;
+    return [teacher.id, data.user.last_sign_in_at ? 'signedIn' : data.user.invited_at ? 'linkSent' : 'unknown'] as const;
+  }));
+  return Object.fromEntries(entries);
+}
+
+export async function listTeachingCandidates(schoolId: string) {
+  const supabase = await createServerSupabaseClient();
+  const {data, error} = await supabase
+    .from('profiles')
+    .select('id, display_name')
+    .eq('school_id', schoolId)
+    .in('role', ['ADMIN', 'TEACHER'])
+    .eq('is_active', true)
+    .order('display_name');
+  if (error) throw error;
+  return data.map((row) => ({id: row.id as string, displayName: row.display_name as string}));
+}
+
 export async function getTeacher(schoolId: string, id: string) {
   const supabase = await createServerSupabaseClient();
   const {data, error} = await supabase
@@ -67,14 +91,16 @@ export async function updateTeacher(
     displayName: string;
     preferredLanguage: 'en' | 'ar';
     assignedGroupIds: string[];
+    allowReassignment: boolean;
   }
 ) {
   const supabase = await createServerSupabaseClient();
-  const {error} = await supabase.rpc('update_teacher_administration', {
+  const {error} = await supabase.rpc('update_teacher_administration_confirmed', {
     p_teacher_profile_id: input.id,
     p_display_name: input.displayName,
     p_preferred_language: input.preferredLanguage,
-    p_group_ids: input.assignedGroupIds
+    p_group_ids: input.assignedGroupIds,
+    p_allow_reassignment: input.allowReassignment
   });
   if (error) throw error;
 }

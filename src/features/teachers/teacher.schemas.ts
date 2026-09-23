@@ -13,7 +13,8 @@ export const teacherUpdateSchema = z.object({
   id: databaseUuid,
   displayName: requiredText,
   preferredLanguage: z.enum(['en', 'ar']),
-  assignedGroupIds: z.array(databaseUuid).transform((ids) => [...new Set(ids)])
+  assignedGroupIds: z.array(databaseUuid).transform((ids) => [...new Set(ids)]),
+  allowReassignment: z.boolean()
 });
 
 export type TeacherInput = z.infer<typeof teacherSchema>;

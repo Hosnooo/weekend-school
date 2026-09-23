@@ -9,6 +9,6 @@ export const groupSchema = z.object({
   teacherProfileId: optionalUuid
 });
 
-export const groupUpdateSchema = groupSchema.extend({id: databaseUuid});
+export const groupUpdateSchema = groupSchema.extend({id: databaseUuid, allowReassignment: z.boolean()});
 
 export type GroupInput = z.infer<typeof groupSchema>;

@@ -1987,3 +1987,26 @@ Primary priorities, in order:
 ```
 
 Do not sacrifice priorities 1–5 for feature quantity.
+
+# 57. Approved administrator workflow extension (2026-09-22)
+
+The approved design in `docs/superpowers/specs/2026-09-22-admin-workflows-and-reports-design.md` extends this specification. Implement it in three sequential phases; keep all existing school isolation, authorization, RLS, bilingual, and immutable-history rules. Where earlier sections imply that only a `TEACHER` profile can teach, the explicit assignment rule below takes precedence.
+
+## Extension phase 1 — assignments and access
+
+- An active administrator may be the primary teacher for assigned groups while retaining administrator rights. Only a current, explicit group assignment grants weekly-update access. Administrator My Groups and History show assigned groups only.
+- Each group has one primary teacher. Teacher and group forms show the current assignee. Reassignment of an occupied group requires explicit confirmation and is atomic; a conflict is visible rather than silently ignored. Admins can manage teacher assignments after invitation, see assigned groups and account access state, and resend an access link for an existing invited account without duplicating the user or profile.
+- A student has at most one current group. Admins can move a student from Edit Student; the move closes the old membership and creates the new one atomically, preserving history. Effective dates govern the current group. A same-day correction is permitted only when no submitted session depends on that membership.
+- Login includes bilingual password recovery through Supabase Auth and the configured Auth SMTP service. The request response does not reveal whether an email exists. Recovery leads to the existing password-setting flow; invalid links offer a new request. Public signup remains disabled.
+- Student search and direct assignment links appear in existing administration screens. Dashboard and Reports show readiness and failed-delivery counts; report detail shows recipient delivery history to administrators only.
+
+## Extension phase 2 — initial roster CSV
+
+- Admins can download a UTF-8 template, preview and validate a CSV of students, one primary guardian per student, and initial group assignment, then confirm an all-or-nothing import. The preview identifies row errors, normalized email, group resolution, reused guardians, and likely duplicates. Stable exported group IDs are authoritative; group names resolve only when unambiguous. Existing guardians are reused within the school by normalized email. Students are not merged by name. Identical repeat imports are blocked; likely duplicates in modified imports require explicit review. The operation is bounded and transactional, records an audit summary, and does not retain the raw file long term. It creates no Auth users.
+
+## Extension phase 3 — report wording and teacher preview
+
+- A school has one reusable report template with optional English and Arabic introduction and closing text. Admins edit and preview it from Reports. Blank values preserve current appearance. The wording at generation time is copied into the immutable report snapshot; later template edits affect future reports only. Browser and email render from the same snapshot.
+- A teacher can read a generated parent-report preview for a student currently in one of their assigned groups. The preview is read-only and excludes guardian contact details, delivery diagnostics, and admin controls. Server authorization and RLS enforce current same-school assignment. Generation and sending remain administrator-only.
+
+Each extension phase passes lint, typecheck, tests, build, real PostgreSQL/RLS tests for database changes, and focused bilingual browser checks before release. New migrations are forward-only and precede dependent production code. The four original end-to-end workflows remain passing. See the approved design for detailed edge cases and exclusions.

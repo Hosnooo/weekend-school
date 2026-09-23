@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import {useActionState} from 'react';
 import {useTranslations} from 'next-intl';
 
@@ -42,6 +43,7 @@ export function LoginForm({locale}: {locale: Locale}) {
       <Button disabled={pending} type="submit">
         {pending ? translations('signingIn') : translations('signIn')}
       </Button>
+      <Link href={`/${locale}/forgot-password`}>{translations('forgotPassword')}</Link>
     </form>
   );
 }

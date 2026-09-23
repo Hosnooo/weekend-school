@@ -47,8 +47,25 @@ describe('migration contract', () => {
       '202609200009_teacher_workflow.sql',
       '202609200010_report_generation.sql',
       '202609200011_email_delivery.sql',
-      '202609200012_delivery_identity_and_recovery.sql'
+      '202609200012_delivery_identity_and_recovery.sql',
+      '202609220013_teacher_assignment.sql',
+      '202609220014_student_transfer.sql',
+      '202609220015_protect_submitted_rosters.sql',
+      '202609220016_protect_membership_history.sql',
+      '202609220017_confirm_group_reassignment.sql',
+      '202609220018_revoke_anon_security_definer_execution.sql'
     ]);
+  });
+
+  it('revokes anonymous execution from security definer functions and future defaults', async () => {
+    const {sql} = await readMigrations();
+
+    expect(sql).toContain("where n.nspname = 'public'");
+    expect(sql).toContain('and p.prosecdef');
+    expect(sql).toContain("revoke execute on function %s from anon");
+    expect(sql).toMatch(
+      /alter default privileges for role postgres in schema public\s+revoke execute on functions from anon/i
+    );
   });
 
   it('saves and submits weekly updates atomically', async () => {
