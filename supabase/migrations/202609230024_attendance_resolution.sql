@@ -55,10 +55,11 @@ for each row execute function public.set_updated_at();
 alter table public.attendance_resolutions enable row level security;
 alter table public.attendance_resolutions force row level security;
 
-create policy attendance_resolutions_admin_all on public.attendance_resolutions
-for all to authenticated
-using (school_id = public.current_school_id() and public.is_admin())
-with check (school_id = public.current_school_id() and public.is_admin());
+-- Admins may inspect decisions through RLS. Writes are intentionally withheld from
+-- authenticated clients and go through resolve_attendance_conflict() only.
+create policy attendance_resolutions_admin_select on public.attendance_resolutions
+for select to authenticated
+using (school_id = public.current_school_id() and public.is_admin());
 
 create function public.get_effective_attendance(
   p_class_subject_id uuid,
@@ -97,11 +98,44 @@ begin
   end if;
 
   return query
+  with observations as (
+    select wss.attendance_status
+    from public.weekly_submission_students wss
+    join public.weekly_submissions ws
+      on ws.school_id = wss.school_id
+     and ws.id = wss.submission_id
+    where ws.school_id = target_school_id
+      and ws.class_subject_id = p_class_subject_id
+      and ws.subject_group_id is not distinct from p_subject_group_id
+      and ws.week_start = p_week_start
+      and ws.status = 'SUBMITTED'
+      and wss.student_id = p_student_id
+  ), stats as (
+    select
+      count(*)::bigint as observation_count,
+      count(distinct attendance_status)::bigint as distinct_count
+    from observations
+  )
   select
-    null::public.attendance_status,
-    false,
-    false,
-    0::bigint;
+    case
+      when stats.distinct_count = 1 then (
+        select observation.attendance_status
+        from observations observation
+        limit 1
+      )
+      when stats.distinct_count > 1 then resolution.resolved_status
+      else null::public.attendance_status
+    end as status,
+    stats.distinct_count > 1 as has_conflict,
+    stats.distinct_count > 1 and resolution.id is not null as is_resolved,
+    stats.observation_count
+  from stats
+  left join public.attendance_resolutions resolution
+    on resolution.school_id = target_school_id
+   and resolution.class_subject_id = p_class_subject_id
+   and resolution.subject_group_id is not distinct from p_subject_group_id
+   and resolution.week_start = p_week_start
+   and resolution.student_id = p_student_id;
 end;
 $$;
 
@@ -121,15 +155,63 @@ language plpgsql
 security definer
 set search_path = ''
 as $$
+declare
+  target_school_id uuid := public.current_school_id();
+  target_profile_id uuid := public.current_profile_id();
+  distinct_status_count bigint;
 begin
-  if public.current_school_id() is null
-    or public.current_profile_id() is null
+  if target_school_id is null
+    or target_profile_id is null
     or not public.is_admin()
   then
     raise exception 'admin access required' using errcode = '42501';
   end if;
 
-  raise exception 'attendance conflict resolution not implemented' using errcode = '0A000';
+  if p_status is null or p_status not in ('PRESENT', 'ABSENT') then
+    raise exception 'official attendance must be PRESENT or ABSENT' using errcode = '23514';
+  end if;
+
+  select count(distinct wss.attendance_status)::bigint
+  into distinct_status_count
+  from public.weekly_submission_students wss
+  join public.weekly_submissions ws
+    on ws.school_id = wss.school_id
+   and ws.id = wss.submission_id
+  where ws.school_id = target_school_id
+    and ws.class_subject_id = p_class_subject_id
+    and ws.subject_group_id is not distinct from p_subject_group_id
+    and ws.week_start = p_week_start
+    and ws.status = 'SUBMITTED'
+    and wss.student_id = p_student_id;
+
+  if coalesce(distinct_status_count, 0) < 2 then
+    raise exception 'attendance conflict required' using errcode = '23514';
+  end if;
+
+  insert into public.attendance_resolutions (
+    school_id,
+    class_subject_id,
+    subject_group_id,
+    week_start,
+    student_id,
+    resolved_status,
+    resolved_by_profile_id,
+    resolved_at
+  ) values (
+    target_school_id,
+    p_class_subject_id,
+    p_subject_group_id,
+    p_week_start,
+    p_student_id,
+    p_status,
+    target_profile_id,
+    now()
+  )
+  on conflict on constraint attendance_resolutions_one_context_student_week
+  do update set
+    resolved_status = excluded.resolved_status,
+    resolved_by_profile_id = excluded.resolved_by_profile_id,
+    resolved_at = now();
 end;
 $$;
 
