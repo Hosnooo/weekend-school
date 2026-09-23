@@ -4,3 +4,5 @@ export const classSchema=z.object({nameEn:z.string().trim().min(1).max(120),name
 export const subjectSchema=classSchema;
 export const classSubjectSchema=z.object({classId:z.uuid(),subjectId:z.uuid()});
 export const subjectGroupSchema=z.object({classSubjectId:z.uuid(),nameEn:z.string().trim().min(1).max(120),nameAr:optionalName});
+
+export {teachingAssignmentSchema} from '@/features/teaching-assignments/teaching-assignment.schemas';

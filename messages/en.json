@@ -125,7 +125,14 @@
     "search": "Search students",
     "searchAction": "Search",
     "noSearchResults": "No matching students.",
-    "assignGroup": "Assign group"
+    "assignGroup": "Assign group",
+    "enrollment": "Class enrollment and subjects",
+    "class": "Class",
+    "changeClass": "Change class",
+    "includeSubject": "Include subject",
+    "excludeSubject": "Exclude subject",
+    "subjectGroup": "Subject group",
+    "changeSubjectGroup": "Change group"
   },
   "guardians": {
     "title": "Guardians",
@@ -282,6 +289,40 @@
       "GOOD": "Good",
       "DEVELOPING": "Developing",
       "NEEDS_SUPPORT": "Needs support"
-    }
+    },
+    "myTeaching": "My Teaching",
+    "myTeachingDescription": "Record an independent weekly update for each subject or group you teach.",
+    "noTeaching": "No active teaching assignments.",
+    "wholeClass": "Whole class",
+    "class": "Class",
+    "subject": "Subject"
+  },
+  "classes": {
+    "title": "Classes",
+    "description": "Manage classes, subjects, groups, and teaching assignments.",
+    "addClass": "Add class",
+    "empty": "No classes yet.",
+    "nameEn": "Class name (English)",
+    "nameAr": "Class name (Arabic, optional)",
+    "counts": "{students} students, {subjects} subjects",
+    "archive": "Archive",
+    "restore": "Restore",
+    "detailDescription": "Manage subjects, groups, and teacher assignments.",
+    "saveClass": "Save class",
+    "subjects": "Subjects",
+    "subjectNameEn": "Subject name (English)",
+    "subjectNameAr": "Subject name (Arabic, optional)",
+    "addSubject": "Add subject",
+    "grouped": "Grouped subject",
+    "wholeClass": "Whole class",
+    "defaultGroup": "Default group",
+    "makeDefault": "Make default (does not move existing students)",
+    "groupNameEn": "Group name (English)",
+    "groupNameAr": "Group name (Arabic, optional)",
+    "addGroup": "Add group",
+    "teacher": "Teacher",
+    "scope": "Scope",
+    "entireSubject": "Entire subject",
+    "assignTeacher": "Assign teacher"
   }
 }

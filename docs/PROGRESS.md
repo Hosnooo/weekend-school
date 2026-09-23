@@ -266,3 +266,12 @@ Pilot usability follow-up on 2026-09-22:
 - `pnpm test:e2e`: could not start because `.env.local` is not provisioned in this cloud checkout.
 - `pnpm build`: compiled and typechecked, then prerendering stopped because required public Supabase environment variables are not provisioned.
 - Hosted migration, deployment, and production smoke steps were not run; Phase 2 remains blocked.
+
+## Redesign application wiring follow-up — 2026-09-23
+
+- Replaced the `/classes` and `/my-teaching` compatibility redirects with authenticated, school-scoped application screens.
+- Added Class creation/edit/archive, Subject and Group creation/default selection, multi-teacher Subject/Group assignment, student Class/Subject/Group administration, deduplicated teacher context cards, independent teacher-owned draft/submission forms, Present/Absent-only attendance, sparse exceptions, and author-owned submission history.
+- Added forward migration 25 to protect submitted weekly records and provide transactional Class and Subject Group moves. Migrations 1-24 were not edited in this follow-up.
+- `pnpm lint`, `pnpm typecheck`, and `pnpm test` passed; unit suite reported 22 files and 98 tests.
+- `NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321 NEXT_PUBLIC_SUPABASE_ANON_KEY=test-anon-key pnpm build` passed and generated all 40 routes using non-secret local placeholder build values.
+- Local PostgreSQL/RLS and browser E2E remain unverified because the cloud task has no running local Supabase or `.env.local`. No hosted migration, seed, or production action was run.

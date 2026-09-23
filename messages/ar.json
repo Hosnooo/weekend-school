@@ -125,7 +125,14 @@
     "search": "البحث عن الطلاب",
     "searchAction": "بحث",
     "noSearchResults": "لا يوجد طلاب مطابقون.",
-    "assignGroup": "تعيين مجموعة"
+    "assignGroup": "تعيين مجموعة",
+    "enrollment": "التسجيل والمواد",
+    "class": "الفصل",
+    "changeClass": "تغيير الفصل",
+    "includeSubject": "تضمين المادة",
+    "excludeSubject": "استبعاد المادة",
+    "subjectGroup": "مجموعة المادة",
+    "changeSubjectGroup": "تغيير المجموعة"
   },
   "guardians": {
     "title": "أولياء الأمور",
@@ -282,6 +289,40 @@
       "GOOD": "جيد",
       "DEVELOPING": "قيد التطور",
       "NEEDS_SUPPORT": "يحتاج إلى دعم"
-    }
+    },
+    "myTeaching": "تدريسي",
+    "myTeachingDescription": "سجل تحديثًا مستقلاً لكل مادة أو مجموعة تقوم بتدريسها.",
+    "noTeaching": "لا توجد مهام تدريس نشطة.",
+    "wholeClass": "الفصل بالكامل",
+    "class": "الفصل",
+    "subject": "المادة"
+  },
+  "classes": {
+    "title": "الفصول",
+    "description": "إدارة الفصول والمواد والمجموعات والمعلمين.",
+    "addClass": "إضافة فصل",
+    "empty": "لا توجد فصول بعد.",
+    "nameEn": "اسم الفصل (بالإنجليزية)",
+    "nameAr": "اسم الفصل (بالعربية)",
+    "counts": "{students} طلاب، {subjects} مواد",
+    "archive": "أرشفة",
+    "restore": "استعادة",
+    "detailDescription": "إدارة المواد والمجموعات وتعيينات المعلمين.",
+    "saveClass": "حفظ الفصل",
+    "subjects": "المواد",
+    "subjectNameEn": "اسم المادة (بالإنجليزية)",
+    "subjectNameAr": "اسم المادة (بالعربية)",
+    "addSubject": "إضافة مادة",
+    "grouped": "مادة مقسمة إلى مجموعات",
+    "wholeClass": "الفصل بالكامل",
+    "defaultGroup": "المجموعة الافتراضية",
+    "makeDefault": "تعيين افتراضية (لا ينقل الطلاب الحاليين)",
+    "groupNameEn": "اسم المجموعة (بالإنجليزية)",
+    "groupNameAr": "اسم المجموعة (بالعربية)",
+    "addGroup": "إضافة مجموعة",
+    "teacher": "المعلم",
+    "scope": "النطاق",
+    "entireSubject": "المادة كاملة",
+    "assignTeacher": "تعيين المعلم"
   }
 }
