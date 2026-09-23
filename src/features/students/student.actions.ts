@@ -21,7 +21,7 @@ import {studentUpdateSchema} from '@/features/students/student.schemas';
 import {isLocale} from '@/i18n/config';
 import {requireProfile} from '@/lib/auth/require-profile';
 import type {ActionState} from '@/lib/validation/action-state';
-import {saveFailure, validationFailure} from '@/lib/validation/action-state';
+import {initialActionState, saveFailure, validationFailure} from '@/lib/validation/action-state';
 import {databaseUuid} from '@/lib/validation/fields';
 
 function localeFrom(formData: FormData) {
@@ -138,7 +138,7 @@ export async function changeStudentClassAction(
   revalidatePath(`/${locale}/students`);
   revalidatePath(`/${locale}/classes`);
   revalidatePath(`/${locale}/students/${parsed.data.studentId}/edit`);
-  return {status: 'success'};
+  return initialActionState;
 }
 
 export async function setSubjectExcludedAction(
@@ -161,7 +161,7 @@ export async function setSubjectExcludedAction(
     return enrollmentMutationFailure(error);
   }
   revalidatePath(`/${locale}/students/${parsed.data.studentId}/edit`);
-  return {status: 'success'};
+  return initialActionState;
 }
 
 export async function moveStudentSubjectGroupAction(
@@ -184,5 +184,5 @@ export async function moveStudentSubjectGroupAction(
     return enrollmentMutationFailure(error);
   }
   revalidatePath(`/${locale}/students/${parsed.data.studentId}/edit`);
-  return {status: 'success'};
+  return initialActionState;
 }
