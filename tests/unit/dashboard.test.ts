@@ -1,5 +1,6 @@
 import {describe, expect, it} from 'vitest';
 
+import * as dashboardModel from '@/features/dashboard/dashboard.model';
 import {schoolWeekForDate, summarizeGroupSubmissions} from '@/features/dashboard/dashboard.model';
 
 describe('dashboard summary rules', () => {
@@ -17,5 +18,13 @@ describe('dashboard summary rules', () => {
       {id: 'a', nameEn: 'A', nameAr: null, submitted: true},
       {id: 'b', nameEn: 'B', nameAr: null, submitted: false}
     ]});
+  });
+
+  it('provides teacher-context update summarization instead of group-only completion', () => {
+    const summarizeTeachingUpdates = (dashboardModel as unknown as {
+      summarizeTeachingUpdates?: unknown;
+    }).summarizeTeachingUpdates;
+
+    expect(summarizeTeachingUpdates).toBeTypeOf('function');
   });
 });
