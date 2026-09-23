@@ -1,5 +1,16 @@
 import type {AttendanceStatus,Performance,StudentException} from './weekly-update.model';
-export type TeacherGroup={id:string;nameEn:string;nameAr:string|null;studentCount:number;lastUpdate:string|null};
+
+export type TeachingContext={
+  classSubjectId:string;
+  subjectGroupId:string|null;
+  classNameEn:string;
+  classNameAr:string|null;
+  subjectNameEn:string;
+  subjectNameAr:string|null;
+  groupNameEn:string|null;
+  groupNameAr:string|null;
+};
+export type TeachingCard=TeachingContext&{studentCount:number;weekStart:string;submissionId:string|null;status:'MISSING'|'DRAFT'|'SUBMITTED'};
 export type RosterStudent={id:string;nameEn:string;nameAr:string|null};
-export type WeeklySession={id:string;groupId:string;groupNameEn:string;groupNameAr:string|null;sessionDate:string;status:'DRAFT'|'SUBMITTED';isOwnedDraft:boolean;progressEn:string|null;progressAr:string|null;defaultPerformance:Performance|null;roster:RosterStudent[];attendance:Array<{studentId:string;status:AttendanceStatus}>;exceptions:StudentException[]};
-export type HistoryItem={id:string;groupNameEn:string;groupNameAr:string|null;sessionDate:string;submittedAt:string|null};
+export type WeeklySubmission=TeachingContext&{id:string;weekStart:string;status:'DRAFT'|'SUBMITTED';progressEn:string|null;progressAr:string|null;defaultPerformance:Performance|null;roster:RosterStudent[];attendance:Array<{studentId:string;status:AttendanceStatus}>;exceptions:StudentException[]};
+export type HistoryItem=TeachingContext&{id:string;weekStart:string;submittedAt:string|null};
