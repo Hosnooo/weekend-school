@@ -14,6 +14,14 @@ export type EnrollmentClassSubject = {
   groups: EnrollmentGroup[];
 };
 
+export type EnrollmentClassOption = {
+  id: string;
+  nameEn: string;
+  nameAr: string | null;
+  isActive: boolean;
+  subjects: EnrollmentClassSubject[];
+};
+
 export type EnrollmentSubjectExclusion = {
   classSubjectId: string;
   startsOn: string;
@@ -40,6 +48,14 @@ export type SubjectParticipation = {
   included: boolean;
   subjectGroupId: string | null;
   assignmentNeeded: boolean;
+};
+
+export type StudentEnrollmentState = {
+  currentClass: EnrollmentClassOption | null;
+  currentEnrollment: ClassEnrollmentHistoryItem | null;
+  exclusions: EnrollmentSubjectExclusion[];
+  memberships: EnrollmentGroupMembership[];
+  participation: SubjectParticipation[];
 };
 
 export type ClassChangePlan = {
