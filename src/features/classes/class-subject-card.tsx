@@ -26,7 +26,11 @@ export async function ClassSubjectCard({
         <div>
           <h3>{subjectName}</h3>
           <p className="muted-text">
-            {subject.groups.length === 0 ? t('wholeClass') : t('groupCount', {count: subject.groups.length})}
+            {subject.groups.length === 0
+              ? t('wholeClass')
+              : t('groupCount', {count: subject.groups.length})}
+            {' · '}
+            {t('teacherCount', {count: subject.teacherCount})}
           </p>
         </div>
       </header>
@@ -34,30 +38,38 @@ export async function ClassSubjectCard({
       {subject.groups.length === 0 ? (
         <p className="empty-inline">{t('noGroups')}</p>
       ) : (
-        <ul className="group-list">
-          {subject.groups.map((group) => {
-            const groupName = locale === 'ar' && group.nameAr ? group.nameAr : group.nameEn;
-            return (
-              <li key={group.id} className="group-list-item">
-                <span>
-                  <strong>{groupName}</strong>
-                  {group.isDefault ? <span className="status-badge status-active">{t('defaultGroup')}</span> : null}
-                </span>
-                {!group.isDefault ? (
-                  <form action={setDefaultGroupAction}>
-                    <input name="locale" type="hidden" value={locale} />
-                    <input name="classId" type="hidden" value={classId} />
-                    <input name="classSubjectId" type="hidden" value={subject.id} />
-                    <input name="subjectGroupId" type="hidden" value={group.id} />
-                    <button className="text-button" type="submit">
-                      {t('makeDefault')}
-                    </button>
-                  </form>
-                ) : null}
-              </li>
-            );
-          })}
-        </ul>
+        <>
+          <ul className="group-list">
+            {subject.groups.map((group) => {
+              const groupName =
+                locale === 'ar' && group.nameAr ? group.nameAr : group.nameEn;
+              return (
+                <li key={group.id} className="group-list-item">
+                  <span>
+                    <strong>{groupName}</strong>
+                    {group.isDefault ? (
+                      <span className="status-badge status-active">
+                        {t('defaultGroup')}
+                      </span>
+                    ) : null}
+                  </span>
+                  {!group.isDefault ? (
+                    <form action={setDefaultGroupAction}>
+                      <input name="locale" type="hidden" value={locale} />
+                      <input name="classId" type="hidden" value={classId} />
+                      <input name="classSubjectId" type="hidden" value={subject.id} />
+                      <input name="subjectGroupId" type="hidden" value={group.id} />
+                      <button className="text-button" type="submit">
+                        {t('makeDefault')}
+                      </button>
+                    </form>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
+          <p className="form-hint">{t('defaultGroupHelp')}</p>
+        </>
       )}
 
       <details className="disclosure-card">
