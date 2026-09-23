@@ -1,7 +1,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
-select plan(15);
+select plan(18);
 
 select has_table('public', 'weekly_submissions', 'independent weekly submissions table exists');
 select has_table('public', 'weekly_submission_students', 'per-student weekly observations table exists');
@@ -16,6 +16,12 @@ select has_function(
   'save_weekly_submission',
   array['uuid','uuid','uuid','date','text','text','public.performance_level','jsonb','jsonb','boolean'],
   'atomic weekly submission save function exists'
+);
+select has_function(
+  'public',
+  'get_weekly_submission_context',
+  array['uuid'],
+  'author-owned historical context function exists'
 );
 
 -- Dedicated Class/Subject/Group fixtures for independent teacher-authored submissions.
@@ -36,8 +42,8 @@ insert into public.subject_groups (id, school_id, class_subject_id, name_en, nam
   ('a4000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000001', 'a3000000-0000-0000-0000-000000000001', 'Quran Group A', 'مجموعة القرآن أ'),
   ('a4000000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000001', 'a3000000-0000-0000-0000-000000000003', 'Other Group', 'مجموعة أخرى');
 
--- Ahmed (English teacher) has whole-Subject Quran access and whole-class Arabic.
--- Omar (Arabic teacher) shares Quran Group A exactly.
+-- English Teacher has whole-Subject Quran access and whole-class Arabic.
+-- Arabic Teacher shares Quran Group A exactly.
 insert into public.teaching_assignments (
   id, school_id, teacher_profile_id, class_subject_id, subject_group_id, starts_on
 ) values
@@ -139,6 +145,16 @@ select set_config('request.jwt.claim.role', 'authenticated', true);
 select set_config('request.jwt.claim.sub', 'b0000000-0000-0000-0000-000000000002', true);
 
 select results_eq(
+  $$select id from public.weekly_submissions
+    where class_subject_id = 'a3000000-0000-0000-0000-000000000001'
+      and subject_group_id = 'a4000000-0000-0000-0000-000000000001'
+      and week_start = date '2026-09-20'
+    order by id$$,
+  array['a8000000-0000-0000-0000-000000000001'::uuid],
+  'teacher history visibility excludes a co-teacher submission in the same context/week'
+);
+
+select results_eq(
   $$select student_id from public.get_weekly_submission_roster(
     'a3000000-0000-0000-0000-000000000001',
     'a4000000-0000-0000-0000-000000000001',
@@ -171,6 +187,20 @@ select results_eq(
       and ws.week_start = date '2026-10-04'$$,
   array['SUBMITTED'::text],
   'atomic save finalizes the teacher-owned submission'
+);
+
+reset role;
+update public.teaching_assignments
+set ends_on = date '2026-09-20'
+where id = 'a5000000-0000-0000-0000-000000000001';
+set local role authenticated;
+select set_config('request.jwt.claim.role', 'authenticated', true);
+select set_config('request.jwt.claim.sub', 'b0000000-0000-0000-0000-000000000002', true);
+select results_eq(
+  $$select class_name_en, subject_name_en, group_name_en
+    from public.get_weekly_submission_context('a8000000-0000-0000-0000-000000000001')$$,
+  $$values ('Weekly Class'::text, 'Weekly Quran'::text, 'Quran Group A'::text)$$,
+  'teacher retains context labels for an authored submission after the assignment ends'
 );
 
 reset role;
