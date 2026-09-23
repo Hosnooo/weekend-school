@@ -3,6 +3,7 @@ import {describe, expect, it} from 'vitest';
 import {
   countUnresolvedAttendanceConflicts,
   schoolWeekForDate,
+  summarizeActionableDashboard,
   summarizeGroupSubmissions,
   summarizeTeachingUpdates
 } from '@/features/dashboard/dashboard.model';
@@ -81,5 +82,31 @@ describe('dashboard summary rules', () => {
     ];
 
     expect(countUnresolvedAttendanceConflicts(observations, resolutions)).toBe(1);
+  });
+
+  it('combines teacher-context update status and unresolved conflicts for the actionable dashboard', () => {
+    const teacherOne = {teacherProfileId: 't1', classSubjectId: 'cs1', subjectGroupId: 'g1'};
+    const teacherTwo = {teacherProfileId: 't2', classSubjectId: 'cs1', subjectGroupId: 'g1'};
+    const wholeClass = {teacherProfileId: 't1', classSubjectId: 'cs2', subjectGroupId: null};
+    const observations = [
+      {classSubjectId: 'cs1', subjectGroupId: 'g1', weekStart: '2026-09-21', studentId: 's1', status: 'PRESENT' as const},
+      {classSubjectId: 'cs1', subjectGroupId: 'g1', weekStart: '2026-09-21', studentId: 's1', status: 'ABSENT' as const}
+    ];
+
+    expect(summarizeActionableDashboard({
+      expectedContexts: [teacherOne, teacherTwo, wholeClass],
+      submissions: [
+        {...teacherOne, status: 'SUBMITTED'},
+        {...wholeClass, status: 'DRAFT'}
+      ],
+      observations,
+      resolutions: []
+    })).toMatchObject({
+      expectedCount: 3,
+      submittedCount: 1,
+      draftCount: 1,
+      missingCount: 1,
+      unresolvedAttendanceConflicts: 1
+    });
   });
 });
