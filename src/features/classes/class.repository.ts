@@ -20,6 +20,10 @@ type ClassListRow = {
   name_ar: string | null;
   is_active: boolean;
   class_subjects: Array<{id: string; is_active: boolean}>;
+  class_enrollments: Array<{
+    starts_on: string;
+    ends_on: string | null;
+  }>;
 };
 
 type ClassSubjectRow = {
@@ -34,23 +38,51 @@ type ClassSubjectRow = {
     name_ar: string | null;
     is_active: boolean;
   }>;
+  teaching_assignments: Array<{
+    teacher_profile_id: string;
+    starts_on: string;
+    ends_on: string | null;
+  }>;
 };
+
+function todayIso() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function includesDate(
+  startsOn: string,
+  endsOn: string | null,
+  date: string
+) {
+  return startsOn <= date && (endsOn === null || endsOn >= date);
+}
 
 export async function listClasses(schoolId: string): Promise<ClassSummary[]> {
   const supabase = await createServerSupabaseClient();
   const {data, error} = await supabase
     .from('classes')
-    .select('id, name_en, name_ar, is_active, class_subjects(id, is_active)')
+    .select(`
+      id,
+      name_en,
+      name_ar,
+      is_active,
+      class_subjects(id, is_active),
+      class_enrollments(starts_on, ends_on)
+    `)
     .eq('school_id', schoolId)
     .order('name_en');
 
   if (error) throw error;
 
+  const today = todayIso();
   return (data as unknown as ClassListRow[]).map((row) => ({
     id: row.id,
     nameEn: row.name_en,
     nameAr: row.name_ar,
     isActive: row.is_active,
+    activeStudentCount: row.class_enrollments.filter(({starts_on, ends_on}) =>
+      includesDate(starts_on, ends_on, today)
+    ).length,
     subjectCount: row.class_subjects.filter(({is_active}) => is_active).length
   }));
 }
@@ -78,7 +110,8 @@ export async function getClassDetail(
       default_group_id,
       is_active,
       subjects(name_en, name_ar),
-      subject_groups(id, name_en, name_ar, is_active)
+      subject_groups(id, name_en, name_ar, is_active),
+      teaching_assignments(teacher_profile_id, starts_on, ends_on)
     `)
     .eq('school_id', schoolId)
     .eq('class_id', classId)
@@ -86,6 +119,7 @@ export async function getClassDetail(
 
   if (subjectError) throw subjectError;
 
+  const today = todayIso();
   return {
     id: classRow.id as string,
     nameEn: classRow.name_en as string,
@@ -100,6 +134,11 @@ export async function getClassDetail(
             subjectNameAr: row.subjects.name_ar,
             isActive: row.is_active,
             defaultGroupId: row.default_group_id,
+            teacherCount: new Set(
+              row.teaching_assignments
+                .filter(({starts_on, ends_on}) => includesDate(starts_on, ends_on, today))
+                .map(({teacher_profile_id}) => teacher_profile_id)
+            ).size,
             groups: row.subject_groups
               .map((group) => ({
                 id: group.id,
