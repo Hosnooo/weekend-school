@@ -1,5 +1,6 @@
 import {describe, expect, it, vi} from 'vitest';
 
+import type {Profile} from '@/features/profiles/profile.types';
 import {
   AuthorizationError,
   assertActiveProfile,
@@ -10,24 +11,24 @@ import {
   type AuthorizationDependencies
 } from '@/lib/auth/authorization';
 
-const activeTeacher = {
+const activeTeacher: Profile = {
   id: 'profile-1',
   schoolId: 'school-1',
   displayName: 'Fatima',
-  role: 'TEACHER' as const,
-  preferredLanguage: 'en' as const,
+  role: 'TEACHER',
+  preferredLanguage: 'en',
   isActive: true
 };
 
-const activeAdmin = {
+const activeAdmin: Profile = {
   ...activeTeacher,
   id: 'admin-1',
   displayName: 'Admin',
-  role: 'ADMIN' as const
+  role: 'ADMIN'
 };
 
 function dependencies(
-  profile = activeTeacher,
+  profile: Profile = activeTeacher,
   canTeach = true
 ): AuthorizationDependencies {
   return {
