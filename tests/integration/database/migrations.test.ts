@@ -87,7 +87,8 @@ describe('migration contract', () => {
       '202609230022_weekly_teaching_submissions.sql',
       '202609230023_weekly_submission_history_context.sql',
       '202609230024_attendance_resolution.sql',
-      '202609230025_subject_aware_reports.sql'
+      '202609230025_subject_aware_reports.sql',
+      '202609230026_archives_and_delete.sql'
     ]);
   });
 
