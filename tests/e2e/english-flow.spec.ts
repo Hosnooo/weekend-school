@@ -36,8 +36,8 @@ test('English redesigned workflow reaches a finalized Class report', async ({pag
   await page.goto('/en/reports');
   await page.getByLabel('Period start').fill('2030-01-07');
   await page.getByLabel('Period end').fill('2030-01-13');
-  await page.getByLabel('Class').selectOption(redesign.classId);
-  await page.getByLabel('Report scope').selectOption('CLASS');
+  await page.locator('select[name="classId"]').selectOption(redesign.classId);
+  await page.locator('select[name="scopeType"]').selectOption('CLASS');
   await page.getByRole('button', {name: 'Prepare report batch'}).click();
   await expect(page.getByRole('heading', {name: 'Batch review'})).toBeVisible();
   await expect(page.getByText('Blue reading lesson')).toBeVisible();

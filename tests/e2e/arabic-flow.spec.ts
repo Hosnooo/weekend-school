@@ -22,10 +22,10 @@ test('Arabic RTL teaching and report workflow uses the redesigned Group context'
   await page.goto('/ar/reports');
   await page.getByLabel('بداية الفترة').fill('2030-02-04');
   await page.getByLabel('نهاية الفترة').fill('2030-02-10');
-  await page.getByLabel('الفصل', {exact: true}).selectOption(redesign.classId);
-  await page.getByLabel('نطاق التقرير').selectOption('GROUP');
-  await page.getByLabel('المادة').selectOption(redesign.groupedSubjectId);
-  await page.getByLabel('المجموعة').selectOption(redesign.blueGroupId);
+  await page.locator('select[name="classId"]').selectOption(redesign.classId);
+  await page.locator('select[name="scopeType"]').selectOption('GROUP');
+  await page.locator('select[name="classSubjectId"]').selectOption(redesign.groupedSubjectId);
+  await page.locator('select[name="subjectGroupId"]').selectOption(redesign.blueGroupId);
   await page.getByRole('button', {name: 'إعداد دفعة تقارير'}).click();
   await expect(page.getByRole('heading', {name: 'مراجعة الدفعة'})).toBeVisible();
   await expect(page.getByText('تدربنا على القراءة العربية')).toBeVisible();

@@ -39,6 +39,8 @@ export async function restoreArchivedStudentAction(formData: FormData) {
   const locale = localeFrom(formData);
   await requireProfile(locale, 'ADMIN');
   await restoreArchivedStudent(idFrom(formData));
+  revalidatePath(`/${locale}/students`);
+  revalidatePath(`/${locale}/settings/archives`);
   redirect(`/${locale}/settings/archives`);
 }
 
