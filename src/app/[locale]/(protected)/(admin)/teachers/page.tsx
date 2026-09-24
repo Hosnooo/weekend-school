@@ -3,7 +3,7 @@ import {notFound} from 'next/navigation';
 
 import {ActionLink, AdminPage} from '@/components/ui/admin-page';
 import {resendTeacherAccessAction, setTeacherActiveAction} from '@/features/teachers/teacher.actions';
-import {getTeacherAccessStates, listTeachers} from '@/features/teachers/teacher.repository';
+import {getTeacherAccessStates, listTeachers, listTeachingCandidates} from '@/features/teachers/teacher.repository';
 import {isLocale} from '@/i18n/config';
 import {Link} from '@/i18n/navigation';
 import {requireProfile} from '@/lib/auth/require-profile';
@@ -15,7 +15,12 @@ export default async function TeachersPage({params, searchParams}: {
   const {locale} = await params;
   if (!isLocale(locale)) notFound();
   const profile = await requireProfile(locale, 'ADMIN');
-  const teachers = await listTeachers(profile.schoolId);
+  const [teachers, teachingCandidates] = await Promise.all([
+    listTeachers(profile.schoolId),
+    listTeachingCandidates(profile.schoolId)
+  ]);
+  const teacherIds = new Set(teachers.map((teacher) => teacher.id));
+  const administratorCandidates = teachingCandidates.filter((candidate) => !teacherIds.has(candidate.id));
   const accessStates = await getTeacherAccessStates(teachers);
   const {access} = await searchParams;
   const [t, common, language] = await Promise.all([
@@ -42,5 +47,17 @@ export default async function TeachersPage({params, searchParams}: {
         </div></td>
       </tr>)}</tbody>
     </table></div>}
+
+    {administratorCandidates.length > 0 ? <section className="subsection">
+      <h2>{t('assignments')}</h2>
+      <p>{t('description')}</p>
+      <div className="table-wrap"><table>
+        <thead><tr><th>{t('name')}</th><th>{common('actions')}</th></tr></thead>
+        <tbody>{administratorCandidates.map((candidate) => <tr key={candidate.id}>
+          <td><strong>{candidate.displayName}</strong></td>
+          <td><Link href={`/teachers/${candidate.id}/assignments`}>{t('assignments')}</Link></td>
+        </tr>)}</tbody>
+      </table></div>
+    </section> : null}
   </AdminPage>;
 }
