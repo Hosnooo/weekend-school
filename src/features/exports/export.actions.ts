@@ -2,7 +2,7 @@
 
 import {resolveReportPeriod} from '@/features/reports/report.service';
 import {isLocale, type Locale} from '@/i18n/config';
-import {requireProfile} from '@/lib/auth/require-profile';
+import {requireAdministrator} from '@/lib/auth/require-profile';
 
 import {createExportRequest, getSchoolTimezone} from './export.repository';
 import {validateExportRequest, type ExportRequestInput} from './export.service';
@@ -71,7 +71,7 @@ function scopeFromForm(formData: FormData): ExportRequestInput['scope'] {
 
 export async function createExportAction(formData: FormData) {
   const locale = localeFrom(formData);
-  const profile = await requireProfile(locale, 'ADMIN');
+  const profile = await requireAdministrator(locale);
   const timeZone = await getSchoolTimezone(profile.schoolId);
   const period = periodFromForm(formData, localIsoDate(timeZone));
   const request = validateExportRequest({

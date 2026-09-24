@@ -12,7 +12,7 @@ import {createExportAction} from '@/features/exports/export.actions';
 import {ExportPanel, type ExportPanelLabels} from '@/features/exports/export-panel';
 import {listExportOptions} from '@/features/exports/export.repository';
 import {isLocale, type Locale} from '@/i18n/config';
-import {requireProfile} from '@/lib/auth/require-profile';
+import {requireAdministrator} from '@/lib/auth/require-profile';
 
 const archiveLabels: Record<Locale, ArchivePanelLabels & {pageTitle: string; pageDescription: string}> = {
   en: {
@@ -78,7 +78,7 @@ export default async function ArchivesPage({params}: {params: Promise<{locale: s
   const {locale: rawLocale} = await params;
   if (!isLocale(rawLocale)) notFound();
   const locale = rawLocale;
-  const profile = await requireProfile(locale, 'ADMIN');
+  const profile = await requireAdministrator(locale);
   const [students, options] = await Promise.all([
     listArchivedStudents(profile.schoolId, locale),
     listExportOptions(profile.schoolId, locale)
