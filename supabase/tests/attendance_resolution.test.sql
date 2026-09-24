@@ -32,7 +32,7 @@ insert into public.subject_groups (id, school_id, class_subject_id, name_en, nam
    'aa300000-0000-0000-0000-000000000001', 'Attendance Group', 'مجموعة الحضور');
 
 insert into public.teaching_assignments (
-  id, school_id, teacher_profile_id, class_subject_id, subject_group_id, starts_on
+  id, school_id, teacher_id, class_subject_id, subject_group_id, starts_on
 ) values
   ('aa500000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000001',
    'c0000000-0000-0000-0000-000000000002', 'aa300000-0000-0000-0000-000000000001',
@@ -57,7 +57,7 @@ insert into public.subject_group_memberships (
 );
 
 insert into public.weekly_submissions (
-  id, school_id, class_subject_id, subject_group_id, teacher_profile_id, week_start
+  id, school_id, class_subject_id, subject_group_id, teacher_id, week_start
 ) values
   ('aa800000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000001', 'aa300000-0000-0000-0000-000000000001', 'aa400000-0000-0000-0000-000000000001', 'c0000000-0000-0000-0000-000000000002', date '2026-09-07'),
   ('aa800000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000001', 'aa300000-0000-0000-0000-000000000001', 'aa400000-0000-0000-0000-000000000001', 'c0000000-0000-0000-0000-000000000003', date '2026-09-07'),
