@@ -1,10 +1,10 @@
 # Implementation Progress
 
-Last updated: 2026-09-22
+Last updated: 2026-09-24
 
 ## Current status
 
-The previously released MVP and administrator-workflow work are now under an approved Phase 1 architecture correction. The active branch is replacing the group-centric primary-teacher/global-group model with explicit Class -> Subject -> optional Group semantics before any roster CSV work begins. Phase 2 CSV is blocked until the correction passes the full local gate, hosted forward migrations, production deployment, runtime-error review, and production smoke tests.
+The Class -> Subject -> optional Group redesign has been followed by the approved independent-role correction on `codex/independent-role-records`. Application authorization now treats Profiles as login/audit identity only and grants Administrator/Teacher capability through explicit independent business records and account links. Implementation Tasks 1-6 are complete on the branch; Task 7 documentation and final release verification are in progress. Hosted production has not been changed by this correction.
 
 ## Planning completed
 
@@ -119,7 +119,7 @@ Not claimed in Phase 3:
 
 ## Phase 5 — Email
 
-Status: Implementation complete; live Supabase and Resend sandbox verification remain outstanding.
+Status: Implementation complete; live Supabase and Resend sandbox verification remains outstanding.
 
 Completed:
 
@@ -261,3 +261,15 @@ Status: In progress on `codex/class-subject-group-redesign-spec`.
 - Authority synchronization is Task 1 of `docs/superpowers/plans/2026-09-22-class-subject-group-reporting-redesign.md`; D-025 and `docs/SPEC.md` section 58 supersede conflicting historical rules without rewriting old decisions.
 - Forward-only architecture migrations start at 19; applied migrations 1–18 remain immutable. Hosted production receives no development seed.
 - Phase 2 roster CSV remains blocked until the architecture correction passes the full local gate, Vercel preview, hosted migrations, production deploy, runtime-error review, and production smoke test.
+
+## Independent role records correction — implementation complete, release verification active (2026-09-24)
+
+- Branch: `codex/independent-role-records`. The approved design is `docs/superpowers/specs/2026-09-23-independent-role-records-design.md`; `docs/SPEC.md` section 59 and D-026 are the current authority for Administrator/Teacher identity and capability semantics.
+- Added the single forward-only independent-role migration after immutable migrations 1-27. It creates independent `administrators`, `teachers`, `administrator_accounts`, and `teacher_accounts`, deterministically backfills legacy roles, moves Teacher-owned teaching history to Teacher IDs, removes the current Profile role discriminator, and rewrites capability/RLS helpers around explicit account links.
+- Production-style legacy ADMIN backfill remains Administrator-only. Administrator business records and Teacher business records are independent; names/business emails may repeat; matching email never grants or removes a role. An Administrator becomes a teaching candidate only through a separate Teacher record and explicit Teacher account link.
+- Teacher business creation is separate from login access. Existing same-school Auth/Profile identities can be reused only during an explicit access action. Teacher unlink/deactivation does not mutate Administrator access or historical Teacher attribution.
+- Administrator management was added with independent business/login handling and last-active-Administrator protection. Removing Administrator capability does not remove Teacher access, the Teacher record, the shared Profile, or Teacher history.
+- Capability-based navigation now supports Administrator-only, Teacher-only, and dual Administrator+Teacher logins. Administrator and dual-capability accounts default to Dashboard; Teacher-only accounts default to My Teaching.
+- Export was intentionally simplified to one rule: active Administrator capability gets all export-related UI/actions/protected downloads; no Administrator capability gets none. Teacher capability does not grant export access.
+- The implementation head `3457f2f09a44ff6a16cde3addd9049b990fbe9f9` passed Redesign CI #246: Quality, Database/RLS, and E2E/browser workflows all succeeded. Task 7 documentation/final branch verification is the remaining pre-PR work.
+- Hosted Supabase migrations and production deployment remain untouched. No production release occurs without explicit authorization after the final branch gate.

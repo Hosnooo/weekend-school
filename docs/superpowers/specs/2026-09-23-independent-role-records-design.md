@@ -1,7 +1,7 @@
 # Independent Role Records Design
 
 **Date:** 2026-09-23  
-**Status:** Proposed design approved in conversation; written specification pending final review  
+**Status:** Approved and implemented; authoritative correction to `docs/SPEC.md`  
 **Scope:** Replace the current single-role profile model with independent Administrator, Teacher, Guardian, and Student records.
 
 ## 1. Problem
@@ -187,6 +187,8 @@ An Administrator is not shown in Teacher lists or teaching-assignment selectors 
 
 The temporary behavior introduced by PR #4 that adds ADMIN profiles directly to teaching candidates must be removed.
 
+An active Administrator can manage Administrator business records and access links. The application must prevent removal of the last active Administrator capability for a school. Removing Administrator capability must never remove a linked Teacher capability, Teacher business record, historical Teacher attribution, or the shared login Profile.
+
 ## 8. Migration Strategy
 
 This is one coordinated forward-only migration/refactor. Existing migrations remain immutable.
@@ -223,7 +225,7 @@ Production currently has an Administrator profile and no Teacher profile; theref
 3. Update invitation/access logic.
 4. Update navigation routing to support a login that has both Administrator and Teacher capabilities without converting one into the other.
 
-For an account with both capabilities, Admin navigation remains available and Teacher workflow is also available. The UI may expose both destinations; it does not collapse the records.
+For an account with both capabilities, Admin navigation remains available and Teacher workflow is also available. The UI exposes both destinations; it does not collapse the records. Admin-only accounts do not receive Teacher navigation, and Teacher-only accounts do not receive Administrator navigation.
 
 ### Phase D: constraint cutover
 
@@ -298,7 +300,7 @@ Application verification:
 - unit/contract suite;
 - production build;
 - local database reset + pgTAP/RLS suite;
-- targeted browser workflows for Admin-only, Teacher-only, and Admin+Teacher accounts;
+- targeted browser workflows for Admin-only, Teacher-only, and Admin+Teacher accounts where those fixtures are part of the maintained browser suite;
 - EN/AR and RTL checks.
 
 ## 13. Release Safety
@@ -307,7 +309,7 @@ Do not apply this migration to hosted production until:
 - local migration/backfill tests pass;
 - RLS tests pass;
 - Admin-only login is verified locally;
-- Admin+Teacher behavior is verified locally;
+- Admin+Teacher behavior is verified locally when such an account is explicitly configured;
 - the production build is green.
 
 Release order:
@@ -318,6 +320,8 @@ Release order:
 5. verify Teacher creation accepts an email already used by an Administrator;
 6. verify removing/unlinking that Teacher leaves Administrator access intact.
 
+No hosted migration or production deployment occurs without explicit production release authorization.
+
 ## 14. Superseded Rules
 
 This design supersedes prior statements that:
@@ -326,4 +330,13 @@ This design supersedes prior statements that:
 - Teacher creation should fail because the email belongs to an Administrator;
 - Admin and Teacher are mutually exclusive profile types.
 
-The Class -> Subject -> optional Group architecture, enrollment rules, co-teacher behavior, attendance rules, report immutability, archive/export behavior, bilingual requirements, and other redesign decisions remain unchanged unless directly affected by the ID migration described above.
+The Class -> Subject -> optional Group architecture, enrollment rules, co-teacher behavior, attendance rules, report immutability, archive/delete behavior, bilingual requirements, and other redesign decisions remain unchanged unless directly affected by the ID migration described above.
+
+## 15. Export access
+
+All export-related capability is Administrator-only.
+
+- A login with an active Administrator capability can see and use the complete export UI and protected export endpoints, whether or not that same login also has Teacher capability.
+- A login without Administrator capability sees no export UI and cannot create or download exports directly.
+- Teacher capability does not grant any export permission.
+- Export authorization is enforced at the Administrator page/action boundary, protected download boundary, and PostgreSQL/RLS layer; hiding UI alone is not authorization.
