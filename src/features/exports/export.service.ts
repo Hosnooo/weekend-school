@@ -6,13 +6,21 @@ export type ExportDataset =
   | 'REPORTS'
   | 'DELIVERIES';
 
+type ExportScopeIds = {
+  classId?: string;
+  classSubjectId?: string;
+  subjectGroupId?: string;
+  studentId?: string;
+  teacherProfileId?: string;
+};
+
 export type ExportScope =
-  | {type: 'SCHOOL'}
-  | {type: 'CLASS'; classId: string}
-  | {type: 'SUBJECT'; classId: string; classSubjectId: string}
-  | {type: 'GROUP'; classId: string; classSubjectId: string; subjectGroupId: string}
-  | {type: 'STUDENT'; studentId: string}
-  | {type: 'TEACHER'; teacherProfileId: string};
+  | ({type: 'SCHOOL'} & ExportScopeIds)
+  | ({type: 'CLASS'; classId: string} & ExportScopeIds)
+  | ({type: 'SUBJECT'; classId: string; classSubjectId: string} & ExportScopeIds)
+  | ({type: 'GROUP'; classId: string; classSubjectId: string; subjectGroupId: string} & ExportScopeIds)
+  | ({type: 'STUDENT'; studentId: string} & ExportScopeIds)
+  | ({type: 'TEACHER'; teacherProfileId: string} & ExportScopeIds);
 
 export type ExportRequest = {
   periodStart: string | null;
