@@ -71,5 +71,5 @@ export async function downloadArchivedStudentDataAction(formData: FormData) {
       includeFinalizedReportPdfs: true
     }
   });
-  redirect(`/api/exports/${exportId}`);
+  return `/api/exports/${exportId}`;
 }

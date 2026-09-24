@@ -1,7 +1,5 @@
 'use server';
 
-import {redirect} from 'next/navigation';
-
 import {resolveReportPeriod} from '@/features/reports/report.service';
 import {isLocale, type Locale} from '@/i18n/config';
 import {requireProfile} from '@/lib/auth/require-profile';
@@ -89,5 +87,5 @@ export async function createExportAction(formData: FormData) {
     requestedByProfileId: profile.id,
     request
   });
-  redirect(`/api/exports/${exportId}`);
+  return `/api/exports/${exportId}`;
 }

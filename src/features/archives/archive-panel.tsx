@@ -1,3 +1,5 @@
+import {ProtectedDownloadForm, type ProtectedDownloadAction} from '@/features/exports/protected-download-form';
+
 import type {DeleteImpact} from './archive.types';
 import {DeleteImpactDialog, type DeleteImpactLabels} from './delete-impact-dialog';
 
@@ -32,7 +34,7 @@ export function ArchivePanel({
   locale: string;
   students: readonly ArchivedStudentItem[];
   restoreAction?: FormAction;
-  downloadAction?: FormAction;
+  downloadAction?: ProtectedDownloadAction;
   permanentDeleteAction?: FormAction;
 }) {
   return (
@@ -48,11 +50,11 @@ export function ArchivePanel({
               <button className="button button-secondary" type="submit">{labels.restore}</button>
             </form>
             <a href={`/${locale}/students/${student.id}/edit`}>{labels.viewHistory}</a>
-            <form action={downloadAction}>
+            <ProtectedDownloadForm action={downloadAction}>
               <input name="locale" type="hidden" value={locale}/>
               <input name="id" type="hidden" value={student.id}/>
               <button className="button button-secondary" type="submit">{labels.downloadData}</button>
-            </form>
+            </ProtectedDownloadForm>
           </div>
 
           <p>{labels.downloadFirst}</p>

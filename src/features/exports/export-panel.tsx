@@ -1,4 +1,4 @@
-type FormAction = (formData: FormData) => void | Promise<void>;
+import {ProtectedDownloadForm, type ProtectedDownloadAction} from './protected-download-form';
 
 export type ExportPanelLabels = {
   title: string;
@@ -47,7 +47,7 @@ export function ExportPanel({
   labels: ExportPanelLabels;
   locale: string;
   options: ExportPanelOptions;
-  action?: FormAction;
+  action?: ProtectedDownloadAction;
 }) {
   const datasets = [
     ['STUDENTS', labels.students, true],
@@ -61,7 +61,7 @@ export function ExportPanel({
   return (
     <section className="admin-card" aria-label={labels.title}>
       <h2>{labels.title}</h2>
-      <form action={action} className="form-stack">
+      <ProtectedDownloadForm action={action} className="form-stack">
         <input name="locale" type="hidden" value={locale}/>
 
         <label>
@@ -146,7 +146,7 @@ export function ExportPanel({
         <label><input name="includeCsv" type="checkbox"/> {labels.csv}</label>
         <label><input name="includeFinalizedReportPdfs" type="checkbox"/> {labels.pdfs}</label>
         <button className="button button-primary" type="submit">{labels.submit}</button>
-      </form>
+      </ProtectedDownloadForm>
     </section>
   );
 }
