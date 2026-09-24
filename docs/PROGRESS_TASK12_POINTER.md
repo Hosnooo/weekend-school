@@ -1,0 +1,1 @@
+Task 12 verification is recorded in `docs/TASK12_VERIFICATION.md` and is intended to be folded into `docs/PROGRESS.md` during the final release-documentation pass in Task 13. No release side effects are authorized by this note.
