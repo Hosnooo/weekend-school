@@ -18,7 +18,7 @@ export type TeachingClassSubject = {
 
 export type TeachingAssignment = {
   id: string;
-  teacherProfileId: string;
+  teacherId: string;
   classSubjectId: string;
   subjectGroupId: string | null;
   startsOn: string;
@@ -26,6 +26,7 @@ export type TeachingAssignment = {
 };
 
 export type EffectiveTeachingContext = {
+  teacherId: string;
   classSubjectId: string;
   subjectGroupId: string | null;
   classNameEn: string;

@@ -10,12 +10,12 @@ function effectiveOn(assignment: TeachingAssignment, onDate: string) {
 }
 
 export function expandEffectiveTeachingContexts({
-  teacherProfileId,
+  teacherId,
   assignments,
   classSubjects,
   onDate
 }: {
-  teacherProfileId: string;
+  teacherId: string;
   assignments: TeachingAssignment[];
   classSubjects: TeachingClassSubject[];
   onDate: string;
@@ -26,14 +26,15 @@ export function expandEffectiveTeachingContexts({
   const contexts = new Map<string, EffectiveTeachingContext>();
 
   for (const assignment of assignments) {
-    if (assignment.teacherProfileId !== teacherProfileId || !effectiveOn(assignment, onDate)) continue;
+    if (assignment.teacherId !== teacherId || !effectiveOn(assignment, onDate)) continue;
     const subject = subjectById.get(assignment.classSubjectId);
     if (!subject) continue;
 
     const groups = subject.groups.filter(({isActive}) => isActive);
     if (assignment.subjectGroupId === null) {
       if (groups.length === 0) {
-        contexts.set(`${subject.id}:whole`, {
+        contexts.set(`${teacherId}:${subject.id}:whole`, {
+          teacherId,
           classSubjectId: subject.id,
           subjectGroupId: null,
           classNameEn: subject.classNameEn,
@@ -47,7 +48,8 @@ export function expandEffectiveTeachingContexts({
       }
 
       for (const group of groups) {
-        contexts.set(`${subject.id}:${group.id}`, {
+        contexts.set(`${teacherId}:${subject.id}:${group.id}`, {
+          teacherId,
           classSubjectId: subject.id,
           subjectGroupId: group.id,
           classNameEn: subject.classNameEn,
@@ -63,7 +65,8 @@ export function expandEffectiveTeachingContexts({
 
     const group = groups.find(({id}) => id === assignment.subjectGroupId);
     if (!group) continue;
-    contexts.set(`${subject.id}:${group.id}`, {
+    contexts.set(`${teacherId}:${subject.id}:${group.id}`, {
+      teacherId,
       classSubjectId: subject.id,
       subjectGroupId: group.id,
       classNameEn: subject.classNameEn,

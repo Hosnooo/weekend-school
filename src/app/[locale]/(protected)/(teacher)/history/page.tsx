@@ -4,13 +4,13 @@ import {AdminPage} from '@/components/ui/admin-page';
 import {listTeacherHistory} from '@/features/weekly-updates/weekly-update.repository';
 import {isLocale} from '@/i18n/config';
 import {Link} from '@/i18n/navigation';
-import {requireTeachingProfile} from '@/lib/auth/require-profile';
+import {requireTeachingAccount} from '@/lib/auth/require-profile';
 
 export default async function HistoryPage({params}:{params:Promise<{locale:string}>}){
   const{locale}=await params;
   if(!isLocale(locale))notFound();
-  const profile=await requireTeachingProfile(locale);
-  const history=await listTeacherHistory(profile.schoolId,profile.id);
+  const{profile,teacherIds}=await requireTeachingAccount(locale);
+  const history=await listTeacherHistory(profile.schoolId,teacherIds);
   const t=await getTranslations({locale,namespace:'weekly'});
   const common=await getTranslations({locale,namespace:'common'});
   const localName=(en:string,ar:string|null)=>locale==='ar'&&ar?ar:en;

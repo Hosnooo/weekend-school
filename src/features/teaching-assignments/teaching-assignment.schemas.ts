@@ -3,7 +3,7 @@ import {z} from 'zod';
 import {databaseUuid, optionalUuid} from '@/lib/validation/fields';
 
 export const teachingAssignmentSchema = z.object({
-  teacherProfileId: databaseUuid,
+  teacherId: databaseUuid,
   classSubjectId: databaseUuid,
   subjectGroupId: optionalUuid,
   startsOn: z.iso.date()

@@ -4,13 +4,13 @@ import {AdminPage} from '@/components/ui/admin-page';
 import {WeeklyUpdateForm} from '@/features/weekly-updates/weekly-update-form';
 import {getWeeklySubmissionById} from '@/features/weekly-updates/weekly-update.repository';
 import {isLocale} from '@/i18n/config';
-import {requireTeachingProfile} from '@/lib/auth/require-profile';
+import {requireTeachingAccount} from '@/lib/auth/require-profile';
 
 export default async function HistoryDetail({params}:{params:Promise<{locale:string;id:string}>}){
   const{locale,id}=await params;
   if(!isLocale(locale))notFound();
-  const profile=await requireTeachingProfile(locale);
-  const submission=await getWeeklySubmissionById(profile.schoolId,profile.id,id);
+  const{profile,teacherIds}=await requireTeachingAccount(locale);
+  const submission=await getWeeklySubmissionById(profile.schoolId,teacherIds,id);
   if(!submission||submission.status!=='SUBMITTED')notFound();
   const t=await getTranslations({locale,namespace:'weekly'});
   const localName=(en:string,ar:string|null)=>locale==='ar'&&ar?ar:en;
