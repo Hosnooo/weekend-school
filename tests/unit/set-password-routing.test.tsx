@@ -55,9 +55,9 @@ describe('password setup routing', () => {
     await waitFor(() => expect(state.replace).toHaveBeenCalledWith('/en/dashboard'));
   });
 
-  it('sends a teacher to assigned groups after setting a password', async () => {
+  it('sends a teacher to My Teaching after setting a password', async () => {
     state.role = 'TEACHER';
     await setPassword();
-    await waitFor(() => expect(state.replace).toHaveBeenCalledWith('/en/my-groups'));
+    await waitFor(() => expect(state.replace).toHaveBeenCalledWith('/en/my-teaching'));
   });
 });
