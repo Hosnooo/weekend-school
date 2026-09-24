@@ -20,9 +20,10 @@ describe('legacy route cleanup', () => {
     expect(source).toContain("redirect(`/${locale}/my-teaching`)");
   });
 
-  it('sends a successful teacher login directly to My Teaching', () => {
+  it('routes successful logins through the capability resolver and never restores My Groups', () => {
     const source = readFileSync(loginAction, 'utf8');
-    expect(source).toContain("`/${locale}/my-teaching`");
+    expect(source).toContain('getDefaultAuthenticatedRoute');
+    expect(source).toContain('redirect(`/${locale}${destination}`)');
     expect(source).not.toContain("`/${locale}/my-groups`");
   });
 });

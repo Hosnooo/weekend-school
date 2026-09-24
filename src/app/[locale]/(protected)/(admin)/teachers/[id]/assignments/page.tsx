@@ -11,16 +11,14 @@ import {listTeachingCandidates} from '@/features/teachers/teacher.repository';
 import {todayInTimeZone} from '@/features/weekly-updates/weekly-update.model';
 import {getSchoolTimezone} from '@/features/weekly-updates/weekly-update.repository';
 import {isLocale} from '@/i18n/config';
-import {requireProfile} from '@/lib/auth/require-profile';
+import {requireAdministrator} from '@/lib/auth/require-profile';
 
-export default async function TeachingAssignmentsPage({
-  params
-}: {
+export default async function TeachingAssignmentsPage({params}: {
   params: Promise<{locale: string; id: string}>;
 }) {
   const {locale, id} = await params;
   if (!isLocale(locale)) notFound();
-  const profile = await requireProfile(locale, 'ADMIN');
+  const profile = await requireAdministrator(locale);
   const [candidates, classSubjects, assignments, timeZone, t] = await Promise.all([
     listTeachingCandidates(profile.schoolId),
     listTeachingClassSubjects(profile.schoolId),
@@ -31,13 +29,12 @@ export default async function TeachingAssignmentsPage({
   const candidate = candidates.find((item) => item.id === id);
   if (!candidate) notFound();
   const today = todayInTimeZone(timeZone);
-
-  return <AdminPage title={`${candidate.displayName} — ${t('assignments')}`} description={t('description')}>
+  return <AdminPage title={`${candidate.displayName} — ${t('assignments')}`} description={t('assignmentHelp')}>
     <TeachingAssignmentEditor
       assignments={assignments}
       classSubjects={classSubjects}
       locale={locale}
-      teacherProfileId={candidate.id}
+      teacherId={candidate.id}
       today={today}
     />
   </AdminPage>;

@@ -42,10 +42,13 @@ insert into public.subject_groups (id, school_id, class_subject_id, name_en, nam
   ('a4000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000001', 'a3000000-0000-0000-0000-000000000001', 'Quran Group A', 'مجموعة القرآن أ'),
   ('a4000000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000001', 'a3000000-0000-0000-0000-000000000003', 'Other Group', 'مجموعة أخرى');
 
+insert into public.teachers (id, school_id, display_name, email, preferred_language) values
+  ('a9000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000001', 'Unassigned Weekly Teacher', 'unassigned.weekly@example.test', 'en');
+
 -- English Teacher has whole-Subject Quran access and whole-class Arabic.
 -- Arabic Teacher shares Quran Group A exactly.
 insert into public.teaching_assignments (
-  id, school_id, teacher_profile_id, class_subject_id, subject_group_id, starts_on
+  id, school_id, teacher_id, class_subject_id, subject_group_id, starts_on
 ) values
   ('a5000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000001', 'c0000000-0000-0000-0000-000000000002', 'a3000000-0000-0000-0000-000000000001', null, date '2026-09-01'),
   ('a5000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000001', 'c0000000-0000-0000-0000-000000000003', 'a3000000-0000-0000-0000-000000000001', 'a4000000-0000-0000-0000-000000000001', date '2026-09-01'),
@@ -67,7 +70,7 @@ insert into public.subject_group_memberships (
 
 select lives_ok($teacher_one$
   insert into public.weekly_submissions (
-    id, school_id, class_subject_id, subject_group_id, teacher_profile_id, week_start
+    id, school_id, class_subject_id, subject_group_id, teacher_id, week_start
   ) values (
     'a8000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000001',
     'a3000000-0000-0000-0000-000000000001', 'a4000000-0000-0000-0000-000000000001',
@@ -77,7 +80,7 @@ $teacher_one$, 'first teacher can author Quran Group A for the week');
 
 select lives_ok($teacher_two$
   insert into public.weekly_submissions (
-    id, school_id, class_subject_id, subject_group_id, teacher_profile_id, week_start
+    id, school_id, class_subject_id, subject_group_id, teacher_id, week_start
   ) values (
     'a8000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000001',
     'a3000000-0000-0000-0000-000000000001', 'a4000000-0000-0000-0000-000000000001',
@@ -87,7 +90,7 @@ $teacher_two$, 'co-teacher can author the same teaching context in the same week
 
 select throws_ok($duplicate$
   insert into public.weekly_submissions (
-    school_id, class_subject_id, subject_group_id, teacher_profile_id, week_start
+    school_id, class_subject_id, subject_group_id, teacher_id, week_start
   ) values (
     'a0000000-0000-0000-0000-000000000001', 'a3000000-0000-0000-0000-000000000001',
     'a4000000-0000-0000-0000-000000000001', 'c0000000-0000-0000-0000-000000000002', date '2026-09-20'
@@ -96,7 +99,7 @@ $duplicate$, '23505', null, 'one teacher cannot duplicate one logical context/we
 
 select lives_ok($whole_class$
   insert into public.weekly_submissions (
-    id, school_id, class_subject_id, subject_group_id, teacher_profile_id, week_start
+    id, school_id, class_subject_id, subject_group_id, teacher_id, week_start
   ) values (
     'a8000000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000001',
     'a3000000-0000-0000-0000-000000000002', null,
@@ -106,7 +109,7 @@ $whole_class$, 'a whole-class Subject stores subject_group_id = null');
 
 select throws_ok($wrong_group$
   insert into public.weekly_submissions (
-    school_id, class_subject_id, subject_group_id, teacher_profile_id, week_start
+    school_id, class_subject_id, subject_group_id, teacher_id, week_start
   ) values (
     'a0000000-0000-0000-0000-000000000001', 'a3000000-0000-0000-0000-000000000001',
     'a4000000-0000-0000-0000-000000000003', 'c0000000-0000-0000-0000-000000000002', date '2026-09-27'
@@ -115,10 +118,10 @@ $wrong_group$, '23503', null, 'Group must belong to the submitted Class Subject'
 
 select throws_ok($unassigned_teacher$
   insert into public.weekly_submissions (
-    school_id, class_subject_id, subject_group_id, teacher_profile_id, week_start
+    school_id, class_subject_id, subject_group_id, teacher_id, week_start
   ) values (
     'a0000000-0000-0000-0000-000000000001', 'a3000000-0000-0000-0000-000000000001',
-    'a4000000-0000-0000-0000-000000000001', 'c0000000-0000-0000-0000-000000000001', date '2026-09-20'
+    'a4000000-0000-0000-0000-000000000001', 'a9000000-0000-0000-0000-000000000001', date '2026-09-20'
   );
 $unassigned_teacher$, '42501', null, 'submission author must have an effective teaching assignment');
 
@@ -181,7 +184,7 @@ $save_submission$, 'authorized teacher can atomically submit a complete weekly u
 
 select results_eq(
   $$select ws.status::text from public.weekly_submissions ws
-    where ws.teacher_profile_id = 'c0000000-0000-0000-0000-000000000002'
+    where ws.teacher_id = 'c0000000-0000-0000-0000-000000000002'
       and ws.class_subject_id = 'a3000000-0000-0000-0000-000000000001'
       and ws.subject_group_id = 'a4000000-0000-0000-0000-000000000001'
       and ws.week_start = date '2026-10-04'$$,

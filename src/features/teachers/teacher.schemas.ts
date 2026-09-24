@@ -11,6 +11,7 @@ export const teacherSchema = z.object({
 export const teacherUpdateSchema = z.object({
   id: databaseUuid,
   displayName: requiredText,
+  email: normalizedEmail,
   preferredLanguage: z.enum(['en', 'ar'])
 });
 

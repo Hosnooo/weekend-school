@@ -5,10 +5,7 @@ import {useTranslations} from 'next-intl';
 
 import {Button} from '@/components/ui/button';
 import {FormFeedback} from '@/components/ui/form-feedback';
-import type {
-  TeachingAssignment,
-  TeachingClassSubject
-} from '@/features/teaching-assignments/teaching-assignment.types';
+import type {TeachingAssignment, TeachingClassSubject} from '@/features/teaching-assignments/teaching-assignment.types';
 import {
   assignTeacherAction,
   createTeacherAction,
@@ -30,14 +27,17 @@ export function TeacherForm({locale, teacher}: {locale: Locale; teacher?: Teache
   );
 
   return <form action={action} className="record-form">
-    <input name="locale" type="hidden" value={locale} />
-    {teacher ? <input name="id" type="hidden" value={teacher.id} /> : null}
+    <input name="locale" type="hidden" value={locale}/>
+    {teacher ? <input name="id" type="hidden" value={teacher.id}/> : null}
     <div className="form-grid">
-      <label>{t('displayName')}<input defaultValue={teacher?.displayName} name="displayName" required /></label>
-      {!teacher ? <label>{t('email')}<input autoComplete="email" name="email" required type="email" /></label> : null}
-      <label>{t('preferredLanguage')}<select defaultValue={teacher?.preferredLanguage ?? 'en'} name="preferredLanguage"><option value="en">{language('english')}</option><option value="ar">{language('arabic')}</option></select></label>
+      <label>{t('displayName')}<input defaultValue={teacher?.displayName} name="displayName" required/></label>
+      <label>{t('email')}<input autoComplete="email" defaultValue={teacher?.email ?? ''} name="email" required type="email"/></label>
+      <label>{t('preferredLanguage')}<select defaultValue={teacher?.preferredLanguage ?? 'en'} name="preferredLanguage">
+        <option value="en">{language('english')}</option>
+        <option value="ar">{language('arabic')}</option>
+      </select></label>
     </div>
-    <FormFeedback state={state} />
+    <FormFeedback state={state}/>
     <div className="form-actions">
       <Button disabled={pending}>{pending ? common('saving') : common('save')}</Button>
       <Link className="button button-secondary action-link" href="/teachers">{common('cancel')}</Link>
@@ -45,19 +45,18 @@ export function TeacherForm({locale, teacher}: {locale: Locale; teacher?: Teache
   </form>;
 }
 
-function isEffective(assignment: TeachingAssignment, date: string) {
-  return assignment.startsOn <= date && (assignment.endsOn === null || assignment.endsOn >= date);
-}
+const isEffective = (assignment: TeachingAssignment, date: string) =>
+  assignment.startsOn <= date && (assignment.endsOn === null || assignment.endsOn >= date);
 
 export function TeachingAssignmentEditor({
   locale,
-  teacherProfileId,
+  teacherId,
   classSubjects,
   assignments,
   today
 }: {
   locale: Locale;
-  teacherProfileId: string;
+  teacherId: string;
   classSubjects: TeachingClassSubject[];
   assignments: TeachingAssignment[];
   today: string;
@@ -78,17 +77,16 @@ export function TeachingAssignmentEditor({
   const [classSubjectId, setClassSubjectId] = useState(subjectsForClass[0]?.id ?? '');
   const [subjectGroupId, setSubjectGroupId] = useState('');
   const selectedSubject = classSubjects.find((subject) => subject.id === classSubjectId) ?? null;
-
-  const label = (english: string, arabic: string | null) => locale === 'ar' && arabic ? arabic : english;
+  const label = (en: string, ar: string | null) => locale === 'ar' && ar ? ar : en;
   const duplicateCoverage = assignments.some((assignment) => {
     if (!selectedSubject || assignment.classSubjectId !== selectedSubject.id || !isEffective(assignment, today)) return false;
     if (assignment.subjectGroupId === null) return true;
     return subjectGroupId !== '' && assignment.subjectGroupId === subjectGroupId;
   });
 
-  function changeClass(nextClassId: string) {
-    setClassId(nextClassId);
-    const nextSubject = classSubjects.find((subject) => (subject.classId ?? subject.classNameEn) === nextClassId);
+  function changeClass(next: string) {
+    setClassId(next);
+    const nextSubject = classSubjects.find((subject) => (subject.classId ?? subject.classNameEn) === next);
     setClassSubjectId(nextSubject?.id ?? '');
     setSubjectGroupId('');
   }
@@ -97,29 +95,23 @@ export function TeachingAssignmentEditor({
     <h2>{t('assignments')}</h2>
     <p>{t('assignmentHelp')}</p>
     {classSubjects.length === 0 ? <p className="empty-state">{t('noTeachingContexts')}</p> : <form action={action} className="record-form">
-      <input name="locale" type="hidden" value={locale} />
-      <input name="teacherProfileId" type="hidden" value={teacherProfileId} />
+      <input name="locale" type="hidden" value={locale}/>
+      <input name="teacherId" type="hidden" value={teacherId}/>
       <div className="form-grid">
-        <label>{t('class')}
-          <select onChange={(event) => changeClass(event.target.value)} value={classId}>
-            {classes.map((item) => <option key={item.id} value={item.id}>{label(item.nameEn, item.nameAr)}</option>)}
-          </select>
-        </label>
-        <label>{t('subject')}
-          <select name="classSubjectId" onChange={(event) => {setClassSubjectId(event.target.value); setSubjectGroupId('');}} value={classSubjectId}>
-            {subjectsForClass.map((subject) => <option key={subject.id} value={subject.id}>{label(subject.subjectNameEn, subject.subjectNameAr)}</option>)}
-          </select>
-        </label>
-        <label>{t('scope')}
-          <select name="subjectGroupId" onChange={(event) => setSubjectGroupId(event.target.value)} value={subjectGroupId}>
-            <option value="">{t('entireSubject')}</option>
-            {selectedSubject?.groups.map((group) => <option key={group.id} value={group.id}>{label(group.nameEn, group.nameAr)}</option>)}
-          </select>
-        </label>
-        <label>{t('startsOn')}<input defaultValue={today} name="startsOn" required type="date" /></label>
+        <label>{t('class')}<select onChange={(event) => changeClass(event.target.value)} value={classId}>
+          {classes.map((item) => <option key={item.id} value={item.id}>{label(item.nameEn, item.nameAr)}</option>)}
+        </select></label>
+        <label>{t('subject')}<select name="classSubjectId" onChange={(event) => {setClassSubjectId(event.target.value); setSubjectGroupId('');}} value={classSubjectId}>
+          {subjectsForClass.map((subject) => <option key={subject.id} value={subject.id}>{label(subject.subjectNameEn, subject.subjectNameAr)}</option>)}
+        </select></label>
+        <label>{t('scope')}<select name="subjectGroupId" onChange={(event) => setSubjectGroupId(event.target.value)} value={subjectGroupId}>
+          <option value="">{t('entireSubject')}</option>
+          {selectedSubject?.groups.map((group) => <option key={group.id} value={group.id}>{label(group.nameEn, group.nameAr)}</option>)}
+        </select></label>
+        <label>{t('startsOn')}<input defaultValue={today} name="startsOn" required type="date"/></label>
       </div>
       {duplicateCoverage ? <p role="status">{t('coverageExists')}</p> : null}
-      <FormFeedback state={state} />
+      <FormFeedback state={state}/>
       <div className="form-actions"><Button disabled={pending || duplicateCoverage || !classSubjectId}>{pending ? common('saving') : t('addAssignment')}</Button></div>
     </form>}
 
@@ -137,10 +129,10 @@ export function TeachingAssignmentEditor({
           <td>{assignment.startsOn}</td>
           <td>{assignment.endsOn ?? '—'}</td>
           <td>{active ? <form action={endTeacherAssignmentAction}>
-            <input name="locale" type="hidden" value={locale} />
-            <input name="teacherProfileId" type="hidden" value={teacherProfileId} />
-            <input name="assignmentId" type="hidden" value={assignment.id} />
-            <input name="endsOn" type="hidden" value={today} />
+            <input name="locale" type="hidden" value={locale}/>
+            <input name="teacherId" type="hidden" value={teacherId}/>
+            <input name="assignmentId" type="hidden" value={assignment.id}/>
+            <input name="endsOn" type="hidden" value={today}/>
             <button className="text-button" type="submit">{t('endToday')}</button>
           </form> : '—'}</td>
         </tr>;

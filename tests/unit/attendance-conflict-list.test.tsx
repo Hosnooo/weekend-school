@@ -24,8 +24,8 @@ const conflict = {
   groupNameEn: 'Group A',
   groupNameAr: 'المجموعة أ',
   observations: [
-    {teacherProfileId: '44444444-4444-4444-8444-444444444444', teacherName: 'Teacher One', status: 'PRESENT' as const},
-    {teacherProfileId: '55555555-5555-4555-8555-555555555555', teacherName: 'Teacher Two', status: 'ABSENT' as const}
+    {teacherId: '44444444-4444-4444-8444-444444444444', teacherName: 'Teacher One', status: 'PRESENT' as const},
+    {teacherId: '55555555-5555-4555-8555-555555555555', teacherName: 'Teacher Two', status: 'ABSENT' as const}
   ],
   resolution: null
 };

@@ -11,12 +11,12 @@ import {getTeacher} from '@/features/teachers/teacher.repository';
 import {todayInTimeZone} from '@/features/weekly-updates/weekly-update.model';
 import {getSchoolTimezone} from '@/features/weekly-updates/weekly-update.repository';
 import {isLocale} from '@/i18n/config';
-import {requireProfile} from '@/lib/auth/require-profile';
+import {requireAdministrator} from '@/lib/auth/require-profile';
 
 export default async function EditTeacherPage({params}: {params: Promise<{locale: string; id: string}>}) {
   const {locale, id} = await params;
   if (!isLocale(locale)) notFound();
-  const profile = await requireProfile(locale, 'ADMIN');
+  const profile = await requireAdministrator(locale);
   const [teacher, classSubjects, assignments, timeZone] = await Promise.all([
     getTeacher(profile.schoolId, id),
     listTeachingClassSubjects(profile.schoolId),
@@ -26,14 +26,16 @@ export default async function EditTeacherPage({params}: {params: Promise<{locale
   if (!teacher) notFound();
   const t = await getTranslations({locale, namespace: 'teachers'});
   const today = todayInTimeZone(timeZone);
-
-  return <AdminPage title={t('editTitle')} description={t('description')}>
-    <TeacherForm locale={locale} teacher={teacher} />
+  const description = locale === 'ar'
+    ? 'عدّل سجل المعلم وتعيينات التدريس بشكل مستقل عن حساب الدخول.'
+    : 'Edit the Teacher record and teaching assignments independently from account access.';
+  return <AdminPage title={t('editTitle')} description={description}>
+    <TeacherForm locale={locale} teacher={teacher}/>
     <TeachingAssignmentEditor
       assignments={assignments}
       classSubjects={classSubjects}
       locale={locale}
-      teacherProfileId={teacher.id}
+      teacherId={teacher.id}
       today={today}
     />
   </AdminPage>;

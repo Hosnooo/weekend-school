@@ -4,20 +4,21 @@ import Link from 'next/link';
 import {usePathname} from 'next/navigation';
 import {useLocale, useTranslations} from 'next-intl';
 
-import {getNavigationItems, type AppRole} from '@/lib/auth/navigation';
+import type {AccountCapabilities} from '@/lib/auth/authorization';
+import {getNavigationItems} from '@/lib/auth/navigation';
 
 type AppNavigationProps = {
-  role: AppRole;
+  capabilities: AccountCapabilities;
 };
 
-export function AppNavigation({role}: AppNavigationProps) {
+export function AppNavigation({capabilities}: AppNavigationProps) {
   const locale = useLocale();
   const pathname = usePathname();
   const translations = useTranslations('navigation');
 
   return (
     <nav aria-label={translations('label')} className="app-navigation">
-      {getNavigationItems(role).map((item) => {
+      {getNavigationItems(capabilities).map((item) => {
         const href = `/${locale}${item.href}`;
         const isCurrent = pathname === href || pathname.startsWith(`${href}/`);
 

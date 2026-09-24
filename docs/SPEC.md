@@ -1994,7 +1994,7 @@ The approved design in `docs/superpowers/specs/2026-09-22-admin-workflows-and-re
 
 ## Extension phase 1 — assignments and access
 
-- An active administrator may be the primary teacher for assigned groups while retaining administrator rights. Only a current, explicit group assignment grants weekly-update access. Administrator My Groups and History show assigned groups only.
+- An active administrator may be the primary teacher for assigned groups while retaining administrator rights. Only a current, explicit group assignment grants teacher workflow access. Administrator My Groups and History show assigned groups only.
 - Each group has one primary teacher. Teacher and group forms show the current assignee. Reassignment of an occupied group requires explicit confirmation and is atomic; a conflict is visible rather than silently ignored. Admins can manage teacher assignments after invitation, see assigned groups and account access state, and resend an access link for an existing invited account without duplicating the user or profile.
 - A student has at most one current group. Admins can move a student from Edit Student; the move closes the old membership and creates the new one atomically, preserving history. Effective dates govern the current group. A same-day correction is permitted only when no submitted session depends on that membership.
 - Login includes bilingual password recovery through Supabase Auth and the configured Auth SMTP service. The request response does not reveal whether an email exists. Recovery leads to the existing password-setting flow; invalid links offer a new request. Public signup remains disabled.
@@ -2227,3 +2227,61 @@ pnpm build
 Apply hosted forward migrations before deploying code that requires them. Verify Vercel preview, hosted migration history, RLS, invitation/recovery behavior, password-form visibility, Classes/Subjects/Groups, multi-teacher submissions, attendance resolution, subject-aware reports, archive/delete/export safety, English/Arabic shells, and runtime errors.
 
 The Phase 2 roster CSV work described in section 57 is blocked until this architecture correction is released and the production smoke gate passes. When CSV work resumes, its template/import semantics must target the corrected Class/Subject/Group model rather than the legacy one-global-group model.
+
+# 59. Independent Administrator and Teacher records (2026-09-24)
+
+This section supersedes conflicting role/account requirements in sections 5, 7, 15, 32, 37, 44, 52-57, and any part of section 58 that treats an Administrator Profile as a Teacher identity or derives capability from a profile role or matching email. The approved detailed design is `docs/superpowers/specs/2026-09-23-independent-role-records-design.md`.
+
+## 59.1 Login identity and business records
+
+`profiles` represents authenticated login/audit identity only. It does not contain the business role of the person and does not contain a current role discriminator.
+
+Administrator and Teacher are independent business records in `administrators` and `teachers`. Guardian and Student remain independent business records as well. The same human may have any combination of these records.
+
+Matching names or business emails never imply a relationship between records. Duplicate business names/emails are allowed. Supabase Auth email uniqueness applies only to login identities.
+
+## 59.2 Explicit capability links
+
+Administrator capability exists only through an active same-school `administrator_accounts` link to an active Administrator record. Teacher capability exists only through an active same-school `teacher_accounts` link to an active Teacher record.
+
+A Profile may have Administrator capability, Teacher capability, both, or neither. One capability never grants or removes the other.
+
+A legacy Administrator backfills to Administrator + Administrator account access only. It does not become a Teacher automatically. An Administrator may teach only after a separate Teacher business record exists, that login is explicitly linked to the Teacher, and that Teacher has an effective teaching assignment.
+
+## 59.3 Teacher identity and history
+
+Teaching assignments, weekly submissions, report/source attribution, and other Teacher-owned history use `teachers.id`. Profile IDs are reserved for authenticated actor/audit identity where the action is performed by the logged-in account rather than authored by a Teacher role.
+
+Deactivating, archiving, unlinking, or safely deleting one role must not mutate another role, the shared login Profile, or unrelated role history. Historical Teacher attribution remains readable after Teacher deactivation or account unlinking.
+
+## 59.4 Administrator and Teacher management
+
+Creating an Administrator or Teacher business record is separate from granting login access. A business record may exist with no login account. When access is explicitly linked, an existing same-school Profile may be reused; email equality alone never grants access.
+
+Teacher creation must not fail because the same email belongs to an Administrator, Guardian, Student, another Teacher business record, or an existing Auth user. Teacher candidate lists contain active Teacher records only.
+
+Administrator management may create, reactivate, deactivate, and safely remove Administrator records/access. The application must prevent removal of the last active Administrator capability for a school. Removing Administrator capability must preserve Teacher capability and Teacher history.
+
+## 59.5 Capability-based navigation
+
+Navigation is the union of explicit capabilities:
+
+- Administrator-only: administrative navigation; no My Teaching.
+- Teacher-only: My Teaching; no Settings/administrative navigation.
+- Administrator + Teacher: both administrative navigation and My Teaching, without duplicate items.
+
+After authentication, Administrator-only and dual-capability accounts default to Dashboard. Teacher-only accounts default to My Teaching.
+
+## 59.6 Export access
+
+Export is Administrator-only and intentionally has no separate Teacher/export role model.
+
+A login with active Administrator capability can see and use all export-related UI, creation actions, and protected download endpoints, whether or not the login also has Teacher capability. A login without Administrator capability sees no export UI and cannot create or download exports directly.
+
+Teacher capability alone grants no export permission. This restriction is enforced server-side and through PostgreSQL/RLS as well as in navigation/UI.
+
+## 59.7 Migration and release safety
+
+Existing applied migrations remain immutable. The independent-role cutover is forward-only and deterministically backfills existing Administrator and Teacher Profiles into their independent business records and explicit account links before removing legacy role coupling.
+
+Hosted production is not changed merely because this branch is green. Local quality/build, PostgreSQL/RLS, and browser verification must pass first, followed by an explicit production release authorization and controlled hosted migration/deployment sequence.

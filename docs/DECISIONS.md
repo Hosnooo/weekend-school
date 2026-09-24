@@ -187,3 +187,21 @@ Use explicit `Class -> Subject -> optional Group` concepts. A student has one ac
 This decision supersedes D-007's hierarchy shape, D-008's one-session-per-group/date identity, D-023's group-submission dashboard semantics, and the teacher/student cardinality and release-order portions of D-024. Existing authentication, school isolation, recovery, provider, and forward-only migration decisions remain in force where they do not conflict.
 
 Approved lifecycle is Active -> Archived -> Restore OR Permanently Delete. An admin may permanently delete an archived entity and dependent history after an explicit impact review; protected export/download is available before deletion and independently by period/scope.
+
+## D-026 — Administrator and Teacher are independent business records
+
+**Status:** Accepted — 2026-09-24
+
+`profiles` is login/audit identity only. Administrator and Teacher are independent school business records, with permission granted only through explicit `administrator_accounts` and `teacher_accounts` links. A Profile may have Administrator capability, Teacher capability, both, or neither. Matching display names or business emails never create, block, merge, remove, or authorize another role.
+
+Teaching assignments, weekly submissions, and historical teacher attribution use `teachers.id`; authenticated actor/audit fields continue to use `profiles.id`. An Administrator is a teaching candidate only when a separate Teacher record exists and the login has explicit Teacher access. Removing or deactivating one capability must preserve the other capability, its business record, the shared login Profile, and historical attribution.
+
+This supersedes D-017's assumption of two mutually exclusive typed profile roles and D-024's rule that an Administrator profile can teach directly. It also supersedes any compatibility behavior under D-025 that still derives Teacher identity from Profile role or email.
+
+Administrator management may add, reactivate, deactivate, and safely remove Administrator records/access while preventing school lockout by removal of the last active Administrator. Teacher management remains independent and cannot mutate Administrator access as a side effect.
+
+Navigation is the union of explicit capabilities: Administrator-only gets administrative navigation, Teacher-only gets My Teaching, and a dual-capability login gets both. After authentication, Administrator and dual-capability accounts default to Dashboard; Teacher-only accounts default to My Teaching.
+
+Export is intentionally simple and Administrator-only. Any login with active Administrator capability can see and use all export-related UI/actions/downloads; any login without Administrator capability receives no export UI and no export access. Teacher capability does not grant export permission.
+
+The detailed authoritative correction is `docs/superpowers/specs/2026-09-23-independent-role-records-design.md`. Production remains unchanged until the complete branch is verified and an explicit production release is authorized.

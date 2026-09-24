@@ -5,6 +5,7 @@ import {redirect} from 'next/navigation';
 import {loginSchema} from '@/features/auth/auth.schemas';
 import type {LoginState} from '@/features/auth/auth.types';
 import {isLocale} from '@/i18n/config';
+import {getDefaultAuthenticatedRoute} from '@/lib/auth/navigation';
 import {createServerSupabaseClient} from '@/lib/supabase/server';
 
 export async function loginAction(
@@ -18,39 +19,49 @@ export async function loginAction(
     password: formData.get('password')
   });
 
-  if (!parsed.success) {
-    return {error: 'invalidCredentials'};
-  }
+  if (!parsed.success) return {error: 'invalidCredentials'};
 
-  const supabase = await createServerSupabaseClient();
-  const {data: authData, error: authError} = await supabase.auth.signInWithPassword(
-    parsed.data
-  );
+  const db = await createServerSupabaseClient();
+  const {data: authData, error: authError} = await db.auth.signInWithPassword(parsed.data);
 
-  if (authError || !authData.user) {
-    return {error: 'invalidCredentials'};
-  }
+  if (authError || !authData.user) return {error: 'invalidCredentials'};
 
-  const {data: profile, error: profileError} = await supabase
+  const {data: profile, error: profileError} = await db
     .from('profiles')
-    .select('role, is_active')
+    .select('is_active')
     .eq('auth_user_id', authData.user.id)
     .maybeSingle();
 
   if (profileError || !profile?.is_active) {
-    await supabase.auth.signOut();
+    await db.auth.signOut();
     return {error: 'accessUnavailable'};
   }
 
-  redirect(
-    profile.role === 'ADMIN' ? `/${locale}/dashboard` : `/${locale}/my-teaching`
-  );
+  const [administratorResult, teacherResult] = await Promise.all([
+    db.rpc('is_admin'),
+    db.rpc('current_teacher_ids')
+  ]);
+
+  const teacherIds = Array.isArray(teacherResult.data)
+    ? teacherResult.data.filter((value): value is string => typeof value === 'string')
+    : [];
+  const destination = getDefaultAuthenticatedRoute({
+    isAdmin: administratorResult.data === true,
+    teacherIds
+  });
+
+  if (administratorResult.error || teacherResult.error || !destination) {
+    await db.auth.signOut();
+    return {error: 'accessUnavailable'};
+  }
+
+  redirect(`/${locale}${destination}`);
 }
 
 export async function logoutAction(formData: FormData) {
   const localeValue = String(formData.get('locale') ?? 'en');
   const locale = isLocale(localeValue) ? localeValue : 'en';
-  const supabase = await createServerSupabaseClient();
-  await supabase.auth.signOut();
+  const db = await createServerSupabaseClient();
+  await db.auth.signOut();
   redirect(`/${locale}/login`);
 }

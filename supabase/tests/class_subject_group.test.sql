@@ -55,6 +55,9 @@ select lives_ok($setup$
     ('74000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000001', '73000000-0000-0000-0000-000000000001', 'Quran B', 'قرآن ب'),
     ('74000000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000001', '73000000-0000-0000-0000-000000000002', 'Arabic A', 'عربي أ');
 
+  insert into public.teachers (id, school_id, display_name, email, preferred_language) values
+    ('79000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000001', 'Independent Context Teacher', 'context.teacher@example.test', 'en');
+
   update public.class_subjects
   set default_group_id = case id
     when '73000000-0000-0000-0000-000000000001'::uuid then '74000000-0000-0000-0000-000000000001'::uuid
@@ -144,7 +147,7 @@ select is(
 
 select lives_ok($teachers$
   insert into public.teaching_assignments (
-    id, school_id, teacher_profile_id, class_subject_id, subject_group_id, starts_on
+    id, school_id, teacher_id, class_subject_id, subject_group_id, starts_on
   ) values
     (
       '77000000-0000-0000-0000-000000000001',
@@ -181,7 +184,7 @@ select lives_ok($teachers$
     (
       '77000000-0000-0000-0000-000000000005',
       'a0000000-0000-0000-0000-000000000001',
-      'c0000000-0000-0000-0000-000000000001',
+      '79000000-0000-0000-0000-000000000001',
       '73000000-0000-0000-0000-000000000001',
       '74000000-0000-0000-0000-000000000001',
       date '2026-09-01'
@@ -190,7 +193,7 @@ $teachers$, 'multiple teachers can share a Class Subject or Group');
 
 select throws_ok($duplicate_teacher$
   insert into public.teaching_assignments (
-    id, school_id, teacher_profile_id, class_subject_id, subject_group_id, starts_on
+    id, school_id, teacher_id, class_subject_id, subject_group_id, starts_on
   ) values (
     '77000000-0000-0000-0000-000000000006',
     'a0000000-0000-0000-0000-000000000001',
@@ -293,7 +296,7 @@ select ok(
 );
 select ok(
   public.teacher_can_teach_context(
-    'c0000000-0000-0000-0000-000000000001',
+    '79000000-0000-0000-0000-000000000001',
     '73000000-0000-0000-0000-000000000001',
     '74000000-0000-0000-0000-000000000001',
     date '2026-09-15'
@@ -302,7 +305,7 @@ select ok(
 );
 select ok(
   not public.teacher_can_teach_context(
-    'c0000000-0000-0000-0000-000000000001',
+    '79000000-0000-0000-0000-000000000001',
     '73000000-0000-0000-0000-000000000001',
     '74000000-0000-0000-0000-000000000002',
     date '2026-09-15'

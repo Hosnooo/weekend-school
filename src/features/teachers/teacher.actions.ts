@@ -5,7 +5,6 @@ import {headers} from 'next/headers';
 import {redirect} from 'next/navigation';
 import {z} from 'zod';
 
-import {buildPasswordRecoveryRedirect} from '@/features/auth/password-recovery.service';
 import {
   assignTeacher,
   endTeacherAssignment
@@ -14,15 +13,22 @@ import {
   endTeachingAssignmentSchema,
   teachingAssignmentSchema
 } from '@/features/teaching-assignments/teaching-assignment.schemas';
-import {setTeacherActive, updateTeacher} from '@/features/teachers/teacher.repository';
+import {
+  getTeacher,
+  insertTeacher,
+  setTeacherActive,
+  updateTeacher
+} from '@/features/teachers/teacher.repository';
 import {teacherSchema, teacherUpdateSchema} from '@/features/teachers/teacher.schemas';
 import {
-  inviteTeacher,
-  resendTeacherAccess,
-  type TeacherInvitationDependencies
+  createTeacherBusinessRecord,
+  ensureTeacherAccess,
+  unlinkTeacherAccess,
+  type TeacherAccessDependencies,
+  type UnlinkTeacherAccessDependencies
 } from '@/features/teachers/teacher.service';
 import {isLocale} from '@/i18n/config';
-import {requireProfile} from '@/lib/auth/require-profile';
+import {requireAdministrator} from '@/lib/auth/require-profile';
 import {createServiceRoleSupabaseClient} from '@/lib/supabase/service-role';
 import type {ActionState} from '@/lib/validation/action-state';
 import {initialActionState, saveFailure, validationFailure} from '@/lib/validation/action-state';
@@ -41,31 +47,85 @@ function teacherInput(formData: FormData) {
   };
 }
 
-function createInvitationDependencies(redirectTo: string): TeacherInvitationDependencies {
+function accessRedirectTo(
+  host: string,
+  protocol: string,
+  preferredLanguage: 'en' | 'ar'
+) {
+  return new URL(`/${preferredLanguage}/set-password`, `${protocol}://${host}`).toString();
+}
+
+function createAccessDependencies(): TeacherAccessDependencies {
   const supabase = createServiceRoleSupabaseClient();
   return {
+    async loadTeacher(teacherId, schoolId) {
+      const {data, error} = await supabase.from('teachers')
+        .select('id,school_id,display_name,preferred_language')
+        .eq('id', teacherId)
+        .eq('school_id', schoolId)
+        .eq('is_active', true)
+        .maybeSingle();
+      if (error) throw error;
+      return data ? {
+        id: data.id as string,
+        schoolId: data.school_id as string,
+        displayName: data.display_name as string,
+        preferredLanguage: data.preferred_language as 'en' | 'ar'
+      } : null;
+    },
+    async findAuthUserByEmail(email) {
+      for (let page = 1; page <= 100; page++) {
+        const {data, error} = await supabase.auth.admin.listUsers({page, perPage: 1000});
+        if (error) throw error;
+        const match = data.users.find((user) => user.email?.trim().toLowerCase() === email);
+        if (match) return {id: match.id};
+        if (data.users.length < 1000) return null;
+      }
+      throw new Error('Auth user lookup exceeded its page limit');
+    },
+    async findProfileByAuthUserId(authUserId) {
+      const {data, error} = await supabase.from('profiles')
+        .select('id,school_id')
+        .eq('auth_user_id', authUserId)
+        .maybeSingle();
+      if (error) throw error;
+      return data ? {id: data.id as string, schoolId: data.school_id as string} : null;
+    },
     async inviteAuthUser(input) {
       const {data, error} = await supabase.auth.admin.inviteUserByEmail(input.email, {
-        data: {display_name: input.displayName, preferred_language: input.preferredLanguage},
-        redirectTo
+        data: {
+          display_name: input.displayName,
+          preferred_language: input.preferredLanguage
+        },
+        redirectTo: input.redirectTo
       });
       if (error || !data.user) throw error ?? new Error('Invitation returned no user');
       return data.user.id;
     },
-    async createProfile(input, authUserId) {
-      const {data, error} = await supabase
-        .from('profiles')
-        .insert({
-          school_id: input.schoolId,
-          auth_user_id: authUserId,
-          display_name: input.displayName,
-          role: 'TEACHER',
-          preferred_language: input.preferredLanguage
-        })
-        .select('id')
-        .single();
+    async createProfile(input) {
+      const {data, error} = await supabase.from('profiles').insert({
+        school_id: input.schoolId,
+        auth_user_id: input.authUserId,
+        display_name: input.displayName,
+        preferred_language: input.preferredLanguage
+      }).select('id').single();
       if (error) throw error;
       return data.id as string;
+    },
+    async linkTeacherAccount(input) {
+      const {error} = await supabase.from('teacher_accounts').upsert({
+        school_id: input.schoolId,
+        teacher_id: input.teacherId,
+        profile_id: input.profileId
+      }, {
+        onConflict: 'school_id,teacher_id,profile_id',
+        ignoreDuplicates: true
+      });
+      if (error) throw error;
+    },
+    async sendAccessLink(email, redirectTo) {
+      const {error} = await supabase.auth.resetPasswordForEmail(email, {redirectTo});
+      if (error) throw error;
     },
     async deleteProfile(profileId) {
       const {error} = await supabase.from('profiles').delete().eq('id', profileId);
@@ -74,30 +134,18 @@ function createInvitationDependencies(redirectTo: string): TeacherInvitationDepe
     async deleteAuthUser(authUserId) {
       const {error} = await supabase.auth.admin.deleteUser(authUserId);
       if (error) throw error;
-    },
-    async findUnclaimedAuthUser(email, schoolId) {
-      for (let page = 1; page <= 100; page++) {
-        const {data, error} = await supabase.auth.admin.listUsers({page, perPage: 1000});
-        if (error) throw error;
-        const match = data.users.find((user) => user.email?.toLowerCase() === email);
-        if (match) {
-          const {data: profile, error: profileError} = await supabase.from('profiles')
-            .select('id, school_id, role').eq('auth_user_id', match.id).maybeSingle();
-          if (profileError) throw profileError;
-          if (profile?.school_id === schoolId && profile.role === 'ADMIN') {
-            throw new Error('administrator already has an account');
-          }
-          if (profile?.school_id === schoolId && profile.role === 'TEACHER') {
-            throw new Error('teacher already has an account');
-          }
-          return profile ? null : match.id;
-        }
-        if (data.users.length < 1000) return null;
-      }
-      throw new Error('Auth user lookup exceeded its page limit');
-    },
-    async sendExistingAccessLink(email) {
-      const {error} = await supabase.auth.resetPasswordForEmail(email, {redirectTo});
+    }
+  };
+}
+
+function createUnlinkDependencies(): UnlinkTeacherAccessDependencies {
+  const supabase = createServiceRoleSupabaseClient();
+  return {
+    async unlinkTeacherAccount(input) {
+      const {error} = await supabase.from('teacher_accounts').delete()
+        .eq('school_id', input.schoolId)
+        .eq('teacher_id', input.teacherId)
+        .eq('profile_id', input.profileId);
       if (error) throw error;
     }
   };
@@ -108,24 +156,17 @@ export async function createTeacherAction(
   formData: FormData
 ): Promise<ActionState> {
   const locale = localeFrom(formData);
-  const profile = await requireProfile(locale, 'ADMIN');
+  const profile = await requireAdministrator(locale);
   const parsed = teacherSchema.safeParse(teacherInput(formData));
   if (!parsed.success) return validationFailure();
   try {
-    const requestHeaders = await headers();
-    const host = requestHeaders.get('x-forwarded-host') ?? requestHeaders.get('host');
-    if (!host) throw new Error('Invitation host is unavailable');
-    const protocol = requestHeaders.get('x-forwarded-proto') ?? (host.startsWith('localhost') || host.startsWith('127.0.0.1') ? 'http' : 'https');
-    const redirectTo = new URL(`/${parsed.data.preferredLanguage}/set-password`, `${protocol}://${host}`).toString();
-    await inviteTeacher(
+    await createTeacherBusinessRecord(
       {...parsed.data, schoolId: profile.schoolId},
-      createInvitationDependencies(redirectTo)
+      {createTeacher: insertTeacher}
     );
   } catch (error) {
-    console.error('Unable to invite teacher', {error});
-    if (error instanceof Error && error.message === 'administrator already has an account') return saveFailure('adminAccount');
-    if (error instanceof Error && error.message === 'teacher already has an account') return saveFailure('teacherAccount');
-    return saveFailure('invite');
+    console.error('Unable to create teacher', {error});
+    return saveFailure();
   }
   revalidatePath(`/${locale}/teachers`);
   redirect(`/${locale}/teachers`);
@@ -136,10 +177,11 @@ export async function updateTeacherAction(
   formData: FormData
 ): Promise<ActionState> {
   const locale = localeFrom(formData);
-  const profile = await requireProfile(locale, 'ADMIN');
+  const profile = await requireAdministrator(locale);
   const parsed = teacherUpdateSchema.safeParse({
     id: formData.get('id'),
     displayName: formData.get('displayName'),
+    email: formData.get('email'),
     preferredLanguage: formData.get('preferredLanguage')
   });
   if (!parsed.success) return validationFailure();
@@ -158,9 +200,9 @@ export async function assignTeacherAction(
   formData: FormData
 ): Promise<ActionState> {
   const locale = localeFrom(formData);
-  const profile = await requireProfile(locale, 'ADMIN');
+  const profile = await requireAdministrator(locale);
   const parsed = teachingAssignmentSchema.safeParse({
-    teacherProfileId: formData.get('teacherProfileId'),
+    teacherId: formData.get('teacherId'),
     classSubjectId: formData.get('classSubjectId'),
     subjectGroupId: formData.get('subjectGroupId'),
     startsOn: formData.get('startsOn')
@@ -173,32 +215,32 @@ export async function assignTeacherAction(
     return saveFailure();
   }
   revalidatePath(`/${locale}/teachers`);
-  revalidatePath(`/${locale}/teachers/${parsed.data.teacherProfileId}/edit`);
+  revalidatePath(`/${locale}/teachers/${parsed.data.teacherId}/edit`);
   return initialActionState;
 }
 
 export async function endTeacherAssignmentAction(formData: FormData) {
   const locale = localeFrom(formData);
-  const profile = await requireProfile(locale, 'ADMIN');
-  const teacherProfileId = databaseUuid.safeParse(formData.get('teacherProfileId'));
+  const profile = await requireAdministrator(locale);
+  const teacherId = databaseUuid.safeParse(formData.get('teacherId'));
   const parsed = endTeachingAssignmentSchema.safeParse({
     assignmentId: formData.get('assignmentId'),
     endsOn: formData.get('endsOn')
   });
-  if (!teacherProfileId.success || !parsed.success) return;
+  if (!teacherId.success || !parsed.success) return;
   try {
-    await endTeacherAssignment(profile.schoolId, teacherProfileId.data, parsed.data);
+    await endTeacherAssignment(profile.schoolId, teacherId.data, parsed.data);
   } catch (error) {
     console.error('Unable to end teaching assignment', {error});
     return;
   }
   revalidatePath(`/${locale}/teachers`);
-  revalidatePath(`/${locale}/teachers/${teacherProfileId.data}/edit`);
+  revalidatePath(`/${locale}/teachers/${teacherId.data}/edit`);
 }
 
 export async function setTeacherActiveAction(formData: FormData) {
   const locale = localeFrom(formData);
-  const profile = await requireProfile(locale, 'ADMIN');
+  const profile = await requireAdministrator(locale);
   const parsed = z.object({id: databaseUuid, isActive: z.enum(['true', 'false'])}).safeParse({
     id: formData.get('id'),
     isActive: formData.get('isActive')
@@ -210,39 +252,54 @@ export async function setTeacherActiveAction(formData: FormData) {
 
 export async function resendTeacherAccessAction(formData: FormData) {
   const locale = localeFrom(formData);
-  const profile = await requireProfile(locale, 'ADMIN');
+  const profile = await requireAdministrator(locale);
   const parsed = databaseUuid.safeParse(formData.get('id'));
   if (!parsed.success) return;
-  const requestHeaders = await headers();
-  const origin = requestHeaders.get('origin');
-  const host = requestHeaders.get('x-forwarded-host') ?? requestHeaders.get('host');
-  if (!origin || !host) throw new Error('Invitation origin is unavailable');
-  const supabase = createServiceRoleSupabaseClient();
+
   let outcome: 'sent' | 'failed' = 'sent';
   try {
-    await resendTeacherAccess(parsed.data, profile.schoolId, {
-      async findTeacher(profileId, schoolId) {
-        const {data, error} = await supabase.from('profiles')
-          .select('auth_user_id, preferred_language')
-          .eq('id', profileId).eq('school_id', schoolId).eq('role', 'TEACHER').eq('is_active', true).maybeSingle();
-        if (error) throw error;
-        return data ? {authUserId: data.auth_user_id as string, preferredLanguage: data.preferred_language as 'en' | 'ar'} : null;
-      },
-      async getAuthEmail(authUserId) {
-        const {data, error} = await supabase.auth.admin.getUserById(authUserId);
-        if (error) throw error;
-        return data.user?.email ?? null;
-      },
-      async sendAccessLink(email, language) {
-        const redirectTo = buildPasswordRecoveryRedirect(origin, host, language);
-        const {error} = await supabase.auth.resetPasswordForEmail(email, {redirectTo});
-        if (error) throw error;
-      }
-    });
+    const teacher = await getTeacher(profile.schoolId, parsed.data);
+    if (!teacher?.email) throw new Error('Teacher login email is unavailable');
+    const requestHeaders = await headers();
+    const host = requestHeaders.get('x-forwarded-host') ?? requestHeaders.get('host');
+    if (!host) throw new Error('Invitation host is unavailable');
+    const protocol = requestHeaders.get('x-forwarded-proto') ??
+      (host.startsWith('localhost') || host.startsWith('127.0.0.1') ? 'http' : 'https');
+    const redirectTo = accessRedirectTo(host, protocol, teacher.preferredLanguage);
+    await ensureTeacherAccess({
+      schoolId: profile.schoolId,
+      teacherId: teacher.id,
+      loginEmail: teacher.email,
+      redirectTo
+    }, createAccessDependencies());
   } catch (error) {
-    console.error('Unable to resend teacher access', {error});
+    console.error('Unable to send teacher access', {error});
     outcome = 'failed';
   }
+
   revalidatePath(`/${locale}/teachers`);
   redirect(`/${locale}/teachers?access=${outcome}`);
+}
+
+export async function unlinkTeacherAccessAction(formData: FormData) {
+  const locale = localeFrom(formData);
+  const profile = await requireAdministrator(locale);
+  const parsed = z.object({teacherId: databaseUuid, profileId: databaseUuid}).safeParse({
+    teacherId: formData.get('teacherId'),
+    profileId: formData.get('profileId')
+  });
+  if (!parsed.success) return;
+
+  try {
+    await unlinkTeacherAccess({
+      schoolId: profile.schoolId,
+      teacherId: parsed.data.teacherId,
+      profileId: parsed.data.profileId
+    }, createUnlinkDependencies());
+  } catch (error) {
+    console.error('Unable to unlink teacher access', {error});
+    return;
+  }
+
+  revalidatePath(`/${locale}/teachers`);
 }

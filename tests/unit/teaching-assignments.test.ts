@@ -40,7 +40,7 @@ const islamic: TeachingClassSubject = {
 };
 
 function assignment(
-  teacherProfileId: string,
+  teacherId: string,
   classSubjectId: string,
   subjectGroupId: string | null,
   startsOn = '2026-09-01',
@@ -48,7 +48,7 @@ function assignment(
 ): TeachingAssignment {
   return {
     id: crypto.randomUUID(),
-    teacherProfileId,
+    teacherId,
     classSubjectId,
     subjectGroupId,
     startsOn,
@@ -59,7 +59,7 @@ function assignment(
 describe('flexible teaching assignments', () => {
   it('supports multiple Classes and Subjects for one teacher without a primary role', () => {
     const contexts = expandEffectiveTeachingContexts({
-      teacherProfileId: teacherA,
+      teacherId: teacherA,
       assignments: [
         assignment(teacherA, quran.id, quran.groups[0]!.id),
         assignment(teacherA, arabic.id, null),
@@ -83,13 +83,13 @@ describe('flexible teaching assignments', () => {
       assignment(teacherB, quran.id, shared)
     ];
 
-    expect(expandEffectiveTeachingContexts({teacherProfileId: teacherA, assignments, classSubjects: [quran], onDate: '2026-09-23'})).toHaveLength(1);
-    expect(expandEffectiveTeachingContexts({teacherProfileId: teacherB, assignments, classSubjects: [quran], onDate: '2026-09-23'})).toHaveLength(1);
+    expect(expandEffectiveTeachingContexts({teacherId: teacherA, assignments, classSubjects: [quran], onDate: '2026-09-23'})).toHaveLength(1);
+    expect(expandEffectiveTeachingContexts({teacherId: teacherB, assignments, classSubjects: [quran], onDate: '2026-09-23'})).toHaveLength(1);
   });
 
   it('expands a whole-Subject assignment to every active Group and deduplicates an exact Group assignment', () => {
     const contexts = expandEffectiveTeachingContexts({
-      teacherProfileId: teacherA,
+      teacherId: teacherA,
       assignments: [
         assignment(teacherA, quran.id, null),
         assignment(teacherA, quran.id, quran.groups[0]!.id)
@@ -106,7 +106,7 @@ describe('flexible teaching assignments', () => {
 
   it('keeps a whole-Class-Subject context when the Subject has no Groups', () => {
     const contexts = expandEffectiveTeachingContexts({
-      teacherProfileId: teacherA,
+      teacherId: teacherA,
       assignments: [assignment(teacherA, arabic.id, null)],
       classSubjects: [arabic],
       onDate: '2026-09-23'
@@ -121,7 +121,7 @@ describe('flexible teaching assignments', () => {
 
   it('ignores inactive and out-of-date assignment contexts', () => {
     const contexts = expandEffectiveTeachingContexts({
-      teacherProfileId: teacherA,
+      teacherId: teacherA,
       assignments: [
         assignment(teacherA, quran.id, null, '2026-09-01', '2026-09-20'),
         assignment(teacherA, islamic.id, islamic.groups[0]!.id)

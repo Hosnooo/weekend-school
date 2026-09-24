@@ -24,7 +24,7 @@ type SubmissionRow = {
   id: string;
   class_subject_id: string;
   subject_group_id: string | null;
-  teacher_profile_id: string;
+  teacher_id: string;
   week_start: string;
   progress_en: string | null;
   progress_ar: string | null;
@@ -189,7 +189,7 @@ export async function getReportBatchWorkspace(
   let submissions: SubmissionRow[] = [];
   if (classSubjectIds.length > 0) {
     const submissionResult = await db.from('weekly_submissions')
-      .select('id,class_subject_id,subject_group_id,teacher_profile_id,week_start,progress_en,progress_ar,default_performance')
+      .select('id,class_subject_id,subject_group_id,teacher_id,week_start,progress_en,progress_ar,default_performance')
       .eq('school_id', schoolId)
       .eq('status', 'SUBMITTED')
       .gte('week_start', batch.period_start)
@@ -203,9 +203,9 @@ export async function getReportBatchWorkspace(
     }
   }
 
-  const teacherIds = [...new Set(submissions.map(({teacher_profile_id}) => teacher_profile_id))];
+  const teacherIds = [...new Set(submissions.map(({teacher_id}) => teacher_id))];
   const teachersResult = teacherIds.length > 0
-    ? await db.from('profiles').select('id,display_name').eq('school_id', schoolId).in('id', teacherIds)
+    ? await db.from('teachers').select('id,display_name').eq('school_id', schoolId).in('id', teacherIds)
     : {data: [], error: null};
   requireNoError(teachersResult.error);
 
@@ -250,7 +250,7 @@ export async function getReportBatchWorkspace(
       classSubjectId: row.class_subject_id,
       subjectGroupId: row.subject_group_id,
       weekStart: row.week_start,
-      teacherName: teacherById.get(row.teacher_profile_id) ?? 'Teacher',
+      teacherName: teacherById.get(row.teacher_id) ?? 'Teacher',
       subjectNameEn: subject?.name_en ?? row.class_subject_id,
       subjectNameAr: subject?.name_ar ?? null,
       groupNameEn: group?.name_en ?? null,

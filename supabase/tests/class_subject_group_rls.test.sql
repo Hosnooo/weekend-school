@@ -45,7 +45,7 @@ insert into public.subject_exclusions (id, school_id, class_subject_id, student_
   ('87000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000001', '83000000-0000-0000-0000-000000000001', 'e0000000-0000-0000-0000-000000000014', current_date - 5);
 
 -- Teacher 1 covers the full Subject. Teacher 2 covers only Group A.
-insert into public.teaching_assignments (id, school_id, teacher_profile_id, class_subject_id, subject_group_id, starts_on) values
+insert into public.teaching_assignments (id, school_id, teacher_id, class_subject_id, subject_group_id, starts_on) values
   ('88000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000001', 'c0000000-0000-0000-0000-000000000002', '83000000-0000-0000-0000-000000000001', null, current_date - 10),
   ('88000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000001', 'c0000000-0000-0000-0000-000000000003', '83000000-0000-0000-0000-000000000001', '84000000-0000-0000-0000-000000000001', current_date - 10);
 

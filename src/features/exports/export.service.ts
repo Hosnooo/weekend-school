@@ -11,7 +11,7 @@ type ExportScopeIds = {
   classSubjectId?: string;
   subjectGroupId?: string;
   studentId?: string;
-  teacherProfileId?: string;
+  teacherId?: string;
 };
 
 export type ExportScope =
@@ -20,7 +20,7 @@ export type ExportScope =
   | ({type: 'SUBJECT'; classId: string; classSubjectId: string} & ExportScopeIds)
   | ({type: 'GROUP'; classId: string; classSubjectId: string; subjectGroupId: string} & ExportScopeIds)
   | ({type: 'STUDENT'; studentId: string} & ExportScopeIds)
-  | ({type: 'TEACHER'; teacherProfileId: string} & ExportScopeIds);
+  | ({type: 'TEACHER'; teacherId: string} & ExportScopeIds);
 
 export type ExportRequest = {
   periodStart: string | null;
@@ -40,7 +40,7 @@ export type ExportRequestInput = {
     classSubjectId?: string;
     subjectGroupId?: string;
     studentId?: string;
-    teacherProfileId?: string;
+    teacherId?: string;
   };
   datasets: readonly string[];
   includeCsv: boolean;
@@ -53,7 +53,7 @@ export type ExportRecordContext = {
   classSubjectId?: string | null;
   subjectGroupId?: string | null;
   studentId?: string | null;
-  teacherProfileId?: string | null;
+  teacherId?: string | null;
 };
 
 export type FinalizedReportExportRef = {
@@ -116,7 +116,7 @@ function validateScope(scope: ExportRequestInput['scope']): ExportScope {
   if (scope.type === 'TEACHER') {
     return {
       type: 'TEACHER',
-      teacherProfileId: requireNonEmpty(scope.teacherProfileId, 'Teacher')
+      teacherId: requireNonEmpty(scope.teacherId, 'Teacher')
     };
   }
 
@@ -210,7 +210,7 @@ export function recordMatchesExportRequest(
     case 'STUDENT':
       return record.studentId === request.scope.studentId;
     case 'TEACHER':
-      return record.teacherProfileId === request.scope.teacherProfileId;
+      return record.teacherId === request.scope.teacherId;
   }
 }
 
@@ -260,12 +260,12 @@ export function planExportFiles(
 }
 
 export function authorizeExportDownload(input: {
-  actorRole: string;
+  actorIsAdministrator: boolean;
   actorActive: boolean;
   actorSchoolId: string;
   exportSchoolId: string;
 }) {
-  if (input.actorRole !== 'ADMIN') {
+  if (!input.actorIsAdministrator) {
     throw new Error('Administrator access is required for exports');
   }
   if (!input.actorActive) {
@@ -278,7 +278,7 @@ export function authorizeExportDownload(input: {
 }
 
 export function authorizeStoredExportDownload(input: {
-  actorRole: string;
+  actorIsAdministrator: boolean;
   actorActive: boolean;
   actorSchoolId: string;
   exportSchoolId: string;

@@ -30,7 +30,24 @@ export async function submitTeachingUpdate(page: Page, input: {
   absentStudent?: string;
   exceptionStudent?: string;
 }) {
-  const query = new URLSearchParams({classSubjectId: input.classSubjectId, week: input.week});
+  await page.goto(`/${input.locale}/my-teaching`);
+  const groupFragment = input.subjectGroupId
+    ? `subjectGroupId=${input.subjectGroupId}`
+    : 'subjectGroupId=&';
+  const updateLink = page.locator(
+    `a[href*="classSubjectId=${input.classSubjectId}"][href*="${groupFragment}"]`
+  ).first();
+  await expect(updateLink).toBeVisible();
+  const href = await updateLink.getAttribute('href');
+  expect(href).toBeTruthy();
+  const teacherId = new URL(href!, 'http://localhost').searchParams.get('teacherId');
+  expect(teacherId).toBeTruthy();
+
+  const query = new URLSearchParams({
+    teacherId: teacherId!,
+    classSubjectId: input.classSubjectId,
+    week: input.week
+  });
   if (input.subjectGroupId) query.set('subjectGroupId', input.subjectGroupId);
   await page.goto(`/${input.locale}/my-teaching/update?${query}`);
   const markAll = page.getByRole('button', {name: input.locale === 'ar' ? 'تحديد الجميع حاضرين' : 'Mark all present'});

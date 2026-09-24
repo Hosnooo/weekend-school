@@ -124,7 +124,7 @@ export function ExportPanel({
           </label>
           <label>
             {labels.teacher}
-            <select name="teacherProfileId" defaultValue="">
+            <select name="teacherId" defaultValue="">
               <option value="">—</option>
               {options.teachers.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
             </select>

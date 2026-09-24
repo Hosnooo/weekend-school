@@ -1,4 +1,53 @@
 'use server';
-import {revalidatePath} from 'next/cache';import {redirect} from 'next/navigation';import {isLocale} from '@/i18n/config';import {requireTeachingProfile} from '@/lib/auth/require-profile';import {canTeachWeeklyContext,saveWeeklyUpdate} from './weekly-update.repository';import {weeklyUpdateSchema} from './weekly-update.schemas';import {toSparseExceptions} from './weekly-update.model';
-export type WeeklyActionState={status:'idle'|'saving'|'saved'|'error';error:'validation'|'save'|null};
-export async function saveWeeklyUpdateAction(_state:WeeklyActionState,formData:FormData):Promise<WeeklyActionState>{const rawLocale=String(formData.get('locale')??'en');const locale=isLocale(rawLocale)?rawLocale:'en';const profile=await requireTeachingProfile(locale);let attendance:unknown;let exceptions:unknown;try{attendance=JSON.parse(String(formData.get('attendance')??'[]'));exceptions=JSON.parse(String(formData.get('exceptions')??'[]'));}catch{return{status:'error',error:'validation'}}const parsed=weeklyUpdateSchema.safeParse({submissionId:formData.get('submissionId'),classSubjectId:formData.get('classSubjectId'),subjectGroupId:formData.get('subjectGroupId'),weekStart:formData.get('weekStart'),progressEn:formData.get('progressEn'),progressAr:formData.get('progressAr'),defaultPerformance:String(formData.get('defaultPerformance')??'')||null,attendance,exceptions,intent:formData.get('intent')});if(!parsed.success)return{status:'error',error:'validation'};try{if(!(await canTeachWeeklyContext(profile.schoolId,profile.id,parsed.data.classSubjectId,parsed.data.subjectGroupId,parsed.data.weekStart)))return{status:'error',error:'save'};await saveWeeklyUpdate({...parsed.data,exceptions:toSparseExceptions(parsed.data.exceptions)});}catch(error){console.error('Unable to save weekly update',{error});return{status:'error',error:'save'}}revalidatePath(`/${locale}/my-teaching`);revalidatePath(`/${locale}/history`);if(parsed.data.intent==='submit')redirect(`/${locale}/history`);return{status:'saved',error:null};}
+
+import {revalidatePath} from 'next/cache';
+import {redirect} from 'next/navigation';
+
+import {isLocale} from '@/i18n/config';
+import {requireTeachingAccount} from '@/lib/auth/require-profile';
+import {toSparseExceptions} from './weekly-update.model';
+import {canTeachWeeklyContext, saveWeeklyUpdate} from './weekly-update.repository';
+import {weeklyUpdateSchema} from './weekly-update.schemas';
+
+export type WeeklyActionState = {status: 'idle' | 'saving' | 'saved' | 'error'; error: 'validation' | 'save' | null};
+
+export async function saveWeeklyUpdateAction(_state: WeeklyActionState, formData: FormData): Promise<WeeklyActionState> {
+  const rawLocale = String(formData.get('locale') ?? 'en');
+  const locale = isLocale(rawLocale) ? rawLocale : 'en';
+  const {profile, teacherIds} = await requireTeachingAccount(locale);
+  let attendance: unknown;
+  let exceptions: unknown;
+  try {
+    attendance = JSON.parse(String(formData.get('attendance') ?? '[]'));
+    exceptions = JSON.parse(String(formData.get('exceptions') ?? '[]'));
+  } catch {
+    return {status: 'error', error: 'validation'};
+  }
+  const parsed = weeklyUpdateSchema.safeParse({
+    teacherId: formData.get('teacherId'),
+    submissionId: formData.get('submissionId'),
+    classSubjectId: formData.get('classSubjectId'),
+    subjectGroupId: formData.get('subjectGroupId'),
+    weekStart: formData.get('weekStart'),
+    progressEn: formData.get('progressEn'),
+    progressAr: formData.get('progressAr'),
+    defaultPerformance: String(formData.get('defaultPerformance') ?? '') || null,
+    attendance,
+    exceptions,
+    intent: formData.get('intent')
+  });
+  if (!parsed.success || !teacherIds.includes(parsed.data.teacherId)) return {status: 'error', error: 'validation'};
+  try {
+    if (!(await canTeachWeeklyContext(profile.schoolId, parsed.data.teacherId, parsed.data.classSubjectId, parsed.data.subjectGroupId, parsed.data.weekStart))) {
+      return {status: 'error', error: 'save'};
+    }
+    await saveWeeklyUpdate({...parsed.data, exceptions: toSparseExceptions(parsed.data.exceptions)});
+  } catch (error) {
+    console.error('Unable to save weekly update', {error});
+    return {status: 'error', error: 'save'};
+  }
+  revalidatePath(`/${locale}/my-teaching`);
+  revalidatePath(`/${locale}/history`);
+  if (parsed.data.intent === 'submit') redirect(`/${locale}/history`);
+  return {status: 'saved', error: null};
+}

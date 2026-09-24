@@ -24,7 +24,7 @@ export type StoredExportRequest = {
 export type ExportActor = {
   id: string;
   schoolId: string;
-  role: string;
+  isAdministrator: boolean;
   isActive: boolean;
 };
 
@@ -41,18 +41,22 @@ export async function getCurrentExportActor(): Promise<ExportActor | null> {
   const {data: {user}} = await supabase.auth.getUser();
   if (!user) return null;
 
-  const {data, error} = await supabase
-    .from('profiles')
-    .select('id, school_id, role, is_active')
-    .eq('auth_user_id', user.id)
-    .maybeSingle();
+  const [{data, error}, {data: isAdministrator, error: administratorError}] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('id, school_id, is_active')
+      .eq('auth_user_id', user.id)
+      .maybeSingle(),
+    supabase.rpc('is_admin')
+  ]);
   if (error) throw error;
+  if (administratorError) throw administratorError;
   if (!data) return null;
 
   return {
     id: data.id,
     schoolId: data.school_id,
-    role: data.role,
+    isAdministrator: Boolean(isAdministrator),
     isActive: data.is_active
   };
 }
@@ -76,7 +80,7 @@ export async function listExportOptions(schoolId: string, locale: Locale) {
     supabase.from('class_subjects').select('id, class_id, subject_id').eq('school_id', schoolId).eq('is_active', true),
     supabase.from('subject_groups').select('id, class_subject_id, name_en, name_ar').eq('school_id', schoolId).eq('is_active', true).order('name_en'),
     supabase.from('students').select('id, first_name_en, last_name_en, first_name_ar, last_name_ar').eq('school_id', schoolId).order('last_name_en').order('first_name_en'),
-    supabase.from('profiles').select('id, display_name').eq('school_id', schoolId).eq('is_active', true).in('role', ['TEACHER', 'ADMIN']).order('display_name')
+    supabase.from('teachers').select('id, display_name').eq('school_id', schoolId).eq('is_active', true).order('display_name')
   ]);
 
   for (const result of [classesResult, subjectsResult, classSubjectsResult, groupsResult, studentsResult, teachersResult]) {
@@ -219,8 +223,8 @@ export async function collectExportGenerationData(
     supabase.from('subject_group_memberships').select('id, class_subject_id, subject_group_id, student_id, starts_on, ends_on').eq('school_id', schoolId),
     supabase.from('subject_exclusions').select('class_subject_id, student_id, starts_on, ends_on').eq('school_id', schoolId),
     supabase.from('class_subjects').select('id, class_id').eq('school_id', schoolId),
-    supabase.from('teaching_assignments').select('id, teacher_profile_id, class_subject_id, subject_group_id, starts_on, ends_on').eq('school_id', schoolId),
-    supabase.from('weekly_submissions').select('id, class_subject_id, subject_group_id, teacher_profile_id, week_start, status, progress_en, progress_ar, default_performance, submitted_at').eq('school_id', schoolId),
+    supabase.from('teaching_assignments').select('id, teacher_id, class_subject_id, subject_group_id, starts_on, ends_on').eq('school_id', schoolId),
+    supabase.from('weekly_submissions').select('id, class_subject_id, subject_group_id, teacher_id, week_start, status, progress_en, progress_ar, default_performance, submitted_at').eq('school_id', schoolId),
     supabase.from('weekly_submission_students').select('id, submission_id, student_id, attendance_status, performance_override, comment_en, comment_ar').eq('school_id', schoolId),
     supabase.from('reports').select('id, student_id, period_start, period_end, language, status, snapshot_json, revision, finalized_at, generated_at').eq('school_id', schoolId),
     supabase.from('email_deliveries').select('id, report_id, student_id, period_start, period_end, recipient_email, status, sent_at, created_at').eq('school_id', schoolId)
@@ -324,7 +328,7 @@ export async function collectExportGenerationData(
     for (const assignment of assignmentsResult.data ?? []) {
       if (!periodOverlaps(assignment.starts_on, assignment.ends_on, request)) continue;
       const context = {
-        teacherProfileId: assignment.teacher_profile_id,
+        teacherId: assignment.teacher_id,
         classId: classSubjectMap.get(assignment.class_subject_id) ?? null,
         classSubjectId: assignment.class_subject_id,
         subjectGroupId: assignment.subject_group_id
@@ -345,7 +349,7 @@ export async function collectExportGenerationData(
     const context = {
       occurredOn: submission.week_start,
       studentId: studentRow.student_id,
-      teacherProfileId: submission.teacher_profile_id,
+      teacherId: submission.teacher_id,
       classId: classSubjectMap.get(submission.class_subject_id) ?? null,
       classSubjectId: submission.class_subject_id,
       subjectGroupId: submission.subject_group_id

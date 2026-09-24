@@ -16,7 +16,7 @@ describe('AppNavigation', () => {
     navigationState.pathname = '/en/my-teaching';
     render(
       <NextIntlClientProvider locale="en" messages={englishMessages}>
-        <AppNavigation role="TEACHER" />
+        <AppNavigation capabilities={{isAdmin: false, teacherIds: ['teacher-1']}} />
       </NextIntlClientProvider>
     );
 
@@ -29,7 +29,7 @@ describe('AppNavigation', () => {
     navigationState.pathname = '/en/classes/class-1';
     render(
       <NextIntlClientProvider locale="en" messages={englishMessages}>
-        <AppNavigation role="ADMIN" />
+        <AppNavigation capabilities={{isAdmin: true, teacherIds: []}} />
       </NextIntlClientProvider>
     );
 
@@ -44,5 +44,18 @@ describe('AppNavigation', () => {
     ]);
     expect(screen.getByRole('link', {name: 'Classes'})).toHaveAttribute('aria-current', 'page');
     expect(screen.getByRole('link', {name: 'Dashboard'})).not.toHaveAttribute('aria-current');
+  });
+
+  it('renders both navigation surfaces for a dual-capability account', () => {
+    navigationState.pathname = '/en/my-teaching';
+    render(
+      <NextIntlClientProvider locale="en" messages={englishMessages}>
+        <AppNavigation capabilities={{isAdmin: true, teacherIds: ['teacher-1']}} />
+      </NextIntlClientProvider>
+    );
+
+    expect(screen.getByRole('link', {name: 'Dashboard'})).toBeInTheDocument();
+    expect(screen.getByRole('link', {name: 'My Teaching'})).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', {name: 'History'})).toBeInTheDocument();
   });
 });

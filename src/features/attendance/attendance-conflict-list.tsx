@@ -49,7 +49,7 @@ export function AttendanceConflictList({
               </p>
               <ul>
                 {conflict.observations.map((observation) => (
-                  <li key={observation.teacherProfileId}>
+                  <li key={observation.teacherId}>
                     {observation.teacherName}: {statusLabel(observation.status)}
                   </li>
                 ))}
