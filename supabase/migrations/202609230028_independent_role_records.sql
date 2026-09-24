@@ -5,8 +5,8 @@
 create table public.administrators (
   id uuid primary key default gen_random_uuid(),
   school_id uuid not null references public.schools(id) on delete restrict,
-  display_name text not null,
-  email text,
+  display_name text not null check (length(trim(display_name)) > 0),
+  email text check (email is null or (email = lower(trim(email)) and position('@' in email) > 1)),
   is_active boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
@@ -16,8 +16,8 @@ create table public.administrators (
 create table public.teachers (
   id uuid primary key default gen_random_uuid(),
   school_id uuid not null references public.schools(id) on delete restrict,
-  display_name text not null,
-  email text,
+  display_name text not null check (length(trim(display_name)) > 0),
+  email text check (email is null or (email = lower(trim(email)) and position('@' in email) > 1)),
   preferred_language public.language_code not null default 'en',
   is_active boolean not null default true,
   created_at timestamptz not null default now(),
@@ -80,8 +80,9 @@ alter table public.teachers force row level security;
 alter table public.administrator_accounts force row level security;
 alter table public.teacher_accounts force row level security;
 
--- Preserve existing role ownership deterministically. Reusing the legacy profile UUID
--- keeps the mapping stable without relying on names or email equality.
+-- Preserve existing role ownership deterministically. The approved Task 1 contract
+-- reuses each legacy profile UUID for its corresponding business-role record.
+-- This mapping is explicit and never depends on matching names or email values.
 insert into public.administrators (
   id,
   school_id,
@@ -95,7 +96,7 @@ select
   p.id,
   p.school_id,
   p.display_name,
-  u.email,
+  case when u.email is null then null else lower(trim(u.email)) end,
   p.is_active,
   p.created_at,
   p.updated_at
@@ -118,7 +119,7 @@ select
   p.id,
   p.school_id,
   p.display_name,
-  u.email,
+  case when u.email is null then null else lower(trim(u.email)) end,
   p.preferred_language,
   p.is_active,
   p.created_at,
