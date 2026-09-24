@@ -160,7 +160,7 @@ export async function assignTeacherAction(
   const locale = localeFrom(formData);
   const profile = await requireProfile(locale, 'ADMIN');
   const parsed = teachingAssignmentSchema.safeParse({
-    teacherProfileId: formData.get('teacherProfileId'),
+    teacherId: formData.get('teacherId'),
     classSubjectId: formData.get('classSubjectId'),
     subjectGroupId: formData.get('subjectGroupId'),
     startsOn: formData.get('startsOn')
@@ -173,27 +173,27 @@ export async function assignTeacherAction(
     return saveFailure();
   }
   revalidatePath(`/${locale}/teachers`);
-  revalidatePath(`/${locale}/teachers/${parsed.data.teacherProfileId}/edit`);
+  revalidatePath(`/${locale}/teachers/${parsed.data.teacherId}/edit`);
   return initialActionState;
 }
 
 export async function endTeacherAssignmentAction(formData: FormData) {
   const locale = localeFrom(formData);
   const profile = await requireProfile(locale, 'ADMIN');
-  const teacherProfileId = databaseUuid.safeParse(formData.get('teacherProfileId'));
+  const teacherId = databaseUuid.safeParse(formData.get('teacherId'));
   const parsed = endTeachingAssignmentSchema.safeParse({
     assignmentId: formData.get('assignmentId'),
     endsOn: formData.get('endsOn')
   });
-  if (!teacherProfileId.success || !parsed.success) return;
+  if (!teacherId.success || !parsed.success) return;
   try {
-    await endTeacherAssignment(profile.schoolId, teacherProfileId.data, parsed.data);
+    await endTeacherAssignment(profile.schoolId, teacherId.data, parsed.data);
   } catch (error) {
     console.error('Unable to end teaching assignment', {error});
     return;
   }
   revalidatePath(`/${locale}/teachers`);
-  revalidatePath(`/${locale}/teachers/${teacherProfileId.data}/edit`);
+  revalidatePath(`/${locale}/teachers/${teacherId.data}/edit`);
 }
 
 export async function setTeacherActiveAction(formData: FormData) {
