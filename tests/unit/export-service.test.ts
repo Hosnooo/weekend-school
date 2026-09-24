@@ -46,8 +46,8 @@ describe('protected exports', () => {
 
     expect(validateExportRequest({
       ...request,
-      scope: {type: 'TEACHER', teacherProfileId: 'teacher-1'}
-    }).scope).toEqual({type: 'TEACHER', teacherProfileId: 'teacher-1'});
+      scope: {type: 'TEACHER', teacherId: 'teacher-1'}
+    }).scope).toEqual({type: 'TEACHER', teacherId: 'teacher-1'});
   });
 
   it('filters student and teacher exports without leaking unrelated rows', () => {
@@ -60,10 +60,10 @@ describe('protected exports', () => {
 
     const teacherRequest = validateExportRequest({
       ...request,
-      scope: {type: 'TEACHER', teacherProfileId: 'teacher-1'}
+      scope: {type: 'TEACHER', teacherId: 'teacher-1'}
     });
-    expect(recordMatchesExportRequest({teacherProfileId: 'teacher-1', occurredOn: '2026-09-12'}, teacherRequest)).toBe(true);
-    expect(recordMatchesExportRequest({teacherProfileId: 'teacher-2', occurredOn: '2026-09-12'}, teacherRequest)).toBe(false);
+    expect(recordMatchesExportRequest({teacherId: 'teacher-1', occurredOn: '2026-09-12'}, teacherRequest)).toBe(true);
+    expect(recordMatchesExportRequest({teacherId: 'teacher-2', occurredOn: '2026-09-12'}, teacherRequest)).toBe(false);
     expect(recordMatchesExportRequest({studentId: 'student-1', occurredOn: '2026-09-12'}, teacherRequest)).toBe(false);
   });
 
@@ -103,7 +103,7 @@ describe('protected exports', () => {
   it('permits temporary downloads only for an active admin in the owning school', () => {
     expect(() =>
       authorizeExportDownload({
-        actorRole: 'TEACHER',
+        actorIsAdministrator: false,
         actorActive: true,
         actorSchoolId: 'school-a',
         exportSchoolId: 'school-a'
@@ -112,7 +112,7 @@ describe('protected exports', () => {
 
     expect(() =>
       authorizeExportDownload({
-        actorRole: 'ADMIN',
+        actorIsAdministrator: true,
         actorActive: false,
         actorSchoolId: 'school-a',
         exportSchoolId: 'school-a'
@@ -121,7 +121,7 @@ describe('protected exports', () => {
 
     expect(() =>
       authorizeExportDownload({
-        actorRole: 'ADMIN',
+        actorIsAdministrator: true,
         actorActive: true,
         actorSchoolId: 'school-a',
         exportSchoolId: 'school-b'
@@ -130,7 +130,7 @@ describe('protected exports', () => {
 
     expect(
       authorizeExportDownload({
-        actorRole: 'ADMIN',
+        actorIsAdministrator: true,
         actorActive: true,
         actorSchoolId: 'school-a',
         exportSchoolId: 'school-a'
@@ -140,7 +140,7 @@ describe('protected exports', () => {
 
   it('rejects expired stored export requests even for the owning admin', () => {
     expect(() => authorizeStoredExportDownload({
-      actorRole: 'ADMIN',
+      actorIsAdministrator: true,
       actorActive: true,
       actorSchoolId: 'school-a',
       exportSchoolId: 'school-a',
@@ -149,7 +149,7 @@ describe('protected exports', () => {
     })).toThrow(/expired/i);
 
     expect(authorizeStoredExportDownload({
-      actorRole: 'ADMIN',
+      actorIsAdministrator: true,
       actorActive: true,
       actorSchoolId: 'school-a',
       exportSchoolId: 'school-a',

@@ -63,7 +63,7 @@ function scopeFromForm(formData: FormData): ExportRequestInput['scope'] {
     case 'STUDENT':
       return {type, studentId: String(formData.get('studentId') ?? '')};
     case 'TEACHER':
-      return {type, teacherProfileId: String(formData.get('teacherProfileId') ?? '')};
+      return {type, teacherId: String(formData.get('teacherId') ?? '')};
     default:
       return {type: 'SCHOOL'};
   }

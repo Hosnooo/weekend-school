@@ -25,7 +25,7 @@ export async function GET(
 
     try {
       authorizeStoredExportDownload({
-        actorRole: actor.role,
+        actorIsAdministrator: actor.isAdministrator,
         actorActive: actor.isActive,
         actorSchoolId: actor.schoolId,
         exportSchoolId: stored.schoolId,
