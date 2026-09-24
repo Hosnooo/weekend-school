@@ -58,6 +58,30 @@ export type ReportBatchReadinessSummary = {
   missingData: number;
 };
 
+export type ReportComposerLabels = {
+  sources: string;
+  useTeacher: (name: string) => string;
+  customProgressEn: string;
+  customProgressAr: string;
+  readiness: string;
+  readyAutomatically: string;
+  personalizedComments: string;
+  attendanceConflicts: string;
+  missingData: string;
+};
+
+const defaultLabels: ReportComposerLabels = {
+  sources: 'Teacher source blocks',
+  useTeacher: (name) => `Use ${name}`,
+  customProgressEn: 'Custom official progress (English)',
+  customProgressAr: 'Custom official progress (Arabic)',
+  readiness: 'Report batch readiness',
+  readyAutomatically: 'ready automatically',
+  personalizedComments: 'personalized comments',
+  attendanceConflicts: 'attendance conflicts',
+  missingData: 'missing data'
+};
+
 function clean(value: string | null | undefined) {
   const trimmed = value?.trim();
   return trimmed ? trimmed : null;
@@ -148,28 +172,40 @@ export function summarizeReportBatchReadiness(
   );
 }
 
-export function ReportBatchSummary({students}: {students: ReportBatchStudentReadiness[]}) {
+export function ReportBatchSummary({
+  students,
+  labels = defaultLabels
+}: {
+  students: ReportBatchStudentReadiness[];
+  labels?: ReportComposerLabels;
+}) {
   const summary = summarizeReportBatchReadiness(students);
 
   return (
-    <div className="report-batch-summary" aria-label="Report batch readiness">
-      <span>{summary.readyAutomatically} ready automatically</span>
-      <span>{summary.personalizedComments} personalized comments</span>
-      <span>{summary.attendanceConflicts} attendance conflicts</span>
-      <span>{summary.missingData} missing data</span>
+    <div className="report-batch-summary" aria-label={labels.readiness}>
+      <span>{summary.readyAutomatically} {labels.readyAutomatically}</span>
+      <span>{summary.personalizedComments} {labels.personalizedComments}</span>
+      <span>{summary.attendanceConflicts} {labels.attendanceConflicts}</span>
+      <span>{summary.missingData} {labels.missingData}</span>
     </div>
   );
 }
 
-export function ReportComposer({sources}: {sources: ReportComposerSource[]}) {
+export function ReportComposer({
+  sources,
+  labels = defaultLabels
+}: {
+  sources: ReportComposerSource[];
+  labels?: ReportComposerLabels;
+}) {
   return (
     <div className="report-composer">
       <fieldset className="report-source-list">
-        <legend>Teacher source blocks</legend>
+        <legend>{labels.sources}</legend>
         {sources.map((source) => (
           <label className="report-source-option" key={source.id}>
             <input
-              aria-label={`Use ${source.teacherName}`}
+              aria-label={labels.useTeacher(source.teacherName)}
               name="selectedSourceIds"
               type="checkbox"
               value={source.id}
@@ -183,11 +219,11 @@ export function ReportComposer({sources}: {sources: ReportComposerSource[]}) {
         ))}
       </fieldset>
       <label htmlFor="report-custom-progress-en">
-        Custom official progress (English)
+        {labels.customProgressEn}
         <textarea id="report-custom-progress-en" name="customProgressEn" />
       </label>
       <label htmlFor="report-custom-progress-ar">
-        Custom official progress (Arabic)
+        {labels.customProgressAr}
         <textarea dir="rtl" id="report-custom-progress-ar" name="customProgressAr" />
       </label>
     </div>

@@ -23,6 +23,15 @@ function assertRpcData<T>(data: T | null, error: {message?: string; code?: strin
   return data;
 }
 
+export async function archiveStudent(entityId: string) {
+  const supabase = await createServerSupabaseClient();
+  const {error} = await supabase.rpc('archive_entity', {
+    p_entity_type: 'STUDENT',
+    p_entity_id: entityId
+  });
+  if (error) throw error;
+}
+
 export async function getDeleteImpact(entityId: string): Promise<DeleteImpact> {
   const supabase = await createServerSupabaseClient();
   const {data, error} = await supabase.rpc('get_delete_impact', {

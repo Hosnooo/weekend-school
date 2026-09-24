@@ -20,10 +20,7 @@ type ClassListRow = {
   name_ar: string | null;
   is_active: boolean;
   class_subjects: Array<{id: string; is_active: boolean}>;
-  class_enrollments: Array<{
-    starts_on: string;
-    ends_on: string | null;
-  }>;
+  class_enrollments: Array<{starts_on: string; ends_on: string | null}>;
 };
 
 type ClassSubjectRow = {
@@ -49,11 +46,7 @@ function todayIso() {
   return new Date().toISOString().slice(0, 10);
 }
 
-function includesDate(
-  startsOn: string,
-  endsOn: string | null,
-  date: string
-) {
+function includesDate(startsOn: string, endsOn: string | null, date: string) {
   return startsOn <= date && (endsOn === null || endsOn >= date);
 }
 
@@ -110,8 +103,8 @@ export async function getClassDetail(
       default_group_id,
       is_active,
       subjects(name_en, name_ar),
-      subject_groups(id, name_en, name_ar, is_active),
-      teaching_assignments(teacher_profile_id, starts_on, ends_on)
+      subject_groups!subject_groups_class_subject_school_fk(id, name_en, name_ar, is_active),
+      teaching_assignments!teaching_assignments_class_subject_school_fk(teacher_profile_id, starts_on, ends_on)
     `)
     .eq('school_id', schoolId)
     .eq('class_id', classId)

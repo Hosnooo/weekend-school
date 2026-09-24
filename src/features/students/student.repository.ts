@@ -63,6 +63,7 @@ export async function listStudents(schoolId: string) {
       .from('students')
       .select(studentSelect)
       .eq('school_id', schoolId)
+      .eq('is_active', true)
       .order('last_name_en')
       .order('first_name_en'),
     supabase.from('schools').select('timezone').eq('id', schoolId).single()

@@ -1,13 +1,15 @@
 'use server';
 
+import {revalidatePath} from 'next/cache';
 import {redirect} from 'next/navigation';
 
+import {createExportRequest} from '@/features/exports/export.repository';
 import {isLocale, type Locale} from '@/i18n/config';
 import {requireProfile} from '@/lib/auth/require-profile';
 import {databaseUuid} from '@/lib/validation/fields';
-import {createExportRequest} from '@/features/exports/export.repository';
 
 import {
+  archiveStudent,
   getDeleteImpact,
   permanentlyDeleteArchivedStudent,
   restoreArchivedStudent
@@ -23,6 +25,14 @@ function idFrom(formData: FormData) {
   const parsed = databaseUuid.safeParse(formData.get('id'));
   if (!parsed.success) throw new Error('Invalid archived student');
   return parsed.data;
+}
+
+export async function archiveStudentAction(formData: FormData) {
+  const locale = localeFrom(formData);
+  await requireProfile(locale, 'ADMIN');
+  await archiveStudent(idFrom(formData));
+  revalidatePath(`/${locale}/students`);
+  revalidatePath(`/${locale}/settings/archives`);
 }
 
 export async function restoreArchivedStudentAction(formData: FormData) {

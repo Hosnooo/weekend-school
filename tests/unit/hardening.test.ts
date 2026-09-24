@@ -41,7 +41,7 @@ describe('release hardening contracts', () => {
     expect(actions).not.toContain('export const initialWeeklyActionState');
   });
 
-  it('provides an idempotent bilingual seed with the specified fixture quantities', async () => {
+  it('provides an idempotent bilingual base seed with the specified fixture quantities', async () => {
     const seed = await readFile(join(process.cwd(), 'supabase', 'seed.sql'), 'utf8');
     expect(seed).toContain('on conflict');
     expect(seed.match(/-- seed-student:/g)).toHaveLength(12);
@@ -51,7 +51,7 @@ describe('release hardening contracts', () => {
     expect(seed).toContain("'SUBMITTED'");
   });
 
-  it('ships the real RLS matrix and exactly four named end-to-end workflows', async () => {
+  it('ships the real RLS matrix and all six named redesigned end-to-end workflows', async () => {
     const rls = await readFile(join(process.cwd(), 'supabase', 'tests', 'rls.test.sql'), 'utf8');
     for (const scenario of ['admin own school', 'assigned teacher', 'unrelated teacher', 'inactive profile', 'cross-school identifier', 'teacher cannot send reports']) {
       expect(rls).toContain(scenario);
@@ -62,7 +62,9 @@ describe('release hardening contracts', () => {
       .sort();
     expect(e2eFiles).toEqual([
       'arabic-flow.spec.ts',
+      'archive-export.spec.ts',
       'authorization.spec.ts',
+      'co-teacher-attendance.spec.ts',
       'english-flow.spec.ts',
       'student-exception.spec.ts'
     ]);

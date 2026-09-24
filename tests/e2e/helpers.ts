@@ -33,7 +33,9 @@ export async function submitTeachingUpdate(page: Page, input: {
   const query = new URLSearchParams({classSubjectId: input.classSubjectId, week: input.week});
   if (input.subjectGroupId) query.set('subjectGroupId', input.subjectGroupId);
   await page.goto(`/${input.locale}/my-teaching/update?${query}`);
-  await page.getByRole('button', {name: input.locale === 'ar' ? 'تحديد الجميع حاضرين' : 'Mark all present'}).click();
+  const markAll = page.getByRole('button', {name: input.locale === 'ar' ? 'تحديد الجميع حاضرين' : 'Mark all present'});
+  await expect(markAll).toBeVisible();
+  await markAll.click();
   if (input.absentStudent) {
     await page.locator('label').filter({hasText: input.absentStudent}).locator('select').selectOption('ABSENT');
   }

@@ -43,7 +43,7 @@ export async function listTeachingClassSubjects(schoolId: string): Promise<Teach
       is_active,
       classes(id, name_en, name_ar, is_active),
       subjects(name_en, name_ar, is_active),
-      subject_groups(id, name_en, name_ar, is_active)
+      subject_groups!subject_groups_class_subject_school_fk(id, name_en, name_ar, is_active)
     `)
     .eq('school_id', schoolId)
     .eq('is_active', true);
