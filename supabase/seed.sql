@@ -33,13 +33,52 @@ insert into public.schools (id,name_en,name_ar,timezone,default_language)
 values ('a0000000-0000-0000-0000-000000000001','Weekend School','مدرسة نهاية الأسبوع','America/Edmonton','en')
 on conflict (id) do update set name_en=excluded.name_en,name_ar=excluded.name_ar,timezone=excluded.timezone,default_language=excluded.default_language;
 
-insert into public.profiles (id,school_id,auth_user_id,display_name,role,preferred_language,is_active) values
-  ('c0000000-0000-0000-0000-000000000001','a0000000-0000-0000-0000-000000000001','b0000000-0000-0000-0000-000000000001','Local Admin','ADMIN','en',true),
-  -- seed-teacher: 01
-  ('c0000000-0000-0000-0000-000000000002','a0000000-0000-0000-0000-000000000001','b0000000-0000-0000-0000-000000000002','English Teacher','TEACHER','en',true),
-  -- seed-teacher: 02
-  ('c0000000-0000-0000-0000-000000000003','a0000000-0000-0000-0000-000000000001','b0000000-0000-0000-0000-000000000003','المعلمة العربية','TEACHER','ar',true)
-on conflict (id) do update set display_name=excluded.display_name,preferred_language=excluded.preferred_language,is_active=true;
+-- The same development seed supports both the pre-28 upgrade fixture and the
+-- current independent-role schema. Keep legacy role labels only while the
+-- legacy column exists; after migration 28 seed explicit business records/links.
+do $$
+begin
+  if exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'profiles'
+      and column_name = 'role'
+  ) then
+    execute $seed$
+      insert into public.profiles (id,school_id,auth_user_id,display_name,role,preferred_language,is_active) values
+        ('c0000000-0000-0000-0000-000000000001','a0000000-0000-0000-0000-000000000001','b0000000-0000-0000-0000-000000000001','Local Admin','ADMIN','en',true),
+        ('c0000000-0000-0000-0000-000000000002','a0000000-0000-0000-0000-000000000001','b0000000-0000-0000-0000-000000000002','English Teacher','TEACHER','en',true),
+        ('c0000000-0000-0000-0000-000000000003','a0000000-0000-0000-0000-000000000001','b0000000-0000-0000-0000-000000000003','المعلمة العربية','TEACHER','ar',true)
+      on conflict (id) do update set display_name=excluded.display_name,preferred_language=excluded.preferred_language,is_active=true
+    $seed$;
+  else
+    insert into public.profiles (id,school_id,auth_user_id,display_name,preferred_language,is_active) values
+      ('c0000000-0000-0000-0000-000000000001','a0000000-0000-0000-0000-000000000001','b0000000-0000-0000-0000-000000000001','Local Admin','en',true),
+      ('c0000000-0000-0000-0000-000000000002','a0000000-0000-0000-0000-000000000001','b0000000-0000-0000-0000-000000000002','English Teacher','en',true),
+      ('c0000000-0000-0000-0000-000000000003','a0000000-0000-0000-0000-000000000001','b0000000-0000-0000-0000-000000000003','المعلمة العربية','ar',true)
+    on conflict (id) do update set display_name=excluded.display_name,preferred_language=excluded.preferred_language,is_active=true;
+
+    insert into public.administrators (id,school_id,display_name,email,is_active) values
+      ('c0000000-0000-0000-0000-000000000001','a0000000-0000-0000-0000-000000000001','Local Admin','admin@example.test',true)
+    on conflict (id) do update set display_name=excluded.display_name,email=excluded.email,is_active=true;
+
+    insert into public.teachers (id,school_id,display_name,email,preferred_language,is_active) values
+      ('c0000000-0000-0000-0000-000000000002','a0000000-0000-0000-0000-000000000001','English Teacher','teacher.en@example.test','en',true),
+      ('c0000000-0000-0000-0000-000000000003','a0000000-0000-0000-0000-000000000001','المعلمة العربية','teacher.ar@example.test','ar',true)
+    on conflict (id) do update set display_name=excluded.display_name,email=excluded.email,preferred_language=excluded.preferred_language,is_active=true;
+
+    insert into public.administrator_accounts (school_id,administrator_id,profile_id) values
+      ('a0000000-0000-0000-0000-000000000001','c0000000-0000-0000-0000-000000000001','c0000000-0000-0000-0000-000000000001')
+    on conflict do nothing;
+
+    insert into public.teacher_accounts (school_id,teacher_id,profile_id) values
+      ('a0000000-0000-0000-0000-000000000001','c0000000-0000-0000-0000-000000000002','c0000000-0000-0000-0000-000000000002'),
+      ('a0000000-0000-0000-0000-000000000001','c0000000-0000-0000-0000-000000000003','c0000000-0000-0000-0000-000000000003')
+    on conflict do nothing;
+  end if;
+end;
+$$;
 
 insert into public.groups (id,school_id,name_en,name_ar,is_active) values
   -- seed-group: 01
@@ -50,11 +89,31 @@ insert into public.groups (id,school_id,name_en,name_ar,is_active) values
   ('d0000000-0000-0000-0000-000000000003','a0000000-0000-0000-0000-000000000001','Advanced','المتقدم',true)
 on conflict (id) do update set name_en=excluded.name_en,name_ar=excluded.name_ar,is_active=true;
 
-insert into public.group_teachers (school_id,group_id,teacher_profile_id,assignment_type) values
-  ('a0000000-0000-0000-0000-000000000001','d0000000-0000-0000-0000-000000000001','c0000000-0000-0000-0000-000000000002','PRIMARY'),
-  ('a0000000-0000-0000-0000-000000000001','d0000000-0000-0000-0000-000000000002','c0000000-0000-0000-0000-000000000003','PRIMARY'),
-  ('a0000000-0000-0000-0000-000000000001','d0000000-0000-0000-0000-000000000003','c0000000-0000-0000-0000-000000000002','PRIMARY')
-on conflict (school_id,group_id,teacher_profile_id) do update set assignment_type=excluded.assignment_type;
+do $$
+begin
+  if exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'group_teachers'
+      and column_name = 'teacher_profile_id'
+  ) then
+    execute $seed$
+      insert into public.group_teachers (school_id,group_id,teacher_profile_id,assignment_type) values
+        ('a0000000-0000-0000-0000-000000000001','d0000000-0000-0000-0000-000000000001','c0000000-0000-0000-0000-000000000002','PRIMARY'),
+        ('a0000000-0000-0000-0000-000000000001','d0000000-0000-0000-0000-000000000002','c0000000-0000-0000-0000-000000000003','PRIMARY'),
+        ('a0000000-0000-0000-0000-000000000001','d0000000-0000-0000-0000-000000000003','c0000000-0000-0000-0000-000000000002','PRIMARY')
+      on conflict (school_id,group_id,teacher_profile_id) do update set assignment_type=excluded.assignment_type
+    $seed$;
+  else
+    insert into public.group_teachers (school_id,group_id,teacher_id,assignment_type) values
+      ('a0000000-0000-0000-0000-000000000001','d0000000-0000-0000-0000-000000000001','c0000000-0000-0000-0000-000000000002','PRIMARY'),
+      ('a0000000-0000-0000-0000-000000000001','d0000000-0000-0000-0000-000000000002','c0000000-0000-0000-0000-000000000003','PRIMARY'),
+      ('a0000000-0000-0000-0000-000000000001','d0000000-0000-0000-0000-000000000003','c0000000-0000-0000-0000-000000000002','PRIMARY')
+    on conflict (school_id,group_id,teacher_id) do update set assignment_type=excluded.assignment_type;
+  end if;
+end;
+$$;
 
 insert into public.students (id,school_id,first_name_en,last_name_en,first_name_ar,last_name_ar,is_active) values
   -- seed-student: 01
