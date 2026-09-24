@@ -1,4 +1,4 @@
-import {createRequire} from 'node:module';
+import {join} from 'node:path';
 
 import {Document, Font, Page, StyleSheet, Text, View, renderToBuffer} from '@react-pdf/renderer';
 import {strToU8, zipSync} from 'fflate';
@@ -13,14 +13,20 @@ import {
   type ExportRequestInput
 } from './export.service';
 
-const require = createRequire(import.meta.url);
 const XLSX_CONTENT_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 const ZIP_CONTENT_TYPE = 'application/zip';
-const textEncoder = new TextEncoder();
+const ARABIC_FONT_PATH = join(
+  process.cwd(),
+  'node_modules',
+  '@fontsource',
+  'noto-sans-arabic',
+  'files',
+  'noto-sans-arabic-arabic-400-normal.woff'
+);
 
 Font.register({
   family: 'NotoSansArabic',
-  src: require.resolve('@fontsource/noto-sans-arabic/files/noto-sans-arabic-arabic-400-normal.woff')
+  src: ARABIC_FONT_PATH
 });
 Font.registerHyphenationCallback((word) => [word]);
 
