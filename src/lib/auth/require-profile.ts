@@ -94,8 +94,8 @@ async function requireAccountContext(
 export async function requireProfile(locale: Locale, legacyRole?: AppRole): Promise<Profile> {
   const {profile, capabilities} = await requireAccountContext(locale);
 
-  // Transitional call-shape compatibility only: these checks no longer read
-  // profiles.role. They resolve the requested capability from explicit links.
+  // Transitional call-shape compatibility only: these checks now resolve
+  // requested capabilities exclusively from explicit account links.
   if (legacyRole === 'ADMIN' && !canAdmin(capabilities)) {
     redirect(`/${locale}/login?reason=access`);
   }
