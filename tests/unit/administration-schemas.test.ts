@@ -3,41 +3,29 @@ import {describe, expect, it} from 'vitest';
 import {groupSchema, groupUpdateSchema} from '@/features/groups/group.schemas';
 import {guardianSchema} from '@/features/guardians/guardian.schemas';
 import {membershipSchema} from '@/features/groups/membership.schemas';
-import {studentSchema, studentTransferSchema} from '@/features/students/student.schemas';
+import {studentUpdateSchema} from '@/features/students/student.schemas';
 import {teacherSchema, teacherUpdateSchema} from '@/features/teachers/teacher.schemas';
 
 const groupId = '11111111-1111-4111-8111-111111111111';
 const studentId = '22222222-2222-4222-8222-222222222222';
 
 describe('student administration validation', () => {
-  it('normalizes names and guardian email while allowing omitted Arabic names', () => {
+  it('normalizes student identity fields while allowing omitted Arabic names', () => {
     expect(
-      studentSchema.parse({
+      studentUpdateSchema.parse({
+        id: studentId,
         firstNameEn: '  Sara ',
         lastNameEn: ' Mohammed ',
         firstNameAr: ' ',
-        lastNameAr: '',
-        groupId,
-        guardianName: '  Amina Mohammed ',
-        guardianEmail: '  Parent@Example.COM ',
-        reportLanguage: 'both'
+        lastNameAr: ''
       })
     ).toEqual({
+      id: studentId,
       firstNameEn: 'Sara',
       lastNameEn: 'Mohammed',
       firstNameAr: null,
-      lastNameAr: null,
-      groupId,
-      guardianName: 'Amina Mohammed',
-      guardianEmail: 'parent@example.com',
-      reportLanguage: 'both'
+      lastNameAr: null
     });
-  });
-
-  it('requires a valid target group and transfer date', () => {
-    expect(studentTransferSchema.safeParse({studentId, groupId, startsOn: '2026-09-22'}).success).toBe(true);
-    expect(studentTransferSchema.safeParse({studentId, groupId, startsOn: '2026-02-30'}).success).toBe(false);
-    expect(studentTransferSchema.safeParse({studentId, groupId: '', startsOn: '2026-09-22'}).success).toBe(false);
   });
 });
 
@@ -74,34 +62,31 @@ describe('group administration validation', () => {
 });
 
 describe('teacher administration validation', () => {
-  it('deduplicates assigned groups and normalizes the invitation email', () => {
+  it('normalizes the invitation email without coupling onboarding to assignments', () => {
     expect(
       teacherSchema.parse({
         displayName: ' Fatima Ali ',
         email: ' TEACHER@example.com ',
-        preferredLanguage: 'ar',
-        assignedGroupIds: [groupId, groupId]
+        preferredLanguage: 'ar'
       })
     ).toEqual({
       displayName: 'Fatima Ali',
       email: 'teacher@example.com',
-      preferredLanguage: 'ar',
-      assignedGroupIds: [groupId]
+      preferredLanguage: 'ar'
     });
   });
 
-  it('requires explicit confirmation before an occupied group can be reassigned', () => {
-    const input = {
+  it('updates teacher identity independently from teaching assignments', () => {
+    expect(teacherUpdateSchema.parse({
+      id: '33333333-3333-4333-8333-333333333333',
+      displayName: ' Fatima Ali ',
+      preferredLanguage: 'en'
+    })).toEqual({
       id: '33333333-3333-4333-8333-333333333333',
       displayName: 'Fatima Ali',
-      preferredLanguage: 'en',
-      assignedGroupIds: [groupId]
-    };
-    expect(teacherUpdateSchema.parse({...input, allowReassignment: false}).allowReassignment).toBe(false);
-    expect(teacherUpdateSchema.parse({...input, allowReassignment: true}).allowReassignment).toBe(true);
-    expect(teacherUpdateSchema.safeParse({...input, allowReassignment: 'true'}).success).toBe(false);
+      preferredLanguage: 'en'
+    });
   });
-
 });
 
 describe('membership administration validation', () => {

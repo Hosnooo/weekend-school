@@ -2,9 +2,12 @@ import {getTranslations} from 'next-intl/server';
 import {notFound} from 'next/navigation';
 
 import {AdminPage} from '@/components/ui/admin-page';
-import {listGroups} from '@/features/groups/group.repository';
+import {
+  getStudentEnrollmentState,
+  listEnrollmentClasses
+} from '@/features/enrollment/enrollment.repository';
+import {StudentEnrollmentEditor} from '@/features/students/student-enrollment-editor';
 import {StudentForm} from '@/features/students/student-form';
-import {StudentTransferForm} from '@/features/students/student-transfer-form';
 import {getStudent} from '@/features/students/student.repository';
 import {todayInTimeZone} from '@/features/weekly-updates/weekly-update.model';
 import {getSchoolTimezone} from '@/features/weekly-updates/weekly-update.repository';
@@ -15,16 +18,26 @@ export default async function EditStudentPage({params}: {params: Promise<{locale
   const {locale, id} = await params;
   if (!isLocale(locale)) notFound();
   const profile = await requireProfile(locale, 'ADMIN');
-  const [student, groups, timeZone] = await Promise.all([
+  const [student, classes, timeZone] = await Promise.all([
     getStudent(profile.schoolId, id),
-    listGroups(profile.schoolId),
+    listEnrollmentClasses(profile.schoolId),
     getSchoolTimezone(profile.schoolId)
   ]);
   if (!student) notFound();
-  const t = await getTranslations({locale, namespace: 'students'});
   const today = todayInTimeZone(timeZone);
+  const [enrollment, t] = await Promise.all([
+    getStudentEnrollmentState(profile.schoolId, id, today),
+    getTranslations({locale, namespace: 'students'})
+  ]);
+
   return <AdminPage title={t('editTitle')} description={t('description')}>
-    <StudentForm groups={[]} locale={locale} student={student} today={today} />
-    <StudentTransferForm groups={groups} locale={locale} student={student} today={today} />
+    <StudentForm locale={locale} student={student} today={today} />
+    <StudentEnrollmentEditor
+      classes={classes}
+      enrollment={enrollment}
+      locale={locale}
+      studentId={student.id}
+      today={today}
+    />
   </AdminPage>;
 }

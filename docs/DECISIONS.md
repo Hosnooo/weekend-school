@@ -177,3 +177,13 @@ Local end-to-end tests must refuse hosted Supabase URLs, because they create and
 Keep a single `ADMIN` profile for an administrator who teaches; explicit same-school group assignment grants teacher workflow access. Preserve one primary teacher per group and one effective current group per student. Assignment changes must be atomic and visible, with historical sessions and memberships preserved. Password recovery uses Supabase Auth and the configured Auth SMTP service, not application-managed passwords. The extension ships in this order: assignments/account access, student CSV import, then reusable report wording and teacher read-only preview. The full approved contract is in `docs/SPEC.md` section 57 and the linked design document.
 
 Develop on a GitHub feature branch and verify its Vercel preview before merging to the production branch. Apply forward-only production Supabase migrations before deploying code that requires them; Vercel's Git deployment does not apply database migrations.
+
+## D-025 — Explicit Class/Subject/Group model supersedes group-centric cardinalities
+
+**Status:** Accepted — 2026-09-22
+
+Use explicit `Class -> Subject -> optional Group` concepts. A student has one active Class, participates automatically in that Class's Subjects unless excluded, and has at most one active Group per Class Subject. Teachers may have multiple Class/Subject/Group assignments and multiple teachers may share the same context; there is no primary-teacher business rule. Co-teachers submit separately and the admin resolves official attendance/report content. Attendance is Present/Absent only. Reports are subject-aware, parent-facing teacher names are omitted, and finalization creates immutable snapshots.
+
+This decision supersedes D-007's hierarchy shape, D-008's one-session-per-group/date identity, D-023's group-submission dashboard semantics, and the teacher/student cardinality and release-order portions of D-024. Existing authentication, school isolation, recovery, provider, and forward-only migration decisions remain in force where they do not conflict.
+
+Approved lifecycle is Active -> Archived -> Restore OR Permanently Delete. An admin may permanently delete an archived entity and dependent history after an explicit impact review; protected export/download is available before deletion and independently by period/scope.

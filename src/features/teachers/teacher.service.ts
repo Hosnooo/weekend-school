@@ -3,18 +3,11 @@ export type TeacherInvitationInput = {
   displayName: string;
   email: string;
   preferredLanguage: 'en' | 'ar';
-  assignedGroupIds: string[];
 };
 
 export type TeacherInvitationDependencies = {
-  validateAssignments(input: TeacherInvitationInput): Promise<void>;
   inviteAuthUser(input: TeacherInvitationInput): Promise<string>;
   createProfile(input: TeacherInvitationInput, authUserId: string): Promise<string>;
-  assignGroups(
-    schoolId: string,
-    profileId: string,
-    groupIds: string[]
-  ): Promise<void>;
   deleteProfile(profileId: string): Promise<void>;
   deleteAuthUser(authUserId: string): Promise<void>;
   findUnclaimedAuthUser(email: string, schoolId: string): Promise<string | null>;
@@ -39,23 +32,26 @@ export async function inviteTeacher(
   input: TeacherInvitationInput,
   dependencies: TeacherInvitationDependencies
 ) {
-  await dependencies.validateAssignments(input);
-  let authUserId: string;
-  let newAuthUser = true;
-  try {
-    authUserId = await dependencies.inviteAuthUser(input);
-  } catch (error) {
-    const existingAuthUserId = await dependencies.findUnclaimedAuthUser(input.email, input.schoolId);
-    if (!existingAuthUserId) throw error;
-    authUserId = existingAuthUserId;
-    newAuthUser = false;
-  }
-  let profileId: string | null = null;
+  const normalizedInput = {...input, email: input.email.trim().toLowerCase()};
 
+  let authUserId: string;
+  let newAuthUser = false;
+  const existingAuthUserId = await dependencies.findUnclaimedAuthUser(
+    normalizedInput.email,
+    normalizedInput.schoolId
+  );
+
+  if (existingAuthUserId) {
+    authUserId = existingAuthUserId;
+  } else {
+    authUserId = await dependencies.inviteAuthUser(normalizedInput);
+    newAuthUser = true;
+  }
+
+  let profileId: string | null = null;
   try {
-    profileId = await dependencies.createProfile(input, authUserId);
-    await dependencies.assignGroups(input.schoolId, profileId, input.assignedGroupIds);
-    if (!newAuthUser) await dependencies.sendExistingAccessLink(input.email);
+    profileId = await dependencies.createProfile(normalizedInput, authUserId);
+    if (!newAuthUser) await dependencies.sendExistingAccessLink(normalizedInput.email);
     return profileId;
   } catch (error) {
     if (profileId) {

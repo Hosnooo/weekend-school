@@ -1,7 +1,7 @@
 import {getTranslations} from 'next-intl/server';
 import {notFound} from 'next/navigation';
 
-import {AdminPage} from '@/components/ui/admin-page';
+import {ActionLink, AdminPage} from '@/components/ui/admin-page';
 import {SchoolSettingsForm} from '@/features/school-settings/school-settings-form';
 import {getSchoolSettings} from '@/features/school-settings/school-settings.repository';
 import {isLocale} from '@/i18n/config';
@@ -16,7 +16,11 @@ export default async function SettingsPage({params, searchParams}: {params: Prom
     getTranslations({locale, namespace: 'schoolSettings'}),
     searchParams
   ]);
-  return <AdminPage title={t('title')} description={t('description')}>
+  return <AdminPage
+    title={t('title')}
+    description={t('description')}
+    actions={<ActionLink href="/settings/archives">{locale === 'ar' ? 'الأرشيف والتصدير' : 'Archives & export'}</ActionLink>}
+  >
     <SchoolSettingsForm locale={locale} settings={settings} saved={query.saved === '1'} />
   </AdminPage>;
 }

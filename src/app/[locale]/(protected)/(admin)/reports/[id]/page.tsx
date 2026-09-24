@@ -2,7 +2,7 @@ import {getTranslations} from 'next-intl/server';
 import {notFound} from 'next/navigation';
 
 import {AdminPage, SecondaryLink} from '@/components/ui/admin-page';
-import {renderStudentReport} from '@/features/reports/report.renderer';
+import {renderStudentReport, renderStudentReportV2} from '@/features/reports/report.renderer';
 import {getReport, listReportDeliveries} from '@/features/reports/report.repository';
 import {isLocale} from '@/i18n/config';
 import {requireProfile} from '@/lib/auth/require-profile';
@@ -17,7 +17,9 @@ export default async function ReportPreviewPage({params}: {params: Promise<{loca
     getTranslations({locale, namespace: 'reports'}),
     listReportDeliveries(profile.schoolId, id)
   ]);
-  const html = renderStudentReport(report.snapshot, report.language);
+  const html = report.snapshot.version === 2
+    ? renderStudentReportV2(report.snapshot, report.language)
+    : renderStudentReport(report.snapshot, report.language);
   const backHref = `/reports?periodStart=${report.periodStart}&periodEnd=${report.periodEnd}`;
   return <AdminPage title={t('previewTitle')} description={`${report.periodStart} – ${report.periodEnd}`} actions={<SecondaryLink href={backHref}>{t('back')}</SecondaryLink>}>
     <iframe className="report-preview" sandbox="" srcDoc={html} title={t('previewTitle')} />

@@ -1,2 +1,13 @@
-import {getTranslations} from 'next-intl/server';import {notFound} from 'next/navigation';import {AdminPage} from '@/components/ui/admin-page';import {todayInTimeZone} from '@/features/weekly-updates/weekly-update.model';import {getSchoolTimezone,listAssignedGroups} from '@/features/weekly-updates/weekly-update.repository';import {isLocale} from '@/i18n/config';import {Link} from '@/i18n/navigation';import {requireTeachingProfile} from '@/lib/auth/require-profile';
-export default async function MyGroupsPage({params}:{params:Promise<{locale:string}>}){const{locale}=await params;if(!isLocale(locale))notFound();const profile=await requireTeachingProfile(locale);const[groups,timeZone]=await Promise.all([listAssignedGroups(profile.schoolId,profile.id),getSchoolTimezone(profile.schoolId)]);const t=await getTranslations({locale,namespace:'weekly'});const today=todayInTimeZone(timeZone);return <AdminPage title={t('myGroups')} description={t('myGroupsDescription')}>{groups.length===0?<p className="empty-state">{t('noGroups')}</p>:<div className="group-cards">{groups.map((group)=><article className="group-card" key={group.id}><h2>{locale==='ar'&&group.nameAr?group.nameAr:group.nameEn}</h2><p>{t('studentCount',{count:group.studentCount})}</p><p>{group.lastUpdate?t('lastUpdate',{date:new Intl.DateTimeFormat(locale,{dateStyle:'medium'}).format(new Date(`${group.lastUpdate}T12:00:00`))}):t('noUpdates')}</p><Link className="button button-primary action-link" href={`/my-groups/${group.id}/update?date=${today}`}>{t('updateThisWeek')}</Link></article>)}</div>}</AdminPage>}
+import {notFound, redirect} from 'next/navigation';
+
+import {isLocale} from '@/i18n/config';
+
+export default async function LegacyMyGroupsPage({
+  params
+}: {
+  params: Promise<{locale: string}>;
+}) {
+  const {locale} = await params;
+  if (!isLocale(locale)) notFound();
+  redirect(`/${locale}/my-teaching`);
+}

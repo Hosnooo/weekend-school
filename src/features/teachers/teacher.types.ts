@@ -4,5 +4,5 @@ export type TeacherListItem = {
   displayName: string;
   preferredLanguage: 'en' | 'ar';
   isActive: boolean;
-  assignedGroups: Array<{id: string; nameEn: string; nameAr: string | null}>;
+  assignmentCount: number;
 };

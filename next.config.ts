@@ -4,5 +4,10 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
 export default withNextIntl({
   allowedDevOrigins: ['127.0.0.1'],
-  reactStrictMode: true
+  reactStrictMode: true,
+  outputFileTracingIncludes: {
+    '/*': [
+      './node_modules/@fontsource/noto-sans-arabic/files/noto-sans-arabic-arabic-400-normal.woff'
+    ]
+  }
 });

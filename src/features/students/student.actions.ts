@@ -5,23 +5,46 @@ import {redirect} from 'next/navigation';
 import {z} from 'zod';
 
 import {
-  createStudentWithGuardian,
-  moveStudentGroup,
-  setStudentActive,
-  updateStudent
-} from '@/features/students/student.repository';
-import {studentSchema, studentTransferSchema, studentUpdateSchema} from '@/features/students/student.schemas';
+  changeStudentClass,
+  createStudentWithEnrollment,
+  moveStudentSubjectGroup,
+  setSubjectExcluded
+} from '@/features/enrollment/enrollment.repository';
+import {
+  changeStudentClassSchema,
+  createStudentEnrollmentSchema,
+  moveStudentSubjectGroupSchema,
+  setSubjectExcludedSchema
+} from '@/features/enrollment/enrollment.schemas';
+import {setStudentActive, updateStudent} from '@/features/students/student.repository';
+import {studentUpdateSchema} from '@/features/students/student.schemas';
 import {isLocale} from '@/i18n/config';
 import {requireProfile} from '@/lib/auth/require-profile';
 import type {ActionState} from '@/lib/validation/action-state';
-import {saveFailure, validationFailure} from '@/lib/validation/action-state';
+import {initialActionState, saveFailure, validationFailure} from '@/lib/validation/action-state';
 import {databaseUuid} from '@/lib/validation/fields';
-
-const studentCreationSchema = studentSchema.extend({startsOn: z.iso.date()});
 
 function localeFrom(formData: FormData) {
   const value = String(formData.get('locale') ?? 'en');
   return isLocale(value) ? value : 'en';
+}
+
+function parseJson(value: FormDataEntryValue | null) {
+  if (typeof value !== 'string') return null;
+  try {
+    return JSON.parse(value) as unknown;
+  } catch {
+    return null;
+  }
+}
+
+function enrollmentMutationFailure(error: unknown) {
+  console.error('Unable to update student enrollment', {error});
+  if (typeof error === 'object' && error !== null && 'code' in error &&
+    ['23P01', '23505', '55000', '22023'].includes(String(error.code))) {
+    return saveFailure('transferConflict');
+  }
+  return saveFailure();
 }
 
 export async function createStudentAction(
@@ -29,28 +52,30 @@ export async function createStudentAction(
   formData: FormData
 ): Promise<ActionState> {
   const locale = localeFrom(formData);
-  const profile = await requireProfile(locale, 'ADMIN');
-  const parsed = studentCreationSchema.safeParse({
+  await requireProfile(locale, 'ADMIN');
+  const parsed = createStudentEnrollmentSchema.safeParse({
     firstNameEn: formData.get('firstNameEn'),
     lastNameEn: formData.get('lastNameEn'),
     firstNameAr: formData.get('firstNameAr'),
     lastNameAr: formData.get('lastNameAr'),
-    groupId: formData.get('groupId'),
     guardianName: formData.get('guardianName'),
     guardianEmail: formData.get('guardianEmail'),
     reportLanguage: formData.get('reportLanguage'),
-    startsOn: formData.get('startsOn')
+    classId: formData.get('classId'),
+    startsOn: formData.get('startsOn'),
+    subjects: parseJson(formData.get('subjects'))
   });
   if (!parsed.success) return validationFailure();
 
   try {
-    await createStudentWithGuardian(profile.schoolId, parsed.data);
+    await createStudentWithEnrollment(parsed.data);
   } catch (error) {
     console.error('Unable to create student', {error});
     return saveFailure();
   }
 
   revalidatePath(`/${locale}/students`);
+  revalidatePath(`/${locale}/classes`);
   redirect(`/${locale}/students`);
 }
 
@@ -92,29 +117,72 @@ export async function setStudentActiveAction(formData: FormData) {
   revalidatePath(`/${locale}/students`);
 }
 
-export async function moveStudentGroupAction(
+export async function changeStudentClassAction(
   _state: ActionState,
   formData: FormData
 ): Promise<ActionState> {
   const locale = localeFrom(formData);
   await requireProfile(locale, 'ADMIN');
-  const parsed = studentTransferSchema.safeParse({
+  const parsed = changeStudentClassSchema.safeParse({
     studentId: formData.get('studentId'),
-    groupId: formData.get('groupId'),
+    targetClassId: formData.get('targetClassId'),
     startsOn: formData.get('startsOn')
   });
   if (!parsed.success) return validationFailure();
+
   try {
-    await moveStudentGroup(parsed.data);
+    await changeStudentClass(parsed.data);
   } catch (error) {
-    console.error('Unable to move student group', {error});
-    if (typeof error === 'object' && error !== null && 'code' in error &&
-      ['23P01', '55000', '22023'].includes(String(error.code))) {
-      return saveFailure('transferConflict');
-    }
-    return saveFailure();
+    return enrollmentMutationFailure(error);
   }
   revalidatePath(`/${locale}/students`);
-  revalidatePath(`/${locale}/groups`);
-  redirect(`/${locale}/students/${parsed.data.studentId}/edit`);
+  revalidatePath(`/${locale}/classes`);
+  revalidatePath(`/${locale}/students/${parsed.data.studentId}/edit`);
+  return initialActionState;
+}
+
+export async function setSubjectExcludedAction(
+  _state: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const locale = localeFrom(formData);
+  await requireProfile(locale, 'ADMIN');
+  const parsed = setSubjectExcludedSchema.safeParse({
+    studentId: formData.get('studentId'),
+    classSubjectId: formData.get('classSubjectId'),
+    excluded: formData.get('excluded') === 'true',
+    effectiveOn: formData.get('effectiveOn')
+  });
+  if (!parsed.success) return validationFailure();
+
+  try {
+    await setSubjectExcluded(parsed.data);
+  } catch (error) {
+    return enrollmentMutationFailure(error);
+  }
+  revalidatePath(`/${locale}/students/${parsed.data.studentId}/edit`);
+  return initialActionState;
+}
+
+export async function moveStudentSubjectGroupAction(
+  _state: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const locale = localeFrom(formData);
+  await requireProfile(locale, 'ADMIN');
+  const parsed = moveStudentSubjectGroupSchema.safeParse({
+    studentId: formData.get('studentId'),
+    classSubjectId: formData.get('classSubjectId'),
+    targetGroupId: formData.get('targetGroupId'),
+    startsOn: formData.get('startsOn')
+  });
+  if (!parsed.success) return validationFailure();
+
+  try {
+    await moveStudentSubjectGroup(parsed.data);
+  } catch (error) {
+    return enrollmentMutationFailure(error);
+  }
+  revalidatePath(`/${locale}/students/${parsed.data.studentId}/edit`);
+  return initialActionState;
 }

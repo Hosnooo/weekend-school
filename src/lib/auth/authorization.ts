@@ -8,6 +8,19 @@ export class AuthorizationError extends Error {
   }
 }
 
+export type TeachingContextRef = {
+  classSubjectId: string;
+  subjectGroupId: string | null;
+};
+
+export type AuthorizationDependencies = {
+  loadProfile: () => Promise<Profile | null>;
+  canTeachContext: (
+    profile: Profile,
+    context: TeachingContextRef
+  ) => Promise<boolean>;
+};
+
 export function assertActiveProfile(profile: Profile | null): Profile {
   if (!profile?.isActive) {
     throw new AuthorizationError();
@@ -26,4 +39,24 @@ export function assertRole(profile: Profile, requiredRole: AppRole): Profile {
 
 export function assertTeachingProfile(profile: Profile): Profile {
   return assertActiveProfile(profile);
+}
+
+export async function requireAdmin(
+  dependencies: AuthorizationDependencies
+): Promise<Profile> {
+  const profile = assertActiveProfile(await dependencies.loadProfile());
+  return assertRole(profile, 'ADMIN');
+}
+
+export async function requireTeachingContextAccess(
+  context: TeachingContextRef,
+  dependencies: AuthorizationDependencies
+): Promise<Profile> {
+  const profile = assertActiveProfile(await dependencies.loadProfile());
+
+  if (!(await dependencies.canTeachContext(profile, context))) {
+    throw new AuthorizationError();
+  }
+
+  return profile;
 }

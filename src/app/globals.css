@@ -9,7 +9,13 @@
   --border: #dce1e8;
   --primary: #155e75;
   --primary-hover: #0e4f63;
+  --success: #166534;
+  --success-surface: #dcfce7;
+  --warning: #92400e;
+  --warning-surface: #fef3c7;
   --danger: #b42318;
+  --danger-hover: #912018;
+  --danger-surface: #fee4e2;
   --focus: #0ea5e9;
 }
 
@@ -26,7 +32,7 @@ body {
   margin: 0;
   color: var(--text);
   background: var(--background);
-  font-family: Arial, 'Noto Sans Arabic', sans-serif;
+  font-family: Inter, Arial, 'Noto Sans Arabic', sans-serif;
 }
 
 a {
@@ -35,10 +41,7 @@ a {
 
 button,
 input,
-select {
-  font: inherit;
-}
-
+select,
 textarea {
   font: inherit;
 }
@@ -191,8 +194,8 @@ tbody tr:last-child td {
   font-weight: 700;
 }
 
-.status-active { color: #166534; background: #dcfce7; }
-.status-inactive { color: #7c2d12; background: #ffedd5; }
+.status-active { color: var(--success); background: var(--success-surface); }
+.status-inactive { color: var(--warning); background: var(--warning-surface); }
 
 .text-button {
   padding: 0;
@@ -208,9 +211,10 @@ tbody tr:last-child td {
   gap: 1.25rem;
 }
 
-.form-success {
+.form-success,
+.success-message {
   margin: 0;
-  color: #166534;
+  color: var(--success);
 }
 
 .form-grid {
@@ -219,14 +223,26 @@ tbody tr:last-child td {
   gap: 1rem;
 }
 
+.form-field,
 .record-form label {
   display: grid;
   gap: 0.4rem;
   font-weight: 600;
 }
 
+.form-hint,
+.muted-text,
+.empty-inline {
+  margin-block: 0.35rem 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
 .record-form input:not([type='hidden']):not([type='checkbox']),
-.record-form select {
+.record-form select,
+.form-field input:not([type='hidden']):not([type='checkbox']),
+.form-field select {
   min-height: 2.75rem;
   width: 100%;
   padding-inline: 0.75rem;
@@ -263,6 +279,97 @@ tbody tr:last-child td {
 .compact-form { margin-block-end: 1rem; }
 .subsection { display: grid; gap: 1rem; }
 
+.content-section,
+.stack-section {
+  display: grid;
+  gap: 1rem;
+}
+
+.subject-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+  gap: 1rem;
+}
+
+.subject-card,
+.inline-form-card,
+.disclosure-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+}
+
+.subject-card {
+  display: grid;
+  gap: 1rem;
+  padding: 1.25rem;
+}
+
+.subject-card-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.subject-card-heading h3 {
+  margin: 0;
+}
+
+.inline-form-card {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 1rem;
+}
+
+.inline-form-card .form-field {
+  min-inline-size: min(100%, 18rem);
+  flex: 1 1 18rem;
+}
+
+.disclosure-card {
+  padding: 0.85rem 1rem;
+}
+
+.disclosure-card > summary {
+  min-height: 2.5rem;
+  display: flex;
+  align-items: center;
+  color: var(--primary);
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.disclosure-card[open] > summary {
+  margin-block-end: 0.75rem;
+}
+
+.group-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  border-block-start: 1px solid var(--border);
+}
+
+.group-list-item {
+  min-height: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-block: 0.65rem;
+  border-block-end: 1px solid var(--border);
+}
+
+.group-list-item > span {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
 .group-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
@@ -286,6 +393,7 @@ tbody tr:last-child td {
 .weekly-form select { width: 100%; min-height: 2.75rem; padding: 0.65rem 0.75rem; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 0.5rem; }
 .section-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
 .section-heading h2 { margin: 0; }
+.section-heading p { margin-block: .35rem 0; color: var(--muted); }
 .attendance-list { display: grid; gap: 0.75rem; }
 .attendance-list label { grid-template-columns: minmax(0,1fr) minmax(8rem,11rem); align-items: center; }
 .exception-row { border-block-start: 1px solid var(--border); }
@@ -300,7 +408,6 @@ tbody tr:last-child td {
 .report-summary div { display:grid;gap:.25rem;padding:1rem;background:var(--surface);border:1px solid var(--border);border-radius:.75rem; }
 .report-summary strong { font-size:1.75rem; }
 .report-summary span { color:var(--muted); }
-.success-message { color:#166534; }
 .report-preview { width:100%;min-height:70vh;background:#fff;border:1px solid var(--border);border-radius:.75rem; }
 
 :focus-visible {
@@ -392,6 +499,15 @@ tbody tr:last-child td {
   color: var(--text);
   background: var(--surface);
   border-color: var(--border);
+}
+
+.button-danger {
+  color: #ffffff;
+  background: var(--danger);
+}
+
+.button-danger:hover:not(:disabled) {
+  background: var(--danger-hover);
 }
 
 .form-error {
@@ -512,6 +628,13 @@ tbody tr:last-child td {
 
   .form-grid {
     grid-template-columns: 1fr;
+  }
+
+  .inline-form-card,
+  .subject-card-heading,
+  .group-list-item {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .attendance-list label { grid-template-columns: 1fr; }

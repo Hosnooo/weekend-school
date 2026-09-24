@@ -7,9 +7,14 @@ import {z} from 'zod';
 
 import {buildPasswordRecoveryRedirect} from '@/features/auth/password-recovery.service';
 import {
-  setTeacherActive,
-  updateTeacher
-} from '@/features/teachers/teacher.repository';
+  assignTeacher,
+  endTeacherAssignment
+} from '@/features/teaching-assignments/teaching-assignment.repository';
+import {
+  endTeachingAssignmentSchema,
+  teachingAssignmentSchema
+} from '@/features/teaching-assignments/teaching-assignment.schemas';
+import {setTeacherActive, updateTeacher} from '@/features/teachers/teacher.repository';
 import {teacherSchema, teacherUpdateSchema} from '@/features/teachers/teacher.schemas';
 import {
   inviteTeacher,
@@ -20,7 +25,7 @@ import {isLocale} from '@/i18n/config';
 import {requireProfile} from '@/lib/auth/require-profile';
 import {createServiceRoleSupabaseClient} from '@/lib/supabase/service-role';
 import type {ActionState} from '@/lib/validation/action-state';
-import {saveFailure, validationFailure} from '@/lib/validation/action-state';
+import {initialActionState, saveFailure, validationFailure} from '@/lib/validation/action-state';
 import {databaseUuid} from '@/lib/validation/fields';
 
 function localeFrom(formData: FormData) {
@@ -32,37 +37,13 @@ function teacherInput(formData: FormData) {
   return {
     displayName: formData.get('displayName'),
     email: formData.get('email'),
-    preferredLanguage: formData.get('preferredLanguage'),
-    assignedGroupIds: formData.getAll('assignedGroupIds')
+    preferredLanguage: formData.get('preferredLanguage')
   };
 }
 
 function createInvitationDependencies(redirectTo: string): TeacherInvitationDependencies {
   const supabase = createServiceRoleSupabaseClient();
   return {
-    async validateAssignments(input) {
-      if (input.assignedGroupIds.length === 0) return;
-      const {data: groups, error} = await supabase
-        .from('groups')
-        .select('id, group_teachers!inner(assignment_type)')
-        .eq('school_id', input.schoolId)
-        .eq('is_active', true)
-        .in('id', input.assignedGroupIds)
-        .eq('group_teachers.assignment_type', 'PRIMARY');
-      if (error) throw error;
-      if (groups.length > 0) throw new Error('A selected group already has a primary teacher');
-
-      const {data: validGroups, error: validError} = await supabase
-        .from('groups')
-        .select('id')
-        .eq('school_id', input.schoolId)
-        .eq('is_active', true)
-        .in('id', input.assignedGroupIds);
-      if (validError) throw validError;
-      if (validGroups.length !== input.assignedGroupIds.length) {
-        throw new Error('Invalid group assignment');
-      }
-    },
     async inviteAuthUser(input) {
       const {data, error} = await supabase.auth.admin.inviteUserByEmail(input.email, {
         data: {display_name: input.displayName, preferred_language: input.preferredLanguage},
@@ -85,26 +66,6 @@ function createInvitationDependencies(redirectTo: string): TeacherInvitationDepe
         .single();
       if (error) throw error;
       return data.id as string;
-    },
-    async assignGroups(schoolId, profileId, groupIds) {
-      if (groupIds.length === 0) return;
-      const {data: groups, error: groupError} = await supabase
-        .from('groups')
-        .select('id')
-        .eq('school_id', schoolId)
-        .eq('is_active', true)
-        .in('id', groupIds);
-      if (groupError) throw groupError;
-      if (groups.length !== groupIds.length) throw new Error('Invalid group assignment');
-      const {error} = await supabase.from('group_teachers').insert(
-        groupIds.map((groupId) => ({
-          school_id: schoolId,
-          group_id: groupId,
-          teacher_profile_id: profileId,
-          assignment_type: 'PRIMARY'
-        }))
-      );
-      if (error) throw error;
     },
     async deleteProfile(profileId) {
       const {error} = await supabase.from('profiles').delete().eq('id', profileId);
@@ -175,26 +136,64 @@ export async function updateTeacherAction(
   formData: FormData
 ): Promise<ActionState> {
   const locale = localeFrom(formData);
-  await requireProfile(locale, 'ADMIN');
+  const profile = await requireProfile(locale, 'ADMIN');
   const parsed = teacherUpdateSchema.safeParse({
     id: formData.get('id'),
     displayName: formData.get('displayName'),
-    preferredLanguage: formData.get('preferredLanguage'),
-    assignedGroupIds: formData.getAll('assignedGroupIds'),
-    allowReassignment: formData.get('allowReassignment') === 'true'
+    preferredLanguage: formData.get('preferredLanguage')
   });
   if (!parsed.success) return validationFailure();
   try {
-    await updateTeacher(parsed.data);
+    await updateTeacher(profile.schoolId, parsed.data);
   } catch (error) {
     console.error('Unable to update teacher', {error});
-    if (typeof error === 'object' && error !== null && 'message' in error && error.message === 'primary teacher conflict') {
-      return saveFailure('conflict');
-    }
     return saveFailure();
   }
   revalidatePath(`/${locale}/teachers`);
   redirect(`/${locale}/teachers`);
+}
+
+export async function assignTeacherAction(
+  _state: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const locale = localeFrom(formData);
+  const profile = await requireProfile(locale, 'ADMIN');
+  const parsed = teachingAssignmentSchema.safeParse({
+    teacherProfileId: formData.get('teacherProfileId'),
+    classSubjectId: formData.get('classSubjectId'),
+    subjectGroupId: formData.get('subjectGroupId'),
+    startsOn: formData.get('startsOn')
+  });
+  if (!parsed.success) return validationFailure();
+  try {
+    await assignTeacher(profile.schoolId, parsed.data);
+  } catch (error) {
+    console.error('Unable to add teaching assignment', {error});
+    return saveFailure();
+  }
+  revalidatePath(`/${locale}/teachers`);
+  revalidatePath(`/${locale}/teachers/${parsed.data.teacherProfileId}/edit`);
+  return initialActionState;
+}
+
+export async function endTeacherAssignmentAction(formData: FormData) {
+  const locale = localeFrom(formData);
+  const profile = await requireProfile(locale, 'ADMIN');
+  const teacherProfileId = databaseUuid.safeParse(formData.get('teacherProfileId'));
+  const parsed = endTeachingAssignmentSchema.safeParse({
+    assignmentId: formData.get('assignmentId'),
+    endsOn: formData.get('endsOn')
+  });
+  if (!teacherProfileId.success || !parsed.success) return;
+  try {
+    await endTeacherAssignment(profile.schoolId, teacherProfileId.data, parsed.data);
+  } catch (error) {
+    console.error('Unable to end teaching assignment', {error});
+    return;
+  }
+  revalidatePath(`/${locale}/teachers`);
+  revalidatePath(`/${locale}/teachers/${teacherProfileId.data}/edit`);
 }
 
 export async function setTeacherActiveAction(formData: FormData) {

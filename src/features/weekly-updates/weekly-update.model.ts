@@ -1,5 +1,5 @@
 export type Performance='EXCELLENT'|'GOOD'|'DEVELOPING'|'NEEDS_SUPPORT';
-export type AttendanceStatus='PRESENT'|'ABSENT'|'LATE'|'EXCUSED';
+export type AttendanceStatus='PRESENT'|'ABSENT';
 export type StudentException={studentId:string;performanceOverride:Performance|null;commentEn:string|null;commentAr:string|null};
 
 export function effectivePerformance(groupDefault:Performance|null,override:Performance|null){return override??groupDefault;}

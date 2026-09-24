@@ -4,7 +4,7 @@ Last updated: 2026-09-22
 
 ## Current status
 
-All six implementation phases and the final review-remediation pass are complete on `phase-6-hardening`. The release gate includes a fresh local Supabase reset, real PostgreSQL/RLS tests, four authenticated browser workflows (including actual teacher invitation acceptance), the standard lint/typecheck/test/build checks, and an authorized live Resend sandbox delivery.
+The previously released MVP and administrator-workflow work are now under an approved Phase 1 architecture correction. The active branch is replacing the group-centric primary-teacher/global-group model with explicit Class -> Subject -> optional Group semantics before any roster CSV work begins. Phase 2 CSV is blocked until the correction passes the full local gate, hosted forward migrations, production deployment, runtime-error review, and production smoke tests.
 
 ## Planning completed
 
@@ -247,3 +247,17 @@ Pilot usability follow-up on 2026-09-22:
 - The first browser run encountered a previously submitted local seed session and correctly rendered that update read-only; after resetting only local Docker Supabase, all four workflows passed. A concurrent typecheck saw a partially rewritten generated `.next/dev/types` file; deleting only that generated directory, restoring generated `next-env.d.ts`, and regenerating types resolved it. Neither issue involved hosted data.
 - GitHub branch was pushed and draft PR #1 opened. GitHub reports the first Vercel Preview deployment as failed, while its status exposes no build-log detail. Browser access to the private Vercel log was blocked by automatic approval review when it attempted a separate Google sign-in. The production site remains on the earlier `main` deployment; hosted migrations 13–17 were not applied.
 - Next release steps: inspect/fix the Vercel preview, apply migrations 13–17 to hosted Supabase, merge the PR to `main`, then verify the live admin flows and invitation email. Student/guardian/group CSV import and reusable report wording with teacher read-only preview remain Phases 2 and 3, in that order.
+
+## Architecture correction — active (2026-09-22)
+
+Status: In progress on `codex/class-subject-group-redesign-spec`.
+
+- The user rejected the one-primary-teacher model, one-global-current-group student model, subgroup hierarchy, group-only session identity, Late/Excused attendance in the new teaching workflow, and group-only reporting/dashboard assumptions after production smoke testing exposed the mismatch with the actual school structure.
+- The approved replacement is explicit `Class -> Subject -> optional Group`, one active Class per student, automatic Subject participation unless excluded, at most one Group per Class Subject, flexible multi-teacher assignments without PRIMARY/ASSISTANT business semantics, and separate co-teacher weekly submissions.
+- Attendance in the corrected model is Present/Absent only. Matching co-teacher observations count once; disagreements become admin-resolved conflicts.
+- Reports become period- and Subject-aware with admin-approved shared content, optional student exceptions, `Draft -> Review -> Finalize -> Send`, immutable finalized snapshots, no parent-facing teacher names, and `MCE Weekend School` authorship.
+- Normal lifecycle becomes `Active -> Archived -> Restore OR Permanently Delete`; confirmed admin deletion may remove dependent history after an impact review. Export/download is available independently and prominently before deletion.
+- Teacher invitation handling must resolve existing Auth state before inviting and must regress the production `email_exists` failure. Password setup/recovery uses unified visible auth-field styling.
+- Authority synchronization is Task 1 of `docs/superpowers/plans/2026-09-22-class-subject-group-reporting-redesign.md`; D-025 and `docs/SPEC.md` section 58 supersede conflicting historical rules without rewriting old decisions.
+- Forward-only architecture migrations start at 19; applied migrations 1–18 remain immutable. Hosted production receives no development seed.
+- Phase 2 roster CSV remains blocked until the architecture correction passes the full local gate, Vercel preview, hosted migrations, production deploy, runtime-error review, and production smoke test.

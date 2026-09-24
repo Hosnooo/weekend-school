@@ -2010,3 +2010,220 @@ The approved design in `docs/superpowers/specs/2026-09-22-admin-workflows-and-re
 - A teacher can read a generated parent-report preview for a student currently in one of their assigned groups. The preview is read-only and excludes guardian contact details, delivery diagnostics, and admin controls. Server authorization and RLS enforce current same-school assignment. Generation and sending remain administrator-only.
 
 Each extension phase passes lint, typecheck, tests, build, real PostgreSQL/RLS tests for database changes, and focused bilingual browser checks before release. New migrations are forward-only and precede dependent production code. The four original end-to-end workflows remain passing. See the approved design for detailed edge cases and exclusions.
+
+# 58. Class-Subject-Group architecture correction (2026-09-22)
+
+This section supersedes conflicting requirements in sections 5, 8-12, 15-18, 21-24, 31-39, 44, 51-55, and 57. The approved detailed design is `docs/superpowers/specs/2026-09-22-class-subject-group-reporting-redesign.md`.
+
+## 58.1 Academic structure
+
+Use explicit school concepts:
+
+```text
+Class -> Subject -> optional Group
+```
+
+A `Subject` is reusable school-wide. A `Class Subject` represents one Subject offered to one Class. A Class Subject may be whole-class with no Groups or may use one or more Groups. Do not create fake “All” Groups for whole-class Subjects. There are no subgroups in the corrected architecture.
+
+Each Group belongs to exactly one Class Subject. The same display name such as `Group A` may exist independently under different Subjects. Subject and Group configuration primarily lives inside the Class administration experience.
+
+## 58.2 Student enrollment and participation
+
+A student has exactly one active Class at a time. Class changes are dated: the old enrollment closes and the new enrollment begins without rewriting history.
+
+An actively enrolled student automatically participates in every active Subject for the Class unless the student is explicitly excluded from that Class Subject. Subject exclusions affect only that Subject and do not remove the student from the Class or other Subjects.
+
+For a whole-class Subject, the student participates directly in the Class Subject. For a grouped Subject, the student may have at most one active Group membership within that Class Subject at a time. A student may therefore belong to different Groups for different Subjects, for example Quran Group A and Arabic Group B.
+
+Group membership changes are dated and preserve history. Moving a student between Groups in one Subject must not affect the student's Group in another Subject.
+
+## 58.3 Default Group semantics
+
+When the first Group is created for a Class Subject, it becomes the default Group automatically. An admin may later change the default.
+
+Changing the default Group affects only new or currently unassigned participating students. Existing students remain in their current Groups unless an admin explicitly moves them.
+
+A new student entering a Class is assigned to the current default Group for each grouped Subject unless explicitly excluded or adjusted.
+
+When a whole-class Subject gains its first Group, the admin flow must explicitly handle existing participating students before grouped operation becomes active: either assign them to the new default Group or require review of assignments. The system must not silently leave an ambiguous active roster.
+
+Removing the final Group from a grouped Subject requires explicit confirmation and returns participating students to whole-class Subject participation while preserving historical Group membership records.
+
+## 58.4 Teacher assignments
+
+There is no primary-teacher or assistant-teacher business rule in the corrected model.
+
+A teacher assignment targets either:
+
+- an entire Class Subject, covering the whole Class Subject and every Group under it; or
+- one specific Group within a Class Subject.
+
+Multiple teachers may share the same Class Subject or Group. One teacher may teach many Classes, Subjects, and Groups. Group-level assignments add to whole-Class-Subject assignments rather than replacing them.
+
+Assignments are dated with start/end periods. Reactivation creates a new active assignment period rather than reopening a historical period.
+
+Effective teacher access is deduplicated: if a teacher has both a whole-Class-Subject assignment and a specific Group assignment for the same Group, the UI, permissions, dashboard expectations, and weekly-update identity treat that as one effective teaching context, not duplicates.
+
+## 58.5 Teacher account invitation and recovery
+
+Teacher creation must resolve Auth state before attempting an invitation. Never blindly call `inviteUserByEmail` for an email that already exists.
+
+If an existing Auth identity is an unclaimed/recoverable teacher for the same school, link or resend the appropriate invite/recovery path without creating a duplicate Auth user or profile. If the person is already a claimed active member, show a clear semantic message. If an existing account belongs to another school or incompatible role, do not silently cross-link it; preserve school isolation and surface a safe admin-facing error.
+
+The `email_exists` provider response is a required regression case. Public signup remains disabled. Password setup/recovery uses Supabase Auth, generic anti-enumeration responses, and the shared visible auth input styles.
+
+Deleting a never-used invited teacher removes/revokes the school membership and application record. Delete the underlying Supabase Auth identity only when it is known to be an unused invitation created solely for this school and deletion cannot affect an unrelated pre-existing identity.
+
+## 58.6 Weekly teaching submissions
+
+The weekly source record is teacher-specific. The conceptual identity is:
+
+```text
+Class + Subject + optional Group + Teacher + reporting week
+```
+
+Each co-teacher submits independently. One teacher cannot overwrite another teacher's draft or submitted update. Admins see teacher submissions grouped under the common teaching context/week.
+
+The teacher flow remains `Draft -> Submit`. Submitted content must not silently change. If post-submission edits are supported, preserve a revision history or clearly create a revised submitted version.
+
+Each teacher submission contains shared progress once for the context, a default performance value where provided, attendance observations, and sparse per-student exceptions such as a performance override, progress override, or optional parent-facing comment. Student-specific controls remain collapsed until needed.
+
+Dashboard expected submissions are based on distinct active teacher teaching contexts for the school week until a timetable exists; do not invent meeting schedules.
+
+## 58.7 Attendance
+
+The corrected attendance vocabulary contains exactly:
+
+```text
+PRESENT
+ABSENT
+```
+
+Do not use Late or Excused in the new teaching model.
+
+Teacher UX provides `Mark all Present`, then lets the teacher change absent exceptions.
+
+Multiple teachers may record attendance observations for the same student/context/week. Matching observations count once. Conflicting observations such as one Present and one Absent create one attendance conflict rather than two attendance occurrences.
+
+An active admin resolves a conflict to the official Present or Absent value. Teacher observations remain attributable internally for audit/review; the official value is used in finalized reporting.
+
+A one-week report may show Present or Absent. Longer periods aggregate Present and Absent counts.
+
+## 58.8 Reporting periods, scopes, and approval
+
+Reports use a selected date period. Presets may include week and month, and admins may use a custom range. Do not create separate weekly and monthly report architectures; monthly output aggregates records within the selected period.
+
+Admin report scope may be:
+
+- Class;
+- Subject/Class Subject; or
+- Group.
+
+A Class-level student report contains the applicable selected Subject sections. Subject/Group scopes contain only the relevant Subject/Group content.
+
+Teacher submissions are sources, not the final parent-facing wording. For each reporting context the admin may use one source, include multiple source blocks, combine/edit them, or write official wording based on the sources. Teacher names remain visible internally during review but never appear in the parent-facing final report.
+
+Use reusable content layers rather than forcing one separately authored report per child:
+
+1. school template: heading/introduction/closing/standard layout;
+2. optional Subject template wording;
+3. approved period content derived from teacher submissions;
+4. optional student-specific performance/comment exceptions.
+
+The admin experience should be batch-first and surface exceptions such as personalized comments, attendance conflicts, missing data, or reports needing review.
+
+## 58.9 Report workflow and snapshot immutability
+
+Official report workflow is:
+
+```text
+Draft -> Review -> Finalize -> Send
+```
+
+Finalization creates an immutable snapshot containing at least the student display data, Class label, Subject label, Group label when applicable, period, approved progress wording, approved performance, official attendance result/totals, student-specific comments, template wording, and `MCE Weekend School` authorship.
+
+Later edits to students, teachers, Classes, Subjects, Groups, assignments, templates, or teacher submissions do not change finalized snapshots. Corrections create a revised report/version instead of mutating the finalized one.
+
+Parent-facing reports do not show teacher names. Teacher identities remain internal for source review and auditability.
+
+## 58.10 Navigation and UI
+
+Admin top-level navigation is:
+
+```text
+Dashboard
+Classes
+Students
+Teachers
+Reports
+Settings
+```
+
+Subjects and Groups live primarily inside Classes. The Class page is the main organizational surface and shows Subject cards, Group/whole-class status, assigned teachers, students, weekly submission state, and direct links to related work.
+
+Teacher navigation centers on `My Teaching` cards and history. Each card shows Class, Subject, optional Group/whole class, student count, current-week status, and a prominent weekly-update action.
+
+Use text branding `MCE Weekend School`; no logo is required. Use one primary MCE brand color, neutral light backgrounds, dark readable text, muted borders, green success/submitted, amber pending/review, and red destructive/error states. Avoid decorative gradients and unrelated accent colors.
+
+Use readable English and Arabic font stacks, true document-level RTL for Arabic, logical spacing, visible labels/borders/focus, sufficient contrast, and consistent primary/secondary/destructive actions. Login, Forgot Password, and Set Password share the same visible input primitives so controls cannot disappear against the background.
+
+Teacher weekly-update/attendance screens remain mobile-first around 360px with large tap targets and no normal horizontal scrolling. Admin configuration may be desktop-optimized while still usable on smaller screens.
+
+## 58.11 Dashboard semantics
+
+Teacher dashboard shows actionable current teaching contexts and states such as Not started, Draft, or Submitted.
+
+Admin dashboard focuses on actionable exceptions and unfinished work: expected/submitted teacher updates, attendance conflicts, report batches ready for review, reports needing attention, and unresolved student/Group assignment issues. Do not use the legacy rule that one submitted Group session means the Group is submitted when multiple teacher assignments exist.
+
+## 58.12 Archive, restore, permanent deletion, and export
+
+Normal lifecycle is:
+
+```text
+Active -> Archived -> Restore OR Permanently Delete
+```
+
+Archive removes a record from active workflows while preserving it. Archives provide context-appropriate Restore, View history/data, Download data, and Permanently delete actions.
+
+Admins may permanently delete archived records even when historical data exists. Dependent data belonging to the target may be deleted as part of the confirmed operation, including applicable enrollment/Group history, attendance, submissions, comments, reports, and delivery history.
+
+Permanent deletion must be school-scoped and transactional, must calculate/display meaningful impact counts before confirmation, and must state that the action cannot be undone. Do not rely on a hidden broad cascade as the user-facing behavior.
+
+Records created by mistake with no meaningful dependencies may be permanently deleted directly when safe. Records with active dependencies normally require archive/reassignment/resolution first.
+
+Provide an admin `Export Data` capability independent of deletion. Support period presets for this week, last week, this month, last month, custom range, and all history; scope by school, Class, Subject, Group, Student, or Teacher; and applicable datasets including attendance, teacher submissions/progress, performance, personalized comments, reports, enrollment/Group history, and teacher assignments.
+
+Target export formats are `.xlsx` for structured administration, optional CSV per dataset, PDF for finalized report presentation, and ZIP for bundled multi-file exports. Generated exports are protected and temporary rather than permanent public URLs. Bulk/school-wide export is admin-only. Delete dialogs prominently offer `Download data first`, but export is optional rather than mandatory.
+
+## 58.13 Security and historical access
+
+Keep defense in depth: active-profile server authorization plus PostgreSQL RLS.
+
+Every new school-owned row carries `school_id`. Whole-Class-Subject teacher assignment grants active roster/submission access to participating students in that Subject and its Groups. Group-level assignment grants access only to that Group. Explicitly excluded students do not appear in the active Subject roster.
+
+Teachers may create/manage only their own weekly submissions and cannot edit another teacher's source. Teacher historical submission access must preserve authorship and must not expand merely because the teacher is currently assigned to a context that contains another teacher's historical submissions.
+
+Admins have broader same-school management access. Teachers cannot finalize/send official reports, run bulk school exports, permanently delete school records, or manage structural assignments.
+
+All SECURITY DEFINER functions remain narrowly scoped; anonymous EXECUTE remains revoked. Finalized report snapshots and submitted source records are protected from silent mutation.
+
+## 58.14 Forward-only migration and release gate
+
+Migrations already applied through migration 18 are immutable. The architecture correction begins with forward-only migration 19 or later. Do not edit migrations 1-18 and do not apply development seed data to hosted production.
+
+Migrate the existing minimal production setup conservatively. Preserve current Auth/profile rows and represent legacy root Groups sensibly as Classes without inventing fake Subjects solely to satisfy the new model. Legacy storage may remain temporarily while new workflows transition; cleanup of retired storage is a separate later step after hosted verification.
+
+Every implementation task uses TDD for business behavior/regressions, real PostgreSQL/RLS tests for database/security changes, bilingual/RTL coverage, strict TypeScript, lint, build, and focused browser verification. The final correction release gate runs:
+
+```text
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm test:db
+pnpm test:e2e
+pnpm build
+```
+
+Apply hosted forward migrations before deploying code that requires them. Verify Vercel preview, hosted migration history, RLS, invitation/recovery behavior, password-form visibility, Classes/Subjects/Groups, multi-teacher submissions, attendance resolution, subject-aware reports, archive/delete/export safety, English/Arabic shells, and runtime errors.
+
+The Phase 2 roster CSV work described in section 57 is blocked until this architecture correction is released and the production smoke gate passes. When CSV work resumes, its template/import semantics must target the corrected Class/Subject/Group model rather than the legacy one-global-group model.
