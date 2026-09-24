@@ -7,13 +7,16 @@ export type ExportDataset =
   | 'DELIVERIES';
 
 export type ExportScope =
+  | {type: 'SCHOOL'}
   | {type: 'CLASS'; classId: string}
   | {type: 'SUBJECT'; classId: string; classSubjectId: string}
-  | {type: 'GROUP'; classId: string; classSubjectId: string; subjectGroupId: string};
+  | {type: 'GROUP'; classId: string; classSubjectId: string; subjectGroupId: string}
+  | {type: 'STUDENT'; studentId: string}
+  | {type: 'TEACHER'; teacherProfileId: string};
 
 export type ExportRequest = {
-  periodStart: string;
-  periodEnd: string;
+  periodStart: string | null;
+  periodEnd: string | null;
   scope: ExportScope;
   datasets: readonly ExportDataset[];
   includeCsv: boolean;
@@ -21,17 +24,28 @@ export type ExportRequest = {
 };
 
 export type ExportRequestInput = {
-  periodStart: string;
-  periodEnd: string;
+  periodStart: string | null;
+  periodEnd: string | null;
   scope: {
-    type: 'CLASS' | 'SUBJECT' | 'GROUP';
+    type: 'SCHOOL' | 'CLASS' | 'SUBJECT' | 'GROUP' | 'STUDENT' | 'TEACHER';
     classId?: string;
     classSubjectId?: string;
     subjectGroupId?: string;
+    studentId?: string;
+    teacherProfileId?: string;
   };
   datasets: readonly string[];
   includeCsv: boolean;
   includeFinalizedReportPdfs: boolean;
+};
+
+export type ExportRecordContext = {
+  occurredOn?: string | null;
+  classId?: string | null;
+  classSubjectId?: string | null;
+  subjectGroupId?: string | null;
+  studentId?: string | null;
+  teacherProfileId?: string | null;
 };
 
 export type FinalizedReportExportRef = {
@@ -83,23 +97,33 @@ function requireNonEmpty(value: string | undefined, label: string) {
     throw new Error(`${label} is required`);
   }
 
-  return value;
+  return value.trim();
 }
 
 function validateScope(scope: ExportRequestInput['scope']): ExportScope {
-  const classId = requireNonEmpty(scope.classId, 'Class');
-
-  if (scope.type === 'CLASS') {
-    return {type: 'CLASS', classId};
+  if (scope.type === 'SCHOOL') return {type: 'SCHOOL'};
+  if (scope.type === 'STUDENT') {
+    return {type: 'STUDENT', studentId: requireNonEmpty(scope.studentId, 'Student')};
   }
+  if (scope.type === 'TEACHER') {
+    return {
+      type: 'TEACHER',
+      teacherProfileId: requireNonEmpty(scope.teacherProfileId, 'Teacher')
+    };
+  }
+
+  const classId = requireNonEmpty(scope.classId, 'Class');
+  if (scope.type === 'CLASS') return {type: 'CLASS', classId};
 
   const classSubjectId = requireNonEmpty(scope.classSubjectId, 'Subject');
-  if (scope.type === 'SUBJECT') {
-    return {type: 'SUBJECT', classId, classSubjectId};
-  }
+  if (scope.type === 'SUBJECT') return {type: 'SUBJECT', classId, classSubjectId};
 
-  const subjectGroupId = requireNonEmpty(scope.subjectGroupId, 'Group');
-  return {type: 'GROUP', classId, classSubjectId, subjectGroupId};
+  return {
+    type: 'GROUP',
+    classId,
+    classSubjectId,
+    subjectGroupId: requireNonEmpty(scope.subjectGroupId, 'Group')
+  };
 }
 
 function slugify(value: string) {
@@ -114,7 +138,17 @@ function slugify(value: string) {
 }
 
 export function validateExportRequest(input: ExportRequestInput): ExportRequest {
-  if (!isIsoDate(input.periodStart) || !isIsoDate(input.periodEnd) || input.periodStart > input.periodEnd) {
+  const allHistory = input.periodStart === null && input.periodEnd === null;
+  const partialOpenPeriod = (input.periodStart === null) !== (input.periodEnd === null);
+
+  if (
+    partialOpenPeriod ||
+    (!allHistory && (
+      !isIsoDate(input.periodStart!) ||
+      !isIsoDate(input.periodEnd!) ||
+      input.periodStart! > input.periodEnd!
+    ))
+  ) {
     throw new Error('Export period is invalid');
   }
 
@@ -126,7 +160,6 @@ export function validateExportRequest(input: ExportRequestInput): ExportRequest 
     if (!DATASETS.has(dataset as ExportDataset)) {
       throw new Error(`Unsupported export dataset: ${dataset}`);
     }
-
     return dataset as ExportDataset;
   });
 
@@ -144,12 +177,44 @@ export function validateExportRequest(input: ExportRequestInput): ExportRequest 
   };
 }
 
+export function recordMatchesExportRequest(
+  record: ExportRecordContext,
+  request: ExportRequest
+) {
+  if (
+    request.periodStart &&
+    request.periodEnd &&
+    record.occurredOn &&
+    (record.occurredOn < request.periodStart || record.occurredOn > request.periodEnd)
+  ) {
+    return false;
+  }
+
+  switch (request.scope.type) {
+    case 'SCHOOL':
+      return true;
+    case 'CLASS':
+      return record.classId === request.scope.classId;
+    case 'SUBJECT':
+      return record.classSubjectId === request.scope.classSubjectId;
+    case 'GROUP':
+      return record.subjectGroupId === request.scope.subjectGroupId;
+    case 'STUDENT':
+      return record.studentId === request.scope.studentId;
+    case 'TEACHER':
+      return record.teacherProfileId === request.scope.teacherProfileId;
+  }
+}
+
 export function planExportFiles(
   input: ExportRequestInput,
   finalizedReports: readonly FinalizedReportExportRef[]
 ): ExportPlan {
   const request = validateExportRequest(input);
-  const stem = `mce-weekend-school-export-${request.periodStart}-to-${request.periodEnd}`;
+  const periodStem = request.periodStart && request.periodEnd
+    ? `${request.periodStart}-to-${request.periodEnd}`
+    : 'all-history';
+  const stem = `mce-weekend-school-export-${periodStem}`;
   const files: ExportFilePlan[] = [
     {
       name: `${stem}.xlsx`,
@@ -195,13 +260,29 @@ export function authorizeExportDownload(input: {
   if (input.actorRole !== 'ADMIN') {
     throw new Error('Administrator access is required for exports');
   }
-
   if (!input.actorActive) {
     throw new Error('An active administrator account is required');
   }
-
   if (input.actorSchoolId !== input.exportSchoolId) {
     throw new Error('Export school does not match the administrator school');
+  }
+  return true;
+}
+
+export function authorizeStoredExportDownload(input: {
+  actorRole: string;
+  actorActive: boolean;
+  actorSchoolId: string;
+  exportSchoolId: string;
+  expiresAt: string;
+  now: string;
+}) {
+  authorizeExportDownload(input);
+
+  const expiresAt = Date.parse(input.expiresAt);
+  const now = Date.parse(input.now);
+  if (!Number.isFinite(expiresAt) || !Number.isFinite(now) || now >= expiresAt) {
+    throw new Error('Export request has expired');
   }
 
   return true;
