@@ -10,6 +10,7 @@ import {
   canTeach,
   type AccountCapabilities
 } from '@/lib/auth/authorization';
+import type {AppRole} from '@/lib/auth/navigation';
 import {createServerSupabaseClient} from '@/lib/supabase/server';
 
 type ProfileRow = {
@@ -90,8 +91,19 @@ async function requireAccountContext(
   };
 }
 
-export async function requireProfile(locale: Locale): Promise<Profile> {
-  return (await requireAccountContext(locale)).profile;
+export async function requireProfile(locale: Locale, legacyRole?: AppRole): Promise<Profile> {
+  const {profile, capabilities} = await requireAccountContext(locale);
+
+  // Transitional call-shape compatibility only: these checks no longer read
+  // profiles.role. They resolve the requested capability from explicit links.
+  if (legacyRole === 'ADMIN' && !canAdmin(capabilities)) {
+    redirect(`/${locale}/login?reason=access`);
+  }
+  if (legacyRole === 'TEACHER' && !canTeach(capabilities)) {
+    redirect(`/${locale}/login?reason=access`);
+  }
+
+  return profile;
 }
 
 export async function requireProfileWithCapabilities(
