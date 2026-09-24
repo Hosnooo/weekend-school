@@ -32,8 +32,7 @@ describe('student administration validation', () => {
 describe('guardian administration validation', () => {
   it('rejects malformed email addresses', () => {
     expect(
-      guardianSchema.safeParse({name: 'Parent', email: 'not-email', reportLanguage: 'en'})
-        .success
+      guardianSchema.safeParse({name: 'Parent', email: 'not-email', reportLanguage: 'en'}).success
     ).toBe(false);
   });
 });
@@ -62,7 +61,7 @@ describe('group administration validation', () => {
 });
 
 describe('teacher administration validation', () => {
-  it('normalizes the invitation email without coupling onboarding to assignments', () => {
+  it('normalizes the Teacher business email independently from account access', () => {
     expect(
       teacherSchema.parse({
         displayName: ' Fatima Ali ',
@@ -76,14 +75,16 @@ describe('teacher administration validation', () => {
     });
   });
 
-  it('updates teacher identity independently from teaching assignments', () => {
+  it('updates Teacher business identity independently from teaching assignments', () => {
     expect(teacherUpdateSchema.parse({
       id: '33333333-3333-4333-8333-333333333333',
       displayName: ' Fatima Ali ',
+      email: ' FATIMA@example.com ',
       preferredLanguage: 'en'
     })).toEqual({
       id: '33333333-3333-4333-8333-333333333333',
       displayName: 'Fatima Ali',
+      email: 'fatima@example.com',
       preferredLanguage: 'en'
     });
   });

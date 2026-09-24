@@ -1,2 +1,41 @@
-import {getTranslations} from 'next-intl/server';import {notFound} from 'next/navigation';import {AdminPage} from '@/components/ui/admin-page';import {listTeachingAssignments,listTeachingClassSubjects} from '@/features/teaching-assignments/teaching-assignment.repository';import {TeachingAssignmentEditor} from '@/features/teachers/teacher-form';import {listTeachingCandidates} from '@/features/teachers/teacher.repository';import {todayInTimeZone} from '@/features/weekly-updates/weekly-update.model';import {getSchoolTimezone} from '@/features/weekly-updates/weekly-update.repository';import {isLocale} from '@/i18n/config';import {requireProfile} from '@/lib/auth/require-profile';
-export default async function TeachingAssignmentsPage({params}:{params:Promise<{locale:string;id:string}>}){const{locale,id}=await params;if(!isLocale(locale))notFound();const profile=await requireProfile(locale,'ADMIN');const[candidates,classSubjects,assignments,timeZone,t]=await Promise.all([listTeachingCandidates(profile.schoolId),listTeachingClassSubjects(profile.schoolId),listTeachingAssignments(profile.schoolId,id),getSchoolTimezone(profile.schoolId),getTranslations({locale,namespace:'teachers'})]);const candidate=candidates.find((item)=>item.id===id);if(!candidate)notFound();const today=todayInTimeZone(timeZone);return <AdminPage title={`${candidate.displayName} — ${t('assignments')}`} description={t('description')}><TeachingAssignmentEditor assignments={assignments} classSubjects={classSubjects} locale={locale} teacherId={candidate.id} today={today}/></AdminPage>}
+import {getTranslations} from 'next-intl/server';
+import {notFound} from 'next/navigation';
+
+import {AdminPage} from '@/components/ui/admin-page';
+import {
+  listTeachingAssignments,
+  listTeachingClassSubjects
+} from '@/features/teaching-assignments/teaching-assignment.repository';
+import {TeachingAssignmentEditor} from '@/features/teachers/teacher-form';
+import {listTeachingCandidates} from '@/features/teachers/teacher.repository';
+import {todayInTimeZone} from '@/features/weekly-updates/weekly-update.model';
+import {getSchoolTimezone} from '@/features/weekly-updates/weekly-update.repository';
+import {isLocale} from '@/i18n/config';
+import {requireAdministrator} from '@/lib/auth/require-profile';
+
+export default async function TeachingAssignmentsPage({params}: {
+  params: Promise<{locale: string; id: string}>;
+}) {
+  const {locale, id} = await params;
+  if (!isLocale(locale)) notFound();
+  const profile = await requireAdministrator(locale);
+  const [candidates, classSubjects, assignments, timeZone, t] = await Promise.all([
+    listTeachingCandidates(profile.schoolId),
+    listTeachingClassSubjects(profile.schoolId),
+    listTeachingAssignments(profile.schoolId, id),
+    getSchoolTimezone(profile.schoolId),
+    getTranslations({locale, namespace: 'teachers'})
+  ]);
+  const candidate = candidates.find((item) => item.id === id);
+  if (!candidate) notFound();
+  const today = todayInTimeZone(timeZone);
+  return <AdminPage title={`${candidate.displayName} — ${t('assignments')}`} description={t('assignmentHelp')}>
+    <TeachingAssignmentEditor
+      assignments={assignments}
+      classSubjects={classSubjects}
+      locale={locale}
+      teacherId={candidate.id}
+      today={today}
+    />
+  </AdminPage>;
+}

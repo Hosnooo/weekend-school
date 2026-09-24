@@ -1,11 +1,116 @@
 import 'server-only';
-import type {TeacherListItem} from '@/features/teachers/teacher.types';import {createServerSupabaseClient} from '@/lib/supabase/server';import {createServiceRoleSupabaseClient} from '@/lib/supabase/service-role';
-type TeacherRow={id:string;display_name:string;preferred_language:'en'|'ar';is_active:boolean;teacher_accounts:Array<{profiles:{auth_user_id:string}|null}>;teaching_assignments:Array<{starts_on:string;ends_on:string|null}>};
-const teacherSelect=`id,display_name,preferred_language,is_active,teacher_accounts(profiles(auth_user_id)),teaching_assignments!teaching_assignments_teacher_school_fk(starts_on,ends_on)`;
-function mapTeacher(row:TeacherRow):TeacherListItem{const today=new Date().toISOString().slice(0,10);return{id:row.id,authUserId:row.teacher_accounts.find((link)=>link.profiles)?.profiles?.auth_user_id??null,displayName:row.display_name,preferredLanguage:row.preferred_language,isActive:row.is_active,assignmentCount:row.teaching_assignments.filter(({starts_on,ends_on})=>starts_on<=today&&(ends_on===null||ends_on>=today)).length};}
-export async function listTeachers(schoolId:string){const db=await createServerSupabaseClient();const{data,error}=await db.from('teachers').select(teacherSelect).eq('school_id',schoolId).order('display_name');if(error)throw error;return(data as unknown as TeacherRow[]).map(mapTeacher);}
-export async function getTeacherAccessStates(teachers:TeacherListItem[]):Promise<Record<string,'signedIn'|'linkSent'|'unknown'>>{const db=createServiceRoleSupabaseClient();const entries=await Promise.all(teachers.map(async(teacher)=>{if(!teacher.authUserId)return[teacher.id,'unknown']as const;const{data,error}=await db.auth.admin.getUserById(teacher.authUserId);if(error||!data.user)return[teacher.id,'unknown']as const;return[teacher.id,data.user.last_sign_in_at?'signedIn':data.user.invited_at?'linkSent':'unknown']as const;}));return Object.fromEntries(entries);}
-export async function listTeachingCandidates(schoolId:string){const db=await createServerSupabaseClient();const{data,error}=await db.from('teachers').select('id,display_name').eq('school_id',schoolId).eq('is_active',true).order('display_name');if(error)throw error;return data.map((row)=>({id:row.id as string,displayName:row.display_name as string}));}
-export async function getTeacher(schoolId:string,id:string){const db=await createServerSupabaseClient();const{data,error}=await db.from('teachers').select(teacherSelect).eq('school_id',schoolId).eq('id',id).maybeSingle();if(error)throw error;return data?mapTeacher(data as unknown as TeacherRow):null;}
-export async function updateTeacher(schoolId:string,input:{id:string;displayName:string;preferredLanguage:'en'|'ar'}){const db=await createServerSupabaseClient();const{error}=await db.from('teachers').update({display_name:input.displayName,preferred_language:input.preferredLanguage}).eq('school_id',schoolId).eq('id',input.id);if(error)throw error;}
-export async function setTeacherActive(schoolId:string,id:string,isActive:boolean){const db=await createServerSupabaseClient();const{error}=await db.from('teachers').update({is_active:isActive}).eq('school_id',schoolId).eq('id',id);if(error)throw error;}
+
+import type {TeacherListItem} from '@/features/teachers/teacher.types';
+import {createServerSupabaseClient} from '@/lib/supabase/server';
+import {createServiceRoleSupabaseClient} from '@/lib/supabase/service-role';
+
+type TeacherRow = {
+  id: string;
+  email: string | null;
+  display_name: string;
+  preferred_language: 'en' | 'ar';
+  is_active: boolean;
+  teacher_accounts: Array<{
+    profile_id: string;
+    profiles: {id: string; auth_user_id: string} | null;
+  }>;
+  teaching_assignments: Array<{starts_on: string; ends_on: string | null}>;
+};
+
+const teacherSelect = `id,email,display_name,preferred_language,is_active,teacher_accounts(profile_id,profiles(id,auth_user_id)),teaching_assignments!teaching_assignments_teacher_school_fk(starts_on,ends_on)`;
+
+function mapTeacher(row: TeacherRow): TeacherListItem {
+  const today = new Date().toISOString().slice(0, 10);
+  const account = row.teacher_accounts.find((link) => link.profiles) ?? null;
+  return {
+    id: row.id,
+    email: row.email,
+    accountProfileId: account?.profile_id ?? null,
+    authUserId: account?.profiles?.auth_user_id ?? null,
+    displayName: row.display_name,
+    preferredLanguage: row.preferred_language,
+    isActive: row.is_active,
+    assignmentCount: row.teaching_assignments.filter(
+      ({starts_on, ends_on}) => starts_on <= today && (ends_on === null || ends_on >= today)
+    ).length
+  };
+}
+
+export async function listTeachers(schoolId: string) {
+  const db = await createServerSupabaseClient();
+  const {data, error} = await db.from('teachers').select(teacherSelect).eq('school_id', schoolId).order('display_name');
+  if (error) throw error;
+  return (data as unknown as TeacherRow[]).map(mapTeacher);
+}
+
+export async function getTeacherAccessStates(
+  teachers: TeacherListItem[]
+): Promise<Record<string, 'signedIn' | 'linkSent' | 'unknown'>> {
+  const db = createServiceRoleSupabaseClient();
+  const entries = await Promise.all(teachers.map(async (teacher) => {
+    if (!teacher.authUserId) return [teacher.id, 'unknown'] as const;
+    const {data, error} = await db.auth.admin.getUserById(teacher.authUserId);
+    if (error || !data.user) return [teacher.id, 'unknown'] as const;
+    return [
+      teacher.id,
+      data.user.last_sign_in_at ? 'signedIn' : data.user.invited_at ? 'linkSent' : 'unknown'
+    ] as const;
+  }));
+  return Object.fromEntries(entries);
+}
+
+export async function listTeachingCandidates(schoolId: string) {
+  const db = await createServerSupabaseClient();
+  const {data, error} = await db.from('teachers')
+    .select('id,display_name')
+    .eq('school_id', schoolId)
+    .eq('is_active', true)
+    .order('display_name');
+  if (error) throw error;
+  return data.map((row) => ({id: row.id as string, displayName: row.display_name as string}));
+}
+
+export async function getTeacher(schoolId: string, id: string) {
+  const db = await createServerSupabaseClient();
+  const {data, error} = await db.from('teachers').select(teacherSelect)
+    .eq('school_id', schoolId).eq('id', id).maybeSingle();
+  if (error) throw error;
+  return data ? mapTeacher(data as unknown as TeacherRow) : null;
+}
+
+export async function insertTeacher(input: {
+  schoolId: string;
+  displayName: string;
+  email: string;
+  preferredLanguage: 'en' | 'ar';
+}) {
+  const db = await createServerSupabaseClient();
+  const {data, error} = await db.from('teachers').insert({
+    school_id: input.schoolId,
+    display_name: input.displayName,
+    email: input.email,
+    preferred_language: input.preferredLanguage
+  }).select('id').single();
+  if (error) throw error;
+  return data.id as string;
+}
+
+export async function updateTeacher(
+  schoolId: string,
+  input: {id: string; displayName: string; email: string; preferredLanguage: 'en' | 'ar'}
+) {
+  const db = await createServerSupabaseClient();
+  const {error} = await db.from('teachers').update({
+    display_name: input.displayName,
+    email: input.email,
+    preferred_language: input.preferredLanguage
+  }).eq('school_id', schoolId).eq('id', input.id);
+  if (error) throw error;
+}
+
+export async function setTeacherActive(schoolId: string, id: string, isActive: boolean) {
+  const db = await createServerSupabaseClient();
+  const {error} = await db.from('teachers').update({is_active: isActive})
+    .eq('school_id', schoolId).eq('id', id);
+  if (error) throw error;
+}

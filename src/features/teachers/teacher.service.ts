@@ -1,75 +1,165 @@
-export type TeacherInvitationInput = {
+export type TeacherBusinessInput = {
   schoolId: string;
   displayName: string;
   email: string;
   preferredLanguage: 'en' | 'ar';
 };
 
-export type TeacherInvitationDependencies = {
-  inviteAuthUser(input: TeacherInvitationInput): Promise<string>;
-  createProfile(input: TeacherInvitationInput, authUserId: string): Promise<string>;
-  deleteProfile(profileId: string): Promise<void>;
-  deleteAuthUser(authUserId: string): Promise<void>;
-  findUnclaimedAuthUser(email: string, schoolId: string): Promise<string | null>;
-  sendExistingAccessLink(email: string): Promise<void>;
+export type TeacherAccountLink = {
+  schoolId: string;
+  teacherId: string;
+  profileId: string;
+};
+
+export type TeacherBusinessRecordDependencies = {
+  createTeacher(input: TeacherBusinessInput): Promise<string>;
+  lookupAuthByEmail?: (email: string) => Promise<unknown>;
+  lookupGuardianByEmail?: (email: string) => Promise<unknown>;
+  linkTeacherAccount?: (input: TeacherAccountLink) => Promise<void>;
 };
 
 export type TeacherAccessDependencies = {
-  findTeacher(profileId: string, schoolId: string): Promise<{authUserId: string; preferredLanguage: 'en' | 'ar'} | null>;
-  getAuthEmail(authUserId: string): Promise<string | null>;
-  sendAccessLink(email: string, language: 'en' | 'ar'): Promise<void>;
+  loadTeacher(
+    teacherId: string,
+    schoolId: string
+  ): Promise<{
+    id: string;
+    schoolId: string;
+    displayName: string;
+    preferredLanguage: 'en' | 'ar';
+  } | null>;
+  findAuthUserByEmail(email: string): Promise<{id: string} | null>;
+  findProfileByAuthUserId(authUserId: string): Promise<{id: string; schoolId: string} | null>;
+  inviteAuthUser(input: {
+    email: string;
+    displayName: string;
+    preferredLanguage: 'en' | 'ar';
+    redirectTo: string;
+  }): Promise<string>;
+  createProfile(input: {
+    schoolId: string;
+    authUserId: string;
+    displayName: string;
+    preferredLanguage: 'en' | 'ar';
+  }): Promise<string>;
+  linkTeacherAccount(input: TeacherAccountLink): Promise<void>;
+  sendAccessLink(email: string, redirectTo: string): Promise<void>;
+  deleteProfile?: (profileId: string) => Promise<void>;
+  deleteAuthUser?: (authUserId: string) => Promise<void>;
+  removeAdministratorAccount?: (input: {schoolId: string; profileId: string}) => Promise<void>;
 };
 
-export async function resendTeacherAccess(profileId: string, schoolId: string, dependencies: TeacherAccessDependencies): Promise<void> {
-  const teacher = await dependencies.findTeacher(profileId, schoolId);
-  if (!teacher) throw new Error('Teacher account unavailable');
-  const email = await dependencies.getAuthEmail(teacher.authUserId);
-  if (!email) throw new Error('Teacher account unavailable');
-  await dependencies.sendAccessLink(email, teacher.preferredLanguage);
+export type UnlinkTeacherAccessDependencies = {
+  unlinkTeacherAccount(input: TeacherAccountLink): Promise<void>;
+  deleteProfile?: (profileId: string) => Promise<void>;
+  removeAdministratorAccount?: (input: {schoolId: string; profileId: string}) => Promise<void>;
+};
+
+function normalizeEmail(email: string) {
+  return email.trim().toLowerCase();
 }
 
-export async function inviteTeacher(
-  input: TeacherInvitationInput,
-  dependencies: TeacherInvitationDependencies
+function assertLoginEmail(email: string) {
+  if (!email || !email.includes('@')) throw new Error('A valid login email is required');
+}
+
+export async function createTeacherBusinessRecord(
+  input: TeacherBusinessInput,
+  dependencies: TeacherBusinessRecordDependencies
 ) {
-  const normalizedInput = {...input, email: input.email.trim().toLowerCase()};
+  return dependencies.createTeacher({...input, email: normalizeEmail(input.email)});
+}
 
-  let authUserId: string;
-  let newAuthUser = false;
-  const existingAuthUserId = await dependencies.findUnclaimedAuthUser(
-    normalizedInput.email,
-    normalizedInput.schoolId
-  );
+export async function ensureTeacherAccess(
+  input: {
+    schoolId: string;
+    teacherId: string;
+    loginEmail: string;
+    redirectTo: string;
+  },
+  dependencies: TeacherAccessDependencies
+) {
+  const loginEmail = normalizeEmail(input.loginEmail);
+  assertLoginEmail(loginEmail);
 
-  if (existingAuthUserId) {
-    authUserId = existingAuthUserId;
-  } else {
-    authUserId = await dependencies.inviteAuthUser(normalizedInput);
-    newAuthUser = true;
+  const teacher = await dependencies.loadTeacher(input.teacherId, input.schoolId);
+  if (!teacher || teacher.schoolId !== input.schoolId) {
+    throw new Error('Teacher is not available in this school');
   }
 
-  let profileId: string | null = null;
+  const existingAuth = await dependencies.findAuthUserByEmail(loginEmail);
+  let authUserId: string;
+  let profileId: string;
+  let createdAuth = false;
+  let createdProfile = false;
+
+  if (existingAuth) {
+    authUserId = existingAuth.id;
+    const profile = await dependencies.findProfileByAuthUserId(authUserId);
+    if (profile && profile.schoolId !== input.schoolId) {
+      throw new Error('This login belongs to another school');
+    }
+    if (profile) {
+      profileId = profile.id;
+    } else {
+      profileId = await dependencies.createProfile({
+        schoolId: input.schoolId,
+        authUserId,
+        displayName: teacher.displayName,
+        preferredLanguage: teacher.preferredLanguage
+      });
+      createdProfile = true;
+    }
+  } else {
+    authUserId = await dependencies.inviteAuthUser({
+      email: loginEmail,
+      displayName: teacher.displayName,
+      preferredLanguage: teacher.preferredLanguage,
+      redirectTo: input.redirectTo
+    });
+    createdAuth = true;
+    try {
+      profileId = await dependencies.createProfile({
+        schoolId: input.schoolId,
+        authUserId,
+        displayName: teacher.displayName,
+        preferredLanguage: teacher.preferredLanguage
+      });
+      createdProfile = true;
+    } catch (error) {
+      if (dependencies.deleteAuthUser) {
+        try { await dependencies.deleteAuthUser(authUserId); } catch {}
+      }
+      throw error;
+    }
+  }
+
   try {
-    profileId = await dependencies.createProfile(normalizedInput, authUserId);
-    if (!newAuthUser) await dependencies.sendExistingAccessLink(normalizedInput.email);
-    return profileId;
+    await dependencies.linkTeacherAccount({
+      schoolId: input.schoolId,
+      teacherId: input.teacherId,
+      profileId
+    });
   } catch (error) {
-    if (profileId) {
-      try {
-        await dependencies.deleteProfile(profileId);
-      } catch {
-        // Continue cleanup and preserve the operation's original error.
-      }
+    if (createdProfile && dependencies.deleteProfile) {
+      try { await dependencies.deleteProfile(profileId); } catch {}
     }
-
-    if (newAuthUser) {
-      try {
-        await dependencies.deleteAuthUser(authUserId);
-      } catch {
-        // Cleanup is best effort; server logging belongs in the adapter.
-      }
+    if (createdAuth && dependencies.deleteAuthUser) {
+      try { await dependencies.deleteAuthUser(authUserId); } catch {}
     }
-
     throw error;
   }
+
+  if (existingAuth) {
+    await dependencies.sendAccessLink(loginEmail, input.redirectTo);
+  }
+
+  return profileId;
+}
+
+export async function unlinkTeacherAccess(
+  input: TeacherAccountLink,
+  dependencies: UnlinkTeacherAccessDependencies
+) {
+  await dependencies.unlinkTeacherAccount(input);
 }
