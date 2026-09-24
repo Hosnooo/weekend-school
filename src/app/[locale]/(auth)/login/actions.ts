@@ -43,7 +43,7 @@ export async function loginAction(
   }
 
   redirect(
-    profile.role === 'ADMIN' ? `/${locale}/dashboard` : `/${locale}/my-groups`
+    profile.role === 'ADMIN' ? `/${locale}/dashboard` : `/${locale}/my-teaching`
   );
 }
 
