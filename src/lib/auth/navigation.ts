@@ -32,8 +32,18 @@ const teacherNavigation: readonly NavigationItem[] = [
 export function getNavigationItems(
   capabilities: AccountCapabilities
 ): readonly NavigationItem[] {
-  return [
+  const items = [
     ...(capabilities.isAdmin ? adminNavigation : []),
     ...(capabilities.teacherIds.length > 0 ? teacherNavigation : [])
   ];
+
+  return [...new Map(items.map((item) => [item.href, item])).values()];
+}
+
+export function getDefaultAuthenticatedRoute(
+  capabilities: AccountCapabilities
+): '/dashboard' | '/my-teaching' | null {
+  if (capabilities.isAdmin) return '/dashboard';
+  if (capabilities.teacherIds.length > 0) return '/my-teaching';
+  return null;
 }
