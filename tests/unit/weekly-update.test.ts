@@ -15,7 +15,7 @@ describe('weekly update rules',()=>{
     expect(toSparseExceptions([{studentId:'a',performanceOverride:null,commentEn:'',commentAr:'  '},{studentId:'b',performanceOverride:'EXCELLENT',commentEn:'Great',commentAr:''}])).toEqual([{studentId:'b',performanceOverride:'EXCELLENT',commentEn:'Great',commentAr:null}]);
   });
   it('accepts the independent teacher submission identity',()=>{
-    expect(weeklyUpdateSchema.safeParse({submissionId:null,classSubjectId:'d0000000-0000-0000-0000-000000000001',subjectGroupId:null,weekStart:'2026-09-20',progressEn:'Covered chapter 1',progressAr:'',defaultPerformance:'GOOD',attendance:[{studentId:'e0000000-0000-0000-0000-000000000001',status:'PRESENT'}],exceptions:[],intent:'draft'}).success).toBe(true);
+    expect(weeklyUpdateSchema.safeParse({teacherId:'c0000000-0000-4000-8000-000000000002',submissionId:null,classSubjectId:'d0000000-0000-4000-8000-000000000001',subjectGroupId:null,weekStart:'2026-09-20',progressEn:'Covered chapter 1',progressAr:'',defaultPerformance:'GOOD',attendance:[{studentId:'e0000000-0000-4000-8000-000000000001',status:'PRESENT'}],exceptions:[],intent:'draft'}).success).toBe(true);
   });
   it('allows only Present or Absent teacher observations',()=>{
     expect(attendanceStatusSchema.safeParse('PRESENT').success).toBe(true);
