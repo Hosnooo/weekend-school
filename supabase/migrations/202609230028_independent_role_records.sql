@@ -1,6 +1,5 @@
 -- Forward-only identity correction. Migrations 1-27 are already applied and immutable.
 -- Business roles are independent records. Matching names/emails never imply identity or capability.
--- This migration is intentionally additive in Task 1; authorization cutover follows in later tasks.
 
 create table public.administrators (
   id uuid primary key default gen_random_uuid(),
@@ -140,3 +139,401 @@ select p.school_id, p.id, p.id
 from public.profiles p
 where p.role = 'TEACHER'
 on conflict do nothing;
+
+-- Capability authorization now comes only from explicit active account links.
+create or replace function public.is_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1
+    from public.profiles p
+    join public.administrator_accounts aa
+      on aa.school_id = p.school_id
+     and aa.profile_id = p.id
+    join public.administrators a
+      on a.school_id = aa.school_id
+     and a.id = aa.administrator_id
+    where p.auth_user_id = auth.uid()
+      and p.is_active
+      and a.is_active
+  )
+$$;
+
+create function public.current_teacher_ids()
+returns setof uuid
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select t.id
+  from public.profiles p
+  join public.teacher_accounts ta
+    on ta.school_id = p.school_id
+   and ta.profile_id = p.id
+  join public.teachers t
+    on t.school_id = ta.school_id
+   and t.id = ta.teacher_id
+  where p.auth_user_id = auth.uid()
+    and p.is_active
+    and t.is_active
+$$;
+
+revoke all on function public.current_teacher_ids() from public;
+revoke execute on function public.current_teacher_ids() from anon;
+grant execute on function public.current_teacher_ids() to authenticated;
+
+-- Until Task 3 moves assignment foreign keys to Teacher IDs, legacy/profile-owned
+-- assignment rows remain in place but are usable only by explicitly linked Teacher accounts.
+create or replace function public.teaches_group(target_group_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1
+    from public.group_teachers
+    where group_teachers.school_id = public.current_school_id()
+      and group_teachers.group_id = target_group_id
+      and group_teachers.teacher_profile_id = public.current_profile_id()
+      and exists (select 1 from public.current_teacher_ids())
+  )
+$$;
+
+create or replace function public.can_access_student(target_student_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1
+    from public.group_memberships
+    join public.group_teachers
+      on group_teachers.school_id = group_memberships.school_id
+     and group_teachers.group_id = group_memberships.group_id
+    where group_memberships.school_id = public.current_school_id()
+      and group_memberships.student_id = target_student_id
+      and group_teachers.teacher_profile_id = public.current_profile_id()
+      and exists (select 1 from public.current_teacher_ids())
+  )
+$$;
+
+create or replace function public.teacher_can_teach_context(
+  p_profile_id uuid,
+  p_class_subject_id uuid,
+  p_subject_group_id uuid,
+  p_on_date date
+)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1
+    from public.class_subjects cs
+    join public.classes c
+      on c.school_id = cs.school_id
+     and c.id = cs.class_id
+    join public.profiles p
+      on p.school_id = cs.school_id
+     and p.id = p_profile_id
+     and p.is_active
+    where cs.id = p_class_subject_id
+      and cs.is_active
+      and c.is_active
+      and (
+        auth.uid() is null
+        or (
+          p.id = public.current_profile_id()
+          and exists (select 1 from public.current_teacher_ids())
+        )
+      )
+      and (
+        auth.uid() is null
+        or cs.school_id = public.current_school_id()
+      )
+      and (
+        p_subject_group_id is null
+        or exists (
+          select 1
+          from public.subject_groups sg
+          where sg.school_id = cs.school_id
+            and sg.class_subject_id = cs.id
+            and sg.id = p_subject_group_id
+            and sg.is_active
+        )
+      )
+      and exists (
+        select 1
+        from public.teaching_assignments ta
+        where ta.school_id = cs.school_id
+          and ta.teacher_profile_id = p_profile_id
+          and ta.class_subject_id = cs.id
+          and ta.starts_on <= p_on_date
+          and (ta.ends_on is null or ta.ends_on >= p_on_date)
+          and (
+            (p_subject_group_id is null and ta.subject_group_id is null)
+            or (
+              p_subject_group_id is not null
+              and (ta.subject_group_id is null or ta.subject_group_id = p_subject_group_id)
+            )
+          )
+      )
+  )
+$$;
+
+create or replace function public.current_teacher_can_access_class_subject(
+  p_class_subject_id uuid,
+  p_on_date date
+)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1
+    from public.class_subjects cs
+    join public.classes c
+      on c.school_id = cs.school_id
+     and c.id = cs.class_id
+    join public.profiles p
+      on p.school_id = cs.school_id
+     and p.id = public.current_profile_id()
+     and p.is_active
+    where cs.id = p_class_subject_id
+      and cs.school_id = public.current_school_id()
+      and cs.is_active
+      and c.is_active
+      and exists (select 1 from public.current_teacher_ids())
+      and exists (
+        select 1
+        from public.teaching_assignments ta
+        where ta.school_id = cs.school_id
+          and ta.teacher_profile_id = p.id
+          and ta.class_subject_id = cs.id
+          and ta.starts_on <= p_on_date
+          and (ta.ends_on is null or ta.ends_on >= p_on_date)
+      )
+  )
+$$;
+
+create or replace function public.current_teacher_can_access_student(
+  p_student_id uuid,
+  p_on_date date
+)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1
+    from public.teaching_assignments ta
+    join public.class_subjects cs
+      on cs.school_id = ta.school_id
+     and cs.id = ta.class_subject_id
+    join public.classes c
+      on c.school_id = cs.school_id
+     and c.id = cs.class_id
+    join public.profiles p
+      on p.school_id = ta.school_id
+     and p.id = ta.teacher_profile_id
+     and p.is_active
+    where ta.school_id = public.current_school_id()
+      and ta.teacher_profile_id = public.current_profile_id()
+      and exists (select 1 from public.current_teacher_ids())
+      and ta.starts_on <= p_on_date
+      and (ta.ends_on is null or ta.ends_on >= p_on_date)
+      and cs.is_active
+      and c.is_active
+      and public.student_participates_in_class_subject(
+        p_student_id,
+        ta.class_subject_id,
+        p_on_date
+      )
+      and (
+        ta.subject_group_id is null
+        or exists (
+          select 1
+          from public.subject_group_memberships sgm
+          join public.subject_groups sg
+            on sg.school_id = sgm.school_id
+           and sg.class_subject_id = sgm.class_subject_id
+           and sg.id = sgm.subject_group_id
+          where sgm.school_id = ta.school_id
+            and sgm.class_subject_id = ta.class_subject_id
+            and sgm.subject_group_id = ta.subject_group_id
+            and sgm.student_id = p_student_id
+            and sgm.starts_on <= p_on_date
+            and (sgm.ends_on is null or sgm.ends_on >= p_on_date)
+            and sg.is_active
+        )
+      )
+  )
+$$;
+
+-- Direct teacher-row policies also require an explicit active Teacher link.
+drop policy if exists group_teachers_select on public.group_teachers;
+create policy group_teachers_select on public.group_teachers
+for select to authenticated
+using (
+  school_id = public.current_school_id()
+  and (
+    public.is_admin()
+    or (
+      teacher_profile_id = public.current_profile_id()
+      and exists (select 1 from public.current_teacher_ids())
+    )
+  )
+);
+
+drop policy if exists teaching_assignments_teacher_select on public.teaching_assignments;
+create policy teaching_assignments_teacher_select on public.teaching_assignments
+for select to authenticated
+using (
+  school_id = public.current_school_id()
+  and teacher_profile_id = public.current_profile_id()
+  and exists (select 1 from public.current_teacher_ids())
+);
+
+drop policy if exists weekly_submissions_teacher_update on public.weekly_submissions;
+create policy weekly_submissions_teacher_update on public.weekly_submissions
+for update to authenticated
+using (
+  school_id = public.current_school_id()
+  and teacher_profile_id = public.current_profile_id()
+  and exists (select 1 from public.current_teacher_ids())
+  and status = 'DRAFT'
+)
+with check (
+  school_id = public.current_school_id()
+  and teacher_profile_id = public.current_profile_id()
+  and public.teacher_can_teach_context(
+    public.current_profile_id(), class_subject_id, subject_group_id, week_start
+  )
+);
+
+drop policy if exists weekly_submissions_teacher_delete on public.weekly_submissions;
+create policy weekly_submissions_teacher_delete on public.weekly_submissions
+for delete to authenticated
+using (
+  school_id = public.current_school_id()
+  and teacher_profile_id = public.current_profile_id()
+  and exists (select 1 from public.current_teacher_ids())
+  and status = 'DRAFT'
+);
+
+drop policy if exists weekly_submission_students_teacher_select on public.weekly_submission_students;
+create policy weekly_submission_students_teacher_select on public.weekly_submission_students
+for select to authenticated
+using (
+  school_id = public.current_school_id()
+  and exists (select 1 from public.current_teacher_ids())
+  and exists (
+    select 1 from public.weekly_submissions ws
+    where ws.school_id = weekly_submission_students.school_id
+      and ws.id = weekly_submission_students.submission_id
+      and ws.teacher_profile_id = public.current_profile_id()
+  )
+);
+
+drop policy if exists weekly_submission_students_teacher_update on public.weekly_submission_students;
+create policy weekly_submission_students_teacher_update on public.weekly_submission_students
+for update to authenticated
+using (
+  school_id = public.current_school_id()
+  and exists (select 1 from public.current_teacher_ids())
+  and exists (
+    select 1 from public.weekly_submissions ws
+    where ws.school_id = weekly_submission_students.school_id
+      and ws.id = weekly_submission_students.submission_id
+      and ws.teacher_profile_id = public.current_profile_id()
+      and ws.status = 'DRAFT'
+  )
+)
+with check (
+  school_id = public.current_school_id()
+  and exists (select 1 from public.current_teacher_ids())
+  and exists (
+    select 1 from public.weekly_submissions ws
+    where ws.school_id = weekly_submission_students.school_id
+      and ws.id = weekly_submission_students.submission_id
+      and ws.teacher_profile_id = public.current_profile_id()
+      and ws.status = 'DRAFT'
+  )
+);
+
+drop policy if exists weekly_submission_students_teacher_delete on public.weekly_submission_students;
+create policy weekly_submission_students_teacher_delete on public.weekly_submission_students
+for delete to authenticated
+using (
+  school_id = public.current_school_id()
+  and exists (select 1 from public.current_teacher_ids())
+  and exists (
+    select 1 from public.weekly_submissions ws
+    where ws.school_id = weekly_submission_students.school_id
+      and ws.id = weekly_submission_students.submission_id
+      and ws.teacher_profile_id = public.current_profile_id()
+      and ws.status = 'DRAFT'
+  )
+);
+
+create or replace function public.get_weekly_submission_context(p_submission_id uuid)
+returns table (
+  class_subject_id uuid,
+  subject_group_id uuid,
+  class_name_en text,
+  class_name_ar text,
+  subject_name_en text,
+  subject_name_ar text,
+  group_name_en text,
+  group_name_ar text
+)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select
+    ws.class_subject_id,
+    ws.subject_group_id,
+    c.name_en,
+    c.name_ar,
+    s.name_en,
+    s.name_ar,
+    sg.name_en,
+    sg.name_ar
+  from public.weekly_submissions ws
+  join public.class_subjects cs
+    on cs.school_id = ws.school_id and cs.id = ws.class_subject_id
+  join public.classes c
+    on c.school_id = cs.school_id and c.id = cs.class_id
+  join public.subjects s
+    on s.school_id = cs.school_id and s.id = cs.subject_id
+  left join public.subject_groups sg
+    on sg.school_id = ws.school_id
+   and sg.class_subject_id = ws.class_subject_id
+   and sg.id = ws.subject_group_id
+  where ws.school_id = public.current_school_id()
+    and ws.id = p_submission_id
+    and (
+      public.is_admin()
+      or (
+        ws.teacher_profile_id = public.current_profile_id()
+        and exists (select 1 from public.current_teacher_ids())
+      )
+    )
+$$;

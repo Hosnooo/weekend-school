@@ -80,22 +80,36 @@ describe('login validation', () => {
   });
 });
 
-describe('role navigation', () => {
-  it('exposes only the two teacher destinations', () => {
-    expect(getNavigationItems('TEACHER').map((item) => item.href)).toEqual([
-      '/my-teaching',
-      '/history'
-    ]);
+describe('capability navigation', () => {
+  it('exposes only Teacher destinations for a Teacher-only account', () => {
+    expect(
+      getNavigationItems({isAdmin: false, teacherIds: ['teacher-1']}).map((item) => item.href)
+    ).toEqual(['/my-teaching', '/history']);
   });
 
-  it('uses exactly the approved administrator navigation', () => {
-    expect(getNavigationItems('ADMIN').map((item) => item.href)).toEqual([
+  it('uses exactly the approved administrator navigation for an Admin-only account', () => {
+    expect(getNavigationItems({isAdmin: true, teacherIds: []}).map((item) => item.href)).toEqual([
       '/dashboard',
       '/classes',
       '/students',
       '/teachers',
       '/reports',
       '/settings'
+    ]);
+  });
+
+  it('keeps both independent navigation surfaces for a dual-capability account', () => {
+    expect(
+      getNavigationItems({isAdmin: true, teacherIds: ['teacher-1']}).map((item) => item.href)
+    ).toEqual([
+      '/dashboard',
+      '/classes',
+      '/students',
+      '/teachers',
+      '/reports',
+      '/settings',
+      '/my-teaching',
+      '/history'
     ]);
   });
 });

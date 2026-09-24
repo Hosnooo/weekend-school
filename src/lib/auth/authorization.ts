@@ -1,5 +1,4 @@
 import type {Profile} from '@/features/profiles/profile.types';
-import type {AppRole} from '@/lib/auth/navigation';
 
 export class AuthorizationError extends Error {
   constructor(message = 'Access denied') {
@@ -8,6 +7,11 @@ export class AuthorizationError extends Error {
   }
 }
 
+export type AccountCapabilities = {
+  isAdmin: boolean;
+  teacherIds: string[];
+};
+
 export type TeachingContextRef = {
   classSubjectId: string;
   subjectGroupId: string | null;
@@ -15,6 +19,7 @@ export type TeachingContextRef = {
 
 export type AuthorizationDependencies = {
   loadProfile: () => Promise<Profile | null>;
+  loadCapabilities: (profile: Profile) => Promise<AccountCapabilities>;
   canTeachContext: (
     profile: Profile,
     context: TeachingContextRef
@@ -29,30 +34,45 @@ export function assertActiveProfile(profile: Profile | null): Profile {
   return profile;
 }
 
-export function assertRole(profile: Profile, requiredRole: AppRole): Profile {
-  if (profile.role !== requiredRole) {
-    throw new AuthorizationError();
-  }
-
-  return profile;
+export function canAdmin(capabilities: AccountCapabilities): boolean {
+  return capabilities.isAdmin;
 }
 
-export function assertTeachingProfile(profile: Profile): Profile {
-  return assertActiveProfile(profile);
+export function canTeach(capabilities: AccountCapabilities): boolean {
+  return capabilities.teacherIds.length > 0;
 }
 
 export async function requireAdmin(
   dependencies: AuthorizationDependencies
 ): Promise<Profile> {
   const profile = assertActiveProfile(await dependencies.loadProfile());
-  return assertRole(profile, 'ADMIN');
+  const capabilities = await dependencies.loadCapabilities(profile);
+
+  if (!canAdmin(capabilities)) {
+    throw new AuthorizationError();
+  }
+
+  return profile;
+}
+
+export async function requireTeachingCapability(
+  dependencies: AuthorizationDependencies
+): Promise<{profile: Profile; teacherIds: string[]}> {
+  const profile = assertActiveProfile(await dependencies.loadProfile());
+  const capabilities = await dependencies.loadCapabilities(profile);
+
+  if (!canTeach(capabilities)) {
+    throw new AuthorizationError();
+  }
+
+  return {profile, teacherIds: capabilities.teacherIds};
 }
 
 export async function requireTeachingContextAccess(
   context: TeachingContextRef,
   dependencies: AuthorizationDependencies
 ): Promise<Profile> {
-  const profile = assertActiveProfile(await dependencies.loadProfile());
+  const {profile} = await requireTeachingCapability(dependencies);
 
   if (!(await dependencies.canTeachContext(profile, context))) {
     throw new AuthorizationError();

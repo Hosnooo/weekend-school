@@ -1,7 +1,7 @@
 import {AppHeader} from '@/components/layout/app-header';
 import {AppNavigation} from '@/components/layout/app-navigation';
 import {isLocale} from '@/i18n/config';
-import {requireProfile} from '@/lib/auth/require-profile';
+import {requireProfileWithCapabilities} from '@/lib/auth/require-profile';
 import {notFound} from 'next/navigation';
 
 export default async function ProtectedLayout({
@@ -13,12 +13,12 @@ export default async function ProtectedLayout({
 }>) {
   const {locale} = await params;
   if (!isLocale(locale)) notFound();
-  const profile = await requireProfile(locale);
+  const {profile, capabilities} = await requireProfileWithCapabilities(locale);
 
   return (
     <div className="app-shell">
       <AppHeader locale={locale} profile={profile} />
-      <AppNavigation role={profile.role} />
+      <AppNavigation capabilities={capabilities} />
       <main className="app-content" id="main-content">
         {children}
       </main>
