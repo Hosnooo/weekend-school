@@ -16,7 +16,9 @@ test('student exception remains sparse and visible in submitted history', async 
 
   const row = page.getByRole('row', {name: /Foundations.*Arabic Reading.*Blue.*March/}).first();
   await row.getByRole('link', {name: 'View'}).click();
-  await page.getByRole('button', {name: 'Omar Hassan'}).click();
+  const exceptionToggle = page.getByRole('button', {name: 'Omar Hassan'});
+  await expect(exceptionToggle).toBeDisabled();
+  await expect(exceptionToggle).toHaveAttribute('aria-expanded', 'true');
   await expect(page.getByLabel('Performance override')).toHaveValue('EXCELLENT');
   await expect(page.getByText('Exception workflow lesson')).toBeVisible();
   await expect(page.getByText('Submitted', {exact: true})).toBeVisible();

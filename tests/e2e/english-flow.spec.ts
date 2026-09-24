@@ -14,12 +14,12 @@ test('English redesigned workflow reaches a finalized Class report', async ({pag
 
   await page.goto('/en/students/e0000000-0000-0000-0000-000000000003/edit');
   await expect(page.getByText('Foundations', {exact: true}).first()).toBeVisible();
-  await expect(page.getByText('Blue', {exact: true}).first()).toBeVisible();
+  const arabicReadingEnrollment = page.locator('.record-card').filter({hasText: 'Arabic Reading'});
+  await expect(arabicReadingEnrollment).toContainText('Blue');
 
   await page.goto('/en/teachers/c0000000-0000-0000-0000-000000000002/edit');
-  await expect(page.getByText('Faith & Character', {exact: true}).first()).toBeVisible();
-  await expect(page.getByText('Arabic Reading', {exact: true}).first()).toBeVisible();
-  await expect(page.getByText('Entire subject', {exact: true}).first()).toBeVisible();
+  await expect(page.getByRole('row', {name: /Foundations.*Faith & Character.*Entire subject/})).toBeVisible();
+  await expect(page.getByRole('row', {name: /Foundations.*Arabic Reading.*Entire subject/})).toBeVisible();
 
   await clearSession(page);
   await login(page, 'en', credentials.englishTeacher);

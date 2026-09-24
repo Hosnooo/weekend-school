@@ -22,7 +22,7 @@ test('Arabic RTL teaching and report workflow uses the redesigned Group context'
   await page.goto('/ar/reports');
   await page.getByLabel('بداية الفترة').fill('2030-02-04');
   await page.getByLabel('نهاية الفترة').fill('2030-02-10');
-  await page.getByLabel('الفصل').selectOption(redesign.classId);
+  await page.getByLabel('الفصل', {exact: true}).selectOption(redesign.classId);
   await page.getByLabel('نطاق التقرير').selectOption('GROUP');
   await page.getByLabel('المادة').selectOption(redesign.groupedSubjectId);
   await page.getByLabel('المجموعة').selectOption(redesign.blueGroupId);

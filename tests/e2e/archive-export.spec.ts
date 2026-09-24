@@ -23,6 +23,7 @@ test('archive restore protected export and permanent delete preserve sibling dat
   await expect((await archivedDownload).suggestedFilename()).toMatch(/\.(zip|xlsx)$/);
 
   await card.getByRole('button', {name: 'Restore'}).click();
+  await expect(page.locator('article').filter({hasText: 'Archive Candidate'})).toHaveCount(0);
   await page.goto('/en/students?q=Archive');
   await expect(page.getByRole('row', {name: /Archive Candidate/})).toBeVisible();
   await page.getByRole('row', {name: /Archive Candidate/}).getByRole('button', {name: 'Archive'}).click();

@@ -5,14 +5,15 @@ import {z} from 'zod';
 
 import {isLocale} from '@/i18n/config';
 import {requireProfile} from '@/lib/auth/require-profile';
+import {databaseUuid} from '@/lib/validation/fields';
 
 import {resolveAttendanceConflict} from './attendance.repository';
 
 const resolveAttendanceConflictSchema = z.object({
-  classSubjectId: z.string().uuid(),
-  subjectGroupId: z.string().uuid().nullable(),
+  classSubjectId: databaseUuid,
+  subjectGroupId: databaseUuid.nullable(),
   weekStart: z.iso.date(),
-  studentId: z.string().uuid(),
+  studentId: databaseUuid,
   status: z.enum(['PRESENT', 'ABSENT'])
 });
 

@@ -167,6 +167,8 @@ export async function getReportBatchWorkspace(
   requireNoError(schoolResult.error);
   requireNoError(classResult.error);
   requireNoError(classSubjectsResult.error);
+  if (!schoolResult.data) throw new Error('Report batch school not found');
+  if (!classResult.data) throw new Error('Report batch class not found');
 
   const allClassSubjects = (classSubjectsResult.data ?? []) as Array<{id: string; subject_id: string}>;
   const selectedClassSubjects = allClassSubjects.filter((item) =>
