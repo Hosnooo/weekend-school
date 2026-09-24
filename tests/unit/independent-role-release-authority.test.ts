@@ -26,7 +26,9 @@ describe('independent-role release authority', () => {
       ['current', '_app_role'].join(''),
       ['teacher', '_profile_id'].join(''),
       ['administrator already has', ' an account'].join(''),
-      ['teacher already has', ' an account'].join('')
+      ['teacher already has', ' an account'].join(''),
+      ['هذا البريد يخص مسؤولًا موجودًا.', ' عيّن المجموعات له من صفحة المجموعات.'].join(''),
+      ['لهذا المعلم حساب موجود.', ' استخدم إرسال رابط الوصول من صفحة المعلمين.'].join('')
     ];
 
     for (const filename of files) {
