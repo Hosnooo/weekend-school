@@ -1,21 +1,32 @@
 import {expect, test} from '@playwright/test';
 
-import {credentials, login} from './helpers';
+import {redesign} from './redesign-fixtures';
+import {clearSession, credentials, login, submitTeachingUpdate} from './helpers';
 
-test('teacher cannot open another teacher group by identifier', async ({page}) => {
-  await page.setViewportSize({width: 360, height: 800});
+test('Group-only teacher cannot cross context, role, or co-teacher ownership boundaries', async ({page}) => {
   await login(page, 'en', credentials.englishTeacher);
-  await page.goto('/en/my-groups/d0000000-0000-0000-0000-000000000002/update?date=2030-04-13');
-  await expect(page.getByText('This page could not be found.')).toBeVisible();
-  await expect(page.getByRole('heading', {name: 'Intermediate'})).toHaveCount(0);
+  await submitTeachingUpdate(page, {
+    locale: 'en',
+    classSubjectId: redesign.groupedSubjectId,
+    subjectGroupId: redesign.blueGroupId,
+    week: redesign.authorizationWeek,
+    progressEn: 'Teacher-one private submission'
+  });
+  const ownedHistoryHref = await page.getByRole('row', {name: /Arabic Reading.*Blue.*April/}).first().getByRole('link', {name: 'View'}).getAttribute('href');
+  expect(ownedHistoryHref).toBeTruthy();
 
-  await page.goto('/en/login');
-  await page.getByRole('link', {name: 'Forgot password?'}).click();
-  await expect(page).toHaveURL(/\/en\/forgot-password$/);
-  await page.getByLabel('Email').fill(credentials.englishTeacher.email);
-  await page.getByRole('button', {name: 'Send reset link'}).click();
-  await expect(page.getByRole('status')).toHaveText('If an account exists for that email, a reset link has been sent.');
-  await page.getByLabel('Email').fill('missing@example.test');
-  await page.getByRole('button', {name: 'Send reset link'}).click();
-  await expect(page.getByRole('status')).toHaveText('If an account exists for that email, a reset link has been sent.');
+  await clearSession(page);
+  await login(page, 'en', credentials.arabicTeacher);
+
+  await page.goto(`/en/my-teaching/update?classSubjectId=${redesign.groupedSubjectId}&subjectGroupId=${redesign.greenGroupId}&week=${redesign.authorizationWeek}`);
+  await expect(page.getByText('This page could not be found.')).toBeVisible();
+
+  await page.goto(`/en/my-teaching/update?classSubjectId=${redesign.wholeClassSubjectId}&week=${redesign.authorizationWeek}`);
+  await expect(page.getByText('This page could not be found.')).toBeVisible();
+
+  await page.goto(ownedHistoryHref!);
+  await expect(page.getByText('This page could not be found.')).toBeVisible();
+
+  await page.goto('/en/settings/archives');
+  await expect(page).toHaveURL(/\/en\/login\?reason=access/);
 });

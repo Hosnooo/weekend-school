@@ -63,3 +63,41 @@ jobs:
       - name: Stop local Supabase
         if: always()
         run: pnpm exec supabase stop --no-backup
+
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.19.0 --activate
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Start local Supabase
+        run: pnpm db:start
+      - name: Reset local database with E2E fixtures
+        run: pnpm db:reset
+      - name: Configure local application environment
+        run: |
+          eval "$(pnpm exec supabase status -o env)"
+          cat > .env.local <<EOF
+          NEXT_PUBLIC_SUPABASE_URL=$API_URL
+          NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY
+          SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY
+          BREVO_API_KEY=ci-local-placeholder
+          EMAIL_FROM=ci@example.test
+          CRON_SECRET=ci-local-placeholder
+          E2E_BASE_URL=http://127.0.0.1:3000
+          EOF
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Run browser workflows
+        run: pnpm test:e2e
+      - name: Stop local Supabase
+        if: always()
+        run: pnpm exec supabase stop --no-backup
