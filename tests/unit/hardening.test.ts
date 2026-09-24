@@ -45,8 +45,11 @@ describe('release hardening contracts', () => {
     const seed = await readFile(join(process.cwd(), 'supabase', 'seed.sql'), 'utf8');
     expect(seed).toContain('on conflict');
     expect(seed.match(/-- seed-student:/g)).toHaveLength(12);
-    expect(seed.match(/-- seed-teacher:/g)).toHaveLength(2);
     expect(seed.match(/-- seed-group:/g)).toHaveLength(3);
+    expect(seed).toContain('insert into public.teachers');
+    expect(seed).toContain("'English Teacher','teacher.en@example.test','en',true");
+    expect(seed).toContain("'المعلمة العربية','teacher.ar@example.test','ar',true");
+    expect(seed).toContain('insert into public.teacher_accounts');
     expect(seed).toContain('مدرسة نهاية الأسبوع');
     expect(seed).toContain("'SUBMITTED'");
   });
