@@ -18,7 +18,7 @@ import {
 } from '@/features/enrollment/enrollment.schemas';
 import {setStudentActive, updateStudent} from '@/features/students/student.repository';
 import {studentUpdateSchema} from '@/features/students/student.schemas';
-import {isLocale} from '@/i18n/config';
+import {isLocale, type Locale} from '@/i18n/config';
 import {requireProfile} from '@/lib/auth/require-profile';
 import type {ActionState} from '@/lib/validation/action-state';
 import {initialActionState, saveFailure, validationFailure} from '@/lib/validation/action-state';
@@ -35,6 +35,15 @@ function parseJson(value: FormDataEntryValue | null) {
     return JSON.parse(value) as unknown;
   } catch {
     return null;
+  }
+}
+
+function revalidateStudentSurfaces(locale: Locale, studentId?: string) {
+  revalidatePath(`/${locale}/students`);
+  if (studentId) {
+    revalidatePath(`/${locale}/students/${studentId}`);
+    revalidatePath(`/${locale}/students/${studentId}/edit`);
+    revalidatePath(`/${locale}/students/${studentId}/enrollment`);
   }
 }
 
@@ -74,8 +83,9 @@ export async function createStudentAction(
     return saveFailure();
   }
 
-  revalidatePath(`/${locale}/students`);
+  revalidateStudentSurfaces(locale);
   revalidatePath(`/${locale}/classes`);
+  revalidatePath(`/${locale}/guardians`);
   redirect(`/${locale}/students`);
 }
 
@@ -101,8 +111,8 @@ export async function updateStudentAction(
     return saveFailure();
   }
 
-  revalidatePath(`/${locale}/students`);
-  redirect(`/${locale}/students`);
+  revalidateStudentSurfaces(locale, parsed.data.id);
+  redirect(`/${locale}/students/${parsed.data.id}`);
 }
 
 export async function setStudentActiveAction(formData: FormData) {
@@ -114,7 +124,7 @@ export async function setStudentActiveAction(formData: FormData) {
   });
   if (!parsed.success) return;
   await setStudentActive(profile.schoolId, parsed.data.id, parsed.data.isActive === 'true');
-  revalidatePath(`/${locale}/students`);
+  revalidateStudentSurfaces(locale, parsed.data.id);
 }
 
 export async function changeStudentClassAction(
@@ -135,9 +145,8 @@ export async function changeStudentClassAction(
   } catch (error) {
     return enrollmentMutationFailure(error);
   }
-  revalidatePath(`/${locale}/students`);
+  revalidateStudentSurfaces(locale, parsed.data.studentId);
   revalidatePath(`/${locale}/classes`);
-  revalidatePath(`/${locale}/students/${parsed.data.studentId}/edit`);
   return initialActionState;
 }
 
@@ -160,7 +169,7 @@ export async function setSubjectExcludedAction(
   } catch (error) {
     return enrollmentMutationFailure(error);
   }
-  revalidatePath(`/${locale}/students/${parsed.data.studentId}/edit`);
+  revalidateStudentSurfaces(locale, parsed.data.studentId);
   return initialActionState;
 }
 
@@ -183,6 +192,6 @@ export async function moveStudentSubjectGroupAction(
   } catch (error) {
     return enrollmentMutationFailure(error);
   }
-  revalidatePath(`/${locale}/students/${parsed.data.studentId}/edit`);
+  revalidateStudentSurfaces(locale, parsed.data.studentId);
   return initialActionState;
 }
