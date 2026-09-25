@@ -27,10 +27,10 @@ describe('student, enrollment, and guardian UX contract', () => {
     const edit = source(routes.studentEdit);
     const enrollment = source(routes.studentEnrollment);
 
-    expect(detail).toContain("t('identity')");
+    expect(detail).toContain("teachersT('identityContact')");
     expect(detail).toContain("t('enrollment')");
-    expect(detail).toContain("t('guardians')");
-    expect(detail).toContain("t('lifecycle')");
+    expect(detail).toContain("guardiansT('title')");
+    expect(detail).toContain("teachersT('lifecycle')");
     expect(detail).toContain('/edit');
     expect(detail).toContain('/enrollment');
     expect(detail).not.toContain('StudentForm');
@@ -92,13 +92,13 @@ describe('student, enrollment, and guardian UX contract', () => {
     const repository = source('src/features/guardians/guardian.repository.ts');
     const actions = source('src/features/guardians/guardian.actions.ts');
 
-    expect(detail).toContain("t('contact')");
-    expect(detail).toContain("t('linkedStudents')");
+    expect(detail).toContain("teachersT('identityContact')");
+    expect(detail).toContain("studentsT('title')");
     expect(detail).toContain("t('reportLanguage')");
-    expect(detail).toContain("t('lifecycle')");
+    expect(detail).toContain("teachersT('lifecycle')");
     expect(detail).not.toContain('GuardianForm');
     expect(repository).toContain('student_guardians');
-    expect(form).toContain('href="/guardians"');
+    expect(form).toContain("cancelHref = '/guardians'");
     expect(actions).toContain('/guardians');
     expect(actions).not.toContain('/students/guardians');
   });
