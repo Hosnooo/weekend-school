@@ -91,8 +91,8 @@ describe('migration contract', () => {
       '202609230026_archives_and_delete.sql',
       '202609230027_export_requests.sql',
       '20260924222147_independent_role_records.sql',
-      '202609250150_admin_ux_completion.sql',
-      '202609250151_weekly_context_compatibility.sql'
+      '20260925033643_admin_ux_completion.sql',
+      '20260925033656_weekly_context_compatibility.sql'
     ]);
   });
 
