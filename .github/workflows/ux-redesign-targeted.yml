@@ -24,7 +24,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Targeted UI tests
-        run: pnpm exec vitest run --configLoader runner tests/unit/design-system-foundation.test.tsx
+        run: pnpm exec vitest run --configLoader runner tests/unit/design-system-foundation.test.tsx tests/unit/app-navigation.test.tsx
       - name: Lint
         run: pnpm lint
       - name: Typecheck

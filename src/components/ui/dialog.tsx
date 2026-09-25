@@ -101,8 +101,12 @@ export function Dialog({
   );
 }
 
+export function useDialogClose() {
+  return useContext(DialogContext);
+}
+
 export function DialogClose({className = '', onClick, children, ...props}: ButtonHTMLAttributes<HTMLButtonElement>) {
-  const close = useContext(DialogContext);
+  const close = useDialogClose();
   return (
     <button
       className={`button button-secondary button-default ${className}`.trim()}

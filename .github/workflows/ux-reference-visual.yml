@@ -7,9 +7,12 @@ on:
     paths:
       - '.github/workflows/ux-reference-visual.yml'
       - 'tests/e2e/ui-reference-visual.spec.ts'
+      - 'tests/e2e/app-shell-visual.spec.ts'
       - 'src/components/ui/**'
+      - 'src/components/layout/**'
+      - 'src/lib/auth/navigation.ts'
       - 'src/app/globals.css'
-      - 'src/app/[locale]/(protected)/ui-reference/**'
+      - 'src/app/[locale]/(protected)/**'
       - 'messages/en.json'
       - 'messages/ar.json'
       - 'playwright.config.ts'
@@ -66,13 +69,13 @@ jobs:
           } >> "$GITHUB_ENV"
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium
-      - name: Capture and verify UI reference states
-        run: pnpm exec playwright test tests/e2e/ui-reference-visual.spec.ts
-      - name: Upload UI reference evidence
+      - name: Capture and verify UX foundation and shell states
+        run: pnpm exec playwright test tests/e2e/ui-reference-visual.spec.ts tests/e2e/app-shell-visual.spec.ts
+      - name: Upload UX visual evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ui-reference-visual-evidence
+          name: ux-visual-evidence
           path: test-results
           if-no-files-found: warn
           retention-days: 7

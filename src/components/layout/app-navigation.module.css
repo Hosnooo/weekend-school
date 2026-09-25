@@ -1,10 +1,22 @@
+.shellNavigation {
+  min-width: 0;
+  background: var(--surface);
+  border-inline-end: 1px solid var(--border);
+}
+
+.desktopNavigation {
+  min-height: 100%;
+}
+
+.mobileNavigation {
+  display: none;
+}
+
 .navigation {
   display: grid;
   align-content: start;
   gap: 1.25rem;
   padding: 1.25rem 1rem;
-  background: var(--surface);
-  border-inline-end: 1px solid var(--border);
 }
 
 .section {
@@ -41,44 +53,59 @@
 }
 
 .current {
+  color: var(--primary);
   background: var(--background);
   font-weight: 800;
 }
 
-:global(html[dir='rtl']) .navigation {
-  border-inline-end: 0;
-  border-inline-start: 1px solid var(--border);
+.drawerNavigation {
+  padding: 0;
+}
+
+.drawerActions {
+  display: flex;
+  justify-content: flex-end;
+  margin-block-start: 1.25rem;
+  padding-block-start: 1rem;
+  border-block-start: 1px solid var(--border);
+}
+
+:global(html[dir='rtl']) .section h2 {
+  letter-spacing: normal;
 }
 
 @media (max-width: 52rem) {
-  .navigation,
-  :global(html[dir='rtl']) .navigation {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.75rem;
-    padding: 0.75rem 1rem;
-    border-inline: 0;
+  .shellNavigation {
+    border-inline-end: 0;
     border-block-end: 1px solid var(--border);
   }
 
-  .section {
-    min-width: 0;
+  .desktopNavigation {
+    display: none;
   }
 
-  .links {
+  .mobileNavigation {
     display: flex;
-    overflow-x: auto;
-    padding-block-end: 0.25rem;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 4rem;
+    padding: 0.625rem clamp(1rem, 4vw, 2rem);
   }
 
-  .link {
-    flex: 0 0 auto;
-    white-space: nowrap;
+  .mobileNavigation > button {
+    width: auto;
   }
-}
 
-@media (max-width: 32rem) {
-  .navigation,
-  :global(html[dir='rtl']) .navigation {
-    grid-template-columns: 1fr;
+  .drawerNavigation {
+    max-width: none;
+    padding: 0;
+  }
+
+  .drawerNavigation .section h2 {
+    padding-inline: 0;
+  }
+
+  .drawerNavigation .link {
+    padding-inline: 0.75rem;
   }
 }

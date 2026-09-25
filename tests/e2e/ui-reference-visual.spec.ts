@@ -28,8 +28,9 @@ for (const visualCase of cases) {
     await page.goto(`/${visualCase.locale}/ui-reference`);
 
     await expect(page.locator('html')).toHaveAttribute('dir', visualCase.dir);
-    await expect(page.locator('.ui-reference')).toBeVisible();
-    await expect(page.locator('.data-table')).toBeVisible();
+    const reference = page.locator('.ui-reference');
+    await expect(reference).toBeVisible();
+    await expect(reference.locator('.data-table')).toBeVisible();
     await expect(page.getByRole('button').first()).toBeVisible();
 
     const hasHorizontalOverflow = await page.evaluate(
@@ -37,12 +38,12 @@ for (const visualCase of cases) {
     );
     expect(hasHorizontalOverflow).toBe(false);
 
-    const tabs = page.getByRole('tablist').getByRole('tab');
+    const tabs = reference.getByRole('tablist').getByRole('tab');
     await tabs.nth(1).click();
     await expect(tabs.nth(1)).toHaveAttribute('aria-selected', 'true');
     await tabs.nth(0).click();
 
-    const dialogTrigger = page.locator('button[aria-haspopup="dialog"]').first();
+    const dialogTrigger = reference.locator('button[aria-haspopup="dialog"]').first();
     await dialogTrigger.click();
     await expect(page.getByRole('dialog')).toBeVisible();
     await page.keyboard.press('Escape');
@@ -54,7 +55,7 @@ for (const visualCase of cases) {
     });
 
     if (visualCase.mode === 'desktop') {
-      const menuTrigger = page.locator('.data-table button[aria-haspopup="menu"]').first();
+      const menuTrigger = reference.locator('.data-table button[aria-haspopup="menu"]').first();
       await menuTrigger.click();
       const menu = page.getByRole('menu');
       await expect(menu).toBeVisible();
@@ -69,7 +70,7 @@ for (const visualCase of cases) {
       await page.keyboard.press('Escape');
       await expect(menuTrigger).toBeFocused();
     } else {
-      const layeredTriggers = page.locator('button[aria-haspopup="dialog"]');
+      const layeredTriggers = reference.locator('button[aria-haspopup="dialog"]');
       const sheetTrigger = layeredTriggers.nth(1);
       await sheetTrigger.click();
       await expect(page.getByRole('dialog')).toBeVisible();
