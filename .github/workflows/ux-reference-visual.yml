@@ -1,26 +1,6 @@
 name: UX Reference Visual
 
 on:
-  push:
-    branches:
-      - codex/full-website-ux-redesign
-    paths:
-      - '.github/workflows/ux-reference-visual.yml'
-      - 'tests/e2e/ui-reference-visual.spec.ts'
-      - 'tests/e2e/app-shell-visual.spec.ts'
-      - 'tests/e2e/teaching-assignment-workspace.spec.ts'
-      - 'tests/e2e/teacher-management.spec.ts'
-      - 'src/components/ui/**'
-      - 'src/components/layout/**'
-      - 'src/features/teaching-assignments/**'
-      - 'src/features/teachers/**'
-      - 'src/lib/auth/navigation.ts'
-      - 'src/app/globals.css'
-      - 'src/app/design-system.css'
-      - 'src/app/[locale]/(protected)/**'
-      - 'messages/en.json'
-      - 'messages/ar.json'
-      - 'playwright.config.ts'
   workflow_dispatch:
 
 permissions:

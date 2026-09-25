@@ -1,9 +1,7 @@
 name: UX Redesign Targeted
 
 on:
-  push:
-    branches:
-      - codex/full-website-ux-redesign
+  workflow_dispatch:
 
 permissions:
   contents: read
