@@ -1,0 +1,98 @@
+'use client';
+
+import {useState} from 'react';
+import {useTranslations} from 'next-intl';
+
+import {ConfirmationDialog} from '@/components/ui/confirmation-dialog';
+import {DataTable, type DataTableColumn} from '@/components/ui/data-table';
+import {DropdownMenu, DropdownMenuItem} from '@/components/ui/dropdown-menu';
+import {EmptyState} from '@/components/ui/empty-state';
+import {StatusBadge} from '@/components/ui/status-badge';
+import {archiveManagedEntityAction} from '@/features/archives/archive.actions';
+import {setGuardianActiveAction} from '@/features/guardians/guardian.actions';
+import type {GuardianListItem} from '@/features/guardians/guardian.types';
+import type {Locale} from '@/i18n/config';
+import {Link, useRouter} from '@/i18n/navigation';
+
+export function GuardianManagementList({locale, guardians}: {locale: Locale; guardians: GuardianListItem[]}) {
+  const t = useTranslations('guardians');
+  const common = useTranslations('common');
+  const languages = useTranslations('reportLanguages');
+  const router = useRouter();
+  const [lifecycleTarget, setLifecycleTarget] = useState<GuardianListItem | null>(null);
+
+  if (guardians.length === 0) return <EmptyState title={t('empty')} />;
+
+  async function applyLifecycle() {
+    if (!lifecycleTarget) return;
+    const formData = new FormData();
+    formData.set('locale', locale);
+    formData.set('id', lifecycleTarget.id);
+    if (lifecycleTarget.isActive) {
+      formData.set('entityType', 'GUARDIAN');
+      await archiveManagedEntityAction(formData);
+    } else {
+      formData.set('isActive', 'true');
+      await setGuardianActiveAction(formData);
+    }
+    router.refresh();
+  }
+
+  const columns: DataTableColumn<GuardianListItem>[] = [
+    {
+      key: 'guardian',
+      header: t('name'),
+      render: (guardian) => (
+        <div>
+          <Link href={`/guardians/${guardian.id}`}><strong>{guardian.name}</strong></Link>
+          <div><a href={`mailto:${guardian.email}`}>{guardian.email}</a></div>
+        </div>
+      )
+    },
+    {
+      key: 'language',
+      header: t('reportLanguage'),
+      render: (guardian) => languages(guardian.reportLanguage)
+    },
+    {
+      key: 'status',
+      header: common('status'),
+      render: (guardian) => (
+        <StatusBadge status={guardian.isActive ? 'active' : 'inactive'}>
+          {guardian.isActive ? common('active') : common('inactive')}
+        </StatusBadge>
+      )
+    },
+    {
+      key: 'actions',
+      header: common('actions'),
+      render: (guardian) => (
+        <DropdownMenu label={`${common('actions')}: ${guardian.name}`}>
+          <DropdownMenuItem onSelect={() => router.push(`/guardians/${guardian.id}/edit`)}>
+            {common('edit')}
+          </DropdownMenuItem>
+          <DropdownMenuItem destructive={guardian.isActive} onSelect={() => setLifecycleTarget(guardian)}>
+            {guardian.isActive ? common('deactivate') : common('reactivate')}
+          </DropdownMenuItem>
+        </DropdownMenu>
+      )
+    }
+  ];
+
+  return (
+    <>
+      <DataTable caption={t('title')} columns={columns} getRowKey={(guardian) => guardian.id} rows={guardians} />
+      <ConfirmationDialog
+        cancelLabel={common('cancel')}
+        confirmLabel={lifecycleTarget?.isActive ? common('deactivate') : common('reactivate')}
+        description={lifecycleTarget ? `${lifecycleTarget.isActive ? common('deactivate') : common('reactivate')} ${lifecycleTarget.name}?` : ''}
+        onConfirm={applyLifecycle}
+        onOpenChange={(open) => {
+          if (!open) setLifecycleTarget(null);
+        }}
+        open={lifecycleTarget !== null}
+        title={lifecycleTarget?.isActive ? common('deactivate') : common('reactivate')}
+      />
+    </>
+  );
+}
