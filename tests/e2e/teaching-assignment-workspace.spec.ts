@@ -88,6 +88,7 @@ test.describe('Teaching Assignments reference CRUD flow', () => {
     await page.getByRole('menuitem', {name: 'Edit dates'}).click();
     await page.getByLabel('Starts on').fill('2026-10-02');
     await page.getByRole('button', {name: 'Save dates'}).click();
+    await expect(page.getByRole('button', {name: 'Save dates'})).toBeHidden();
 
     await page.reload();
     await page.getByRole('tab', {name: 'Upcoming'}).click();
@@ -96,6 +97,7 @@ test.describe('Teaching Assignments reference CRUD flow', () => {
     await page.getByRole('menuitem', {name: 'Delete assignment'}).click();
     const deleteDialog = page.getByRole('dialog', {name: 'Delete assignment'});
     await deleteDialog.getByRole('button', {name: 'Delete assignment'}).click();
+    await expect(deleteDialog).toBeHidden();
 
     await page.reload();
     await page.getByRole('tab', {name: 'Upcoming'}).click();
@@ -106,6 +108,7 @@ test.describe('Teaching Assignments reference CRUD flow', () => {
     await page.getByRole('menuitem', {name: 'Delete assignment'}).click();
     const protectedDialog = page.getByRole('dialog', {name: 'Delete assignment'});
     await protectedDialog.getByRole('button', {name: 'Delete assignment'}).click();
+    await expect(protectedDialog).toBeHidden();
     await expect(appAlert).toContainText('submitted teaching history depends on it');
     await page.getByRole('button', {name: /Actions for Foundations.*Faith & Character.*Entire subject/}).click();
     await expect(page.getByRole('menuitem', {name: 'Delete assignment'})).toBeVisible();
