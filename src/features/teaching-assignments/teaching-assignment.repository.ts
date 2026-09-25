@@ -1,11 +1,16 @@
 import 'server-only';
 
 import type {
+  DeleteTeachingAssignmentInput,
   EndTeachingAssignmentInput,
   TeachingAssignmentInput,
   UpdateTeachingAssignmentInput
 } from '@/features/teaching-assignments/teaching-assignment.schemas';
-import {expandEffectiveTeachingContexts} from '@/features/teaching-assignments/teaching-assignment.service';
+import {
+  expandEffectiveTeachingContexts,
+  teachingAssignmentProtectsSubmittedHistory,
+  TeachingAssignmentMutationException
+} from '@/features/teaching-assignments/teaching-assignment.service';
 import type {
   EffectiveTeachingContext,
   TeachingAssignment,
@@ -22,6 +27,12 @@ type AssignmentRow = {
   ends_on: string | null;
 };
 
+type SubmissionRow = {
+  class_subject_id: string;
+  subject_group_id: string | null;
+  week_start: string;
+};
+
 type ClassSubjectRow = {
   id: string;
   is_active: boolean;
@@ -29,6 +40,17 @@ type ClassSubjectRow = {
   subjects: {name_en: string; name_ar: string | null; is_active: boolean} | null;
   subject_groups: Array<{id: string; name_en: string; name_ar: string | null; is_active: boolean}>;
 };
+
+function assignmentFromRow(row: AssignmentRow): TeachingAssignment {
+  return {
+    id: row.id,
+    teacherId: row.teacher_id,
+    classSubjectId: row.class_subject_id,
+    subjectGroupId: row.subject_group_id,
+    startsOn: row.starts_on,
+    endsOn: row.ends_on
+  };
+}
 
 export async function listTeachingClassSubjects(schoolId: string): Promise<TeachingClassSubject[]> {
   const supabase = await createServerSupabaseClient();
@@ -84,14 +106,7 @@ export async function listTeachingAssignments(
     .order('starts_on', {ascending: false});
   if (error) throw error;
 
-  return (data as AssignmentRow[]).map((row) => ({
-    id: row.id,
-    teacherId: row.teacher_id,
-    classSubjectId: row.class_subject_id,
-    subjectGroupId: row.subject_group_id,
-    startsOn: row.starts_on,
-    endsOn: row.ends_on
-  }));
+  return (data as AssignmentRow[]).map(assignmentFromRow);
 }
 
 export async function assignTeacher(schoolId: string, input: TeachingAssignmentInput) {
@@ -101,7 +116,8 @@ export async function assignTeacher(schoolId: string, input: TeachingAssignmentI
     teacher_id: input.teacherId,
     class_subject_id: input.classSubjectId,
     subject_group_id: input.subjectGroupId,
-    starts_on: input.startsOn
+    starts_on: input.startsOn,
+    ends_on: input.endsOn
   });
   if (error) throw error;
 }
@@ -120,7 +136,9 @@ export async function updateTeachingAssignmentDates(
     .eq('id', input.assignmentId)
     .maybeSingle();
   if (existingError) throw existingError;
-  if (!existing) throw new Error('Teaching assignment could not be updated');
+  if (!existing) {
+    throw new TeachingAssignmentMutationException('not-found', 'Teaching assignment not found');
+  }
 
   const {data, error} = await supabase.rpc('update_teaching_assignment_dates', {
     p_teacher_id: teacherId,
@@ -129,7 +147,65 @@ export async function updateTeachingAssignmentDates(
     p_ends_on: input.endsOn
   });
   if (error) throw error;
-  if (!data) throw new Error('Teaching assignment could not be updated');
+  if (!data) {
+    throw new TeachingAssignmentMutationException('not-found', 'Teaching assignment not found');
+  }
+}
+
+export async function deleteTeachingAssignment(
+  schoolId: string,
+  teacherId: string,
+  input: DeleteTeachingAssignmentInput
+) {
+  const supabase = await createServerSupabaseClient();
+  const {data: existing, error: existingError} = await supabase
+    .from('teaching_assignments')
+    .select('id, teacher_id, class_subject_id, subject_group_id, starts_on, ends_on')
+    .eq('school_id', schoolId)
+    .eq('teacher_id', teacherId)
+    .eq('id', input.assignmentId)
+    .maybeSingle();
+  if (existingError) throw existingError;
+  if (!existing) {
+    throw new TeachingAssignmentMutationException('not-found', 'Teaching assignment not found');
+  }
+
+  const assignment = assignmentFromRow(existing as AssignmentRow);
+  const {data: submissions, error: submissionsError} = await supabase
+    .from('weekly_submissions')
+    .select('class_subject_id, subject_group_id, week_start')
+    .eq('school_id', schoolId)
+    .eq('teacher_id', teacherId)
+    .eq('class_subject_id', assignment.classSubjectId)
+    .eq('status', 'SUBMITTED');
+  if (submissionsError) throw submissionsError;
+
+  const protectsHistory = (submissions as SubmissionRow[]).some((submission) =>
+    teachingAssignmentProtectsSubmittedHistory(assignment, {
+      classSubjectId: submission.class_subject_id,
+      subjectGroupId: submission.subject_group_id,
+      weekStart: submission.week_start
+    })
+  );
+  if (protectsHistory) {
+    throw new TeachingAssignmentMutationException(
+      'protected-history',
+      'Teaching assignment is required by submitted teaching history'
+    );
+  }
+
+  const {data: deleted, error: deleteError} = await supabase
+    .from('teaching_assignments')
+    .delete()
+    .eq('school_id', schoolId)
+    .eq('teacher_id', teacherId)
+    .eq('id', input.assignmentId)
+    .select('id')
+    .maybeSingle();
+  if (deleteError) throw deleteError;
+  if (!deleted) {
+    throw new TeachingAssignmentMutationException('not-found', 'Teaching assignment not found');
+  }
 }
 
 export async function endTeacherAssignment(
@@ -148,7 +224,9 @@ export async function endTeacherAssignment(
     .select('id')
     .maybeSingle();
   if (error) throw error;
-  if (!data) throw new Error('Teaching assignment could not be ended');
+  if (!data) {
+    throw new TeachingAssignmentMutationException('not-found', 'Teaching assignment could not be ended');
+  }
 }
 
 export async function listEffectiveTeachingContexts({

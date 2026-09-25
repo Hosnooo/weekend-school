@@ -23,8 +23,8 @@ jobs:
           corepack prepare pnpm@11.19.0 --activate
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      - name: Targeted UI tests
-        run: pnpm exec vitest run --configLoader runner tests/unit/design-system-foundation.test.tsx tests/unit/app-navigation.test.tsx
+      - name: Targeted UX tests
+        run: pnpm exec vitest run --configLoader runner tests/unit/design-system-foundation.test.tsx tests/unit/app-navigation.test.tsx tests/unit/teaching-assignments.test.ts tests/unit/teaching-assignment-mutations.test.ts
       - name: Lint
         run: pnpm lint
       - name: Typecheck

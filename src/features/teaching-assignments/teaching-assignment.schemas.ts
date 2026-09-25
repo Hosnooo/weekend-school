@@ -2,11 +2,17 @@ import {z} from 'zod';
 
 import {databaseUuid, optionalUuid} from '@/lib/validation/fields';
 
+const nullableDate = z.preprocess(
+  (value) => value === '' || value === undefined ? null : value,
+  z.iso.date().nullable()
+);
+
 export const teachingAssignmentSchema = z.object({
   teacherId: databaseUuid,
   classSubjectId: databaseUuid,
   subjectGroupId: optionalUuid,
-  startsOn: z.iso.date()
+  startsOn: z.iso.date(),
+  endsOn: nullableDate
 });
 
 export const endTeachingAssignmentSchema = z.object({
@@ -14,17 +20,17 @@ export const endTeachingAssignmentSchema = z.object({
   endsOn: z.iso.date()
 });
 
-const nullableDate = z.preprocess(
-  (value) => value === '' || value === undefined ? null : value,
-  z.iso.date().nullable()
-);
-
 export const updateTeachingAssignmentSchema = z.object({
   assignmentId: databaseUuid,
   startsOn: z.iso.date(),
   endsOn: nullableDate
 });
 
+export const deleteTeachingAssignmentSchema = z.object({
+  assignmentId: databaseUuid
+});
+
 export type TeachingAssignmentInput = z.infer<typeof teachingAssignmentSchema>;
 export type EndTeachingAssignmentInput = z.infer<typeof endTeachingAssignmentSchema>;
 export type UpdateTeachingAssignmentInput = z.infer<typeof updateTeachingAssignmentSchema>;
+export type DeleteTeachingAssignmentInput = z.infer<typeof deleteTeachingAssignmentSchema>;

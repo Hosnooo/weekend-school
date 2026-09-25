@@ -25,6 +25,19 @@ export type TeachingAssignment = {
   endsOn: string | null;
 };
 
+export type TeachingAssignmentMutationError =
+  | 'validation'
+  | 'invalid-range'
+  | 'overlap'
+  | 'protected-history'
+  | 'not-found'
+  | 'forbidden'
+  | 'unexpected';
+
+export type TeachingAssignmentMutationResult =
+  | {ok: true}
+  | {ok: false; error: TeachingAssignmentMutationError};
+
 export type EffectiveTeachingContext = {
   teacherId: string;
   classSubjectId: string;
