@@ -12,7 +12,7 @@ vi.mock('next/navigation', () => ({
 }));
 
 describe('AppNavigation', () => {
-  it('renders teacher navigation without administrative destinations', () => {
+  it('renders the focused teacher navigation without administrative destinations', () => {
     navigationState.pathname = '/en/my-teaching';
     render(
       <NextIntlClientProvider locale="en" messages={englishMessages}>
@@ -20,12 +20,15 @@ describe('AppNavigation', () => {
       </NextIntlClientProvider>
     );
 
-    expect(screen.getByRole('link', {name: 'My Teaching'})).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('heading', {name: 'My Teaching'})).toBeInTheDocument();
+    expect(screen.getByRole('link', {name: 'This Week'})).toHaveAttribute('aria-current', 'page');
     expect(screen.getByRole('link', {name: 'History'})).toBeInTheDocument();
+    expect(screen.getByRole('link', {name: 'My Profile'})).toBeInTheDocument();
     expect(screen.queryByRole('link', {name: 'Students'})).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', {name: 'Administrators'})).not.toBeInTheDocument();
   });
 
-  it('renders exactly the approved admin navigation in order and marks the current section', () => {
+  it('renders the approved administrator destinations in a discoverable Administration section', () => {
     navigationState.pathname = '/en/classes/class-1';
     render(
       <NextIntlClientProvider locale="en" messages={englishMessages}>
@@ -34,19 +37,25 @@ describe('AppNavigation', () => {
     );
 
     expect(screen.getByRole('navigation', {name: 'Main navigation'})).toBeInTheDocument();
+    expect(screen.getByRole('heading', {name: 'Administration'})).toBeInTheDocument();
     expect(screen.getAllByRole('link').map((link) => link.textContent)).toEqual([
       'Dashboard',
-      'Classes',
       'Students',
+      'Guardians',
       'Teachers',
+      'Administrators',
+      'Classes & Subjects',
+      'Teaching Assignments',
       'Reports',
+      'Export Data',
+      'Archives',
       'Settings'
     ]);
-    expect(screen.getByRole('link', {name: 'Classes'})).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', {name: 'Classes & Subjects'})).toHaveAttribute('aria-current', 'page');
     expect(screen.getByRole('link', {name: 'Dashboard'})).not.toHaveAttribute('aria-current');
   });
 
-  it('renders both navigation surfaces for a dual-capability account', () => {
+  it('visibly separates Administration from personal teaching for a dual-capability account', () => {
     navigationState.pathname = '/en/my-teaching';
     render(
       <NextIntlClientProvider locale="en" messages={englishMessages}>
@@ -54,8 +63,10 @@ describe('AppNavigation', () => {
       </NextIntlClientProvider>
     );
 
+    expect(screen.getByRole('heading', {name: 'Administration'})).toBeInTheDocument();
+    expect(screen.getByRole('heading', {name: 'My Teaching'})).toBeInTheDocument();
     expect(screen.getByRole('link', {name: 'Dashboard'})).toBeInTheDocument();
-    expect(screen.getByRole('link', {name: 'My Teaching'})).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', {name: 'This Week'})).toHaveAttribute('aria-current', 'page');
     expect(screen.getByRole('link', {name: 'History'})).toBeInTheDocument();
   });
 });

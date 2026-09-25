@@ -1,6 +1,10 @@
 import {describe, expect, it} from 'vitest';
 
-import {expandEffectiveTeachingContexts} from '@/features/teaching-assignments/teaching-assignment.service';
+import {
+  classifyTeachingAssignments,
+  expandEffectiveTeachingContexts,
+  validateTeachingAssignmentDateRange
+} from '@/features/teaching-assignments/teaching-assignment.service';
 import type {
   TeachingAssignment,
   TeachingClassSubject
@@ -131,5 +135,32 @@ describe('flexible teaching assignments', () => {
     });
 
     expect(contexts).toEqual([]);
+  });
+
+  it('classifies assignments as current, upcoming, and past for a school-local date', () => {
+    const assignments = [
+      assignment(teacherA, quran.id, null, '2026-09-01', '2026-09-20'),
+      assignment(teacherA, arabic.id, null, '2026-09-21', null),
+      assignment(teacherA, islamic.id, islamic.groups[0]!.id, '2026-10-01', null)
+    ];
+
+    const result = classifyTeachingAssignments(assignments, '2026-09-24');
+
+    expect(result.past.map(({startsOn}) => startsOn)).toEqual(['2026-09-01']);
+    expect(result.current.map(({startsOn}) => startsOn)).toEqual(['2026-09-21']);
+    expect(result.upcoming.map(({startsOn}) => startsOn)).toEqual(['2026-10-01']);
+  });
+
+  it('validates editable assignment date ranges before persistence', () => {
+    expect(validateTeachingAssignmentDateRange('2026-09-24', null)).toEqual({
+      startsOn: '2026-09-24',
+      endsOn: null
+    });
+    expect(validateTeachingAssignmentDateRange('2026-09-24', '2026-10-31')).toEqual({
+      startsOn: '2026-09-24',
+      endsOn: '2026-10-31'
+    });
+    expect(() => validateTeachingAssignmentDateRange('2026-09-24', '2026-09-23'))
+      .toThrow(/end date/i);
   });
 });

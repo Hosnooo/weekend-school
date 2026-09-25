@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - codex/admin-teacher-ux-completion
   workflow_dispatch:
 
 permissions:
