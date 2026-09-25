@@ -11,7 +11,7 @@ permissions:
 jobs:
   ui-foundation:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -25,3 +25,7 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Targeted UI tests
         run: pnpm exec vitest run --configLoader runner tests/unit/design-system-foundation.test.tsx
+      - name: Lint
+        run: pnpm lint
+      - name: Typecheck
+        run: pnpm typecheck
