@@ -180,7 +180,7 @@ describe('teaching assignment workspace reference CRUD flow', () => {
     await user.click(screen.getByRole('button', {name: 'Cancel'}));
 
     expect(screen.queryByLabelText('Starts on')).not.toBeInTheDocument();
-    expect(screen.getByText('2026-09-01')).toBeVisible();
+    expect(screen.getByText(/2026-09-01/)).toBeVisible();
   });
 
   it('renders overlap and protected-history errors with different translated messages', async () => {

@@ -357,9 +357,9 @@ export function TeachingAssignmentWorkspace({
       <Tabs
         label={t('assignmentViews')}
         items={[
-          {id: 'current', label: t('assignmentStatus.current'), content: assignmentRows(classified.current, 'current')},
-          {id: 'upcoming', label: t('assignmentStatus.upcoming'), content: assignmentRows(classified.upcoming, 'upcoming')},
-          {id: 'past', label: t('assignmentStatus.past'), content: assignmentRows(classified.past, 'past')}
+          {value: 'current', label: t('assignmentStatus.current'), content: assignmentRows(classified.current, 'current')},
+          {value: 'upcoming', label: t('assignmentStatus.upcoming'), content: assignmentRows(classified.upcoming, 'upcoming')},
+          {value: 'past', label: t('assignmentStatus.past'), content: assignmentRows(classified.past, 'past')}
         ]}
       />
 
