@@ -50,7 +50,8 @@ export function UIReference() {
     <div className="ui-reference">
       <PageHeader
         actions={<Button>{teachers('addTeacher')}</Button>}
-        breadcrumbs={[{label: navigation('dashboard'), href: '#'}, {label: teachers('title')} ]}
+        breadcrumbLabel={navigation('label')}
+        breadcrumbs={[{label: navigation('dashboard'), href: '#'}, {label: teachers('title')}]}
         description={teachers('description')}
         title={app('name')}
       />
@@ -126,6 +127,7 @@ export function UIReference() {
             {value: 'active', label: common('active'), content: <Alert>{teachers('assignmentHelp')}</Alert>},
             {value: 'inactive', label: common('inactive'), content: <Alert variant="warning">{teachers('noAssignments')}</Alert>}
           ]}
+          label={teachers('assignments')}
         />
       </section>
 

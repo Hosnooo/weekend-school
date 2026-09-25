@@ -8,7 +8,7 @@ type TabItem = {
   content: ReactNode;
 };
 
-export function Tabs({items, defaultValue}: {items: TabItem[]; defaultValue?: string}) {
+export function Tabs({items, defaultValue, label}: {items: TabItem[]; defaultValue?: string; label: string}) {
   const baseId = useId();
   const initial = defaultValue && items.some((item) => item.value === defaultValue)
     ? defaultValue
@@ -35,7 +35,7 @@ export function Tabs({items, defaultValue}: {items: TabItem[]; defaultValue?: st
 
   return (
     <div className="tabs">
-      <div aria-label="Views" className="tabs-list" onKeyDown={handleKeyDown} role="tablist">
+      <div aria-label={label} className="tabs-list" onKeyDown={handleKeyDown} role="tablist">
         {items.map((item) => {
           const selected = item.value === activeItem.value;
           return (

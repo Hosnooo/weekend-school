@@ -3,9 +3,9 @@ type BreadcrumbItem = {
   href?: string;
 };
 
-export function Breadcrumbs({items}: {items: BreadcrumbItem[]}) {
+export function Breadcrumbs({items, label}: {items: BreadcrumbItem[]; label: string}) {
   return (
-    <nav aria-label="Breadcrumb" className="breadcrumbs" dir="inherit">
+    <nav aria-label={label} className="breadcrumbs" dir="inherit">
       <ol>
         {items.map((item, index) => {
           const isLast = index === items.length - 1;

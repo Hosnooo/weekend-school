@@ -7,14 +7,14 @@ export function ConfirmationDialog({
   title,
   description,
   confirmLabel,
-  cancelLabel = 'Cancel',
+  cancelLabel,
   onConfirm
 }: {
   trigger: ReactElement<{onClick?: (event: MouseEvent<HTMLElement>) => void}>;
   title: string;
   description: string;
   confirmLabel: string;
-  cancelLabel?: string;
+  cancelLabel: string;
   onConfirm: () => void;
 }) {
   return (
