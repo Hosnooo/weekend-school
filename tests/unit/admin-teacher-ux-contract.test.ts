@@ -8,7 +8,9 @@ const source = (path: string) => readFileSync(resolve(root, path), 'utf8');
 
 const routes = {
   administrators: 'src/app/[locale]/(protected)/(admin)/administrators/page.tsx',
+  administratorDetail: 'src/app/[locale]/(protected)/(admin)/administrators/[id]/page.tsx',
   administratorEdit: 'src/app/[locale]/(protected)/(admin)/administrators/[id]/edit/page.tsx',
+  administratorAccess: 'src/app/[locale]/(protected)/(admin)/administrators/[id]/access/page.tsx',
   teachingAssignments: 'src/app/[locale]/(protected)/(admin)/teaching-assignments/page.tsx',
   exports: 'src/app/[locale]/(protected)/(admin)/exports/page.tsx',
   archives: 'src/app/[locale]/(protected)/(admin)/archives/page.tsx',
@@ -22,7 +24,19 @@ const routes = {
 
 describe('administrator and teacher UX completion contract', () => {
   it('makes core administrator utilities first-class routes', () => {
-    for (const path of Object.values(routes)) {
+    for (const path of [
+      routes.administrators,
+      routes.administratorEdit,
+      routes.teachingAssignments,
+      routes.exports,
+      routes.archives,
+      routes.teachers,
+      routes.teacherDetail,
+      routes.teacherEdit,
+      routes.teacherAccess,
+      routes.teacherAssignments,
+      routes.teacherProfile
+    ]) {
       expect(existsSync(resolve(root, path)), `${path} should exist`).toBe(true);
     }
   });
@@ -104,6 +118,71 @@ describe('administrator and teacher UX completion contract', () => {
     expect(access).toContain('unlinkTeacherAccessAction');
     expect(access).not.toContain('TeacherForm');
     expect(access).not.toContain('TeachingAssignmentWorkspace');
+  });
+
+  it('standardizes Administrators as a first-class People management surface', () => {
+    const componentPath = 'src/features/administrators/administrator-management-list.tsx';
+    expect(existsSync(resolve(root, routes.administratorDetail)), `${routes.administratorDetail} should exist`).toBe(true);
+    expect(existsSync(resolve(root, routes.administratorAccess)), `${routes.administratorAccess} should exist`).toBe(true);
+    expect(existsSync(resolve(root, componentPath)), `${componentPath} should exist`).toBe(true);
+    if (!existsSync(resolve(root, componentPath))) return;
+
+    const page = source(routes.administrators);
+    const list = source(componentPath);
+    expect(page).toContain('PageHeader');
+    expect(page).toContain('AdministratorManagementList');
+    expect(page).not.toContain('record-card');
+    expect(page).not.toContain('<table');
+    expect(page).not.toContain("locale === 'ar'");
+
+    expect(list).toContain('DataTable');
+    expect(list).toContain('DropdownMenu');
+    expect(list).toContain("t('loginAccess')");
+    expect(list).toContain("t('administratorActions'");
+    expect(list).toContain('/edit');
+    expect(list).toContain('/access');
+    expect(list).not.toContain('row-actions');
+  });
+
+  it('separates Administrator detail, identity editing, login access, and lifecycle operations', () => {
+    expect(existsSync(resolve(root, routes.administratorDetail))).toBe(true);
+    expect(existsSync(resolve(root, routes.administratorAccess))).toBe(true);
+    if (!existsSync(resolve(root, routes.administratorDetail)) || !existsSync(resolve(root, routes.administratorAccess))) return;
+
+    const detail = source(routes.administratorDetail);
+    const edit = source(routes.administratorEdit);
+    const access = source(routes.administratorAccess);
+
+    expect(detail).toContain('getAdministratorAccessStates');
+    expect(detail).toContain("t('identityContact')");
+    expect(detail).toContain("t('loginAccess')");
+    expect(detail).toContain("t('lifecycle')");
+    expect(detail).not.toContain('updateAdministratorDetailsAction');
+    expect(detail).not.toContain('resendAdministratorAccessAction');
+
+    expect(edit).toContain('updateAdministratorDetailsAction');
+    expect(edit).not.toContain('resendAdministratorAccessAction');
+    expect(edit).not.toContain('setAdministratorActiveAction');
+    expect(edit).not.toContain('deleteAdministratorAction');
+
+    expect(access).toContain('resendAdministratorAccessAction');
+    expect(access).not.toContain('updateAdministratorDetailsAction');
+    expect(access).not.toContain('setAdministratorActiveAction');
+    expect(access).not.toContain('deleteAdministratorAction');
+  });
+
+  it('keeps last-active-Administrator blocking discoverable on the canonical Administrators surface', () => {
+    const page = source(routes.administrators);
+    const actions = source('src/features/administrators/administrator.actions.ts');
+    const service = source('src/features/administrators/administrator.service.ts');
+
+    expect(page).toContain("query.error === 'last-admin'");
+    expect(page).toContain("t('lastAdministrator')");
+    expect(service).toContain('Cannot remove the last active Administrator');
+    expect(actions).toContain('isLastAdministratorError');
+    expect(actions).toContain('/administrators');
+    expect(actions).not.toContain('/settings/administrators');
+    expect(actions).not.toContain('teacher_accounts');
   });
 
   it('puts the most common administrator jobs directly on the dashboard', () => {
