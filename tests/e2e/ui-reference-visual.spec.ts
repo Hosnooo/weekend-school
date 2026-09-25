@@ -1,4 +1,4 @@
-import {expect, test} from '@playwright/test';
+import {expect, test, type Locator} from '@playwright/test';
 
 import {credentials, login} from './helpers';
 
@@ -8,6 +8,18 @@ const cases = [
   {locale: 'en' as const, mode: 'mobile', width: 390, height: 844, dir: 'ltr'},
   {locale: 'ar' as const, mode: 'mobile', width: 390, height: 844, dir: 'rtl'}
 ];
+
+async function expectHitTestVisible(locator: Locator) {
+  await expect(locator).toBeVisible();
+  const visibleAtCenter = await locator.evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    const x = Math.min(window.innerWidth - 1, Math.max(0, rect.left + rect.width / 2));
+    const y = Math.min(window.innerHeight - 1, Math.max(0, rect.top + rect.height / 2));
+    const hit = document.elementFromPoint(x, y);
+    return Boolean(hit && (hit === element || element.contains(hit)));
+  });
+  expect(visibleAtCenter).toBe(true);
+}
 
 for (const visualCase of cases) {
   test(`UI reference ${visualCase.locale} ${visualCase.mode}`, async ({page}, testInfo) => {
@@ -44,7 +56,12 @@ for (const visualCase of cases) {
     if (visualCase.mode === 'desktop') {
       const menuTrigger = page.locator('.data-table button[aria-haspopup="menu"]').first();
       await menuTrigger.click();
-      await expect(page.getByRole('menu')).toBeVisible();
+      const menu = page.getByRole('menu');
+      await expect(menu).toBeVisible();
+      const menuItems = menu.getByRole('menuitem');
+      await expect(menuItems).toHaveCount(2);
+      await expectHitTestVisible(menuItems.nth(0));
+      await expectHitTestVisible(menuItems.nth(1));
       await page.screenshot({
         path: testInfo.outputPath(`${visualCase.locale}-${visualCase.mode}-menu.png`),
         fullPage: true

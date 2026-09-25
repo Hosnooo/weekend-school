@@ -144,11 +144,12 @@
 
 .dropdown-menu { position: relative; display: inline-flex; }
 .dropdown-menu-content {
-  position: absolute;
-  z-index: 80;
-  inset-block-start: calc(100% + 0.35rem);
-  inset-inline-end: 0;
+  position: fixed;
+  z-index: 90;
   min-inline-size: 12rem;
+  max-inline-size: min(20rem, calc(100vw - 1rem));
+  max-block-size: min(24rem, calc(100vh - 1rem));
+  overflow-y: auto;
   display: grid;
   padding: 0.35rem;
   background: var(--surface);
