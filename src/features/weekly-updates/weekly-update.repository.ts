@@ -32,14 +32,6 @@ function addDays(date: string, days: number) {
   return value.toISOString().slice(0, 10);
 }
 
-async function loadEffectiveContexts(schoolId: string, teacherId: string, onDate: string) {
-  const [classSubjects, assignments] = await Promise.all([
-    listTeachingClassSubjects(schoolId),
-    listTeachingAssignments(schoolId, teacherId)
-  ]);
-  return expandEffectiveTeachingContexts({teacherId, assignments, classSubjects, onDate});
-}
-
 async function loadEffectiveContextsForTeachers(schoolId: string, teacherIds: string[], onDate: string) {
   if (teacherIds.length === 0) return [];
   const classSubjects = await listTeachingClassSubjects(schoolId);
