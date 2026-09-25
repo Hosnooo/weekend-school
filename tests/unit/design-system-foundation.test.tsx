@@ -82,9 +82,11 @@ describe('design-system foundation contracts', () => {
           {value: 'current', label: 'Current', content: <p>Current assignments</p>},
           {value: 'past', label: 'Past', content: <p>Past assignments</p>}
         ]}
+        label="Assignment views"
       />
     );
 
+    expect(screen.getByRole('tablist', {name: 'Assignment views'})).toBeInTheDocument();
     expect(screen.getByRole('tabpanel')).toHaveTextContent('Current assignments');
     expect(screen.queryByText('Past assignments')).not.toBeInTheDocument();
     await user.click(screen.getByRole('tab', {name: 'Past'}));
@@ -115,11 +117,11 @@ describe('design-system foundation contracts', () => {
   it('renders RTL-safe breadcrumb ordering without hardcoded directional classes', () => {
     const {container} = render(
       <div dir="rtl">
-        <Breadcrumbs items={[{label: 'Teachers'}, {label: 'Ahmed Ali'}]} />
+        <Breadcrumbs items={[{label: 'Teachers'}, {label: 'Ahmed Ali'}]} label="Navigation path" />
       </div>
     );
 
-    expect(screen.getByRole('navigation', {name: 'Breadcrumb'})).toHaveAttribute('dir', 'inherit');
+    expect(screen.getByRole('navigation', {name: 'Navigation path'})).toHaveAttribute('dir', 'inherit');
     expect(screen.getAllByRole('listitem').map((item) => item.textContent?.replace('›', '').trim())).toEqual([
       'Teachers',
       'Ahmed Ali'
@@ -132,6 +134,7 @@ describe('design-system foundation contracts', () => {
     const onConfirm = vi.fn();
     render(
       <ConfirmationDialog
+        cancelLabel="Cancel"
         confirmLabel="Delete assignment"
         description="This action cannot be undone."
         onConfirm={onConfirm}
