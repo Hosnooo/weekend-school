@@ -16,7 +16,7 @@ function teacher() {
 }
 
 describe('explicit Teacher account access', () => {
-  it('reuses an existing same-school profile and sends a new access link', async () => {
+  it('reuses an existing same-school profile without forcing a password reset', async () => {
     const linkTeacherAccount = vi.fn(async () => undefined);
     const sendAccessLink = vi.fn(async () => undefined);
     const createProfile = vi.fn(async () => 'profile-new');
@@ -41,9 +41,31 @@ describe('explicit Teacher account access', () => {
     });
 
     expect(linkTeacherAccount).toHaveBeenCalledWith({schoolId, teacherId, profileId: 'profile-existing'});
-    expect(sendAccessLink).toHaveBeenCalledWith('fatima@example.com', redirectTo);
+    expect(sendAccessLink).not.toHaveBeenCalled();
     expect(inviteAuthUser).not.toHaveBeenCalled();
     expect(createProfile).not.toHaveBeenCalled();
+  });
+
+  it('sends a reset link only when existing access is explicitly resent', async () => {
+    const sendAccessLink = vi.fn(async () => undefined);
+
+    await ensureTeacherAccess({
+      schoolId,
+      teacherId,
+      loginEmail: 'fatima@example.com',
+      redirectTo,
+      resendExistingAccess: true
+    }, {
+      async loadTeacher() { return teacher(); },
+      async findAuthUserByEmail() { return {id: 'auth-existing'}; },
+      async findProfileByAuthUserId() { return {id: 'profile-existing', schoolId}; },
+      async inviteAuthUser() { throw new Error('must not invite'); },
+      async createProfile() { throw new Error('must not create'); },
+      async linkTeacherAccount() {},
+      sendAccessLink
+    });
+
+    expect(sendAccessLink).toHaveBeenCalledWith('fatima@example.com', redirectTo);
   });
 
   it('creates a same-school profile for an existing Auth identity without one', async () => {

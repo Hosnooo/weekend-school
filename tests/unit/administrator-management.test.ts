@@ -72,7 +72,7 @@ describe('administrator business records', () => {
 });
 
 describe('administrator account access', () => {
-  it('reuses an existing same-school Profile without changing Teacher capability', async () => {
+  it('reuses an existing same-school Profile without changing Teacher capability or password', async () => {
     const deps = accessDependencies({
       findAuthUserByEmail: vi.fn().mockResolvedValue({id: 'auth-user-existing'}),
       findProfileByAuthUserId: vi.fn().mockResolvedValue({id: profileId, schoolId})
@@ -87,11 +87,32 @@ describe('administrator account access', () => {
 
     expect(deps.inviteAuthUser).not.toHaveBeenCalled();
     expect(deps.createProfile).not.toHaveBeenCalled();
+    expect(deps.sendAccessLink).not.toHaveBeenCalled();
     expect(deps.linkAdministratorAccount).toHaveBeenCalledWith({
       schoolId,
       administratorId,
       profileId
     });
+  });
+
+  it('sends a reset link only when existing Administrator access is explicitly resent', async () => {
+    const deps = accessDependencies({
+      findAuthUserByEmail: vi.fn().mockResolvedValue({id: 'auth-user-existing'}),
+      findProfileByAuthUserId: vi.fn().mockResolvedValue({id: profileId, schoolId})
+    });
+
+    await ensureAdministratorAccess({
+      schoolId,
+      administratorId,
+      loginEmail: 'existing@example.com',
+      redirectTo: 'https://example.test/en/set-password',
+      resendExistingAccess: true
+    }, deps);
+
+    expect(deps.sendAccessLink).toHaveBeenCalledWith(
+      'existing@example.com',
+      'https://example.test/en/set-password'
+    );
   });
 
   it('rejects reuse of a Profile belonging to another school', async () => {

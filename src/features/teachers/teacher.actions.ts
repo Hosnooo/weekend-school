@@ -270,7 +270,8 @@ export async function resendTeacherAccessAction(formData: FormData) {
       schoolId: profile.schoolId,
       teacherId: teacher.id,
       loginEmail: teacher.email,
-      redirectTo
+      redirectTo,
+      resendExistingAccess: Boolean(teacher.accountProfileId)
     }, createAccessDependencies());
   } catch (error) {
     console.error('Unable to send teacher access', {error});

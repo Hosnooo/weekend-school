@@ -76,6 +76,7 @@ export async function ensureTeacherAccess(
     teacherId: string;
     loginEmail: string;
     redirectTo: string;
+    resendExistingAccess?: boolean;
   },
   dependencies: TeacherAccessDependencies
 ) {
@@ -150,7 +151,7 @@ export async function ensureTeacherAccess(
     throw error;
   }
 
-  if (existingAuth) {
+  if (existingAuth && input.resendExistingAccess) {
     await dependencies.sendAccessLink(loginEmail, input.redirectTo);
   }
 

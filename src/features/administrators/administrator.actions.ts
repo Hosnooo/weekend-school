@@ -207,7 +207,8 @@ export async function resendAdministratorAccessAction(formData: FormData) {
       administratorId: administrator.id,
       loginEmail: administrator.email,
       redirectTo: await invitationRedirect(locale),
-      preferredLanguage: locale
+      preferredLanguage: locale,
+      resendExistingAccess: true
     }, createAccessDependencies());
     if (!administrator.isActive) {
       await setAdministratorActiveSafely({

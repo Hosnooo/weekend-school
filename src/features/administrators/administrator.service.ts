@@ -98,6 +98,7 @@ export async function ensureAdministratorAccess(
     loginEmail: string;
     redirectTo: string;
     preferredLanguage?: 'en' | 'ar';
+    resendExistingAccess?: boolean;
   },
   dependencies: AdministratorAccessDependencies
 ) {
@@ -176,7 +177,7 @@ export async function ensureAdministratorAccess(
     throw error;
   }
 
-  if (existingAuth) {
+  if (existingAuth && input.resendExistingAccess) {
     await dependencies.sendAccessLink(loginEmail, input.redirectTo);
   }
 
