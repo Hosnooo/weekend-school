@@ -1,3 +1,4 @@
+import type {ReactNode} from 'react';
 import {NextIntlClientProvider} from 'next-intl';
 import {render, screen, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -13,6 +14,12 @@ vi.mock('@/features/teaching-assignments/teaching-assignment.actions', () => ({
   createTeachingAssignmentMutationAction: vi.fn(),
   updateTeachingAssignmentMutationAction: vi.fn(),
   deleteTeachingAssignmentAction: vi.fn()
+}));
+
+vi.mock('@/i18n/navigation', () => ({
+  Link: ({children, ...props}: {children: ReactNode; href: string; className?: string}) => (
+    <a {...props}>{children}</a>
+  )
 }));
 
 import {
