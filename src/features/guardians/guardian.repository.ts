@@ -1,7 +1,12 @@
 import 'server-only';
 
 import type {GuardianInput} from '@/features/guardians/guardian.schemas';
-import type {GuardianListItem} from '@/features/guardians/guardian.types';
+import type {
+  GuardianDetail,
+  GuardianListItem,
+  GuardianStudentLink,
+  StudentGuardianLink
+} from '@/features/guardians/guardian.types';
 import {createServerSupabaseClient} from '@/lib/supabase/server';
 
 type GuardianRow = {
@@ -10,6 +15,25 @@ type GuardianRow = {
   email: string;
   report_language: 'en' | 'ar' | 'both';
   is_active: boolean;
+};
+
+type StudentGuardianRow = {
+  is_primary: boolean;
+  receives_reports: boolean;
+  guardians: GuardianRow | null;
+};
+
+type GuardianStudentRow = {
+  is_primary: boolean;
+  receives_reports: boolean;
+  students: {
+    id: string;
+    first_name_en: string;
+    last_name_en: string;
+    first_name_ar: string | null;
+    last_name_ar: string | null;
+    is_active: boolean;
+  } | null;
 };
 
 function mapGuardian(row: GuardianRow): GuardianListItem {
@@ -43,6 +67,51 @@ export async function getGuardian(schoolId: string, id: string) {
     .maybeSingle();
   if (error) throw error;
   return data ? mapGuardian(data as GuardianRow) : null;
+}
+
+export async function listStudentGuardians(schoolId: string, studentId: string): Promise<StudentGuardianLink[]> {
+  const supabase = await createServerSupabaseClient();
+  const {data, error} = await supabase
+    .from('student_guardians')
+    .select('is_primary, receives_reports, guardians(id, name, email, report_language, is_active)')
+    .eq('school_id', schoolId)
+    .eq('student_id', studentId);
+  if (error) throw error;
+
+  return (data as unknown as StudentGuardianRow[]).flatMap((row) => row.guardians ? [{
+    ...mapGuardian(row.guardians),
+    isPrimary: row.is_primary,
+    receivesReports: row.receives_reports
+  }] : []).sort((left, right) => left.name.localeCompare(right.name));
+}
+
+export async function getGuardianDetail(schoolId: string, id: string): Promise<GuardianDetail | null> {
+  const [guardian, linksResult] = await Promise.all([
+    getGuardian(schoolId, id),
+    (async () => {
+      const supabase = await createServerSupabaseClient();
+      return supabase
+        .from('student_guardians')
+        .select('is_primary, receives_reports, students(id, first_name_en, last_name_en, first_name_ar, last_name_ar, is_active)')
+        .eq('school_id', schoolId)
+        .eq('guardian_id', id);
+    })()
+  ]);
+  if (!guardian) return null;
+  if (linksResult.error) throw linksResult.error;
+
+  const students: GuardianStudentLink[] = (linksResult.data as unknown as GuardianStudentRow[]).flatMap((row) => row.students ? [{
+    id: row.students.id,
+    firstNameEn: row.students.first_name_en,
+    lastNameEn: row.students.last_name_en,
+    firstNameAr: row.students.first_name_ar,
+    lastNameAr: row.students.last_name_ar,
+    isActive: row.students.is_active,
+    isPrimary: row.is_primary,
+    receivesReports: row.receives_reports
+  }] : []).sort((left, right) => `${left.lastNameEn} ${left.firstNameEn}`.localeCompare(`${right.lastNameEn} ${right.firstNameEn}`));
+
+  return {...guardian, students};
 }
 
 export async function createGuardian(schoolId: string, input: GuardianInput) {
