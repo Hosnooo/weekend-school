@@ -9,11 +9,14 @@ on:
       - 'tests/e2e/ui-reference-visual.spec.ts'
       - 'tests/e2e/app-shell-visual.spec.ts'
       - 'tests/e2e/teaching-assignment-workspace.spec.ts'
+      - 'tests/e2e/teacher-management.spec.ts'
       - 'src/components/ui/**'
       - 'src/components/layout/**'
       - 'src/features/teaching-assignments/**'
+      - 'src/features/teachers/**'
       - 'src/lib/auth/navigation.ts'
       - 'src/app/globals.css'
+      - 'src/app/design-system.css'
       - 'src/app/[locale]/(protected)/**'
       - 'messages/en.json'
       - 'messages/ar.json'
@@ -71,8 +74,8 @@ jobs:
           } >> "$GITHUB_ENV"
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium
-      - name: Capture and verify UX foundation, shell, and teaching assignments
-        run: pnpm exec playwright test tests/e2e/ui-reference-visual.spec.ts tests/e2e/app-shell-visual.spec.ts tests/e2e/teaching-assignment-workspace.spec.ts
+      - name: Capture and verify UX foundation, shell, teaching assignments, and Teacher management
+        run: pnpm exec playwright test tests/e2e/ui-reference-visual.spec.ts tests/e2e/app-shell-visual.spec.ts tests/e2e/teaching-assignment-workspace.spec.ts tests/e2e/teacher-management.spec.ts
       - name: Upload UX visual evidence
         if: always()
         uses: actions/upload-artifact@v4

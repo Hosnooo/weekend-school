@@ -1,6 +1,7 @@
+import {getTranslations} from 'next-intl/server';
 import {notFound} from 'next/navigation';
 
-import {AdminPage} from '@/components/ui/admin-page';
+import {PageHeader} from '@/components/ui/page-header';
 import {TeacherForm} from '@/features/teachers/teacher-form';
 import {isLocale} from '@/i18n/config';
 import {requireAdministrator} from '@/lib/auth/require-profile';
@@ -9,11 +10,12 @@ export default async function NewTeacherPage({params}: {params: Promise<{locale:
   const {locale} = await params;
   if (!isLocale(locale)) notFound();
   await requireAdministrator(locale);
-  const title = locale === 'ar' ? 'إضافة معلم' : 'Add teacher';
-  const description = locale === 'ar'
-    ? 'أنشئ سجل المعلم أولًا. يمكن ربط حساب دخول به لاحقًا بشكل مستقل.'
-    : 'Create the Teacher record first. Account access can be linked separately afterward.';
-  return <AdminPage title={title} description={description}>
-    <TeacherForm locale={locale}/>
-  </AdminPage>;
+  const t = await getTranslations({locale, namespace: 'teachers'});
+
+  return (
+    <section className="admin-page">
+      <PageHeader description={t('newDescription')} title={t('newTitle')} />
+      <TeacherForm locale={locale} />
+    </section>
+  );
 }

@@ -151,6 +151,14 @@ function createUnlinkDependencies(): UnlinkTeacherAccessDependencies {
   };
 }
 
+function revalidateTeacherSurfaces(locale: string, teacherId: string) {
+  revalidatePath(`/${locale}/teachers`);
+  revalidatePath(`/${locale}/teachers/${teacherId}`);
+  revalidatePath(`/${locale}/teachers/${teacherId}/edit`);
+  revalidatePath(`/${locale}/teachers/${teacherId}/access`);
+  revalidatePath(`/${locale}/teachers/${teacherId}/assignments`);
+}
+
 export async function createTeacherAction(
   _state: ActionState,
   formData: FormData
@@ -191,8 +199,8 @@ export async function updateTeacherAction(
     console.error('Unable to update teacher', {error});
     return saveFailure();
   }
-  revalidatePath(`/${locale}/teachers`);
-  redirect(`/${locale}/teachers`);
+  revalidateTeacherSurfaces(locale, parsed.data.id);
+  redirect(`/${locale}/teachers/${parsed.data.id}`);
 }
 
 export async function assignTeacherAction(
@@ -214,8 +222,7 @@ export async function assignTeacherAction(
     console.error('Unable to add teaching assignment', {error});
     return saveFailure();
   }
-  revalidatePath(`/${locale}/teachers`);
-  revalidatePath(`/${locale}/teachers/${parsed.data.teacherId}/edit`);
+  revalidateTeacherSurfaces(locale, parsed.data.teacherId);
   return initialActionState;
 }
 
@@ -234,8 +241,7 @@ export async function endTeacherAssignmentAction(formData: FormData) {
     console.error('Unable to end teaching assignment', {error});
     return;
   }
-  revalidatePath(`/${locale}/teachers`);
-  revalidatePath(`/${locale}/teachers/${teacherId.data}/edit`);
+  revalidateTeacherSurfaces(locale, teacherId.data);
 }
 
 export async function setTeacherActiveAction(formData: FormData) {
@@ -247,7 +253,7 @@ export async function setTeacherActiveAction(formData: FormData) {
   });
   if (!parsed.success) return;
   await setTeacherActive(profile.schoolId, parsed.data.id, parsed.data.isActive === 'true');
-  revalidatePath(`/${locale}/teachers`);
+  revalidateTeacherSurfaces(locale, parsed.data.id);
 }
 
 export async function resendTeacherAccessAction(formData: FormData) {
@@ -278,8 +284,8 @@ export async function resendTeacherAccessAction(formData: FormData) {
     outcome = 'failed';
   }
 
-  revalidatePath(`/${locale}/teachers`);
-  redirect(`/${locale}/teachers?access=${outcome}`);
+  revalidateTeacherSurfaces(locale, parsed.data);
+  redirect(`/${locale}/teachers/${parsed.data}/access?access=${outcome}`);
 }
 
 export async function unlinkTeacherAccessAction(formData: FormData) {
@@ -302,5 +308,5 @@ export async function unlinkTeacherAccessAction(formData: FormData) {
     return;
   }
 
-  revalidatePath(`/${locale}/teachers`);
+  revalidateTeacherSurfaces(locale, parsed.data.teacherId);
 }

@@ -31,8 +31,8 @@ export default async function TeachingAssignmentsPage({
   return (
     <TeachingAssignmentWorkspace
       assignments={assignments}
-      backHref="/teaching-assignments"
-      backLabel={t('allAssignments')}
+      backHref={`/teachers/${candidate.id}`}
+      backLabel={t('backToTeacher')}
       classSubjects={classSubjects}
       locale={locale}
       teacherId={candidate.id}
