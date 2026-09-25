@@ -1,0 +1,81 @@
+name: UX Reference Visual
+
+on:
+  push:
+    branches:
+      - codex/full-website-ux-redesign
+    paths:
+      - '.github/workflows/ux-reference-visual.yml'
+      - 'tests/e2e/ui-reference-visual.spec.ts'
+      - 'src/components/ui/**'
+      - 'src/app/globals.css'
+      - 'src/app/[locale]/(protected)/ui-reference/**'
+      - 'messages/en.json'
+      - 'messages/ar.json'
+      - 'playwright.config.ts'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  visual-reference:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.19.0 --activate
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Start local Supabase
+        run: pnpm db:start
+      - name: Reset through legacy migration 27 and seed legacy profiles
+        run: pnpm exec supabase db reset --version 202609230027
+      - name: Apply current forward migrations
+        run: pnpm exec supabase migration up --local
+      - name: Load redesigned E2E fixtures
+        run: |
+          eval "$(pnpm exec supabase status -o env)"
+          psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/seed.e2e.sql
+      - name: Configure local application and Playwright environment
+        run: |
+          eval "$(pnpm exec supabase status -o env)"
+          cat > .env.local <<EOF
+          NEXT_PUBLIC_SUPABASE_URL=$API_URL
+          NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY
+          SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY
+          BREVO_API_KEY=ci-local-placeholder
+          EMAIL_FROM=ci@example.test
+          CRON_SECRET=ci-local-placeholder
+          E2E_BASE_URL=http://127.0.0.1:3000
+          EOF
+          {
+            echo "NEXT_PUBLIC_SUPABASE_URL=$API_URL"
+            echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY"
+            echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"
+            echo "BREVO_API_KEY=ci-local-placeholder"
+            echo "EMAIL_FROM=ci@example.test"
+            echo "CRON_SECRET=ci-local-placeholder"
+            echo "E2E_BASE_URL=http://127.0.0.1:3000"
+          } >> "$GITHUB_ENV"
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Capture and verify UI reference states
+        run: pnpm exec playwright test tests/e2e/ui-reference-visual.spec.ts
+      - name: Upload UI reference evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-reference-visual-evidence
+          path: test-results
+          if-no-files-found: warn
+          retention-days: 7
+      - name: Stop local Supabase
+        if: always()
+        run: pnpm exec supabase stop --no-backup
