@@ -19,21 +19,33 @@ import {
 const DialogContext = createContext<(() => void) | null>(null);
 const focusableSelector = 'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
+type DialogProps = {
+  trigger?: ReactElement<{onClick?: (event: MouseEvent<HTMLElement>) => void}>;
+  title: string;
+  children: ReactNode;
+  contentClassName?: string;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+};
+
 export function Dialog({
   trigger,
   title,
   children,
-  contentClassName = ''
-}: {
-  trigger: ReactElement<{onClick?: (event: MouseEvent<HTMLElement>) => void}>;
-  title: string;
-  children: ReactNode;
-  contentClassName?: string;
-}) {
-  const [open, setOpen] = useState(false);
+  contentClassName = '',
+  open: controlledOpen,
+  onOpenChange
+}: DialogProps) {
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const [restoreFocusElement, setRestoreFocusElement] = useState<HTMLElement | null>(null);
   const titleId = useId();
   const contentRef = useRef<HTMLDivElement>(null);
+  const open = controlledOpen ?? uncontrolledOpen;
+
+  function setOpen(nextOpen: boolean) {
+    if (controlledOpen === undefined) setUncontrolledOpen(nextOpen);
+    onOpenChange?.(nextOpen);
+  }
 
   function close() {
     setOpen(false);
@@ -65,7 +77,7 @@ export function Dialog({
     }
   }
 
-  const triggerElement = isValidElement(trigger)
+  const triggerElement = trigger && isValidElement(trigger)
     ? cloneElement(trigger, {
         'aria-haspopup': 'dialog',
         'aria-expanded': open,

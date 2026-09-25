@@ -8,17 +8,21 @@ export function ConfirmationDialog({
   description,
   confirmLabel,
   cancelLabel,
-  onConfirm
+  onConfirm,
+  open,
+  onOpenChange
 }: {
-  trigger: ReactElement<{onClick?: (event: MouseEvent<HTMLElement>) => void}>;
+  trigger?: ReactElement<{onClick?: (event: MouseEvent<HTMLElement>) => void}>;
   title: string;
   description: string;
   confirmLabel: string;
   cancelLabel: string;
   onConfirm: () => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
   return (
-    <Dialog title={title} trigger={trigger}>
+    <Dialog onOpenChange={onOpenChange} open={open} title={title} trigger={trigger}>
       <p className="dialog-description">{description}</p>
       <div className="dialog-actions">
         <DialogClose>{cancelLabel}</DialogClose>
