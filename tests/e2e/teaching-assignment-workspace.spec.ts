@@ -66,12 +66,13 @@ test.describe('Teaching Assignments reference CRUD flow', () => {
     const subjectSelect = addDialog.locator('select[name="classSubjectId"]');
     const scopeSelect = addDialog.locator('select[name="subjectGroupId"]');
     const startsOnInput = addDialog.locator('input[name="startsOn"]');
+    const appAlert = page.locator('.alert[role="alert"]');
     await expect(addDialog).toBeVisible();
     await expect(classSelect).toBeFocused();
     await subjectSelect.selectOption({label: 'Faith & Character'});
     await startsOnInput.fill('2026-09-10');
     await addDialog.getByRole('button', {name: 'Add assignment'}).click();
-    await expect(page.getByRole('alert')).toContainText('overlaps an existing assignment');
+    await expect(appAlert).toContainText('overlaps an existing assignment');
 
     await subjectSelect.selectOption({label: 'Arabic Reading'});
     await scopeSelect.selectOption({label: 'Blue'});
@@ -105,7 +106,7 @@ test.describe('Teaching Assignments reference CRUD flow', () => {
     await page.getByRole('menuitem', {name: 'Delete assignment'}).click();
     const protectedDialog = page.getByRole('dialog', {name: 'Delete assignment'});
     await protectedDialog.getByRole('button', {name: 'Delete assignment'}).click();
-    await expect(page.getByRole('alert')).toContainText('submitted teaching history depends on it');
+    await expect(appAlert).toContainText('submitted teaching history depends on it');
     await page.getByRole('button', {name: /Actions for Foundations.*Faith & Character.*Entire subject/}).click();
     await expect(page.getByRole('menuitem', {name: 'Delete assignment'})).toBeVisible();
     await page.keyboard.press('Escape');
