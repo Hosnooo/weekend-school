@@ -2,7 +2,8 @@ import 'server-only';
 
 import type {
   EndTeachingAssignmentInput,
-  TeachingAssignmentInput
+  TeachingAssignmentInput,
+  UpdateTeachingAssignmentInput
 } from '@/features/teaching-assignments/teaching-assignment.schemas';
 import {expandEffectiveTeachingContexts} from '@/features/teaching-assignments/teaching-assignment.service';
 import type {
@@ -26,12 +27,7 @@ type ClassSubjectRow = {
   is_active: boolean;
   classes: {id: string; name_en: string; name_ar: string | null; is_active: boolean} | null;
   subjects: {name_en: string; name_ar: string | null; is_active: boolean} | null;
-  subject_groups: Array<{
-    id: string;
-    name_en: string;
-    name_ar: string | null;
-    is_active: boolean;
-  }>;
+  subject_groups: Array<{id: string; name_en: string; name_ar: string | null; is_active: boolean}>;
 };
 
 export async function listTeachingClassSubjects(schoolId: string): Promise<TeachingClassSubject[]> {
@@ -98,10 +94,7 @@ export async function listTeachingAssignments(
   }));
 }
 
-export async function assignTeacher(
-  schoolId: string,
-  input: TeachingAssignmentInput
-) {
+export async function assignTeacher(schoolId: string, input: TeachingAssignmentInput) {
   const supabase = await createServerSupabaseClient();
   const {error} = await supabase.from('teaching_assignments').insert({
     school_id: schoolId,
@@ -111,6 +104,32 @@ export async function assignTeacher(
     starts_on: input.startsOn
   });
   if (error) throw error;
+}
+
+export async function updateTeachingAssignmentDates(
+  schoolId: string,
+  teacherId: string,
+  input: UpdateTeachingAssignmentInput
+) {
+  const supabase = await createServerSupabaseClient();
+  const {data: existing, error: existingError} = await supabase
+    .from('teaching_assignments')
+    .select('id')
+    .eq('school_id', schoolId)
+    .eq('teacher_id', teacherId)
+    .eq('id', input.assignmentId)
+    .maybeSingle();
+  if (existingError) throw existingError;
+  if (!existing) throw new Error('Teaching assignment could not be updated');
+
+  const {data, error} = await supabase.rpc('update_teaching_assignment_dates', {
+    p_teacher_id: teacherId,
+    p_assignment_id: input.assignmentId,
+    p_starts_on: input.startsOn,
+    p_ends_on: input.endsOn
+  });
+  if (error) throw error;
+  if (!data) throw new Error('Teaching assignment could not be updated');
 }
 
 export async function endTeacherAssignment(
