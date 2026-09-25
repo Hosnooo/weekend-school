@@ -4,9 +4,9 @@ import {describe, expect, it} from 'vitest';
 
 const root = process.cwd();
 const exportAction = join(root, 'src/features/exports/export.actions.ts');
-const archivesPage = join(
+const exportsPage = join(
   root,
-  'src/app/[locale]/(protected)/(admin)/settings/archives/page.tsx'
+  'src/app/[locale]/(protected)/(admin)/exports/page.tsx'
 );
 const exportDownloadRoute = join(root, 'src/app/api/exports/[exportId]/route.ts');
 const teacherTree = join(root, 'src/app/[locale]/(protected)/(teacher)');
@@ -29,7 +29,7 @@ describe('Administrator-only export access', () => {
   });
 
   it('keeps the export UI inside the explicitly protected Administrator surface', () => {
-    const source = readFileSync(archivesPage, 'utf8');
+    const source = readFileSync(exportsPage, 'utf8');
 
     expect(source).toContain('requireAdministrator');
     expect(source).toContain('await requireAdministrator(locale)');
