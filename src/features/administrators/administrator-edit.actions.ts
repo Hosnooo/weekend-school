@@ -22,7 +22,8 @@ export async function updateAdministratorDetailsAction(formData: FormData) {
     id: formData.get('id'),
     displayName: formData.get('displayName')
   });
-  if (!parsed.success) redirect(`/${locale}/administrators/${String(formData.get('id') ?? '')}/edit?error=validation`);
+  const rawId = String(formData.get('id') ?? '');
+  if (!parsed.success) redirect(`/${locale}/administrators/${rawId}/edit?error=validation`);
 
   try {
     const db = await createServerSupabaseClient();
@@ -40,5 +41,6 @@ export async function updateAdministratorDetailsAction(formData: FormData) {
   }
 
   revalidatePath(`/${locale}/administrators`);
-  redirect(`/${locale}/administrators?updated=1`);
+  revalidatePath(`/${locale}/administrators/${parsed.data.id}`);
+  redirect(`/${locale}/administrators/${parsed.data.id}`);
 }

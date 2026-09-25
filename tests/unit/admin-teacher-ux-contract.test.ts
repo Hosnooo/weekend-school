@@ -8,6 +8,7 @@ const source = (path: string) => readFileSync(resolve(root, path), 'utf8');
 
 const routes = {
   administrators: 'src/app/[locale]/(protected)/(admin)/administrators/page.tsx',
+  administratorNew: 'src/app/[locale]/(protected)/(admin)/administrators/new/page.tsx',
   administratorDetail: 'src/app/[locale]/(protected)/(admin)/administrators/[id]/page.tsx',
   administratorEdit: 'src/app/[locale]/(protected)/(admin)/administrators/[id]/edit/page.tsx',
   administratorAccess: 'src/app/[locale]/(protected)/(admin)/administrators/[id]/access/page.tsx',
@@ -26,7 +27,10 @@ describe('administrator and teacher UX completion contract', () => {
   it('makes core administrator utilities first-class routes', () => {
     for (const path of [
       routes.administrators,
+      routes.administratorNew,
+      routes.administratorDetail,
       routes.administratorEdit,
+      routes.administratorAccess,
       routes.teachingAssignments,
       routes.exports,
       routes.archives,

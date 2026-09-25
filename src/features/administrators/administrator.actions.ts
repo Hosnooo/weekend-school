@@ -157,7 +157,7 @@ export async function createAdministratorAction(formData: FormData) {
     displayName: formData.get('displayName'),
     email: formData.get('email')
   });
-  if (!parsed.success) redirect(`/${locale}/settings/administrators?error=validation`);
+  if (!parsed.success) redirect(`/${locale}/administrators/new?error=validation`);
 
   let administratorId: string;
   try {
@@ -167,7 +167,7 @@ export async function createAdministratorAction(formData: FormData) {
     }, {createAdministrator: insertAdministrator});
   } catch (error) {
     console.error('Unable to create administrator', {error});
-    redirect(`/${locale}/settings/administrators?error=save`);
+    redirect(`/${locale}/administrators/new?error=save`);
   }
 
   try {
@@ -185,20 +185,21 @@ export async function createAdministratorAction(formData: FormData) {
     } catch (deactivationError) {
       console.error('Unable to deactivate administrator after access failure', {error: deactivationError});
     }
-    revalidatePath(`/${locale}/settings/administrators`);
-    redirect(`/${locale}/settings/administrators?access=failed`);
+    revalidatePath(`/${locale}/administrators`);
+    redirect(`/${locale}/administrators?access=failed`);
   }
 
-  revalidatePath(`/${locale}/settings/administrators`);
-  redirect(`/${locale}/settings/administrators?created=1`);
+  revalidatePath(`/${locale}/administrators`);
+  redirect(`/${locale}/administrators?created=1`);
 }
 
 export async function resendAdministratorAccessAction(formData: FormData) {
   const locale = localeFrom(formData);
   const profile = await requireAdministrator(locale);
   const administratorId = databaseUuid.safeParse(formData.get('administratorId'));
-  if (!administratorId.success) redirect(`/${locale}/settings/administrators?error=validation`);
+  if (!administratorId.success) redirect(`/${locale}/administrators?error=validation`);
 
+  const accessPath = `/${locale}/administrators/${administratorId.data}/access`;
   try {
     const administrator = await loadAdministratorWithServiceRole(administratorId.data, profile.schoolId);
     if (!administrator?.email) throw new Error('Administrator login email is unavailable');
@@ -219,11 +220,13 @@ export async function resendAdministratorAccessAction(formData: FormData) {
     }
   } catch (error) {
     console.error('Unable to send administrator access', {error});
-    redirect(`/${locale}/settings/administrators?access=failed`);
+    redirect(`${accessPath}?access=failed`);
   }
 
-  revalidatePath(`/${locale}/settings/administrators`);
-  redirect(`/${locale}/settings/administrators?access=sent`);
+  revalidatePath(`/${locale}/administrators`);
+  revalidatePath(`/${locale}/administrators/${administratorId.data}`);
+  revalidatePath(accessPath);
+  redirect(`${accessPath}?access=sent`);
 }
 
 export async function setAdministratorActiveAction(formData: FormData) {
@@ -236,7 +239,7 @@ export async function setAdministratorActiveAction(formData: FormData) {
     administratorId: formData.get('administratorId'),
     isActive: formData.get('isActive')
   });
-  if (!parsed.success) redirect(`/${locale}/settings/administrators?error=validation`);
+  if (!parsed.success) redirect(`/${locale}/administrators?error=validation`);
 
   try {
     await setAdministratorActiveSafely({
@@ -247,18 +250,19 @@ export async function setAdministratorActiveAction(formData: FormData) {
   } catch (error) {
     console.error('Unable to change administrator status', {error});
     const reason = isLastAdministratorError(error) ? 'last-admin' : 'save';
-    redirect(`/${locale}/settings/administrators?error=${reason}`);
+    redirect(`/${locale}/administrators?error=${reason}`);
   }
 
-  revalidatePath(`/${locale}/settings/administrators`);
-  redirect(`/${locale}/settings/administrators`);
+  revalidatePath(`/${locale}/administrators`);
+  revalidatePath(`/${locale}/administrators/${parsed.data.administratorId}`);
+  redirect(`/${locale}/administrators`);
 }
 
 export async function deleteAdministratorAction(formData: FormData) {
   const locale = localeFrom(formData);
   const profile = await requireAdministrator(locale);
   const administratorId = databaseUuid.safeParse(formData.get('administratorId'));
-  if (!administratorId.success) redirect(`/${locale}/settings/administrators?error=validation`);
+  if (!administratorId.success) redirect(`/${locale}/administrators?error=validation`);
 
   try {
     await deleteAdministratorSafely({
@@ -268,9 +272,9 @@ export async function deleteAdministratorAction(formData: FormData) {
   } catch (error) {
     console.error('Unable to delete administrator', {error});
     const reason = isLastAdministratorError(error) ? 'last-admin' : 'save';
-    redirect(`/${locale}/settings/administrators?error=${reason}`);
+    redirect(`/${locale}/administrators?error=${reason}`);
   }
 
-  revalidatePath(`/${locale}/settings/administrators`);
-  redirect(`/${locale}/settings/administrators?deleted=1`);
+  revalidatePath(`/${locale}/administrators`);
+  redirect(`/${locale}/administrators?deleted=1`);
 }
