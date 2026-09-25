@@ -1,10 +1,10 @@
 import {getTranslations} from 'next-intl/server';
 import {notFound} from 'next/navigation';
 
-import {AdminPage} from '@/components/ui/admin-page';
+import {PageHeader} from '@/components/ui/page-header';
 import {ClassForm} from '@/features/classes/class-form';
 import {isLocale} from '@/i18n/config';
-import {requireProfile} from '@/lib/auth/require-profile';
+import {requireAdministrator} from '@/lib/auth/require-profile';
 
 export default async function NewClassPage({
   params
@@ -14,12 +14,22 @@ export default async function NewClassPage({
   const {locale} = await params;
   if (!isLocale(locale)) notFound();
 
-  await requireProfile(locale, 'ADMIN');
+  await requireAdministrator(locale);
   const t = await getTranslations({locale, namespace: 'classes'});
 
   return (
-    <AdminPage title={t('newTitle')} description={t('description')}>
+    <section className="admin-page">
+      <PageHeader
+        breadcrumbLabel={t('breadcrumbLabel')}
+        breadcrumbs={[
+          {label: t('title'), href: `/${locale}/classes`},
+          {label: t('newTitle')}
+        ]}
+        description={t('description')}
+        title={t('newTitle')}
+      />
+
       <ClassForm locale={locale} />
-    </AdminPage>
+    </section>
   );
 }

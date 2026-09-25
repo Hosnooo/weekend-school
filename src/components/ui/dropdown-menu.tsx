@@ -32,7 +32,7 @@ function getMenuPosition(trigger: HTMLElement, menuHeight = 0): MenuPosition {
     : Math.max(viewportEdge, rect.top - menuGap - menuHeight);
 
   if (direction === 'rtl') {
-    return {top, left: Math.max(viewportEdge, rect.left)};
+    return {top, right: Math.max(viewportEdge, window.innerWidth - rect.right)};
   }
 
   return {top, right: Math.max(viewportEdge, window.innerWidth - rect.right)};
