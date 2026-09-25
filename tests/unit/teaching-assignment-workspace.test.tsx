@@ -121,11 +121,11 @@ describe('teaching assignment workspace reference CRUD flow', () => {
 
     expect(screen.getByRole('tab', {name: 'Current'})).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByText('Quran A')).toBeVisible();
-    expect(screen.queryByText('Arabic')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Level 1.*Arabic/)).not.toBeInTheDocument();
     expect(screen.queryByText('Quran B')).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('tab', {name: 'Upcoming'}));
-    expect(screen.getByText('Arabic')).toBeVisible();
+    expect(screen.getByText(/Level 1.*Arabic/)).toBeVisible();
     expect(screen.queryByText('Quran A')).not.toBeInTheDocument();
   });
 
