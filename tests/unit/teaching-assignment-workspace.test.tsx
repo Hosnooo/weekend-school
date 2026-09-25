@@ -1,6 +1,6 @@
 import type {ReactNode} from 'react';
 import {NextIntlClientProvider} from 'next-intl';
-import {render, screen, within} from '@testing-library/react';
+import {render, screen, waitFor, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 
@@ -174,6 +174,24 @@ describe('teaching assignment workspace reference CRUD flow', () => {
     expect(await screen.findByText('This assignment cannot be deleted because submitted teaching history depends on it.')).toBeVisible();
     menu = await openCurrentActions(user);
     expect(within(menu).getByRole('menuitem', {name: 'Delete assignment'})).toBeVisible();
+  });
+
+  it('keeps the confirmation open until an async delete mutation finishes', async () => {
+    const user = userEvent.setup();
+    let resolveDelete!: (result: {ok: true}) => void;
+    vi.mocked(deleteTeachingAssignmentAction).mockImplementationOnce(
+      () => new Promise((resolve) => { resolveDelete = resolve; })
+    );
+    renderWorkspace();
+
+    const menu = await openCurrentActions(user);
+    await user.click(within(menu).getByRole('menuitem', {name: 'Delete assignment'}));
+    const dialog = screen.getByRole('dialog', {name: 'Delete assignment'});
+    await user.click(within(dialog).getByRole('button', {name: 'Delete assignment'}));
+
+    expect(dialog).toBeVisible();
+    resolveDelete({ok: true});
+    await waitFor(() => expect(screen.queryByRole('dialog', {name: 'Delete assignment'})).not.toBeInTheDocument());
   });
 
   it('uses structured rows rather than legacy floating record cards', () => {

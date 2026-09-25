@@ -367,9 +367,7 @@ export function TeachingAssignmentWorkspace({
         cancelLabel={common('cancel')}
         confirmLabel={confirmation?.kind === 'delete' ? t('deleteAssignment') : t('endAssignment')}
         description={confirmation?.kind === 'delete' ? t('deleteAssignmentConfirm') : t('endAssignmentConfirm')}
-        onConfirm={() => {
-          if (confirmation) void handleConfirmation(confirmation);
-        }}
+        onConfirm={() => confirmation ? handleConfirmation(confirmation) : Promise.resolve()}
         onOpenChange={(open) => {
           if (!open) setConfirmation(null);
         }}
