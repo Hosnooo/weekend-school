@@ -1,24 +1,9 @@
 import type {SelectHTMLAttributes} from 'react';
 
+import {Select} from '@/components/ui/select';
+
 type SelectFieldProps = SelectHTMLAttributes<HTMLSelectElement>;
 
-const baseClassName = [
-  'select-field',
-  'min-h-12',
-  'w-full',
-  'rounded-lg',
-  'border',
-  'border-[var(--border)]',
-  'bg-[var(--surface)]',
-  'px-3.5',
-  'text-[var(--text)]',
-  'shadow-sm',
-  'transition',
-  'focus-visible:border-[var(--focus)]',
-  'disabled:cursor-not-allowed',
-  'disabled:opacity-60'
-].join(' ');
-
 export function SelectField({className = '', ...props}: SelectFieldProps) {
-  return <select className={`${baseClassName} ${className}`.trim()} {...props} />;
+  return <Select className={`select-field ${className}`.trim()} {...props} />;
 }

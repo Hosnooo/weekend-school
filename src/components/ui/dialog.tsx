@@ -4,6 +4,7 @@ import {
   cloneElement,
   createContext,
   isValidElement,
+  type ButtonHTMLAttributes,
   type KeyboardEvent,
   type MouseEvent,
   type ReactElement,
@@ -21,11 +22,13 @@ const focusableSelector = 'button:not([disabled]), a[href], input:not([disabled]
 export function Dialog({
   trigger,
   title,
-  children
+  children,
+  contentClassName = ''
 }: {
   trigger: ReactElement<{onClick?: (event: MouseEvent<HTMLElement>) => void}>;
   title: string;
   children: ReactNode;
+  contentClassName?: string;
 }) {
   const [open, setOpen] = useState(false);
   const titleId = useId();
@@ -39,9 +42,7 @@ export function Dialog({
 
   useEffect(() => {
     if (!open) return;
-    const content = contentRef.current;
-    const first = content?.querySelector<HTMLElement>(focusableSelector);
-    first?.focus();
+    contentRef.current?.querySelector<HTMLElement>(focusableSelector)?.focus();
   }, [open]);
 
   function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
@@ -85,7 +86,7 @@ export function Dialog({
             <div
               aria-labelledby={titleId}
               aria-modal="true"
-              className="dialog-content"
+              className={`dialog-content ${contentClassName}`.trim()}
               onKeyDown={handleKeyDown}
               ref={contentRef}
               role="dialog"
@@ -100,7 +101,19 @@ export function Dialog({
   );
 }
 
-export function DialogClose({children}: {children: ReactNode}) {
+export function DialogClose({className = '', onClick, children, ...props}: ButtonHTMLAttributes<HTMLButtonElement>) {
   const close = useContext(DialogContext);
-  return <button className="button button-secondary button-default" onClick={close ?? undefined} type="button">{children}</button>;
+  return (
+    <button
+      className={`button button-secondary button-default ${className}`.trim()}
+      onClick={(event) => {
+        onClick?.(event);
+        close?.();
+      }}
+      type="button"
+      {...props}
+    >
+      {children}
+    </button>
+  );
 }
