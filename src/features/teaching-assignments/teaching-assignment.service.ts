@@ -9,6 +9,27 @@ function effectiveOn(assignment: TeachingAssignment, onDate: string) {
     (assignment.endsOn === null || assignment.endsOn >= onDate);
 }
 
+export function validateTeachingAssignmentDateRange(startsOn: string, endsOn: string | null) {
+  if (endsOn !== null && endsOn < startsOn) {
+    throw new Error('End date cannot be before start date');
+  }
+  return {startsOn, endsOn};
+}
+
+export function classifyTeachingAssignments(assignments: TeachingAssignment[], onDate: string) {
+  const current: TeachingAssignment[] = [];
+  const upcoming: TeachingAssignment[] = [];
+  const past: TeachingAssignment[] = [];
+
+  for (const assignment of assignments) {
+    if (assignment.startsOn > onDate) upcoming.push(assignment);
+    else if (assignment.endsOn !== null && assignment.endsOn < onDate) past.push(assignment);
+    else current.push(assignment);
+  }
+
+  return {current, upcoming, past};
+}
+
 export function expandEffectiveTeachingContexts({
   teacherId,
   assignments,

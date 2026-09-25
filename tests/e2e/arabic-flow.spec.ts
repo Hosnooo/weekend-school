@@ -7,7 +7,7 @@ test('Arabic RTL teaching and report workflow uses the redesigned Group context'
   await page.setViewportSize({width: 360, height: 800});
   await login(page, 'ar', credentials.arabicTeacher);
   await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
-  await expect(page.getByRole('link', {name: 'تدريسي'})).toHaveAttribute('aria-current', 'page');
+  await expect(page.getByRole('link', {name: 'هذا الأسبوع'})).toHaveAttribute('aria-current', 'page');
   await submitTeachingUpdate(page, {
     locale: 'ar',
     classSubjectId: redesign.groupedSubjectId,

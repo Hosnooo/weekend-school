@@ -9,22 +9,20 @@ import {Link} from '@/i18n/navigation';
 import {requireTeachingAccount} from '@/lib/auth/require-profile';
 
 export default async function MyTeachingPage({params}:{params:Promise<{locale:string}>}){
-  const{locale}=await params;
-  if(!isLocale(locale))notFound();
+  const{locale}=await params;if(!isLocale(locale))notFound();
   const{profile,teacherIds}=await requireTeachingAccount(locale);
   const timeZone=await getSchoolTimezone(profile.schoolId);
   const today=todayInTimeZone(timeZone);
   const weekStart=schoolWeekForDate(today).start;
-  const contexts=await listMyTeaching(profile.schoolId,teacherIds,weekStart,weekStart);
+  const contexts=await listMyTeaching(profile.schoolId, teacherIds, today, weekStart);
   const t=await getTranslations({locale,namespace:'weekly'});
   const localName=(en:string,ar:string|null)=>locale==='ar'&&ar?ar:en;
   return <AdminPage title={t('myTeaching')} description={t('myTeachingDescription')}>
-    {contexts.length===0?<p className="empty-state">{t('noTeaching')}</p>:<div className="group-cards">{contexts.map((context)=><article className="group-card" key={`${context.teacherId}:${context.classSubjectId}:${context.subjectGroupId??'whole'}`}>
+    {contexts.length===0?<div className="empty-state"><p>{t('noTeaching')}</p><p>{locale==='ar'?'إذا كنت تتوقع تعيينًا هنا، تواصل مع المسؤول للتحقق من تاريخ بدء التعيين وصلاحية دخول المعلم.':'If you expect an assignment here, ask an administrator to check the assignment start date and your Teacher login link.'}</p></div>:<div className="group-cards">{contexts.map((context)=><article className="group-card" key={`${context.teacherId}:${context.classSubjectId}:${context.subjectGroupId??'whole'}`}>
       <h2>{localName(context.subjectNameEn,context.subjectNameAr)}</h2>
       <p><strong>{t('class')}:</strong> {localName(context.classNameEn,context.classNameAr)}</p>
       <p><strong>{t('group')}:</strong> {context.subjectGroupId?localName(context.groupNameEn??'',context.groupNameAr):t('wholeClass')}</p>
-      <p>{t('studentCount',{count:context.studentCount})}</p>
-      <p>{t(`submissionStatus.${context.status}`)}</p>
+      <p>{t('studentCount',{count:context.studentCount})}</p><p><span className="status-badge status-active">{t(`submissionStatus.${context.status}`)}</span></p>
       <Link className="button button-primary action-link" href={`/my-teaching/update?teacherId=${context.teacherId}&classSubjectId=${context.classSubjectId}&subjectGroupId=${context.subjectGroupId??''}&week=${context.weekStart}`}>{t('updateThisWeek')}</Link>
     </article>)}</div>}
   </AdminPage>;

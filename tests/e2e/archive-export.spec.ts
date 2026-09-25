@@ -13,7 +13,7 @@ test('archive restore protected export and permanent delete preserve sibling dat
   await candidateRow.getByRole('button', {name: 'Archive'}).click();
   await expect(page.getByRole('row', {name: /Archive Candidate/})).toHaveCount(0);
 
-  await page.goto('/en/settings/archives');
+  await page.goto('/en/archives');
   let card = page.locator('article').filter({hasText: 'Archive Candidate'});
   await expect(card).toBeVisible();
   await expect(card).toContainText('Deletion impact');
@@ -28,10 +28,11 @@ test('archive restore protected export and permanent delete preserve sibling dat
   await expect(page.getByRole('row', {name: /Archive Candidate/})).toBeVisible();
   await page.getByRole('row', {name: /Archive Candidate/}).getByRole('button', {name: 'Archive'}).click();
 
-  await page.goto('/en/settings/archives');
+  await page.goto('/en/archives');
   card = page.locator('article').filter({hasText: 'Archive Candidate'});
   await expect(card).toBeVisible();
 
+  await page.goto('/en/exports');
   await page.getByLabel('Period').selectOption('ALL_HISTORY');
   await page.getByLabel('Scope').selectOption('SCHOOL');
   await page.getByLabel('CSV files').check();
@@ -39,6 +40,9 @@ test('archive restore protected export and permanent delete preserve sibling dat
   await page.getByRole('button', {name: 'Create export'}).click();
   await expect((await schoolExport).suggestedFilename()).toMatch(/\.zip$/);
 
+  await page.goto('/en/archives');
+  card = page.locator('article').filter({hasText: 'Archive Candidate'});
+  await expect(card).toBeVisible();
   await card.getByLabel('Confirmation').fill(`DELETE ${redesign.archiveStudentId}`);
   await card.getByRole('button', {name: 'Permanently delete'}).click();
   await expect(page.locator('article').filter({hasText: 'Archive Candidate'})).toHaveCount(0);

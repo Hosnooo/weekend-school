@@ -14,5 +14,17 @@ export const endTeachingAssignmentSchema = z.object({
   endsOn: z.iso.date()
 });
 
+const nullableDate = z.preprocess(
+  (value) => value === '' || value === undefined ? null : value,
+  z.iso.date().nullable()
+);
+
+export const updateTeachingAssignmentSchema = z.object({
+  assignmentId: databaseUuid,
+  startsOn: z.iso.date(),
+  endsOn: nullableDate
+});
+
 export type TeachingAssignmentInput = z.infer<typeof teachingAssignmentSchema>;
 export type EndTeachingAssignmentInput = z.infer<typeof endTeachingAssignmentSchema>;
+export type UpdateTeachingAssignmentInput = z.infer<typeof updateTeachingAssignmentSchema>;

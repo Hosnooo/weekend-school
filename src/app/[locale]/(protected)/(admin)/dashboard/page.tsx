@@ -1,7 +1,7 @@
 import {getTranslations} from 'next-intl/server';
 import {notFound} from 'next/navigation';
 
-import {ActionLink, AdminPage} from '@/components/ui/admin-page';
+import {ActionLink, AdminPage, SecondaryLink} from '@/components/ui/admin-page';
 import {AttendanceConflictList} from '@/features/attendance/attendance-conflict-list';
 import {getDashboardSummary} from '@/features/dashboard/dashboard.repository';
 import {isLocale} from '@/i18n/config';
@@ -30,7 +30,13 @@ export default async function DashboardPage({params}: {params: Promise<{locale: 
         noTeaching: 'لا توجد تحديثات تدريس متوقعة لهذا الأسبوع.',
         conflictsTitle: 'تعارضات الحضور',
         conflictsHelp: 'راجع اختلافات حضور المعلمين واعتمد حالة الحضور الرسمية.',
-        noConflicts: 'لا توجد تعارضات حضور غير محلولة لهذا الأسبوع.'
+        noConflicts: 'لا توجد تعارضات حضور غير محلولة لهذا الأسبوع.',
+        quickActions: 'إجراءات سريعة',
+        addStudent: 'إضافة طالب',
+        addTeacher: 'إضافة معلم',
+        assignTeacher: 'تعيين معلم',
+        addClass: 'إضافة فصل',
+        reports: 'التقارير'
       }
     : {
         expectedUpdates: 'Expected teaching updates',
@@ -41,17 +47,30 @@ export default async function DashboardPage({params}: {params: Promise<{locale: 
         noTeaching: 'No teaching updates are expected this week.',
         conflictsTitle: 'Attendance conflicts',
         conflictsHelp: 'Review differing teacher observations and choose the official attendance status.',
-        noConflicts: 'No unresolved attendance conflicts this week.'
+        noConflicts: 'No unresolved attendance conflicts this week.',
+        quickActions: 'Quick actions',
+        addStudent: 'Add Student',
+        addTeacher: 'Add Teacher',
+        assignTeacher: 'Assign Teacher',
+        addClass: 'Add Class',
+        reports: 'Reports'
       };
   const schoolName = locale === 'ar' && summary.schoolNameAr
     ? summary.schoolNameAr
     : summary.schoolNameEn;
 
-  return <AdminPage
-    title={navigation('dashboard')}
-    description={`${schoolName} · ${t('description')}`}
-    actions={<ActionLink href="/reports">{navigation('reports')}</ActionLink>}
-  >
+  return <AdminPage title={navigation('dashboard')} description={`${schoolName} · ${t('description')}`}>
+    <section className="subsection" aria-labelledby="quick-actions-heading">
+      <h2 id="quick-actions-heading">{labels.quickActions}</h2>
+      <div className="page-actions">
+        <ActionLink href="/students/new">{labels.addStudent}</ActionLink>
+        <SecondaryLink href="/teachers/new">{labels.addTeacher}</SecondaryLink>
+        <SecondaryLink href="/teaching-assignments">{labels.assignTeacher}</SecondaryLink>
+        <SecondaryLink href="/classes/new">{labels.addClass}</SecondaryLink>
+        <SecondaryLink href="/reports">{labels.reports}</SecondaryLink>
+      </div>
+    </section>
+
     <div className="dashboard-stats">
       <div className="dashboard-stat"><span>{t('students')}</span><strong>{summary.studentCount}</strong></div>
       <div className="dashboard-stat"><span>{t('teachers')}</span><strong>{summary.teacherCount}</strong></div>
@@ -63,10 +82,7 @@ export default async function DashboardPage({params}: {params: Promise<{locale: 
 
     <section className="subsection dashboard-week" aria-labelledby="dashboard-week-heading">
       <div className="dashboard-week-heading">
-        <div>
-          <h2 id="dashboard-week-heading">{t('thisWeek')}</h2>
-          <p>{formatDate(summary.start)} – {formatDate(summary.end)}</p>
-        </div>
+        <div><h2 id="dashboard-week-heading">{t('thisWeek')}</h2><p>{formatDate(summary.start)} – {formatDate(summary.end)}</p></div>
         <strong>{summary.submittedCount} / {summary.expectedCount} {labels.submitted}</strong>
       </div>
       {summary.expectedCount === 0
@@ -83,7 +99,7 @@ export default async function DashboardPage({params}: {params: Promise<{locale: 
       <p>{labels.conflictsHelp}</p>
       {summary.conflicts.length === 0
         ? <p className="dashboard-empty">{labels.noConflicts}</p>
-        : <AttendanceConflictList locale={locale} conflicts={summary.conflicts} />}
+        : <AttendanceConflictList locale={locale} conflicts={summary.conflicts}/>} 
     </section>
   </AdminPage>;
 }
