@@ -22,6 +22,7 @@ export default async function EditGuardianPage({params}: {
   return (
     <section className="admin-page">
       <PageHeader
+        breadcrumbLabel={t('breadcrumbLabel')}
         breadcrumbs={[
           {label: t('title'), href: `/${locale}/guardians`},
           {label: guardian.name, href: `/${locale}/guardians/${guardian.id}`},

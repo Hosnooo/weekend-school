@@ -26,6 +26,7 @@ export default async function EditStudentPage({params}: {
   return (
     <section className="admin-page">
       <PageHeader
+        breadcrumbLabel={t('breadcrumbLabel')}
         breadcrumbs={[
           {label: t('title'), href: `/${locale}/students`},
           {label: studentName, href: `/${locale}/students/${student.id}`},

@@ -34,6 +34,7 @@ export default async function GuardianDetailPage({params}: {
   return (
     <section className="admin-page">
       <PageHeader
+        breadcrumbLabel={t('breadcrumbLabel')}
         actions={<Link className="button button-secondary action-link" href={`/guardians/${guardian.id}/edit`}>{common('edit')}</Link>}
         breadcrumbs={[
           {label: t('title'), href: `/${locale}/guardians`},
@@ -60,7 +61,7 @@ export default async function GuardianDetailPage({params}: {
                   <Link href={`/students/${student.id}`}><strong>{studentName(student)}</strong></Link>
                   <div>
                     {student.isPrimary ? studentsT('guardianSection') : t('title')}
-                    {student.receivesReports ? ` · ${t('reportLanguage')}` : null}
+                    {student.receivesReports ? ` · ${t('receivesReports')}` : null}
                   </div>
                 </div>
               ))}

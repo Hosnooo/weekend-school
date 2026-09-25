@@ -55,7 +55,7 @@ jobs:
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium
       - name: Capture and verify UX foundation, shell, teaching assignments, and Teacher management
-        run: pnpm exec playwright test tests/e2e/ui-reference-visual.spec.ts tests/e2e/app-shell-visual.spec.ts tests/e2e/teaching-assignment-workspace.spec.ts tests/e2e/teacher-management.spec.ts
+        run: pnpm exec playwright test tests/e2e/ui-reference-visual.spec.ts tests/e2e/app-shell-visual.spec.ts tests/e2e/teaching-assignment-workspace.spec.ts tests/e2e/teacher-management.spec.ts tests/e2e/student-guardian-management.spec.ts
       - name: Upload UX visual evidence
         if: always()
         uses: actions/upload-artifact@v4

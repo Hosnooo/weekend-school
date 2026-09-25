@@ -34,6 +34,7 @@ export default async function StudentEnrollmentPage({params}: {
   return (
     <section className="admin-page">
       <PageHeader
+        breadcrumbLabel={t('breadcrumbLabel')}
         actions={<Link className="button button-secondary action-link" href={`/students/${student.id}`}>{studentName}</Link>}
         breadcrumbs={[
           {label: t('title'), href: `/${locale}/students`},

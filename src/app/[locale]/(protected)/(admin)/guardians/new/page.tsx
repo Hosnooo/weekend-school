@@ -15,6 +15,7 @@ export default async function NewGuardianPage({params}: {params: Promise<{locale
   return (
     <section className="admin-page">
       <PageHeader
+        breadcrumbLabel={t('breadcrumbLabel')}
         breadcrumbs={[
           {label: t('title'), href: `/${locale}/guardians`},
           {label: t('newTitle')}

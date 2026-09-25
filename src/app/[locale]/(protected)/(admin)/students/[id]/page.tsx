@@ -45,6 +45,7 @@ export default async function StudentDetailPage({params}: {
   return (
     <section className="admin-page">
       <PageHeader
+        breadcrumbLabel={t('breadcrumbLabel')}
         actions={(
           <>
             <Link className="button button-secondary action-link" href={`/students/${student.id}/edit`}>{common('edit')}</Link>
