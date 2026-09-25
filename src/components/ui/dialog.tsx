@@ -31,13 +31,13 @@ export function Dialog({
   contentClassName?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const [restoreFocusElement, setRestoreFocusElement] = useState<HTMLElement | null>(null);
   const titleId = useId();
   const contentRef = useRef<HTMLDivElement>(null);
-  const triggerRef = useRef<HTMLElement | null>(null);
 
   function close() {
     setOpen(false);
-    queueMicrotask(() => triggerRef.current?.focus());
+    queueMicrotask(() => restoreFocusElement?.focus());
   }
 
   useEffect(() => {
@@ -71,7 +71,7 @@ export function Dialog({
         'aria-expanded': open,
         onClick: (event: MouseEvent<HTMLElement>) => {
           trigger.props.onClick?.(event);
-          triggerRef.current = event.currentTarget;
+          setRestoreFocusElement(event.currentTarget);
           setOpen(true);
         }
       } as Record<string, unknown>)
