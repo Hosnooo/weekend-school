@@ -62,16 +62,20 @@ test.describe('Teaching Assignments reference CRUD flow', () => {
 
     await page.getByRole('button', {name: 'Add assignment'}).click();
     const addDialog = page.getByRole('dialog', {name: 'Add assignment'});
+    const classSelect = addDialog.locator('select').first();
+    const subjectSelect = addDialog.locator('select[name="classSubjectId"]');
+    const scopeSelect = addDialog.locator('select[name="subjectGroupId"]');
+    const startsOnInput = addDialog.locator('input[name="startsOn"]');
     await expect(addDialog).toBeVisible();
-    await expect(addDialog.getByLabel('Class', {exact: true})).toBeFocused();
-    await addDialog.getByLabel('Subject', {exact: true}).selectOption({label: 'Faith & Character'});
-    await addDialog.getByLabel('Starts on', {exact: true}).fill('2026-09-10');
+    await expect(classSelect).toBeFocused();
+    await subjectSelect.selectOption({label: 'Faith & Character'});
+    await startsOnInput.fill('2026-09-10');
     await addDialog.getByRole('button', {name: 'Add assignment'}).click();
     await expect(page.getByRole('alert')).toContainText('overlaps an existing assignment');
 
-    await addDialog.getByLabel('Subject', {exact: true}).selectOption({label: 'Arabic Reading'});
-    await addDialog.getByLabel('Scope', {exact: true}).selectOption({label: 'Blue'});
-    await addDialog.getByLabel('Starts on', {exact: true}).fill('2026-10-01');
+    await subjectSelect.selectOption({label: 'Arabic Reading'});
+    await scopeSelect.selectOption({label: 'Blue'});
+    await startsOnInput.fill('2026-10-01');
     await addDialog.getByRole('button', {name: 'Add assignment'}).click();
     await expect(addDialog).toBeHidden();
 
