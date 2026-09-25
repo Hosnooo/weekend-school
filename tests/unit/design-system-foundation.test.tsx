@@ -2,12 +2,20 @@ import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {describe, expect, it, vi} from 'vitest';
 
+import {Alert} from '@/components/ui/alert';
 import {Breadcrumbs} from '@/components/ui/breadcrumbs';
 import {Button} from '@/components/ui/button';
+import {ConfirmationDialog} from '@/components/ui/confirmation-dialog';
 import {DataTable} from '@/components/ui/data-table';
 import {Dialog, DialogClose} from '@/components/ui/dialog';
 import {DropdownMenu, DropdownMenuItem} from '@/components/ui/dropdown-menu';
+import {EmptyState} from '@/components/ui/empty-state';
 import {FormField} from '@/components/ui/form-field';
+import {IconButton} from '@/components/ui/icon-button';
+import {Input} from '@/components/ui/input';
+import {PageHeader} from '@/components/ui/page-header';
+import {Select} from '@/components/ui/select';
+import {Sheet, SheetClose} from '@/components/ui/sheet';
 import {Tabs} from '@/components/ui/tabs';
 
 describe('design-system foundation contracts', () => {
@@ -104,7 +112,7 @@ describe('design-system foundation contracts', () => {
     expect(screen.getByRole('button', {name: 'Actions for Ahmed'})).toBeInTheDocument();
   });
 
-  it('renders RTL-safe breadcrumb ordering without hardcoded left or right classes', () => {
+  it('renders RTL-safe breadcrumb ordering without hardcoded directional classes', () => {
     const {container} = render(
       <div dir="rtl">
         <Breadcrumbs items={[{label: 'Teachers'}, {label: 'Ahmed Ali'}]} />
@@ -116,6 +124,62 @@ describe('design-system foundation contracts', () => {
       'Teachers',
       'Ahmed Ali'
     ]);
-    expect(container.querySelector('.breadcrumbs-separator')).not.toHaveClass('left', 'right', 'ml-', 'mr-');
+    expect(container.querySelector('.breadcrumbs-separator')?.className).not.toMatch(/\b(?:left|right|ml-|mr-)/);
+  });
+
+  it('keeps confirmation destructive actions explicit and invokes confirm once', async () => {
+    const user = userEvent.setup();
+    const onConfirm = vi.fn();
+    render(
+      <ConfirmationDialog
+        confirmLabel="Delete assignment"
+        description="This action cannot be undone."
+        onConfirm={onConfirm}
+        title="Delete this assignment?"
+        trigger={<Button variant="danger">Delete</Button>}
+      />
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Delete'}));
+    expect(screen.getByRole('dialog', {name: 'Delete this assignment?'})).toHaveTextContent('This action cannot be undone.');
+    await user.click(screen.getByRole('button', {name: 'Delete assignment'}));
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('gives alerts, empty states, icon actions, fields, and page headers clear semantics', () => {
+    render(
+      <>
+        <PageHeader actions={<Button>Add teacher</Button>} description="Manage teaching staff." title="Teachers" />
+        <Alert variant="warning">Login access missing.</Alert>
+        <EmptyState action={<Button>Add assignment</Button>} description="Add one to get started." title="No assignments" />
+        <IconButton label="More actions">•••</IconButton>
+        <FormField htmlFor="name" label="Name"><Input id="name" /></FormField>
+        <FormField htmlFor="status" label="Status"><Select id="status"><option>Active</option></Select></FormField>
+      </>
+    );
+
+    expect(screen.getByRole('heading', {level: 1, name: 'Teachers'})).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('Login access missing.');
+    expect(screen.getByRole('heading', {name: 'No assignments'})).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'More actions'})).toBeInTheDocument();
+    expect(screen.getByLabelText('Name')).toHaveClass('input');
+    expect(screen.getByLabelText('Status')).toHaveClass('select');
+  });
+
+  it('uses dialog semantics for a narrow-screen sheet and restores trigger focus', async () => {
+    const user = userEvent.setup();
+    render(
+      <Sheet title="Navigation" trigger={<Button>Open navigation</Button>}>
+        <p>Navigation body</p>
+        <SheetClose>Close navigation</SheetClose>
+      </Sheet>
+    );
+
+    const trigger = screen.getByRole('button', {name: 'Open navigation'});
+    await user.click(trigger);
+    expect(screen.getByRole('dialog', {name: 'Navigation'})).toHaveClass('sheet-content');
+    await user.click(screen.getByRole('button', {name: 'Close navigation'}));
+    expect(trigger).toHaveFocus();
   });
 });
