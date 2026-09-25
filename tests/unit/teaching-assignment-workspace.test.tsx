@@ -15,11 +15,8 @@ vi.mock('@/features/teaching-assignments/teaching-assignment.actions', () => ({
   updateTeachingAssignmentMutationAction: vi.fn(),
   deleteTeachingAssignmentAction: vi.fn()
 }));
-
 vi.mock('@/i18n/navigation', () => ({
-  Link: ({children, ...props}: {children: ReactNode; href: string; className?: string}) => (
-    <a {...props}>{children}</a>
-  )
+  Link: ({children, ...props}: {children: ReactNode; href: string; className?: string}) => <a {...props}>{children}</a>
 }));
 
 import {
@@ -60,44 +57,16 @@ const classSubjects: TeachingClassSubject[] = [
 ];
 
 const assignments: TeachingAssignment[] = [
-  {
-    id: '66666666-6666-4666-8666-666666666661',
-    teacherId,
-    classSubjectId: quranId,
-    subjectGroupId: quranGroupA,
-    startsOn: '2026-09-01',
-    endsOn: null
-  },
-  {
-    id: '66666666-6666-4666-8666-666666666662',
-    teacherId,
-    classSubjectId: arabicId,
-    subjectGroupId: null,
-    startsOn: '2026-10-01',
-    endsOn: null
-  },
-  {
-    id: '66666666-6666-4666-8666-666666666663',
-    teacherId,
-    classSubjectId: quranId,
-    subjectGroupId: quranGroupB,
-    startsOn: '2026-08-01',
-    endsOn: '2026-08-31'
-  }
+  {id: '66666666-6666-4666-8666-666666666661', teacherId, classSubjectId: quranId, subjectGroupId: quranGroupA, startsOn: '2026-09-01', endsOn: null},
+  {id: '66666666-6666-4666-8666-666666666662', teacherId, classSubjectId: arabicId, subjectGroupId: null, startsOn: '2026-10-01', endsOn: null},
+  {id: '66666666-6666-4666-8666-666666666663', teacherId, classSubjectId: quranId, subjectGroupId: quranGroupB, startsOn: '2026-08-01', endsOn: '2026-08-31'}
 ];
 
 function renderWorkspace(locale: 'en' | 'ar' = 'en') {
-  const localeMessages = locale === 'ar' ? arabicMessages : messages;
   return render(
     <div dir={locale === 'ar' ? 'rtl' : 'ltr'}>
-      <NextIntlClientProvider locale={locale} messages={localeMessages}>
-        <TeachingAssignmentWorkspace
-          assignments={assignments}
-          classSubjects={classSubjects}
-          locale={locale}
-          teacherId={teacherId}
-          today="2026-09-24"
-        />
+      <NextIntlClientProvider locale={locale} messages={locale === 'ar' ? arabicMessages : messages}>
+        <TeachingAssignmentWorkspace assignments={assignments} classSubjects={classSubjects} locale={locale} teacherId={teacherId} today="2026-09-24" />
       </NextIntlClientProvider>
     </div>
   );
@@ -118,12 +87,10 @@ describe('teaching assignment workspace reference CRUD flow', () => {
   it('shows only the active Current tab panel initially', async () => {
     const user = userEvent.setup();
     renderWorkspace();
-
     expect(screen.getByRole('tab', {name: 'Current'})).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByText('Quran A')).toBeVisible();
     expect(screen.queryByText(/Level 1.*Arabic/)).not.toBeInTheDocument();
     expect(screen.queryByText('Quran B')).not.toBeInTheDocument();
-
     await user.click(screen.getByRole('tab', {name: 'Upcoming'}));
     expect(screen.getByText(/Level 1.*Arabic/)).toBeVisible();
     expect(screen.queryByText('Quran A')).not.toBeInTheDocument();
@@ -132,13 +99,10 @@ describe('teaching assignment workspace reference CRUD flow', () => {
   it('does not render date inputs until Edit dates is chosen', async () => {
     const user = userEvent.setup();
     renderWorkspace();
-
     expect(screen.queryByLabelText('Starts on')).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Ends on (optional)')).not.toBeInTheDocument();
-
     const menu = await openCurrentActions(user);
     await user.click(within(menu).getByRole('menuitem', {name: 'Edit dates'}));
-
     expect(screen.getByLabelText('Starts on')).toHaveValue('2026-09-01');
     expect(screen.getByLabelText('Ends on (optional)')).toHaveValue('');
   });
@@ -146,10 +110,8 @@ describe('teaching assignment workspace reference CRUD flow', () => {
   it('opens Add assignment in a focused dialog', async () => {
     const user = userEvent.setup();
     renderWorkspace();
-
     await user.click(screen.getByRole('button', {name: 'Add assignment'}));
     const dialog = screen.getByRole('dialog', {name: 'Add assignment'});
-
     expect(dialog).toBeVisible();
     expect(within(dialog).getByLabelText('Class')).toBeVisible();
     expect(within(dialog).getByLabelText('Subject')).toBeVisible();
@@ -162,7 +124,6 @@ describe('teaching assignment workspace reference CRUD flow', () => {
   it('offers Edit dates, End assignment, and Delete assignment in the row menu', async () => {
     const user = userEvent.setup();
     renderWorkspace();
-
     const menu = await openCurrentActions(user);
     expect(within(menu).getByRole('menuitem', {name: 'Edit dates'})).toBeVisible();
     expect(within(menu).getByRole('menuitem', {name: 'End assignment'})).toBeVisible();
@@ -172,13 +133,11 @@ describe('teaching assignment workspace reference CRUD flow', () => {
   it('cancels edit without mutating the rendered dates', async () => {
     const user = userEvent.setup();
     renderWorkspace();
-
     const menu = await openCurrentActions(user);
     await user.click(within(menu).getByRole('menuitem', {name: 'Edit dates'}));
     await user.clear(screen.getByLabelText('Starts on'));
     await user.type(screen.getByLabelText('Starts on'), '2026-09-05');
     await user.click(screen.getByRole('button', {name: 'Cancel'}));
-
     expect(screen.queryByLabelText('Starts on')).not.toBeInTheDocument();
     expect(screen.getByText(/2026-09-01/)).toBeVisible();
   });
@@ -208,14 +167,11 @@ describe('teaching assignment workspace reference CRUD flow', () => {
     const user = userEvent.setup();
     vi.mocked(deleteTeachingAssignmentAction).mockResolvedValueOnce({ok: false, error: 'protected-history'});
     renderWorkspace();
-
     let menu = await openCurrentActions(user);
     await user.click(within(menu).getByRole('menuitem', {name: 'Delete assignment'}));
-    let dialog = screen.getByRole('dialog', {name: 'Delete assignment'});
+    const dialog = screen.getByRole('dialog', {name: 'Delete assignment'});
     await user.click(within(dialog).getByRole('button', {name: 'Delete assignment'}));
-
     expect(await screen.findByText('This assignment cannot be deleted because submitted teaching history depends on it.')).toBeVisible();
-
     menu = await openCurrentActions(user);
     expect(within(menu).getByRole('menuitem', {name: 'Delete assignment'})).toBeVisible();
   });
