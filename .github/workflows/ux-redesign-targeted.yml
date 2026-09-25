@@ -1,0 +1,27 @@
+name: UX Redesign Targeted
+
+on:
+  push:
+    branches:
+      - codex/full-website-ux-redesign
+
+permissions:
+  contents: read
+
+jobs:
+  ui-foundation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.19.0 --activate
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Targeted UI tests
+        run: pnpm exec vitest run --configLoader runner tests/unit/design-system-foundation.test.tsx
