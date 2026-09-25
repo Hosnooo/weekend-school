@@ -18,11 +18,12 @@ type SubjectSelection = {
   groupId: string | null;
 };
 
-export function StudentForm({locale, classes = [], student, today}: {
+export function StudentForm({locale, classes = [], student, today, cancelHref = '/students'}: {
   locale: Locale;
   classes?: EnrollmentClassOption[];
   student?: StudentListItem;
-  today: string;
+  today?: string;
+  cancelHref?: string;
 }) {
   const t = useTranslations('students');
   const common = useTranslations('common');
@@ -80,7 +81,7 @@ export function StudentForm({locale, classes = [], student, today}: {
           <legend>{t('enrollment')}</legend>
           <div className="form-grid">
             <label>{t('class')}<select name="classId" onChange={(event) => selectClass(event.target.value)} required value={classId}><option value="">—</option>{activeClasses.map((schoolClass) => <option key={schoolClass.id} value={schoolClass.id}>{localize(schoolClass)}</option>)}</select></label>
-            <label>{t('enrollmentStart')}<input defaultValue={today} name="startsOn" required type="date" /></label>
+            <label>{t('enrollmentStart')}<input defaultValue={today ?? ''} name="startsOn" required type="date" /></label>
           </div>
           <input name="subjects" type="hidden" value={JSON.stringify(selections)} />
           {selectedClass ? <div className="stack-list">
@@ -102,7 +103,7 @@ export function StudentForm({locale, classes = [], student, today}: {
         </fieldset>
       </> : null}
       <FormFeedback state={state} />
-      <div className="form-actions"><Button disabled={pending} type="submit">{pending ? common('saving') : common('save')}</Button><Link className="button button-secondary action-link" href="/students">{common('cancel')}</Link></div>
+      <div className="form-actions"><Button disabled={pending} type="submit">{pending ? common('saving') : common('save')}</Button><Link className="button button-secondary action-link" href={cancelHref}>{common('cancel')}</Link></div>
     </form>
   );
 }
