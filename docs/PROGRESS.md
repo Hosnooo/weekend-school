@@ -273,3 +273,24 @@ Status: In progress on `codex/class-subject-group-redesign-spec`.
 - Export was intentionally simplified to one rule: active Administrator capability gets all export-related UI/actions/protected downloads; no Administrator capability gets none. Teacher capability does not grant export access.
 - The implementation head `3457f2f09a44ff6a16cde3addd9049b990fbe9f9` passed Redesign CI #246: Quality, Database/RLS, and E2E/browser workflows all succeeded. Task 7 documentation/final branch verification is the remaining pre-PR work.
 - Hosted Supabase migrations and production deployment remain untouched. No production release occurs without explicit authorization after the final branch gate.
+
+## 2026-09-26 — Full website UX redesign: Task 15 complete
+
+Completed the whole-product copy, RTL, accessibility, and reachability audit.
+
+- Moved remaining interactive Archives, Export Data, Teaching Assignments, and attendance-conflict copy into `next-intl` message catalogs.
+- English and Arabic catalogs remain structurally identical: 658 keys each.
+- Preserved locale-sensitive record/name selection separately from translated UI copy.
+- Updated the hardening contract so required E2E workflows must remain present without incorrectly forbidding additional workflows.
+- Added product-level EN/AR desktop and ~360px reachability/overflow coverage.
+- Added keyboard navigation, dialog focus restoration, and accessible School Settings control coverage.
+- Retained the full export-generation assertions while giving the PDF/ZIP test an explicit timeout appropriate for full-suite contention.
+
+Verification:
+- `pnpm lint` — passed.
+- `pnpm typecheck` — passed.
+- `pnpm test` — 59 files, 267 tests passed.
+- `pnpm build` — passed; 68/68 static pages generated.
+- UX responsive/RTL Playwright audit — 6/6 passed.
+- Accessibility Playwright audit — 6/6 passed.
+- `git diff --check` — passed.

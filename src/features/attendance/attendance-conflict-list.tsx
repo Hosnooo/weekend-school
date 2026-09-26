@@ -20,6 +20,7 @@ export function AttendanceConflictList({
   conflicts: AttendanceConflict[];
 }) {
   const weekly = useTranslations('weekly');
+  const attendanceConflicts = useTranslations('attendanceConflicts');
 
   const statusLabel = (status: OfficialAttendanceStatus) =>
     status === 'PRESENT'
@@ -27,7 +28,7 @@ export function AttendanceConflictList({
       : weekly('attendanceStatus.ABSENT');
 
   const actionLabel = (status: OfficialAttendanceStatus) =>
-    locale === 'ar' ? `اعتماد ${statusLabel(status)}` : `Use ${statusLabel(status)}`;
+    attendanceConflicts('useStatus', {status: statusLabel(status)});
 
   return (
     <div className="stack-list">

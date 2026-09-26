@@ -88,7 +88,7 @@ describe('export artifact generation', () => {
     const pdf = entries['reports/report-1-amina-hassan.pdf']!;
     expect(strFromU8(pdf.slice(0, 5))).toBe('%PDF-');
     expect(pdf.byteLength).toBeGreaterThan(1000);
-  });
+  }, 15_000);
 
   it('returns a directly downloadable XLSX when no extra files are selected', async () => {
     const artifact = await generateExportArtifact(

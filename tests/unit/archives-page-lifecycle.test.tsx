@@ -1,6 +1,58 @@
 import {render, screen} from '@testing-library/react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 
+
+vi.mock('next-intl/server', () => ({
+  getTranslations: vi.fn(async () => {
+    const messages: Record<string, string> = {
+      pageTitle: 'Archives',
+      pageDescription:
+        'Restore inactive records or permanently delete only records with no protected dependencies.',
+      otherTitle: 'Other archived records',
+      otherEmpty: 'No other archived records.',
+      type: 'Type',
+      name: 'Name',
+      dependencies: 'Protected dependencies',
+      status: 'Status',
+      actions: 'Actions',
+      safe: 'Safe to delete',
+      blocked: 'Deletion blocked',
+      permanentDelete: 'Permanently delete',
+      blockedReason:
+        'Permanent deletion is blocked by protected dependencies.',
+      'dependency.accountLinks': 'Account links',
+      'dependency.teachingAssignments': 'Teaching assignments',
+      'dependency.groupAssignments': 'Group assignments',
+      'dependency.weeklySubmissions': 'Weekly submissions',
+      'dependency.studentLinks': 'Student links',
+      'dependency.classSubjects': 'Class subjects',
+      'dependency.enrollments': 'Enrollments',
+      'dependency.memberships': 'Memberships',
+      'dependency.defaultUse': 'Default group use',
+      archivedStudents: 'Archived students',
+      emptyStudents: 'No archived students',
+      restore: 'Restore',
+      viewHistory: 'View data/history',
+      downloadData: 'Download data',
+      downloadFirst: 'Download data first',
+      deleteImpact: 'Deletion impact',
+      memberships: 'Memberships',
+      attendanceObservations: 'Attendance observations',
+      attendanceResolutions: 'Attendance resolutions',
+      comments: 'Comments',
+      reports: 'Reports',
+      emailDeliveries: 'Email deliveries',
+      confirmation: 'Confirmation',
+      confirmationError: 'Enter the exact deletion confirmation.',
+      dependenciesError:
+        'Permanent deletion is blocked by protected dependencies.',
+      deleted: 'Archived record permanently deleted.'
+    };
+
+    return (key: string) => messages[key] ?? key;
+  })
+}));
+
 vi.mock('next/navigation', () => ({
   notFound: vi.fn()
 }));
