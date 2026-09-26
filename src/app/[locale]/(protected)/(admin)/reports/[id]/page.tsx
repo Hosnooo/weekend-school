@@ -1,37 +1,148 @@
 import {getTranslations} from 'next-intl/server';
 import {notFound} from 'next/navigation';
 
-import {AdminPage, SecondaryLink} from '@/components/ui/admin-page';
-import {renderStudentReport, renderStudentReportV2} from '@/features/reports/report.renderer';
-import {getReport, listReportDeliveries} from '@/features/reports/report.repository';
+import {Card} from '@/components/ui/card';
+import {DataTable} from '@/components/ui/data-table';
+import {EmptyState} from '@/components/ui/empty-state';
+import {PageHeader} from '@/components/ui/page-header';
+import {StatusBadge} from '@/components/ui/status-badge';
+import {
+  renderStudentReport,
+  renderStudentReportV2
+} from '@/features/reports/report.renderer';
+import {ReportPreviewFrame} from '@/features/reports/report-preview-frame';
+import {
+  getReport,
+  listReportDeliveries
+} from '@/features/reports/report.repository';
 import {isLocale} from '@/i18n/config';
+import {Link} from '@/i18n/navigation';
 import {requireProfile} from '@/lib/auth/require-profile';
 
-export default async function ReportPreviewPage({params}: {params: Promise<{locale: string; id: string}>}) {
+export default async function ReportPreviewPage({
+  params
+}: {
+  params: Promise<{locale: string; id: string}>;
+}) {
   const {locale, id} = await params;
   if (!isLocale(locale)) notFound();
+
   const profile = await requireProfile(locale, 'ADMIN');
   const report = await getReport(profile.schoolId, id);
+
   if (!report) notFound();
+
   const [t, deliveries] = await Promise.all([
     getTranslations({locale, namespace: 'reports'}),
     listReportDeliveries(profile.schoolId, id)
   ]);
-  const html = report.snapshot.version === 2
-    ? renderStudentReportV2(report.snapshot, report.language)
-    : renderStudentReport(report.snapshot, report.language);
-  const backHref = `/reports?periodStart=${report.periodStart}&periodEnd=${report.periodEnd}`;
-  return <AdminPage title={t('previewTitle')} description={`${report.periodStart} – ${report.periodEnd}`} actions={<SecondaryLink href={backHref}>{t('back')}</SecondaryLink>}>
-    <iframe className="report-preview" sandbox="" srcDoc={html} title={t('previewTitle')} />
-    <section className="subsection" aria-labelledby="delivery-heading">
-      <h2 id="delivery-heading">{t('deliveryHistory')}</h2>
-      {deliveries.length === 0 ? <p>{t('noDeliveries')}</p> : <div className="table-wrap"><table>
-        <thead><tr><th>{t('recipient')}</th><th>{t('status')}</th><th>{t('deliveryDate')}</th></tr></thead>
-        <tbody>{deliveries.map((delivery) => <tr key={delivery.id}>
-          <td>{delivery.recipient_email}</td><td>{t(`deliveryStatus.${delivery.status}`)}</td>
-          <td>{new Intl.DateTimeFormat(locale, {dateStyle: 'medium', timeStyle: 'short'}).format(new Date(delivery.sent_at ?? delivery.created_at))}</td>
-        </tr>)}</tbody>
-      </table></div>}
+
+  const html =
+    report.snapshot.version === 2
+      ? renderStudentReportV2(report.snapshot, report.language)
+      : renderStudentReport(report.snapshot, report.language);
+
+  const backHref =
+    `/reports?periodStart=${report.periodStart}` +
+    `&periodEnd=${report.periodEnd}`;
+
+  const periodLabel =
+    `${report.periodStart} – ${report.periodEnd}`;
+
+  const isolatedPeriodLabel =
+    locale === 'ar'
+      ? `\u2066${periodLabel}\u2069`
+      : periodLabel;
+
+  return (
+    <section className="admin-page">
+      <PageHeader
+        actions={
+          <div className="page-actions">
+            <Link
+              className="button button-secondary action-link"
+              href={backHref}
+            >
+              {t('back')}
+            </Link>
+
+            <Link
+              className="button button-secondary action-link"
+              href="/reports/delivery-status"
+            >
+              {t('viewDeliveryStatus')}
+            </Link>
+          </div>
+        }
+        description={isolatedPeriodLabel}
+        title={t('previewTitle')}
+      />
+
+      <Card className="content-section">
+        <ReportPreviewFrame
+          html={html}
+          title={t('previewTitle')}
+        />
+      </Card>
+
+      <Card className="content-section">
+        <h2>{t('deliveryHistory')}</h2>
+
+        {deliveries.length === 0 ? (
+          <EmptyState title={t('noDeliveries')} />
+        ) : (
+          <DataTable
+            columns={[
+              {
+                key: 'recipient',
+                header: t('recipient'),
+                render: (delivery) => (
+                  <span dir="ltr">
+                    {delivery.recipient_email}
+                  </span>
+                )
+              },
+              {
+                key: 'status',
+                header: t('status'),
+                render: (delivery) => (
+                  <StatusBadge
+                    status={
+                      delivery.status === 'SENT' ||
+                      delivery.status === 'DELIVERED'
+                        ? 'active'
+                        : 'inactive'
+                    }
+                  >
+                    {t(
+                      `deliveryStatus.${delivery.status}`
+                    )}
+                  </StatusBadge>
+                )
+              },
+              {
+                key: 'date',
+                header: t('deliveryDate'),
+                render: (delivery) => (
+                  <bdi>
+                    {new Intl.DateTimeFormat(locale, {
+                      dateStyle: 'medium',
+                      timeStyle: 'short'
+                    }).format(
+                      new Date(
+                        delivery.sent_at ??
+                          delivery.created_at
+                      )
+                    )}
+                  </bdi>
+                )
+              }
+            ]}
+            getRowKey={(delivery) => delivery.id}
+            rows={deliveries}
+          />
+        )}
+      </Card>
     </section>
-  </AdminPage>;
+  );
 }

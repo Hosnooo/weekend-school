@@ -637,6 +637,15 @@ tbody tr:last-child td {
     flex-direction: column;
   }
 
+  .section-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .section-heading .button {
+    width: 100%;
+  }
+
   .attendance-list label { grid-template-columns: 1fr; }
   .sticky-actions { align-items: stretch; flex-direction: column; }
   .sticky-actions .form-actions,

@@ -22,3 +22,122 @@ export async function listReportDeliveries(schoolId: string, reportId: string) {
   if (error) throw error;
   return data;
 }
+
+export type DeliveryStatusGroup = 'PENDING' | 'SENT' | 'FAILED';
+
+type RawDeliveryStatus =
+  | 'PENDING'
+  | 'SENT'
+  | 'DELIVERED'
+  | 'FAILED'
+  | 'BOUNCED';
+
+export type DeliveryStatusRow = {
+  id: string;
+  reportId: string;
+  recipientEmail: string;
+  rawStatus: RawDeliveryStatus;
+  groupStatus: DeliveryStatusGroup;
+  errorMessage: string | null;
+  occurredAt: string;
+  periodStart: string;
+  periodEnd: string;
+  language: ReportLanguage;
+  studentNameEn: string;
+  studentNameAr: string | null;
+};
+
+function groupDeliveryStatus(
+  status: RawDeliveryStatus
+): DeliveryStatusGroup {
+  if (status === 'PENDING') return 'PENDING';
+  if (status === 'SENT' || status === 'DELIVERED') return 'SENT';
+  return 'FAILED';
+}
+
+export async function listDeliveryStatusRows(
+  schoolId: string,
+  filter?: DeliveryStatusGroup
+): Promise<DeliveryStatusRow[]> {
+  const db = await createServerSupabaseClient();
+
+  const {data, error} = await db
+    .from('email_deliveries')
+    .select(`
+      id,
+      report_id,
+      recipient_email,
+      status,
+      error_message,
+      sent_at,
+      created_at,
+      reports!inner(
+        period_start,
+        period_end,
+        language,
+        students(
+          first_name_en,
+          last_name_en,
+          first_name_ar,
+          last_name_ar
+        )
+      )
+    `)
+    .eq('school_id', schoolId)
+    .order('created_at', {ascending: false});
+
+  if (error) throw error;
+
+  const rows = (data ?? []) as unknown as Array<{
+    id: string;
+    report_id: string;
+    recipient_email: string;
+    status: RawDeliveryStatus;
+    error_message: string | null;
+    sent_at: string | null;
+    created_at: string;
+    reports: {
+      period_start: string;
+      period_end: string;
+      language: ReportLanguage;
+      students: {
+        first_name_en: string;
+        last_name_en: string;
+        first_name_ar: string | null;
+        last_name_ar: string | null;
+      } | null;
+    } | null;
+  }>;
+
+  const normalized = rows.flatMap((row) => {
+    const report = row.reports;
+    const student = report?.students;
+
+    if (!report || !student) return [];
+
+    const groupStatus = groupDeliveryStatus(row.status);
+
+    return [{
+      id: row.id,
+      reportId: row.report_id,
+      recipientEmail: row.recipient_email,
+      rawStatus: row.status,
+      groupStatus,
+      errorMessage: row.error_message,
+      occurredAt: row.sent_at ?? row.created_at,
+      periodStart: report.period_start,
+      periodEnd: report.period_end,
+      language: report.language,
+      studentNameEn:
+        `${student.first_name_en} ${student.last_name_en}`,
+      studentNameAr:
+        student.first_name_ar && student.last_name_ar
+          ? `${student.first_name_ar} ${student.last_name_ar}`
+          : null
+    }];
+  });
+
+  return filter
+    ? normalized.filter((row) => row.groupStatus === filter)
+    : normalized;
+}

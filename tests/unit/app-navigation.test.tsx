@@ -50,6 +50,7 @@ describe('AppNavigation', () => {
       'Classes & Subjects',
       'Teaching Assignments',
       'Reports',
+      'Delivery status',
       'Export Data',
       'Archives',
       'School settings'
