@@ -59,3 +59,26 @@ insert into public.teaching_assignments (id,school_id,teacher_id,class_subject_i
   ('18000000-0000-0000-0000-000000000002','a0000000-0000-0000-0000-000000000001','c0000000-0000-0000-0000-000000000002','13000000-0000-0000-0000-000000000002',null,'2026-09-01'),
   ('18000000-0000-0000-0000-000000000003','a0000000-0000-0000-0000-000000000001','c0000000-0000-0000-0000-000000000003','13000000-0000-0000-0000-000000000002','14000000-0000-0000-0000-000000000001','2026-09-01')
 on conflict (id) do nothing;
+
+-- Task 13 archive lifecycle UI fixtures.
+insert into public.classes (id,school_id,name_en,name_ar,is_active) values
+  ('1f000000-0000-4000-8000-000000000001','a0000000-0000-0000-0000-000000000001','Archived Safe Class','فصل مؤرشف آمن',false),
+  ('1f000000-0000-4000-8000-000000000002','a0000000-0000-0000-0000-000000000001','Archived Blocked Class','فصل مؤرشف محظور',false)
+on conflict (id) do update set
+  name_en=excluded.name_en,
+  name_ar=excluded.name_ar,
+  is_active=false;
+
+insert into public.subjects (id,school_id,name_en,name_ar,is_active) values
+  ('1f100000-0000-4000-8000-000000000001','a0000000-0000-0000-0000-000000000001','Archive Dependency Subject','مادة ارتباط الأرشيف',true)
+on conflict (id) do update set
+  name_en=excluded.name_en,
+  name_ar=excluded.name_ar,
+  is_active=true;
+
+insert into public.class_subjects (id,school_id,class_id,subject_id,is_active) values
+  ('1f200000-0000-4000-8000-000000000001','a0000000-0000-0000-0000-000000000001','1f000000-0000-4000-8000-000000000002','1f100000-0000-4000-8000-000000000001',true)
+on conflict (id) do update set
+  class_id=excluded.class_id,
+  subject_id=excluded.subject_id,
+  is_active=true;

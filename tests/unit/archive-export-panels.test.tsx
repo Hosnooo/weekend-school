@@ -49,6 +49,7 @@ const exportLabels = {
   deliveries: 'Deliveries',
   csv: 'CSV files',
   pdfs: 'Finalized report PDFs',
+  fileOptions: 'File options',
   submit: 'Create export'
 };
 
@@ -84,6 +85,29 @@ describe('archives and exports admin panels', () => {
     expect(screen.getByText('Memberships: 3')).toBeVisible();
     expect(screen.getByText('Reports: 4')).toBeVisible();
     expect(screen.getByRole('button', {name: 'Permanently delete'})).toBeVisible();
+  });
+
+  it('organizes export configuration into clear period, scope, dataset, and file-option steps', () => {
+    render(<ExportPanel
+      labels={exportLabels}
+      locale="en"
+      options={{
+        classes: [{id: 'class-1', label: 'Class 1'}],
+        subjects: [{id: 'subject-1', label: 'Quran', classId: 'class-1'}],
+        groups: [{id: 'group-1', label: 'Group A', classSubjectId: 'subject-1'}],
+        students: [{id: 'student-1', label: 'Amina Hassan'}],
+        teachers: [{id: 'teacher-1', label: 'Teacher One'}]
+      }}
+    />);
+
+    expect(screen.getByRole('group', {name: 'Period'})).toBeVisible();
+    expect(screen.getByRole('group', {name: 'Scope'})).toBeVisible();
+    expect(screen.getByRole('group', {name: 'Datasets'})).toBeVisible();
+    expect(screen.getByRole('group', {name: 'File options'})).toBeVisible();
+
+    expect(screen.getByLabelText('CSV files')).toBeVisible();
+    expect(screen.getByLabelText('Finalized report PDFs')).toBeVisible();
+    expect(screen.getByRole('button', {name: 'Create export'})).toBeVisible();
   });
 
   it('renders approved period, scope, dataset, CSV, and finalized-PDF controls', () => {

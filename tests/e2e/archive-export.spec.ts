@@ -10,7 +10,14 @@ test('archive restore protected export and permanent delete preserve sibling dat
   await page.goto('/en/students?q=Archive');
   const candidateRow = page.getByRole('row', {name: /Archive Candidate/});
   await expect(candidateRow).toBeVisible();
-  await candidateRow.getByRole('button', {name: 'Archive'}).click();
+  await candidateRow
+    .getByRole('button', {name: 'Actions: Archive Candidate'})
+    .click();
+  await page.getByRole('menuitem', {name: 'Deactivate'}).click();
+  await page
+    .getByRole('dialog', {name: 'Deactivate'})
+    .getByRole('button', {name: 'Deactivate'})
+    .click();
   await expect(page.getByRole('row', {name: /Archive Candidate/})).toHaveCount(0);
 
   await page.goto('/en/archives');
@@ -26,7 +33,15 @@ test('archive restore protected export and permanent delete preserve sibling dat
   await expect(page.locator('article').filter({hasText: 'Archive Candidate'})).toHaveCount(0);
   await page.goto('/en/students?q=Archive');
   await expect(page.getByRole('row', {name: /Archive Candidate/})).toBeVisible();
-  await page.getByRole('row', {name: /Archive Candidate/}).getByRole('button', {name: 'Archive'}).click();
+  await page
+    .getByRole('row', {name: /Archive Candidate/})
+    .getByRole('button', {name: 'Actions: Archive Candidate'})
+    .click();
+  await page.getByRole('menuitem', {name: 'Deactivate'}).click();
+  await page
+    .getByRole('dialog', {name: 'Deactivate'})
+    .getByRole('button', {name: 'Deactivate'})
+    .click();
 
   await page.goto('/en/archives');
   card = page.locator('article').filter({hasText: 'Archive Candidate'});
