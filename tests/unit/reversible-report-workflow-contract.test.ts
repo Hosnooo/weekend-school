@@ -29,14 +29,22 @@ describe('reversible Teacher and Admin report workflow', () => {
     const reports = read(
       'src/app/[locale]/(protected)/(admin)/reports/page.tsx'
     );
+    const workspacePage = read(
+      'src/app/[locale]/(protected)/(admin)/reports/workspace/[batchId]/page.tsx'
+    );
     const repository = read(
       'src/features/reports/report-batch.repository.ts'
     );
 
     expect(reports).not.toContain('reviewReportBatchAction');
     expect(reports).not.toContain("t('moveToReview')");
-    expect(reports).toContain("t('refreshSources')");
-    expect(reports).toContain('finalizeReportBatchAction');
+
+    expect(workspacePage).toContain(
+      'reopenAdminReportWorkspaceAction'
+    );
+    expect(workspacePage).toContain(
+      'finalizeAdminReportWorkspaceAction'
+    );
 
     expect(repository).not.toContain(
       "workspace.batch.status !== 'REVIEW'"

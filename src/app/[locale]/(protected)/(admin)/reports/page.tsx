@@ -1,39 +1,34 @@
 import {getTranslations} from 'next-intl/server';
 import {notFound} from 'next/navigation';
 
-import {Alert} from '@/components/ui/alert';
-import {Badge} from '@/components/ui/badge';
+import {
+  Badge,
+  type BadgeVariant
+} from '@/components/ui/badge';
 import {Card} from '@/components/ui/card';
-import {DataTable} from '@/components/ui/data-table';
+import {ConfirmSubmitButton} from '@/components/ui/confirm-submit-button';
 import {EmptyState} from '@/components/ui/empty-state';
 import {PageHeader} from '@/components/ui/page-header';
-import {
-  sendReadyReportsAction,
-  sendReportAction
-} from '@/features/email/email.actions';
-import {listEnrollmentClasses} from '@/features/enrollment/enrollment.repository';
-import {
-  approveAllReportSourcesAction,
-  finalizeReportBatchAction,
-  prepareReportBatchAction,
-} from '@/features/reports/report.actions';
-import {
-  ReportBatchSummary,
-  ReportComposer,
-  ReportStudentReviewTable,
-  type ReportComposerLabels,
-  type ReportStudentReviewLabels
-} from '@/features/reports/report-composer';
-import {getReportBatchWorkspace} from '@/features/reports/report-batch.repository';
-import {
-  getReportingTimezone,
-  listReports
-} from '@/features/reports/report.repository';
+import {listAdminReportContexts} from '@/features/reports/admin-report-contexts.repository';
+import type {AdminReportContextStatus} from '@/features/reports/admin-report-contexts';
+import {sendAdminReportBatchAction} from '@/features/reports/admin-report-delivery.actions';
+import {openAdminReportContextAction} from '@/features/reports/admin-report-workflow.actions';
+import {getReportingTimezone} from '@/features/reports/report.repository';
 import {monthPeriod} from '@/features/reports/report.service';
 import {todayInTimeZone} from '@/features/weekly-updates/weekly-update.model';
 import {isLocale} from '@/i18n/config';
 import {Link} from '@/i18n/navigation';
 import {requireProfile} from '@/lib/auth/require-profile';
+
+function statusVariant(
+  status: AdminReportContextStatus
+): BadgeVariant {
+  if (status === 'SENT') return 'success';
+  if (status === 'DELIVERY_ISSUE') return 'danger';
+  if (status === 'READY_TO_SEND') return 'info';
+  if (status === 'READY_FOR_REVIEW') return 'warning';
+  return 'neutral';
+}
 
 export default async function ReportsPage({
   params,
@@ -43,12 +38,7 @@ export default async function ReportsPage({
   searchParams: Promise<{
     periodStart?: string;
     periodEnd?: string;
-    batchId?: string;
     error?: string;
-    generated?: string;
-    sent?: string;
-    failed?: string;
-    skipped?: string;
   }>;
 }) {
   const {locale} = await params;
@@ -56,74 +46,47 @@ export default async function ReportsPage({
 
   const profile = await requireProfile(locale, 'ADMIN');
   const query = await searchParams;
+
   const timezone = await getReportingTimezone(profile.schoolId);
   const defaults = monthPeriod(todayInTimeZone(timezone));
 
-  const periodStart =
+  let periodStart =
     /^\d{4}-\d{2}-\d{2}$/.test(query.periodStart ?? '')
       ? query.periodStart!
       : defaults.periodStart;
 
-  const periodEnd =
+  let periodEnd =
     /^\d{4}-\d{2}-\d{2}$/.test(query.periodEnd ?? '')
       ? query.periodEnd!
       : defaults.periodEnd;
 
-  const [classes, reports, workspace, t, languages, common] =
-    await Promise.all([
-      listEnrollmentClasses(profile.schoolId),
-      listReports(profile.schoolId, periodStart, periodEnd),
-      query.batchId
-        ? getReportBatchWorkspace(profile.schoolId, query.batchId)
-        : Promise.resolve(null),
-      getTranslations({locale, namespace: 'reports'}),
-      getTranslations({locale, namespace: 'reportLanguages'}),
-      getTranslations({locale, namespace: 'common'})
-    ]);
+  if (periodEnd < periodStart) {
+    periodStart = defaults.periodStart;
+    periodEnd = defaults.periodEnd;
+  }
 
-  const activeClasses = classes.filter(({isActive}) => isActive);
-
-  const subjects = activeClasses.flatMap((schoolClass) =>
-    schoolClass.subjects
-      .filter(({isActive}) => isActive)
-      .map((subject) => ({
-        ...subject,
-        classId: schoolClass.id
-      }))
-  );
-
-  const groups = subjects.flatMap((subject) =>
-    subject.groups
-      .filter(({isActive}) => isActive)
-      .map((group) => ({
-        ...group,
-        classSubjectId: subject.id
-      }))
-  );
+  const [contexts, t] = await Promise.all([
+    listAdminReportContexts(
+      profile.schoolId,
+      periodStart,
+      periodEnd
+    ),
+    getTranslations({
+      locale,
+      namespace: 'reports'
+    })
+  ]);
 
   const localize = (
-    value: {nameEn: string; nameAr: string | null}
-  ) =>
-    locale === 'ar' && value.nameAr
-      ? value.nameAr
-      : value.nameEn;
-
-  const defaultClassId =
-    workspace?.batch.classId ?? activeClasses[0]?.id ?? '';
-
-  const defaultSubjectId =
-    workspace?.batch.classSubjectId ??
-    subjects.find(({classId}) => classId === defaultClassId)?.id ??
-    '';
-
-  const defaultGroupId =
-    workspace?.batch.subjectGroupId ??
-    groups.find(
-      ({classSubjectId}) => classSubjectId === defaultSubjectId
-    )?.id ??
-    '';
-
-  const currentScope = workspace?.batch.scopeType ?? 'CLASS';
+    en: string | null | undefined,
+    ar: string | null | undefined,
+    fallback = '—'
+  ) => {
+    if (locale === 'ar' && ar?.trim()) return ar;
+    if (en?.trim()) return en;
+    if (ar?.trim()) return ar;
+    return fallback;
+  };
 
   const hiddenPeriod = (
     <>
@@ -133,73 +96,13 @@ export default async function ReportsPage({
         type="hidden"
         value={periodStart}
       />
-      <input name="periodEnd" type="hidden" value={periodEnd} />
-    </>
-  );
-
-  const batchHidden = workspace ? (
-    <>
-      {hiddenPeriod}
       <input
-        name="batchId"
+        name="periodEnd"
         type="hidden"
-        value={workspace.batch.id}
+        value={periodEnd}
       />
     </>
-  ) : null;
-
-  const statusLabel =
-    workspace?.batch.status === 'FINALIZED'
-      ? t('finalized')
-      : t('inProgress');
-
-  const weekly = await getTranslations({
-    locale,
-    namespace: 'weekly'
-  });
-
-  const studentReviewLabels: ReportStudentReviewLabels = {
-    title: t('studentReview'),
-    help: t('studentReviewHelp'),
-    student: t('student'),
-    attendance: t('attendance'),
-    performance: t('performance'),
-    comment: t('comment'),
-    status: t('status'),
-    ready: t('ready'),
-    needsReview: t('needsReview'),
-    noComment: t('noComment'),
-    attendanceValue: (present, absent) =>
-      t('attendanceCounts', {present, absent}),
-    performanceValue: (performance) =>
-      performance
-        ? weekly(`performance.${performance}`)
-        : '—'
-  };
-
-  const sourceLabels: ReportComposerLabels = {
-    sources: t('sourceBlocks'),
-    useTeacher: (name) => t('useTeacher', {name}),
-    customProgressEn: t('customProgressEn'),
-    customProgressAr: t('customProgressAr'),
-    readiness: t('batchReadiness'),
-    readyAutomatically: t('readyAutomatically'),
-    personalizedComments: t('personalizedComments'),
-    attendanceConflicts: t('attendanceConflicts'),
-    missingData: t('missingData')
-  };
-
-  const sendableReports = reports.filter((report) => {
-    const isPending =
-      report.deliveryStatuses.includes('PENDING');
-
-    return (
-      !isPending &&
-      (report.status === 'READY' || report.status === 'FAILED')
-    );
-  });
-
-
+  );
 
   return (
     <section className="admin-page">
@@ -216,40 +119,10 @@ export default async function ReportsPage({
         title={t('title')}
       />
 
+      <Card className="content-section">
+        <h2>{t('periodFilter')}</h2>
 
-
-      {query.error ? (
-        <Alert variant="danger">
-          {t(
-            query.error === 'validation'
-              ? 'validation'
-              : query.error === 'send'
-                ? 'sendError'
-                : 'save'
-          )}
-        </Alert>
-      ) : null}
-
-      {query.sent !== undefined ? (
-        <Alert variant="success">
-          {t('sendResult', {
-            sent: Number(query.sent) || 0,
-            failed: Number(query.failed) || 0,
-            skipped: Number(query.skipped) || 0
-          })}
-        </Alert>
-      ) : null}
-
-      {!workspace ? (
-        <Card className="content-section">
-          <h2>{t('prepareStage')}</h2>
-
-        <form
-          action={prepareReportBatchAction}
-          className="record-form"
-        >
-          <input name="locale" type="hidden" value={locale} />
-
+        <form className="record-form" method="get">
           <div className="form-grid">
             <label>
               {t('periodStart')}
@@ -270,279 +143,173 @@ export default async function ReportsPage({
                 type="date"
               />
             </label>
-
-            <label>
-              {t('class')}
-              <select
-                defaultValue={defaultClassId}
-                name="classId"
-                required
-              >
-                {activeClasses.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {localize(item)}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label>
-              {t('scope')}
-              <select
-                defaultValue={currentScope}
-                name="scopeType"
-              >
-                <option value="CLASS">{t('classScope')}</option>
-                <option value="SUBJECT">
-                  {t('subjectScope')}
-                </option>
-                <option value="GROUP">{t('groupScope')}</option>
-              </select>
-            </label>
-
-            <label>
-              {t('subject')}
-              <select
-                defaultValue={defaultSubjectId}
-                name="classSubjectId"
-              >
-                <option value="">—</option>
-                {subjects.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {localize(item)}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label>
-              {t('group')}
-              <select
-                defaultValue={defaultGroupId}
-                name="subjectGroupId"
-              >
-                <option value="">—</option>
-                {groups.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {localize(item)}
-                  </option>
-                ))}
-              </select>
-            </label>
           </div>
 
-          <button className="button button-primary" type="submit">
-            {t('prepareBatch')}
+          <button
+            className="button button-secondary"
+            type="submit"
+          >
+            {t('applyPeriod')}
           </button>
         </form>
-        </Card>
-      ) : null}
+      </Card>
 
-      {workspace ? (
-        <Card className="content-section report-workspace">
-          <div className="dashboard-week-heading">
-            <div>
-              <h2>
-                {locale === 'ar' && workspace.classInfo.nameAr
-                  ? workspace.classInfo.nameAr
-                  : workspace.classInfo.nameEn}
-              </h2>
-              <p className="report-batch-meta">
-                {workspace.batch.periodStart} –{' '}
-                {workspace.batch.periodEnd}
-                {' · '}
-                {t('studentCount', {
-                  count: workspace.summaryStudents.length
-                })}
-                {' · '}
-                {t('sourceCount', {
-                  count: workspace.sources.length
-                })}
-              </p>
-            </div>
-
-            <Badge
-              variant={
-                workspace.batch.status === 'FINALIZED'
-                  ? 'success'
-                  : 'warning'
-              }
-            >
-              {statusLabel}
-            </Badge>
-          </div>
-
-          <ReportBatchSummary
-            labels={sourceLabels}
-            students={workspace.summaryStudents}
-          />
-
-          {workspace.sources.length === 0 ? (
-            <EmptyState title={t('noSources')} />
-          ) : (
-            <>
-              <ReportComposer
-                labels={sourceLabels}
-                sources={workspace.sources}
-              />
-
-              <ReportStudentReviewTable
-                labels={studentReviewLabels}
-                locale={locale}
-                students={workspace.summaryStudents}
-              />
-            </>
-          )}
-
-          {workspace.batch.status !== 'FINALIZED' &&
-          workspace.sources.length > 0 ? (
-            <div className="page-actions">
-              <form action={approveAllReportSourcesAction}>
-                {batchHidden}
-                <button
-                  className="button button-secondary"
-                  type="submit"
-                >
-                  {t('refreshSources')}
-                </button>
-              </form>
-
-              <form action={finalizeReportBatchAction}>
-                {batchHidden}
-                <button
-                  className="button button-primary"
-                  disabled={
-                    workspace.approvals.length === 0 ||
-                    workspace.summaryStudents.some(
-                      (student) =>
-                        student.missingDataCount > 0 ||
-                        student.attendanceConflictCount > 0
-                    )
-                  }
-                  type="submit"
-                >
-                  {t('finalizeReports')}
-                </button>
-              </form>
-            </div>
-          ) : null}
-        </Card>
+      {query.error ? (
+        <p className="form-error">
+          {query.error === 'validation'
+            ? t('validation')
+            : t('saveError')}
+        </p>
       ) : null}
 
       <Card className="content-section">
         <div className="section-heading">
           <div>
-            <h2>{t('sendStage')}</h2>
-            <p>{t('sendStageHelp')}</p>
+            <h2>{t('contextsTitle')}</h2>
+            <p>{t('contextsHelp')}</p>
           </div>
-
-          {sendableReports.length > 0 ? (
-            <form action={sendReadyReportsAction}>
-              {hiddenPeriod}
-              <button
-                className="button button-primary"
-                type="submit"
-              >
-                {t('sendReady')}
-              </button>
-            </form>
-          ) : null}
         </div>
 
-        {reports.length === 0 ? (
-          <EmptyState title={t('empty')} />
+        {contexts.length === 0 ? (
+          <EmptyState title={t('noContexts')} />
         ) : (
-          <DataTable
-            columns={[
-              {
-                key: 'student',
-                header: t('student'),
-                render: (report) =>
-                  locale === 'ar' && report.studentNameAr
-                    ? report.studentNameAr
-                    : report.studentNameEn
-              },
-              {
-                key: 'language',
-                header: t('language'),
-                render: (report) => languages(report.language)
-              },
-              {
-                key: 'status',
-                header: t('status'),
-                render: (report) => {
-                  const isPending =
-                    report.deliveryStatuses.includes('PENDING');
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>{t('contextsTitle')}</th>
+                  <th>{t('teachers')}</th>
+                  <th>{t('teacherUpdates')}</th>
+                  <th>{t('openReport')}</th>
+                </tr>
+              </thead>
 
-                  const displayStatus = isPending
-                    ? 'PENDING'
-                    : report.status;
+              <tbody>
+                {contexts.map((context) => {
+                  const groupName = context.groupNameEn
+                    ? localize(
+                        context.groupNameEn,
+                        context.groupNameAr
+                      )
+                    : null;
 
                   return (
-                    <Badge
-                      variant={
-                        displayStatus === 'FAILED'
-                          ? 'danger'
-                          : displayStatus === 'PENDING'
-                            ? 'warning'
-                            : 'success'
-                      }
+                    <tr
+                      key={`${context.classSubjectId}:${context.subjectGroupId ?? 'whole'}`}
                     >
-                      {t(`reportStatus.${displayStatus}`)}
-                    </Badge>
-                  );
-                }
-              },
-              {
-                key: 'generated',
-                header: t('generatedAt'),
-                render: (report) =>
-                  new Intl.DateTimeFormat(locale, {
-                    dateStyle: 'medium',
-                    timeStyle: 'short'
-                  }).format(new Date(report.generatedAt))
-              },
-              {
-                key: 'actions',
-                header: common('actions'),
-                render: (report) => {
-                  const isPending =
-                    report.deliveryStatuses.includes('PENDING');
+                      <td>
+                        <strong>
+                          {localize(
+                            context.classNameEn,
+                            context.classNameAr
+                          )}
+                          {' · '}
+                          {localize(
+                            context.subjectNameEn,
+                            context.subjectNameAr
+                          )}
+                          {groupName ? ` · ${groupName}` : ''}
+                        </strong>
 
-                  return (
-                    <div className="row-actions">
-                      <Link href={`/reports/${report.id}`}>
-                        {t('preview')}
-                      </Link>
-
-                      {!isPending &&
-                      (report.status === 'READY' ||
-                        report.status === 'FAILED') ? (
-                        <form action={sendReportAction}>
-                          {hiddenPeriod}
-                          <input
-                            name="reportId"
-                            type="hidden"
-                            value={report.id}
-                          />
-                          <button
-                            className="text-button"
-                            type="submit"
+                        <div className="report-batch-meta">
+                          <Badge
+                            variant={statusVariant(context.status)}
                           >
-                            {report.status === 'FAILED'
-                              ? t('retry')
-                              : t('send')}
-                          </button>
-                        </form>
-                      ) : null}
-                    </div>
+                            {t(
+                              `contextStatus.${context.status}`
+                            )}
+                          </Badge>
+                        </div>
+                      </td>
+
+                      <td>
+                        {context.teacherNames.length > 0
+                          ? context.teacherNames.join(', ')
+                          : t('noTeacher')}
+                      </td>
+
+                      <td>
+                        <div>
+                          {t('submissionCount', {
+                            count: context.submissionCount
+                          })}
+                        </div>
+                        <div className="report-batch-meta">
+                          {t('studentCommentCount', {
+                            count: context.studentCommentCount
+                          })}
+                        </div>
+                      </td>
+
+                      <td>
+                        <div className="row-actions">
+                          {(context.status === 'READY_TO_SEND' ||
+                            context.status === 'DELIVERY_ISSUE') &&
+                          context.batchId ? (
+                            <form action={sendAdminReportBatchAction}>
+                              {hiddenPeriod}
+
+                              <input
+                                name="batchId"
+                                type="hidden"
+                                value={context.batchId}
+                              />
+                              <input
+                                name="returnTo"
+                                type="hidden"
+                                value="queue"
+                              />
+
+                              <ConfirmSubmitButton
+                                className="button button-primary"
+                                confirmMessage={`${
+                                  context.status === 'DELIVERY_ISSUE'
+                                    ? t('retryContextDelivery')
+                                    : t('sendContextReports')
+                                }?`}
+                                type="submit"
+                              >
+                                {context.status === 'DELIVERY_ISSUE'
+                                  ? t('retryContextDelivery')
+                                  : t('sendContextReports')}
+                              </ConfirmSubmitButton>
+                            </form>
+                          ) : null}
+
+                          <form action={openAdminReportContextAction}>
+                            {hiddenPeriod}
+
+                            <input
+                              name="classId"
+                              type="hidden"
+                              value={context.classId}
+                            />
+                            <input
+                              name="classSubjectId"
+                              type="hidden"
+                              value={context.classSubjectId}
+                            />
+                            <input
+                              name="subjectGroupId"
+                              type="hidden"
+                              value={context.subjectGroupId ?? ''}
+                            />
+
+                            <button
+                              className="button button-secondary"
+                              type="submit"
+                            >
+                              {t('openReport')}
+                            </button>
+                          </form>
+                        </div>
+                      </td>
+                    </tr>
                   );
-                }
-              }
-            ]}
-            getRowKey={(report) => report.id}
-            rows={reports}
-          />
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
       </Card>
     </section>

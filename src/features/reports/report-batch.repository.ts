@@ -3,6 +3,7 @@ import 'server-only';
 import {createServerSupabaseClient} from '@/lib/supabase/server';
 
 import {buildReportSnapshotV2} from './report.service';
+import {getActiveReportTemplate} from './report-template.repository';
 import type {ReportLanguage, ReportPerformance} from './report.types';
 
 export type ReportBatchScope = 'CLASS' | 'SUBJECT' | 'GROUP';
@@ -56,6 +57,7 @@ export type ReportBatchSource = {
   classSubjectId: string;
   subjectGroupId: string | null;
   weekStart: string;
+  teacherId: string;
   teacherName: string;
   subjectNameEn: string;
   subjectNameAr: string | null;
@@ -335,6 +337,7 @@ export async function getReportBatchWorkspace(
       classSubjectId: row.class_subject_id,
       subjectGroupId: row.subject_group_id,
       weekStart: row.week_start,
+      teacherId: row.teacher_id,
       teacherName: teacherById.get(row.teacher_id) ?? 'Teacher',
       subjectNameEn: subject?.name_en ?? row.class_subject_id,
       subjectNameAr: subject?.name_ar ?? null,
@@ -626,6 +629,7 @@ export async function finalizeReportBatch(schoolId: string, batchId: string) {
   }
 
   const db = await createServerSupabaseClient();
+  const template = await getActiveReportTemplate(schoolId);
   const sourceIds = workspace.sources.map(({id}) => id);
   const approvalIds = workspace.approvals.map(({id}) => id);
   const classSubjectIds = [...new Set(workspace.approvals.map(({classSubjectId}) => classSubjectId))];
@@ -757,7 +761,25 @@ export async function finalizeReportBatch(schoolId: string, batchId: string) {
         period: {start: workspace.batch.periodStart, end: workspace.batch.periodEnd},
         language,
         sections,
-        template: {introEn: null, introAr: null, closingEn: null, closingAr: null},
+        template: {
+          name: template.name,
+          mainReportLabelEn: template.mainReportLabelEn,
+          mainReportLabelAr: template.mainReportLabelAr,
+          mainReportHelpEn: template.mainReportHelpEn,
+          mainReportHelpAr: template.mainReportHelpAr,
+          performanceEnabled: template.performanceEnabled,
+          performanceLabelEn: template.performanceLabelEn,
+          performanceLabelAr: template.performanceLabelAr,
+          studentCommentsEnabled: template.studentCommentsEnabled,
+          studentCommentLabelEn: template.studentCommentLabelEn,
+          studentCommentLabelAr: template.studentCommentLabelAr,
+          studentCommentHelpEn: template.studentCommentHelpEn,
+          studentCommentHelpAr: template.studentCommentHelpAr,
+          introEn: template.introEn,
+          introAr: template.introAr,
+          closingEn: template.closingEn,
+          closingAr: template.closingAr
+        },
         generatedAt
       });
       if (!built.snapshot) {

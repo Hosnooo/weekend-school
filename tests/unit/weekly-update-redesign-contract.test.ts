@@ -29,7 +29,7 @@ describe('weekly update redesign contract', () => {
     expect(form).toContain('sticky-actions');
 
     expect(form).toContain("t('attendance')");
-    expect(form).toContain("t('groupProgress')");
+    expect(form).toContain('template.mainReportLabelEn');
     expect(form).toContain("t('defaultPerformance')");
     expect(form).toContain("t('students')");
     expect(form).toContain("t('performanceOverride')");

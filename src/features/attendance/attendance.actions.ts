@@ -37,4 +37,5 @@ export async function resolveAttendanceConflictAction(formData: FormData): Promi
 
   await resolveAttendanceConflict(parsed.data, parsed.data.status);
   revalidatePath(`/${locale}/dashboard`);
+  revalidatePath(`/${locale}/reports`);
 }

@@ -207,11 +207,26 @@ export function WeeklyUpdateForm({
 
   return (
     <form
-      action={action}
       className="weekly-form"
       onChange={change}
-      onSubmit={() => {
+      onSubmit={(event) => {
+        event.preventDefault();
         submittingRef.current = true;
+
+        const submitter = (
+          event.nativeEvent as SubmitEvent
+        ).submitter as HTMLButtonElement | null;
+
+        const data = new FormData(event.currentTarget);
+
+        data.set(
+          'intent',
+          submitter?.value === 'submit'
+            ? 'submit'
+            : 'draft'
+        );
+
+        startTransition(() => action(data));
       }}
       ref={formRef}
     >

@@ -62,6 +62,19 @@ export type ReportSnapshotV2 = {
   language: ReportLanguage;
   sections: ReportSnapshotV2Section[];
   template: {
+    name?: string;
+    mainReportLabelEn?: string;
+    mainReportLabelAr?: string | null;
+    mainReportHelpEn?: string | null;
+    mainReportHelpAr?: string | null;
+    performanceEnabled?: boolean;
+    performanceLabelEn?: string;
+    performanceLabelAr?: string | null;
+    studentCommentsEnabled?: boolean;
+    studentCommentLabelEn?: string;
+    studentCommentLabelAr?: string | null;
+    studentCommentHelpEn?: string | null;
+    studentCommentHelpAr?: string | null;
     introEn: string | null;
     introAr: string | null;
     closingEn: string | null;

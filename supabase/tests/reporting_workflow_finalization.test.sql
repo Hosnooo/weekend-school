@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 
-select plan(13);
+select plan(14);
 
 select has_column(
   'public', 'report_templates', 'main_report_label_en',
@@ -70,6 +70,13 @@ select has_index(
   'report_templates',
   'report_templates_one_active_per_school_idx',
   'a school can have at most one active report template'
+);
+
+select has_function(
+  'public',
+  'reopen_unsent_report_batch',
+  array['uuid'],
+  'an administrator can reopen an unsent finalized report batch'
 );
 
 select * from finish();

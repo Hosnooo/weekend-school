@@ -3,6 +3,7 @@ import {
   fireEvent,
   render,
   screen,
+  waitFor,
   within
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -224,6 +225,47 @@ describe('weekly update form', () => {
         hidden: true
       })
     ).not.toBeVisible();
+  });
+
+  it('keeps draft selections visible after a successful save', async () => {
+    vi.mocked(saveWeeklyUpdateAction).mockResolvedValueOnce({
+      status: 'saved',
+      error: null
+    });
+
+    const user = userEvent.setup();
+    const {container} = renderEnglish();
+
+    const performance =
+      container.querySelector<HTMLSelectElement>(
+        'select[name="defaultPerformance"]'
+      )!;
+
+    await user.selectOptions(performance, 'GOOD');
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Mark all present'
+      })
+    );
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Save draft'
+      })
+    );
+
+    await waitFor(() => {
+      expect(saveWeeklyUpdateAction).toHaveBeenCalled();
+    });
+
+    expect(performance).toHaveValue('GOOD');
+
+    expect(
+      screen.getByRole('combobox', {
+        name: 'Attendance — Ahmad Ali'
+      })
+    ).toHaveValue('PRESENT');
   });
 
   it('keeps navigation protection after a failed save', async () => {
