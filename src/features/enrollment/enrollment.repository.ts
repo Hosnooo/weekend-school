@@ -183,6 +183,16 @@ export async function createStudentWithEnrollment(input: CreateStudentEnrollment
   return data as string;
 }
 
+export async function enrollStudentInClass(input: ChangeStudentClassInput) {
+  const supabase = await createServerSupabaseClient();
+  const {error} = await supabase.rpc('enroll_student_in_class', {
+    p_student_id: input.studentId,
+    p_target_class_id: input.targetClassId,
+    p_starts_on: input.startsOn
+  });
+  if (error) throw error;
+}
+
 export async function changeStudentClass(input: ChangeStudentClassInput) {
   const supabase = await createServerSupabaseClient();
   const {error} = await supabase.rpc('change_student_class', {

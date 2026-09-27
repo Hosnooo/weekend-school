@@ -7,6 +7,7 @@ import {z} from 'zod';
 import {
   changeStudentClass,
   createStudentWithEnrollment,
+  enrollStudentInClass,
   moveStudentSubjectGroup,
   setSubjectExcluded
 } from '@/features/enrollment/enrollment.repository';
@@ -128,6 +129,30 @@ export async function setStudentActiveAction(formData: FormData) {
   if (!parsed.success) return;
   await setStudentActive(profile.schoolId, parsed.data.id, parsed.data.isActive === 'true');
   revalidateStudentSurfaces(locale, parsed.data.id);
+}
+
+export async function enrollStudentInClassAction(
+  _state: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const locale = localeFrom(formData);
+  await requireProfile(locale, 'ADMIN');
+  const parsed = changeStudentClassSchema.safeParse({
+    studentId: formData.get('studentId'),
+    targetClassId: formData.get('targetClassId'),
+    startsOn: formData.get('startsOn')
+  });
+  if (!parsed.success) return validationFailure();
+
+  try {
+    await enrollStudentInClass(parsed.data);
+  } catch (error) {
+    return enrollmentMutationFailure(error);
+  }
+
+  revalidateStudentSurfaces(locale, parsed.data.studentId);
+  revalidatePath(`/${locale}/classes`);
+  return initialActionState;
 }
 
 export async function changeStudentClassAction(

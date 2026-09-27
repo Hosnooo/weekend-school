@@ -16,6 +16,7 @@ import type {
 } from '@/features/enrollment/enrollment.types';
 import {
   changeStudentClassAction,
+  enrollStudentInClassAction,
   moveStudentSubjectGroupAction,
   setSubjectExcludedAction
 } from '@/features/students/student.actions';
@@ -137,7 +138,9 @@ export function StudentEnrollmentEditor({
   const t = useTranslations('students');
   const common = useTranslations('common');
   const [classState, classAction, classPending] = useActionState(
-    changeStudentClassAction,
+    enrollment.currentClass
+      ? changeStudentClassAction
+      : enrollStudentInClassAction,
     initialActionState
   );
   const localize = (value: {nameEn: string; nameAr: string | null}) =>
@@ -151,12 +154,12 @@ export function StudentEnrollmentEditor({
         <SectionHeader title={t('currentClass')} />
         <p>{enrollment.currentClass ? localize(enrollment.currentClass) : common('notAssigned')}</p>
         {enrollment.currentEnrollment ? <p><strong>{t('enrollmentStart')}:</strong> {enrollment.currentEnrollment.startsOn}</p> : null}
-        {enrollment.currentClass && targetClasses.length > 0 ? (
+        {targetClasses.length > 0 ? (
           <form action={classAction} className="form-grid compact-form">
             <input name="locale" type="hidden" value={locale} />
             <input name="studentId" type="hidden" value={studentId} />
             <label>
-              {t('changeClass')}
+              {enrollment.currentClass ? t('changeClass') : t('class')}
               <select name="targetClassId" required>
                 <option value="">—</option>
                 {targetClasses.map((schoolClass) => <option key={schoolClass.id} value={schoolClass.id}>{localize(schoolClass)}</option>)}
@@ -167,7 +170,11 @@ export function StudentEnrollmentEditor({
               <input defaultValue={today} name="startsOn" required type="date" />
             </label>
             <Button disabled={classPending} type="submit" variant="secondary">
-              {classPending ? common('saving') : t('changeClass')}
+              {classPending
+                ? common('saving')
+                : enrollment.currentClass
+                  ? t('changeClass')
+                  : t('enrollInClass')}
             </Button>
             <FormFeedback state={classState} />
           </form>
