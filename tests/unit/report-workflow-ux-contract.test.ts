@@ -15,47 +15,52 @@ function read(relative: string) {
 }
 
 describe('Reports workflow UX contract', () => {
-  it('presents Reports as a progressive editable workflow with finalization as the lock', () => {
+  it('presents one status-driven reporting workflow by teaching context', () => {
     const page = read(
       'src/app/[locale]/(protected)/(admin)/reports/page.tsx'
     );
 
-    expect(page).not.toContain('AdminPage');
     expect(page).toContain('PageHeader');
-    expect(page).toContain('DataTable');
+    expect(page).toContain('Card');
     expect(page).toContain('Alert');
-    expect(page).toContain('ReportStudentReviewTable');
 
-    expect(page).not.toContain('Tabs');
-    expect(page).not.toContain('reviewReportBatchAction');
-    expect(page).not.toContain("t('moveToReview')");
+    expect(page).toContain('listAdminReportContexts');
+    expect(page).toContain('getAdminReportWorkspace');
+    expect(page).toContain('AttendanceConflictList');
 
-    expect(page).toContain("t('prepareStage')");
-    expect(page).toContain("t('refreshSources')");
-    expect(page).toContain("t('finalizeReports')");
-    expect(page).toContain("t('sendStage')");
+    expect(page).toContain('openAdminReportContextAction');
+    expect(page).toContain('saveAdminReportWorkspaceAction');
+    expect(page).toContain('finalizeAdminReportWorkspaceAction');
+    expect(page).toContain('reopenAdminReportWorkspaceAction');
+    expect(page).toContain('sendAdminReportBatchAction');
+
+    expect(page).not.toContain('prepareReportBatchAction');
+    expect(page).not.toContain('approveAllReportSourcesAction');
+    expect(page).not.toContain('sendReadyReportsAction');
+    expect(page).not.toContain('ReportStudentReviewTable');
+    expect(page).not.toContain("name=\"scopeType\"");
+    expect(page).not.toContain("t('prepareStage')");
+    expect(page).not.toContain("t('sendStage')");
   });
 
-  it('makes bulk sending discoverable only when sendable reports exist', () => {
-    const page = read(
-      'src/app/[locale]/(protected)/(admin)/reports/page.tsx'
-    );
-
-    expect(page).toContain('sendReadyReportsAction');
-    expect(page).toContain('sendableReports');
-    expect(page).toContain('sendableReports.length > 0');
-
+  it('exposes the approved administrator-facing workflow statuses', () => {
     const en = JSON.parse(read('messages/en.json'));
     const ar = JSON.parse(read('messages/ar.json'));
 
     for (const messages of [en, ar]) {
-      expect(messages.reports.sendResult).toContain('{sent}');
-      expect(messages.reports.sendResult).toContain('{failed}');
-      expect(messages.reports.sendResult).toContain('{skipped}');
+      expect(messages.reports.contextStatus).toEqual(
+        expect.objectContaining({
+          WAITING: expect.any(String),
+          READY_FOR_REVIEW: expect.any(String),
+          READY_TO_SEND: expect.any(String),
+          SENT: expect.any(String),
+          DELIVERY_ISSUE: expect.any(String)
+        })
+      );
     }
   });
 
-  it('provides a first-class Delivery Status route with status filtering', () => {
+  it('keeps a first-class Delivery Status route with status filtering', () => {
     const relative =
       'src/app/[locale]/(protected)/(admin)/reports/delivery-status/page.tsx';
 
@@ -72,8 +77,6 @@ describe('Reports workflow UX contract', () => {
     expect(page).toContain('SENT');
     expect(page).toContain('FAILED');
     expect(page).toContain('listDeliveryStatusRows');
-
-    // Provider internals must not leak into the administrator UI.
     expect(page).not.toContain('provider_message_id');
   });
 
@@ -91,12 +94,11 @@ describe('Reports workflow UX contract', () => {
     expect(ar.navigation.deliveryStatus).toBe('حالة التسليم');
   });
 
-  it('redesigns report preview without changing its read-only report snapshot', () => {
+  it('keeps report preview read-only and delivery-aware', () => {
     const page = read(
       'src/app/[locale]/(protected)/(admin)/reports/[id]/page.tsx'
     );
 
-    expect(page).not.toContain('AdminPage');
     expect(page).toContain('PageHeader');
     expect(page).toContain('Card');
     expect(page).toContain('DataTable');

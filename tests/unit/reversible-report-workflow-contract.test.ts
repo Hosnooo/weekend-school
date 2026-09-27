@@ -35,8 +35,8 @@ describe('reversible Teacher and Admin report workflow', () => {
 
     expect(reports).not.toContain('reviewReportBatchAction');
     expect(reports).not.toContain("t('moveToReview')");
-    expect(reports).toContain("t('refreshSources')");
-    expect(reports).toContain('finalizeReportBatchAction');
+    expect(reports).toContain('reopenAdminReportWorkspaceAction');
+    expect(reports).toContain('finalizeAdminReportWorkspaceAction');
 
     expect(repository).not.toContain(
       "workspace.batch.status !== 'REVIEW'"

@@ -1,39 +1,60 @@
 import {getTranslations} from 'next-intl/server';
 import {notFound} from 'next/navigation';
 
+import {AttendanceConflictList} from '@/features/attendance/attendance-conflict-list';
 import {Alert} from '@/components/ui/alert';
-import {Badge} from '@/components/ui/badge';
+import {
+  Badge,
+  type BadgeVariant
+} from '@/components/ui/badge';
 import {Card} from '@/components/ui/card';
-import {DataTable} from '@/components/ui/data-table';
 import {EmptyState} from '@/components/ui/empty-state';
 import {PageHeader} from '@/components/ui/page-header';
 import {
-  sendReadyReportsAction,
-  sendReportAction
-} from '@/features/email/email.actions';
-import {listEnrollmentClasses} from '@/features/enrollment/enrollment.repository';
+  listAdminReportContexts
+} from '@/features/reports/admin-report-contexts.repository';
+import type {
+  AdminReportContextStatus
+} from '@/features/reports/admin-report-contexts';
 import {
-  approveAllReportSourcesAction,
-  finalizeReportBatchAction,
-  prepareReportBatchAction,
-} from '@/features/reports/report.actions';
+  sendAdminReportBatchAction
+} from '@/features/reports/admin-report-delivery.actions';
 import {
-  ReportBatchSummary,
-  ReportComposer,
-  ReportStudentReviewTable,
-  type ReportComposerLabels,
-  type ReportStudentReviewLabels
-} from '@/features/reports/report-composer';
-import {getReportBatchWorkspace} from '@/features/reports/report-batch.repository';
+  finalizeAdminReportWorkspaceAction,
+  openAdminReportContextAction,
+  reopenAdminReportWorkspaceAction,
+  saveAdminReportWorkspaceAction
+} from '@/features/reports/admin-report-workflow.actions';
 import {
-  getReportingTimezone,
-  listReports
+  getAdminReportWorkspace
+} from '@/features/reports/admin-report-workspace.repository';
+import {
+  getReportingTimezone
 } from '@/features/reports/report.repository';
 import {monthPeriod} from '@/features/reports/report.service';
+import type {ReportPerformance} from '@/features/reports/report.types';
 import {todayInTimeZone} from '@/features/weekly-updates/weekly-update.model';
 import {isLocale} from '@/i18n/config';
 import {Link} from '@/i18n/navigation';
 import {requireProfile} from '@/lib/auth/require-profile';
+import {databaseUuid} from '@/lib/validation/fields';
+
+const performanceValues: ReportPerformance[] = [
+  'EXCELLENT',
+  'GOOD',
+  'DEVELOPING',
+  'NEEDS_SUPPORT'
+];
+
+function statusVariant(
+  status: AdminReportContextStatus
+): BadgeVariant {
+  if (status === 'SENT') return 'success';
+  if (status === 'DELIVERY_ISSUE') return 'danger';
+  if (status === 'READY_TO_SEND') return 'info';
+  if (status === 'READY_FOR_REVIEW') return 'warning';
+  return 'neutral';
+}
 
 export default async function ReportsPage({
   params,
@@ -45,7 +66,8 @@ export default async function ReportsPage({
     periodEnd?: string;
     batchId?: string;
     error?: string;
-    generated?: string;
+    saved?: string;
+    finalized?: string;
     sent?: string;
     failed?: string;
     skipped?: string;
@@ -56,74 +78,62 @@ export default async function ReportsPage({
 
   const profile = await requireProfile(locale, 'ADMIN');
   const query = await searchParams;
+
   const timezone = await getReportingTimezone(profile.schoolId);
   const defaults = monthPeriod(todayInTimeZone(timezone));
 
-  const periodStart =
+  let periodStart =
     /^\d{4}-\d{2}-\d{2}$/.test(query.periodStart ?? '')
       ? query.periodStart!
       : defaults.periodStart;
 
-  const periodEnd =
+  let periodEnd =
     /^\d{4}-\d{2}-\d{2}$/.test(query.periodEnd ?? '')
       ? query.periodEnd!
       : defaults.periodEnd;
 
-  const [classes, reports, workspace, t, languages, common] =
-    await Promise.all([
-      listEnrollmentClasses(profile.schoolId),
-      listReports(profile.schoolId, periodStart, periodEnd),
-      query.batchId
-        ? getReportBatchWorkspace(profile.schoolId, query.batchId)
-        : Promise.resolve(null),
-      getTranslations({locale, namespace: 'reports'}),
-      getTranslations({locale, namespace: 'reportLanguages'}),
-      getTranslations({locale, namespace: 'common'})
-    ]);
+  if (periodEnd < periodStart) {
+    periodStart = defaults.periodStart;
+    periodEnd = defaults.periodEnd;
+  }
 
-  const activeClasses = classes.filter(({isActive}) => isActive);
+  const parsedBatchId = databaseUuid.safeParse(query.batchId);
+  const requestedBatchId = parsedBatchId.success
+    ? parsedBatchId.data
+    : null;
 
-  const subjects = activeClasses.flatMap((schoolClass) =>
-    schoolClass.subjects
-      .filter(({isActive}) => isActive)
-      .map((subject) => ({
-        ...subject,
-        classId: schoolClass.id
-      }))
-  );
-
-  const groups = subjects.flatMap((subject) =>
-    subject.groups
-      .filter(({isActive}) => isActive)
-      .map((group) => ({
-        ...group,
-        classSubjectId: subject.id
-      }))
-  );
+  const [contexts, workspace, t, weekly] = await Promise.all([
+    listAdminReportContexts(
+      profile.schoolId,
+      periodStart,
+      periodEnd
+    ),
+    requestedBatchId
+      ? getAdminReportWorkspace(
+          profile.schoolId,
+          requestedBatchId
+        )
+      : Promise.resolve(null),
+    getTranslations({
+      locale,
+      namespace: 'reports'
+    }),
+    getTranslations({
+      locale,
+      namespace: 'weekly'
+    })
+  ]);
 
   const localize = (
-    value: {nameEn: string; nameAr: string | null}
-  ) =>
-    locale === 'ar' && value.nameAr
-      ? value.nameAr
-      : value.nameEn;
-
-  const defaultClassId =
-    workspace?.batch.classId ?? activeClasses[0]?.id ?? '';
-
-  const defaultSubjectId =
-    workspace?.batch.classSubjectId ??
-    subjects.find(({classId}) => classId === defaultClassId)?.id ??
-    '';
-
-  const defaultGroupId =
-    workspace?.batch.subjectGroupId ??
-    groups.find(
-      ({classSubjectId}) => classSubjectId === defaultSubjectId
-    )?.id ??
-    '';
-
-  const currentScope = workspace?.batch.scopeType ?? 'CLASS';
+    en: string | null | undefined,
+    ar: string | null | undefined,
+    fallback = '—'
+  ) => {
+    if (locale === 'ar' && ar?.trim()) return ar;
+    if (en?.trim()) return en;
+    if (ar?.trim()) return ar;
+    return fallback;
+  };
 
   const hiddenPeriod = (
     <>
@@ -133,73 +143,57 @@ export default async function ReportsPage({
         type="hidden"
         value={periodStart}
       />
-      <input name="periodEnd" type="hidden" value={periodEnd} />
+      <input
+        name="periodEnd"
+        type="hidden"
+        value={periodEnd}
+      />
     </>
   );
 
-  const batchHidden = workspace ? (
-    <>
-      {hiddenPeriod}
-      <input
-        name="batchId"
-        type="hidden"
-        value={workspace.batch.id}
-      />
-    </>
-  ) : null;
+  const totalPresent =
+    workspace?.attendanceSummary.reduce(
+      (sum, student) => sum + student.presentCount,
+      0
+    ) ?? 0;
 
-  const statusLabel =
-    workspace?.batch.status === 'FINALIZED'
-      ? t('finalized')
-      : t('inProgress');
+  const totalAbsent =
+    workspace?.attendanceSummary.reduce(
+      (sum, student) => sum + student.absentCount,
+      0
+    ) ?? 0;
 
-  const weekly = await getTranslations({
-    locale,
-    namespace: 'weekly'
-  });
+  const mainReportLabel = workspace
+    ? localize(
+        workspace.template.mainReportLabelEn,
+        workspace.template.mainReportLabelAr,
+        t('reportWorkspace')
+      )
+    : '';
 
-  const studentReviewLabels: ReportStudentReviewLabels = {
-    title: t('studentReview'),
-    help: t('studentReviewHelp'),
-    student: t('student'),
-    attendance: t('attendance'),
-    performance: t('performance'),
-    comment: t('comment'),
-    status: t('status'),
-    ready: t('ready'),
-    needsReview: t('needsReview'),
-    noComment: t('noComment'),
-    attendanceValue: (present, absent) =>
-      t('attendanceCounts', {present, absent}),
-    performanceValue: (performance) =>
-      performance
-        ? weekly(`performance.${performance}`)
-        : '—'
-  };
+  const mainReportHelp = workspace
+    ? localize(
+        workspace.template.mainReportHelpEn,
+        workspace.template.mainReportHelpAr,
+        ''
+      )
+    : '';
 
-  const sourceLabels: ReportComposerLabels = {
-    sources: t('sourceBlocks'),
-    useTeacher: (name) => t('useTeacher', {name}),
-    customProgressEn: t('customProgressEn'),
-    customProgressAr: t('customProgressAr'),
-    readiness: t('batchReadiness'),
-    readyAutomatically: t('readyAutomatically'),
-    personalizedComments: t('personalizedComments'),
-    attendanceConflicts: t('attendanceConflicts'),
-    missingData: t('missingData')
-  };
+  const performanceLabel = workspace
+    ? localize(
+        workspace.template.performanceLabelEn,
+        workspace.template.performanceLabelAr,
+        t('performance')
+      )
+    : '';
 
-  const sendableReports = reports.filter((report) => {
-    const isPending =
-      report.deliveryStatuses.includes('PENDING');
-
-    return (
-      !isPending &&
-      (report.status === 'READY' || report.status === 'FAILED')
-    );
-  });
-
-
+  const studentCommentLabel = workspace
+    ? localize(
+        workspace.template.studentCommentLabelEn,
+        workspace.template.studentCommentLabelAr,
+        t('studentCommentsTitle')
+      )
+    : '';
 
   return (
     <section className="admin-page">
@@ -216,17 +210,25 @@ export default async function ReportsPage({
         title={t('title')}
       />
 
-
-
       {query.error ? (
         <Alert variant="danger">
-          {t(
-            query.error === 'validation'
-              ? 'validation'
-              : query.error === 'send'
-                ? 'sendError'
-                : 'save'
-          )}
+          {query.error === 'validation'
+            ? t('validation')
+            : query.error === 'send'
+              ? t('sendError')
+              : t('saveError')}
+        </Alert>
+      ) : null}
+
+      {query.saved ? (
+        <Alert variant="success">
+          {t('savedMessage')}
+        </Alert>
+      ) : null}
+
+      {query.finalized ? (
+        <Alert variant="success">
+          {t('finalizedMessage')}
         </Alert>
       ) : null}
 
@@ -240,16 +242,10 @@ export default async function ReportsPage({
         </Alert>
       ) : null}
 
-      {!workspace ? (
-        <Card className="content-section">
-          <h2>{t('prepareStage')}</h2>
+      <Card className="content-section">
+        <h2>{t('periodFilter')}</h2>
 
-        <form
-          action={prepareReportBatchAction}
-          className="record-form"
-        >
-          <input name="locale" type="hidden" value={locale} />
-
+        <form className="record-form" method="get">
           <div className="form-grid">
             <label>
               {t('periodStart')}
@@ -270,281 +266,480 @@ export default async function ReportsPage({
                 type="date"
               />
             </label>
-
-            <label>
-              {t('class')}
-              <select
-                defaultValue={defaultClassId}
-                name="classId"
-                required
-              >
-                {activeClasses.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {localize(item)}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label>
-              {t('scope')}
-              <select
-                defaultValue={currentScope}
-                name="scopeType"
-              >
-                <option value="CLASS">{t('classScope')}</option>
-                <option value="SUBJECT">
-                  {t('subjectScope')}
-                </option>
-                <option value="GROUP">{t('groupScope')}</option>
-              </select>
-            </label>
-
-            <label>
-              {t('subject')}
-              <select
-                defaultValue={defaultSubjectId}
-                name="classSubjectId"
-              >
-                <option value="">—</option>
-                {subjects.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {localize(item)}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label>
-              {t('group')}
-              <select
-                defaultValue={defaultGroupId}
-                name="subjectGroupId"
-              >
-                <option value="">—</option>
-                {groups.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {localize(item)}
-                  </option>
-                ))}
-              </select>
-            </label>
           </div>
 
-          <button className="button button-primary" type="submit">
-            {t('prepareBatch')}
+          <button
+            className="button button-secondary"
+            type="submit"
+          >
+            {t('applyPeriod')}
           </button>
         </form>
-        </Card>
-      ) : null}
+      </Card>
+
+      <Card className="content-section">
+        <div className="section-heading">
+          <div>
+            <h2>{t('contextsTitle')}</h2>
+            <p>{t('contextsHelp')}</p>
+          </div>
+        </div>
+
+        {contexts.length === 0 ? (
+          <EmptyState title={t('noContexts')} />
+        ) : (
+          <div className="stack-list">
+            {contexts.map((context) => {
+              const groupName = context.groupNameEn
+                ? localize(
+                    context.groupNameEn,
+                    context.groupNameAr
+                  )
+                : null;
+
+              return (
+                <article
+                  className="record-card"
+                  key={`${context.classSubjectId}:${context.subjectGroupId ?? 'whole'}`}
+                >
+                  <div className="record-card-main">
+                    <h3>
+                      {localize(
+                        context.classNameEn,
+                        context.classNameAr
+                      )}
+                      {' · '}
+                      {localize(
+                        context.subjectNameEn,
+                        context.subjectNameAr
+                      )}
+                      {groupName ? ` · ${groupName}` : ''}
+                    </h3>
+
+                    <p>
+                      <strong>{t('teachers')}:</strong>{' '}
+                      {context.teacherNames.length > 0
+                        ? context.teacherNames.join(', ')
+                        : t('noTeacher')}
+                    </p>
+
+                    <p>
+                      {t('submissionCount', {
+                        count: context.submissionCount
+                      })}
+                      {' · '}
+                      {t('studentCommentCount', {
+                        count: context.studentCommentCount
+                      })}
+                    </p>
+                  </div>
+
+                  <div className="row-actions">
+                    <Badge
+                      variant={statusVariant(context.status)}
+                    >
+                      {t(`contextStatus.${context.status}`)}
+                    </Badge>
+
+                    <form action={openAdminReportContextAction}>
+                      {hiddenPeriod}
+                      <input
+                        name="classId"
+                        type="hidden"
+                        value={context.classId}
+                      />
+                      <input
+                        name="classSubjectId"
+                        type="hidden"
+                        value={context.classSubjectId}
+                      />
+                      <input
+                        name="subjectGroupId"
+                        type="hidden"
+                        value={context.subjectGroupId ?? ''}
+                      />
+                      <button
+                        className="button button-secondary"
+                        type="submit"
+                      >
+                        {t('openReport')}
+                      </button>
+                    </form>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </Card>
 
       {workspace ? (
         <Card className="content-section report-workspace">
           <div className="dashboard-week-heading">
             <div>
-              <h2>
-                {locale === 'ar' && workspace.classInfo.nameAr
-                  ? workspace.classInfo.nameAr
-                  : workspace.classInfo.nameEn}
-              </h2>
+              <h2>{t('reportWorkspace')}</h2>
+              <p>
+                {localize(
+                  workspace.context.classNameEn,
+                  workspace.context.classNameAr
+                )}
+                {' · '}
+                {localize(
+                  workspace.context.subjectNameEn,
+                  workspace.context.subjectNameAr
+                )}
+                {workspace.context.groupNameEn
+                  ? ` · ${localize(
+                      workspace.context.groupNameEn,
+                      workspace.context.groupNameAr
+                    )}`
+                  : ''}
+              </p>
               <p className="report-batch-meta">
-                {workspace.batch.periodStart} –{' '}
-                {workspace.batch.periodEnd}
+                {workspace.periodStart} – {workspace.periodEnd}
                 {' · '}
-                {t('studentCount', {
-                  count: workspace.summaryStudents.length
-                })}
+                {workspace.context.teacherNames.length > 0
+                  ? workspace.context.teacherNames.join(', ')
+                  : t('noTeacher')}
                 {' · '}
-                {t('sourceCount', {
-                  count: workspace.sources.length
+                {t('submissionCount', {
+                  count: workspace.context.submissionCount
                 })}
               </p>
             </div>
 
             <Badge
-              variant={
-                workspace.batch.status === 'FINALIZED'
-                  ? 'success'
-                  : 'warning'
-              }
+              variant={statusVariant(
+                workspace.context.status
+              )}
             >
-              {statusLabel}
+              {t(
+                `contextStatus.${workspace.context.status}`
+              )}
             </Badge>
           </div>
 
-          <ReportBatchSummary
-            labels={sourceLabels}
-            students={workspace.summaryStudents}
-          />
-
-          {workspace.sources.length === 0 ? (
-            <EmptyState title={t('noSources')} />
+          {workspace.context.status === 'WAITING' ? (
+            <Alert variant="warning">
+              {t('waitingForTeacher')}
+            </Alert>
           ) : (
             <>
-              <ReportComposer
-                labels={sourceLabels}
-                sources={workspace.sources}
-              />
+              {workspace.canEdit ? (
+                <form
+                  action={saveAdminReportWorkspaceAction}
+                  className="record-form"
+                >
+                  {hiddenPeriod}
+                  <input
+                    name="batchId"
+                    type="hidden"
+                    value={workspace.batchId}
+                  />
 
-              <ReportStudentReviewTable
-                labels={studentReviewLabels}
-                locale={locale}
-                students={workspace.summaryStudents}
-              />
+                  <section>
+                    <h3>{mainReportLabel}</h3>
+                    {mainReportHelp ? <p>{mainReportHelp}</p> : null}
+
+                    <div className="form-grid">
+                      <label>
+                        {t('englishField')}
+                        <textarea
+                          defaultValue={
+                            workspace.mainReportEn ?? ''
+                          }
+                          dir="ltr"
+                          name="mainReportEn"
+                          rows={7}
+                        />
+                      </label>
+
+                      <label>
+                        {t('arabicField')}
+                        <textarea
+                          defaultValue={
+                            workspace.mainReportAr ?? ''
+                          }
+                          dir="rtl"
+                          name="mainReportAr"
+                          rows={7}
+                        />
+                      </label>
+                    </div>
+                  </section>
+
+                  {workspace.template.performanceEnabled ? (
+                    <section>
+                      <label>
+                        {performanceLabel}
+                        <select
+                          defaultValue={
+                            workspace.performance ?? ''
+                          }
+                          name="performance"
+                        >
+                          <option value="">—</option>
+                          {performanceValues.map((value) => (
+                            <option
+                              key={value}
+                              value={value}
+                            >
+                              {weekly(
+                                `performance.${value}`
+                              )}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </section>
+                  ) : null}
+
+                  <section>
+                    <h3>{t('attendanceSummary')}</h3>
+                    <p>
+                      {t('attendanceCounts', {
+                        present: totalPresent,
+                        absent: totalAbsent
+                      })}
+                    </p>
+                  </section>
+
+                  {workspace.template.studentCommentsEnabled ? (
+                    <section>
+                      <h3>{studentCommentLabel}</h3>
+
+                      {workspace.studentComments.length === 0 ? (
+                        <EmptyState
+                          title={t('noStudentComments')}
+                        />
+                      ) : (
+                        <div className="stack-list">
+                          {workspace.studentComments.map(
+                            (student) => (
+                              <article
+                                className="record-card"
+                                key={student.studentId}
+                              >
+                                <div className="record-card-main">
+                                  <h4>
+                                    {localize(
+                                      student.studentNameEn,
+                                      student.studentNameAr
+                                    )}
+                                  </h4>
+
+                                  <input
+                                    name="studentId"
+                                    type="hidden"
+                                    value={student.studentId}
+                                  />
+
+                                  <div className="form-grid">
+                                    <label>
+                                      {t('englishField')}
+                                      <textarea
+                                        defaultValue={
+                                          student.commentEn ?? ''
+                                        }
+                                        dir="ltr"
+                                        name={`commentEn:${student.studentId}`}
+                                        rows={3}
+                                      />
+                                    </label>
+
+                                    <label>
+                                      {t('arabicField')}
+                                      <textarea
+                                        defaultValue={
+                                          student.commentAr ?? ''
+                                        }
+                                        dir="rtl"
+                                        name={`commentAr:${student.studentId}`}
+                                        rows={3}
+                                      />
+                                    </label>
+                                  </div>
+                                </div>
+                              </article>
+                            )
+                          )}
+                        </div>
+                      )}
+                    </section>
+                  ) : null}
+
+                  <div className="page-actions">
+                    <button
+                      className="button button-secondary"
+                      type="submit"
+                    >
+                      {t('saveChanges')}
+                    </button>
+
+                    <button
+                      className="button button-primary"
+                      disabled={
+                        workspace.attendanceConflicts.length > 0
+                      }
+                      formAction={
+                        finalizeAdminReportWorkspaceAction
+                      }
+                      type="submit"
+                    >
+                      {t('finalizeAndPrepare')}
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <>
+                  <Alert variant="info">
+                    {t('lockedReport')}
+                  </Alert>
+
+                  <section>
+                    <h3>{mainReportLabel}</h3>
+                    <p>
+                      <strong>{t('englishField')}:</strong>{' '}
+                      {workspace.mainReportEn ?? '—'}
+                    </p>
+                    <p dir="rtl">
+                      <strong>{t('arabicField')}:</strong>{' '}
+                      {workspace.mainReportAr ?? '—'}
+                    </p>
+                  </section>
+
+                  {workspace.template.performanceEnabled ? (
+                    <section>
+                      <h3>{performanceLabel}</h3>
+                      <p>
+                        {workspace.performance
+                          ? weekly(
+                              `performance.${workspace.performance}`
+                            )
+                          : '—'}
+                      </p>
+                    </section>
+                  ) : null}
+
+                  <section>
+                    <h3>{t('attendanceSummary')}</h3>
+                    <p>
+                      {t('attendanceCounts', {
+                        present: totalPresent,
+                        absent: totalAbsent
+                      })}
+                    </p>
+                  </section>
+
+                  {workspace.template.studentCommentsEnabled ? (
+                    <section>
+                      <h3>{studentCommentLabel}</h3>
+                      {workspace.studentComments.length === 0 ? (
+                        <EmptyState
+                          title={t('noStudentComments')}
+                        />
+                      ) : (
+                        <div className="stack-list">
+                          {workspace.studentComments.map(
+                            (student) => (
+                              <article
+                                className="record-card"
+                                key={student.studentId}
+                              >
+                                <div className="record-card-main">
+                                  <h4>
+                                    {localize(
+                                      student.studentNameEn,
+                                      student.studentNameAr
+                                    )}
+                                  </h4>
+                                  {student.commentEn ? (
+                                    <p>{student.commentEn}</p>
+                                  ) : null}
+                                  {student.commentAr ? (
+                                    <p dir="rtl">
+                                      {student.commentAr}
+                                    </p>
+                                  ) : null}
+                                </div>
+                              </article>
+                            )
+                          )}
+                        </div>
+                      )}
+                    </section>
+                  ) : null}
+                </>
+              )}
+
+              <section>
+                <h3>{t('attendanceCorrections')}</h3>
+
+                {workspace.attendanceConflicts.length === 0 ? (
+                  <p>{t('noAttendanceConflicts')}</p>
+                ) : (
+                  <AttendanceConflictList
+                    conflicts={workspace.attendanceConflicts}
+                    locale={locale}
+                  />
+                )}
+              </section>
+
+              <div className="page-actions">
+                {workspace.canReopen ? (
+                  <form
+                    action={reopenAdminReportWorkspaceAction}
+                  >
+                    {hiddenPeriod}
+                    <input
+                      name="batchId"
+                      type="hidden"
+                      value={workspace.batchId}
+                    />
+                    <button
+                      className="button button-secondary"
+                      type="submit"
+                    >
+                      {t('editReport')}
+                    </button>
+                  </form>
+                ) : null}
+
+                {workspace.context.status ===
+                  'READY_TO_SEND' ||
+                workspace.context.status ===
+                  'DELIVERY_ISSUE' ? (
+                  <form action={sendAdminReportBatchAction}>
+                    {hiddenPeriod}
+                    <input
+                      name="batchId"
+                      type="hidden"
+                      value={workspace.batchId}
+                    />
+                    <button
+                      className="button button-primary"
+                      type="submit"
+                    >
+                      {workspace.context.status ===
+                      'DELIVERY_ISSUE'
+                        ? t('retryContextDelivery')
+                        : t('sendContextReports')}
+                    </button>
+                  </form>
+                ) : null}
+              </div>
+
+              {workspace.reportIds.length > 0 ? (
+                <p className="report-batch-meta">
+                  {t('generatedReports', {
+                    count: workspace.reportIds.length
+                  })}
+                </p>
+              ) : null}
             </>
           )}
-
-          {workspace.batch.status !== 'FINALIZED' &&
-          workspace.sources.length > 0 ? (
-            <div className="page-actions">
-              <form action={approveAllReportSourcesAction}>
-                {batchHidden}
-                <button
-                  className="button button-secondary"
-                  type="submit"
-                >
-                  {t('refreshSources')}
-                </button>
-              </form>
-
-              <form action={finalizeReportBatchAction}>
-                {batchHidden}
-                <button
-                  className="button button-primary"
-                  disabled={
-                    workspace.approvals.length === 0 ||
-                    workspace.summaryStudents.some(
-                      (student) =>
-                        student.missingDataCount > 0 ||
-                        student.attendanceConflictCount > 0
-                    )
-                  }
-                  type="submit"
-                >
-                  {t('finalizeReports')}
-                </button>
-              </form>
-            </div>
-          ) : null}
         </Card>
       ) : null}
-
-      <Card className="content-section">
-        <div className="section-heading">
-          <div>
-            <h2>{t('sendStage')}</h2>
-            <p>{t('sendStageHelp')}</p>
-          </div>
-
-          {sendableReports.length > 0 ? (
-            <form action={sendReadyReportsAction}>
-              {hiddenPeriod}
-              <button
-                className="button button-primary"
-                type="submit"
-              >
-                {t('sendReady')}
-              </button>
-            </form>
-          ) : null}
-        </div>
-
-        {reports.length === 0 ? (
-          <EmptyState title={t('empty')} />
-        ) : (
-          <DataTable
-            columns={[
-              {
-                key: 'student',
-                header: t('student'),
-                render: (report) =>
-                  locale === 'ar' && report.studentNameAr
-                    ? report.studentNameAr
-                    : report.studentNameEn
-              },
-              {
-                key: 'language',
-                header: t('language'),
-                render: (report) => languages(report.language)
-              },
-              {
-                key: 'status',
-                header: t('status'),
-                render: (report) => {
-                  const isPending =
-                    report.deliveryStatuses.includes('PENDING');
-
-                  const displayStatus = isPending
-                    ? 'PENDING'
-                    : report.status;
-
-                  return (
-                    <Badge
-                      variant={
-                        displayStatus === 'FAILED'
-                          ? 'danger'
-                          : displayStatus === 'PENDING'
-                            ? 'warning'
-                            : 'success'
-                      }
-                    >
-                      {t(`reportStatus.${displayStatus}`)}
-                    </Badge>
-                  );
-                }
-              },
-              {
-                key: 'generated',
-                header: t('generatedAt'),
-                render: (report) =>
-                  new Intl.DateTimeFormat(locale, {
-                    dateStyle: 'medium',
-                    timeStyle: 'short'
-                  }).format(new Date(report.generatedAt))
-              },
-              {
-                key: 'actions',
-                header: common('actions'),
-                render: (report) => {
-                  const isPending =
-                    report.deliveryStatuses.includes('PENDING');
-
-                  return (
-                    <div className="row-actions">
-                      <Link href={`/reports/${report.id}`}>
-                        {t('preview')}
-                      </Link>
-
-                      {!isPending &&
-                      (report.status === 'READY' ||
-                        report.status === 'FAILED') ? (
-                        <form action={sendReportAction}>
-                          {hiddenPeriod}
-                          <input
-                            name="reportId"
-                            type="hidden"
-                            value={report.id}
-                          />
-                          <button
-                            className="text-button"
-                            type="submit"
-                          >
-                            {report.status === 'FAILED'
-                              ? t('retry')
-                              : t('send')}
-                          </button>
-                        </form>
-                      ) : null}
-                    </div>
-                  );
-                }
-              }
-            ]}
-            getRowKey={(report) => report.id}
-            rows={reports}
-          />
-        )}
-      </Card>
     </section>
   );
 }
