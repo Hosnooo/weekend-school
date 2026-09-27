@@ -6,7 +6,6 @@ const studentId = 'e0000000-0000-0000-0000-000000000001';
 const studentNameEn = 'Sara Ali';
 const studentNameAr = 'سارة علي';
 
-const guardianId = 'f0000000-0000-0000-0000-000000000001';
 const guardianName = 'Guardian 01';
 const guardianEmail = 'guardian01@example.test';
 
@@ -61,7 +60,8 @@ test.describe('Student, enrollment, and Guardian management', () => {
       await expect(page.getByRole('heading', {level: 2, name: section})).toBeVisible();
     }
 
-    await expect(page.getByRole('link', {name: guardianName})).toBeVisible();
+    await expect(page.getByText(guardianName, {exact: true})).toBeVisible();
+    await expect(page.getByText(guardianEmail, {exact: true})).toBeVisible();
     await expect(
       page.locator('p').filter({hasText: 'Current Class:'})
     ).toContainText('Foundations');
@@ -104,60 +104,80 @@ test.describe('Student, enrollment, and Guardian management', () => {
       fullPage: true
     });
 
-    // Guardians — desktop
+    // Guardian management is centered on the Student record.
+    await page.goto(`/en/students/${studentId}`);
+
+    const addGuardianDetails = page
+      .locator('details')
+      .filter({hasText: 'Add guardian'})
+      .last();
+
+    await addGuardianDetails.locator('summary').click();
+    await addGuardianDetails.getByLabel('Name').fill('Second Guardian');
+    await addGuardianDetails
+      .getByLabel('Email')
+      .fill('second.guardian@example.test');
+    await addGuardianDetails
+      .getByLabel('Phone')
+      .fill('+1 780 555 0300');
+    await addGuardianDetails
+      .getByLabel('Report language')
+      .selectOption('both');
+
+    await addGuardianDetails
+      .getByRole('button', {name: 'Add guardian'})
+      .click();
+
+    const secondGuardian = page
+      .locator('.record-card')
+      .filter({hasText: 'Second Guardian'});
+
+    await expect(secondGuardian).toBeVisible();
+    await expect(secondGuardian).toContainText('second.guardian@example.test');
+    await expect(secondGuardian).toContainText('+1 780 555 0300');
+    await expect(secondGuardian).toContainText('Receives reports');
+
+    // Edit the Guardian from the Student record.
+    await secondGuardian.locator('summary').click();
+    await secondGuardian
+      .getByLabel('Name')
+      .fill('Second Guardian Updated');
+    await secondGuardian
+      .getByRole('button', {name: 'Save'})
+      .click();
+
+    await expect(
+      page.getByText('Second Guardian Updated', {exact: true})
+    ).toBeVisible();
+
+    // Unlinking removes only this Student relationship.
+    const updatedGuardian = page
+      .locator('.record-card')
+      .filter({hasText: 'Second Guardian Updated'});
+
+    await updatedGuardian
+      .getByRole('button', {name: 'Unlink from student'})
+      .click();
+
+    await expect(
+      page.getByText('Second Guardian Updated', {exact: true})
+    ).toHaveCount(0);
+
+    // The standalone Guardians route is informational only.
     await page.goto('/en/guardians');
-    await expect(page.getByRole('heading', {level: 1, name: 'Guardians'})).toBeVisible();
-
-    const guardianRow = page.getByRole('row').filter({hasText: guardianName});
-    await expect(guardianRow).toContainText(guardianEmail);
-    await expect(guardianRow).toContainText('English');
-    await expect(guardianRow).toContainText('Active');
-    await assertNoHorizontalOverflow(page);
-
-    await page.screenshot({
-      path: testInfo.outputPath('en-guardians-desktop.png'),
-      fullPage: true
-    });
-
-    // Guardian detail exposes linked Students.
-    await guardianRow.getByRole('link', {name: guardianName}).click();
-
-    await expect(page).toHaveURL(new RegExp(`/en/guardians/${guardianId}$`));
     await expect(
-      page.getByRole('heading', {level: 1, name: guardianName})
+      page.getByRole('heading', {level: 1, name: 'Guardians'})
     ).toBeVisible();
-
-    for (const section of [
-      'Identity & contact',
-      'Students',
-      'Lifecycle'
-    ]) {
-      await expect(page.getByRole('heading', {level: 2, name: section})).toBeVisible();
-    }
-
-    await expect(page.getByRole('link', {name: studentNameEn})).toBeVisible();
-    await expect(page.getByText(guardianEmail, {exact: true})).toBeVisible();
     await expect(
-      page.getByText('Primary guardian · Receives reports', {exact: true})
+      page.getByRole('heading', {
+        level: 2,
+        name: 'Guardian management has moved'
+      })
+    ).toBeVisible();
+    await expect(
+      page.locator('#main-content').getByRole('link', {name: 'Students'})
     ).toBeVisible();
     await assertNoHorizontalOverflow(page);
-
-    await page.screenshot({
-      path: testInfo.outputPath('en-guardian-detail-desktop.png'),
-      fullPage: true
-    });
-
-    // Guardian editing stays on the canonical Guardian route.
-    await page.getByRole('link', {name: 'Edit'}).click();
-    await expect(page).toHaveURL(new RegExp(`/en/guardians/${guardianId}/edit$`));
-    await expect(
-      page.getByRole('heading', {level: 1, name: 'Edit guardian'})
-    ).toBeVisible();
-    await expect(page.getByLabel('Name')).toHaveValue(guardianName);
-    await expect(page.getByLabel('Email')).toHaveValue(guardianEmail);
-    await expect(page.getByLabel('Report language')).toHaveValue('en');
-
-    await page.goto('/en/guardians');
 
     // Students — narrow layout and overflow menu.
     await page.setViewportSize({width: 360, height: 800});
@@ -181,25 +201,13 @@ test.describe('Student, enrollment, and Guardian management', () => {
 
     await page.keyboard.press('Escape');
 
-    // Guardians — narrow layout and overflow menu.
-    await page.goto('/en/guardians');
+    // Student Guardian management remains usable at 360px.
+    await page.goto(`/en/students/${studentId}`);
+    await expect(
+      page.locator('summary').filter({hasText: 'Add guardian'})
+    ).toBeVisible();
     await assertNoHorizontalOverflow(page);
-
-    const mobileGuardianRow = page.getByRole('row').filter({hasText: guardianName});
-    await mobileGuardianRow
-      .getByRole('button', {name: `Actions: ${guardianName}`})
-      .click();
-
-    await expect(page.getByRole('menuitem', {name: 'Edit'})).toBeVisible();
-    await expect(page.getByRole('menuitem', {name: 'Deactivate'})).toBeVisible();
     await assertSkipLinkHidden(page);
-
-    await page.screenshot({
-      path: testInfo.outputPath('en-guardians-mobile-menu.png'),
-      fullPage: true
-    });
-
-    await page.keyboard.press('Escape');
 
     // Arabic Student detail — RTL.
     await page.setViewportSize({width: 1366, height: 900});
@@ -229,40 +237,28 @@ test.describe('Student, enrollment, and Guardian management', () => {
       fullPage: true
     });
 
-    // Arabic Guardians — desktop.
+    // Arabic standalone Guardians route is informational and RTL-safe.
     await page.goto('/ar/guardians');
 
     await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
     await expect(
       page.getByRole('heading', {level: 1, name: 'أولياء الأمور'})
     ).toBeVisible();
-
-    const arabicGuardianRow = page.getByRole('row').filter({hasText: guardianName});
-    await expect(arabicGuardianRow).toContainText(guardianEmail);
+    await expect(
+      page.getByRole('heading', {
+        level: 2,
+        name: 'تم نقل إدارة أولياء الأمور'
+      })
+    ).toBeVisible();
+    await expect(
+      page.locator('#main-content').getByRole('link', {name: 'الطلاب'})
+    ).toBeVisible();
     await assertNoHorizontalOverflow(page);
 
-    await page.screenshot({
-      path: testInfo.outputPath('ar-guardians-desktop.png'),
-      fullPage: true
-    });
-
-    // Arabic Guardians — narrow overflow menu.
     await page.setViewportSize({width: 360, height: 800});
     await page.goto('/ar/guardians');
     await assertNoHorizontalOverflow(page);
+    await assertSkipLinkHidden(page);
 
-    const arabicMobileGuardianRow = page
-      .getByRole('row')
-      .filter({hasText: guardianName});
-
-    await arabicMobileGuardianRow.getByRole('button').click();
-
-    await expect(page.getByRole('menuitem', {name: 'تعديل'})).toBeVisible();
-    await expect(page.getByRole('menuitem', {name: 'إلغاء التفعيل'})).toBeVisible();
-
-    await page.screenshot({
-      path: testInfo.outputPath('ar-guardians-mobile-menu.png'),
-      fullPage: true
-    });
   });
 });

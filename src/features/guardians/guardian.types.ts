@@ -2,6 +2,7 @@ export type GuardianListItem = {
   id: string;
   name: string;
   email: string;
+  phone: string | null;
   reportLanguage: 'en' | 'ar' | 'both';
   isActive: boolean;
 };

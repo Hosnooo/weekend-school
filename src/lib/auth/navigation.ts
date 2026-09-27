@@ -38,7 +38,6 @@ const administratorSections: readonly NavigationSection[] = [
     id: 'people',
     items: [
       {href: '/students', messageKey: 'students'},
-      {href: '/guardians', messageKey: 'guardians'},
       {href: '/teachers', messageKey: 'teachers'},
       {href: '/administrators', messageKey: 'administrators'}
     ]

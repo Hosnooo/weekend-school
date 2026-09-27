@@ -44,7 +44,6 @@ describe('AppNavigation', () => {
     expect(screen.getAllByRole('link').map((link) => link.textContent)).toEqual([
       'Dashboard',
       'Students',
-      'Guardians',
       'Teachers',
       'Administrators',
       'Classes & Subjects',

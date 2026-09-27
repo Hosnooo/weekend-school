@@ -92,7 +92,8 @@ describe('migration contract', () => {
       '202609230027_export_requests.sql',
       '20260924222147_independent_role_records.sql',
       '20260925033643_admin_ux_completion.sql',
-      '20260925033656_weekly_context_compatibility.sql'
+      '20260925033656_weekly_context_compatibility.sql',
+      '20260927050424_student_guardian_centered_workflow.sql'
     ]);
   });
 

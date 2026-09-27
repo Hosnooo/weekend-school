@@ -159,13 +159,14 @@ export async function getStudentEnrollmentState(
 
 export async function createStudentWithEnrollment(input: CreateStudentEnrollmentInput) {
   const supabase = await createServerSupabaseClient();
-  const {data, error} = await supabase.rpc('create_student_with_enrollment', {
+  const {data, error} = await supabase.rpc('create_student_with_enrollment_v2', {
     p_first_name_en: input.firstNameEn,
     p_last_name_en: input.lastNameEn,
     p_first_name_ar: input.firstNameAr ?? '',
     p_last_name_ar: input.lastNameAr ?? '',
     p_guardian_name: input.guardianName,
     p_guardian_email: input.guardianEmail,
+    p_guardian_phone: input.guardianPhone,
     p_report_language: input.reportLanguage,
     p_class_id: input.classId,
     p_starts_on: input.startsOn,

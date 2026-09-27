@@ -14,17 +14,37 @@ const subjectSelectionSchema = z.object({
   groupId: optionalUuid
 });
 
+const optionalNormalizedEmail = z.preprocess(
+  (value) => (typeof value === 'string' && value.trim() === '' ? null : value),
+  normalizedEmail.nullable()
+);
+
 export const createStudentEnrollmentSchema = z.object({
   firstNameEn: requiredText,
   lastNameEn: requiredText,
   firstNameAr: optionalText,
   lastNameAr: optionalText,
-  guardianName: requiredText,
-  guardianEmail: normalizedEmail,
+  guardianName: optionalText,
+  guardianEmail: optionalNormalizedEmail,
+  guardianPhone: optionalText,
   reportLanguage: z.enum(['en', 'ar', 'both']),
   classId: databaseUuid,
   startsOn: z.iso.date(),
   subjects: z.array(subjectSelectionSchema)
+}).superRefine((value, ctx) => {
+  const supplied = [
+    value.guardianName,
+    value.guardianEmail,
+    value.guardianPhone
+  ].filter((item) => item !== null).length;
+
+  if (supplied !== 0 && supplied !== 3) {
+    ctx.addIssue({
+      code: 'custom',
+      message: 'Complete guardian details are required',
+      path: ['guardianName']
+    });
+  }
 });
 
 export const changeStudentClassSchema = z.object({
