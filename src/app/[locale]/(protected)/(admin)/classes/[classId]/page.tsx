@@ -46,6 +46,12 @@ export default async function ClassDetailPage({
       ? classDetail.nameAr
       : classDetail.nameEn;
 
+  const formatDate = (value: string) =>
+    new Intl.DateTimeFormat(locale, {
+      dateStyle: 'medium',
+      timeZone: 'UTC'
+    }).format(new Date(`${value}T12:00:00Z`));
+
   return (
     <section className="admin-page">
       <PageHeader
@@ -61,8 +67,10 @@ export default async function ClassDetailPage({
             <ClassEditDialog
               classId={classDetail.id}
               locale={locale}
+              endsOn={classDetail.endsOn}
               nameAr={classDetail.nameAr}
               nameEn={classDetail.nameEn}
+              startsOn={classDetail.startsOn}
             />
           </>
         }
@@ -71,7 +79,12 @@ export default async function ClassDetailPage({
           {label: t('title'), href: `/${locale}/classes`},
           {label: className}
         ]}
-        description={t('classDetailDescription')}
+        description={`${t('classDetailDescription')} ${t('classPeriodDescription', {
+          start: formatDate(classDetail.startsOn),
+          end: classDetail.endsOn
+            ? formatDate(classDetail.endsOn)
+            : t('ongoing')
+        })}`}
         title={className}
       />
 

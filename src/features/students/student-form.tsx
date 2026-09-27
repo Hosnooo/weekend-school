@@ -6,6 +6,7 @@ import {useTranslations} from 'next-intl';
 import {Button} from '@/components/ui/button';
 import {FormFeedback} from '@/components/ui/form-feedback';
 import type {EnrollmentClassOption} from '@/features/enrollment/enrollment.types';
+import type {GuardianListItem} from '@/features/guardians/guardian.types';
 import {
   createStudentAction,
   updateStudentAction
@@ -24,12 +25,14 @@ type SubjectSelection = {
 export function StudentForm({
   locale,
   classes = [],
+  availableGuardians = [],
   student,
   today,
   cancelHref = '/students'
 }: {
   locale: Locale;
   classes?: EnrollmentClassOption[];
+  availableGuardians?: GuardianListItem[];
   student?: StudentListItem;
   today?: string;
   cancelHref?: string;
@@ -37,6 +40,7 @@ export function StudentForm({
   const t = useTranslations('students');
   const common = useTranslations('common');
   const classMessages = useTranslations('classes');
+  const guardiansT = useTranslations('guardians');
   const reportLanguages = useTranslations('reportLanguages');
   const [state, action, pending] = useActionState(
     student ? updateStudentAction : createStudentAction,
@@ -50,6 +54,30 @@ export function StudentForm({
   const selectedClass =
     activeClasses.find(({id}) => id === classId) ?? null;
   const [selections, setSelections] = useState<SubjectSelection[]>([]);
+  const [guardianMode, setGuardianMode] = useState<
+    'none' | 'existing' | 'new'
+  >('none');
+  const [guardianId, setGuardianId] = useState('');
+  const [guardianSearch, setGuardianSearch] = useState('');
+  const [guardianEmail, setGuardianEmail] = useState('');
+
+  const normalizedGuardianSearch = guardianSearch.trim().toLocaleLowerCase();
+  const matchingGuardians = availableGuardians.filter((guardian) => {
+    if (!normalizedGuardianSearch) return true;
+    return (
+      guardian.name.toLocaleLowerCase().includes(normalizedGuardianSearch) ||
+      guardian.email.toLocaleLowerCase().includes(normalizedGuardianSearch)
+    );
+  });
+
+  const normalizedGuardianEmail = guardianEmail.trim().toLocaleLowerCase();
+  const existingGuardianForEmail =
+    guardianMode === 'new' && normalizedGuardianEmail
+      ? availableGuardians.find(
+          (guardian) =>
+            guardian.email.toLocaleLowerCase() === normalizedGuardianEmail
+        ) ?? null
+      : null;
 
   const localize = (value: {nameEn: string; nameAr: string | null}) =>
     locale === 'ar' && value.nameAr ? value.nameAr : value.nameEn;
@@ -121,29 +149,197 @@ export function StudentForm({
         <>
           <fieldset>
             <legend>{t('guardianOptional')}</legend>
-            <p className="field-help">{t('guardianOptionalHelp')}</p>
+            <p className="field-help">
+              {guardiansT('guardianChoiceHelp')}
+            </p>
+
+            <input
+              name="guardianMode"
+              type="hidden"
+              value={guardianMode}
+            />
+            <input
+              name="guardianId"
+              type="hidden"
+              value={guardianMode === 'existing' ? guardianId : ''}
+            />
+
             <div className="form-grid">
               <label>
-                {t('guardianName')}
-                <input name="guardianName" />
+                <input
+                  checked={guardianMode === 'none'}
+                  name="guardianModeChoice"
+                  onChange={() => {
+                    setGuardianMode('none');
+                    setGuardianId('');
+                  }}
+                  type="radio"
+                />{' '}
+                {guardiansT('noGuardian')}
               </label>
+
               <label>
-                {t('guardianEmail')}
-                <input autoComplete="email" name="guardianEmail" type="email" />
+                <input
+                  checked={guardianMode === 'existing'}
+                  disabled={availableGuardians.length === 0}
+                  name="guardianModeChoice"
+                  onChange={() => setGuardianMode('existing')}
+                  type="radio"
+                />{' '}
+                {guardiansT('linkExistingGuardian')}
               </label>
+
               <label>
-                {t('guardianPhone')}
-                <input autoComplete="tel" name="guardianPhone" type="tel" />
-              </label>
-              <label>
-                {t('reportLanguage')}
-                <select defaultValue="en" name="reportLanguage">
-                  <option value="en">{reportLanguages('en')}</option>
-                  <option value="ar">{reportLanguages('ar')}</option>
-                  <option value="both">{reportLanguages('both')}</option>
-                </select>
+                <input
+                  checked={guardianMode === 'new'}
+                  name="guardianModeChoice"
+                  onChange={() => {
+                    setGuardianMode('new');
+                    setGuardianId('');
+                  }}
+                  type="radio"
+                />{' '}
+                {guardiansT('addNewGuardian')}
               </label>
             </div>
+
+            {guardianMode === 'existing' ? (
+              <div className="stack-list">
+                <label>
+                  {guardiansT('searchExistingGuardian')}
+                  <input
+                    name="guardianSearch"
+                    onChange={(event) =>
+                      setGuardianSearch(event.target.value)
+                    }
+                    placeholder={guardiansT(
+                      'searchExistingGuardianPlaceholder'
+                    )}
+                    type="search"
+                    value={guardianSearch}
+                  />
+                </label>
+
+                <p className="field-help">
+                  {guardiansT('searchExistingGuardianHelp')}
+                </p>
+
+                {matchingGuardians.length === 0 ? (
+                  <p>{guardiansT('noGuardianSearchResults')}</p>
+                ) : (
+                  <div className="stack-list">
+                    {matchingGuardians.map((guardian) => (
+                      <label
+                        className="record-card"
+                        key={guardian.id}
+                      >
+                        <input
+                          checked={guardianId === guardian.id}
+                          name="guardianSelection"
+                          onChange={() => setGuardianId(guardian.id)}
+                          type="radio"
+                        />{' '}
+                        <strong>{guardian.name}</strong>
+                        {' — '}
+                        {guardian.email}
+                        {!guardian.isActive ? (
+                          <>
+                            {' '}
+                            ({guardiansT('archived')})
+                          </>
+                        ) : null}
+                      </label>
+                    ))}
+                  </div>
+                )}
+
+                {guardianId &&
+                availableGuardians.find(
+                  (guardian) =>
+                    guardian.id === guardianId && !guardian.isActive
+                ) ? (
+                  <p className="field-help">
+                    {guardiansT('selectedArchivedGuardianHelp')}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
+
+            {guardianMode === 'new' ? (
+              <div className="stack-list">
+                <div className="form-grid">
+                  <label>
+                    {t('guardianName')}
+                    <input name="guardianName" required />
+                  </label>
+
+                  <label>
+                    {t('guardianEmail')}
+                    <input
+                      autoComplete="email"
+                      name="guardianEmail"
+                      onChange={(event) =>
+                        setGuardianEmail(event.target.value)
+                      }
+                      required
+                      type="email"
+                      value={guardianEmail}
+                    />
+                  </label>
+
+                  <label>
+                    {t('guardianPhone')}
+                    <input
+                      autoComplete="tel"
+                      name="guardianPhone"
+                      required
+                      type="tel"
+                    />
+                  </label>
+
+                  <label>
+                    {t('reportLanguage')}
+                    <select defaultValue="en" name="reportLanguage">
+                      <option value="en">{reportLanguages('en')}</option>
+                      <option value="ar">{reportLanguages('ar')}</option>
+                      <option value="both">
+                        {reportLanguages('both')}
+                      </option>
+                    </select>
+                  </label>
+                </div>
+
+                {existingGuardianForEmail ? (
+                  <div className="record-card stack-list">
+                    <p>
+                      {guardiansT('existingEmailFound')}
+                    </p>
+                    <div>
+                      <strong>{existingGuardianForEmail.name}</strong>
+                      {' — '}
+                      {existingGuardianForEmail.email}
+                      {!existingGuardianForEmail.isActive ? (
+                        <>
+                          {' '}
+                          ({guardiansT('archived')})
+                        </>
+                      ) : null}
+                    </div>
+                    <Button
+                      onClick={() => {
+                        setGuardianMode('existing');
+                        setGuardianId(existingGuardianForEmail.id);
+                        setGuardianSearch(existingGuardianForEmail.email);
+                      }}
+                      type="button"
+                      variant="secondary"
+                    >
+                      {guardiansT('useExistingGuardian')}
+                    </Button>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
           </fieldset>
 
           <fieldset>
@@ -258,7 +454,10 @@ export function StudentForm({
       <FormFeedback state={state} />
 
       <div className="form-actions">
-        <Button disabled={pending} type="submit">
+        <Button
+          disabled={pending || Boolean(existingGuardianForEmail)}
+          type="submit"
+        >
           {pending ? common('saving') : common('save')}
         </Button>
         <Link

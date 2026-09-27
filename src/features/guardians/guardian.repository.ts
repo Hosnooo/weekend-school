@@ -2,6 +2,7 @@ import 'server-only';
 
 import type {
   GuardianInput,
+  StudentGuardianExistingLinkInput,
   StudentGuardianLinkInput,
   StudentGuardianUpdateInput
 } from '@/features/guardians/guardian.schemas';
@@ -168,6 +169,20 @@ export async function updateGuardian(
     .eq('school_id', schoolId)
     .eq('id', id);
   if (error) throw error;
+}
+
+export async function linkExistingGuardianToStudent(
+  input: StudentGuardianExistingLinkInput
+) {
+  const supabase = await createServerSupabaseClient();
+  const {data, error} = await supabase.rpc('link_existing_student_guardian', {
+    p_student_id: input.studentId,
+    p_guardian_id: input.guardianId,
+    p_is_primary: input.isPrimary,
+    p_receives_reports: input.receivesReports
+  });
+  if (error) throw error;
+  return data as string;
 }
 
 export async function linkGuardianToStudent(input: StudentGuardianLinkInput) {

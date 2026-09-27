@@ -27,6 +27,8 @@ export type ClassSummary = {
   id: string;
   nameEn: string;
   nameAr: string | null;
+  startsOn: string;
+  endsOn: string | null;
   isActive: boolean;
   activeStudentCount: number;
   subjectCount: number;
@@ -36,6 +38,8 @@ export type ClassDetail = {
   id: string;
   nameEn: string;
   nameAr: string | null;
+  startsOn: string;
+  endsOn: string | null;
   isActive: boolean;
   subjects: ClassSubjectSummary[];
 };

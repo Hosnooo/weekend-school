@@ -67,10 +67,12 @@ export async function createStudentAction(
     lastNameEn: formData.get('lastNameEn'),
     firstNameAr: formData.get('firstNameAr'),
     lastNameAr: formData.get('lastNameAr'),
+    guardianMode: formData.get('guardianMode'),
+    guardianId: formData.get('guardianId'),
     guardianName: formData.get('guardianName'),
     guardianEmail: formData.get('guardianEmail'),
     guardianPhone: formData.get('guardianPhone'),
-    reportLanguage: formData.get('reportLanguage'),
+    reportLanguage: formData.get('reportLanguage') ?? 'en',
     classId: formData.get('classId'),
     startsOn: formData.get('startsOn'),
     subjects: parseJson(formData.get('subjects'))

@@ -13,14 +13,59 @@ describe('Class administration schemas', () => {
   it('requires an English Class display name and normalizes an empty Arabic name', () => {
     expect(classSchema.safeParse({nameEn: '   ', nameAr: ''}).success).toBe(false);
 
-    const parsed = classSchema.parse({nameEn: ' Class 5 ', nameAr: ''});
-    expect(parsed).toEqual({nameEn: 'Class 5', nameAr: null});
+    const parsed = classSchema.parse({
+      nameEn: ' Class 5 ',
+      nameAr: '',
+      startsOn: '2026-09-01',
+      endsOn: ''
+    });
+    expect(parsed).toEqual({
+      nameEn: 'Class 5',
+      nameAr: null,
+      startsOn: '2026-09-01',
+      endsOn: null
+    });
   });
 
   it('accepts bilingual Class names', () => {
-    expect(classSchema.parse({nameEn: 'Class 5', nameAr: 'الصف الخامس'})).toEqual({
+    expect(classSchema.parse({
       nameEn: 'Class 5',
-      nameAr: 'الصف الخامس'
+      nameAr: 'الصف الخامس',
+      startsOn: '2026-09-01',
+      endsOn: ''
+    })).toEqual({
+      nameEn: 'Class 5',
+      nameAr: 'الصف الخامس',
+      startsOn: '2026-09-01',
+      endsOn: null
+    });
+  });
+
+  it('requires a Class start date and prevents an end date before it', () => {
+    expect(classSchema.safeParse({
+      nameEn: 'Class 5',
+      nameAr: '',
+      startsOn: '',
+      endsOn: ''
+    }).success).toBe(false);
+
+    expect(classSchema.safeParse({
+      nameEn: 'Class 5',
+      nameAr: '',
+      startsOn: '2026-09-01',
+      endsOn: '2026-08-31'
+    }).success).toBe(false);
+
+    expect(classSchema.parse({
+      nameEn: 'Class 5',
+      nameAr: '',
+      startsOn: '2026-09-01',
+      endsOn: '2027-06-30'
+    })).toEqual({
+      nameEn: 'Class 5',
+      nameAr: null,
+      startsOn: '2026-09-01',
+      endsOn: '2027-06-30'
     });
   });
 

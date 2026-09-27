@@ -19,11 +19,19 @@ const optionalNormalizedEmail = z.preprocess(
   normalizedEmail.nullable()
 );
 
+export const guardianCreationModeSchema = z.enum([
+  'none',
+  'existing',
+  'new'
+]);
+
 export const createStudentEnrollmentSchema = z.object({
   firstNameEn: requiredText,
   lastNameEn: requiredText,
   firstNameAr: optionalText,
   lastNameAr: optionalText,
+  guardianMode: guardianCreationModeSchema,
+  guardianId: optionalUuid,
   guardianName: optionalText,
   guardianEmail: optionalNormalizedEmail,
   guardianPhone: optionalText,
@@ -32,16 +40,46 @@ export const createStudentEnrollmentSchema = z.object({
   startsOn: z.iso.date(),
   subjects: z.array(subjectSelectionSchema)
 }).superRefine((value, ctx) => {
-  const supplied = [
+  const suppliedGuardianDetails = [
     value.guardianName,
     value.guardianEmail,
     value.guardianPhone
   ].filter((item) => item !== null).length;
 
-  if (supplied !== 0 && supplied !== 3) {
+  if (value.guardianMode === 'none') {
+    if (value.guardianId !== null || suppliedGuardianDetails !== 0) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'No Guardian identity may be supplied',
+        path: ['guardianMode']
+      });
+    }
+    return;
+  }
+
+  if (value.guardianMode === 'existing') {
+    if (value.guardianId === null) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Existing Guardian ID is required',
+        path: ['guardianId']
+      });
+    }
+
+    if (suppliedGuardianDetails !== 0) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Existing Guardian must be selected by ID',
+        path: ['guardianId']
+      });
+    }
+    return;
+  }
+
+  if (value.guardianId !== null || suppliedGuardianDetails !== 3) {
     ctx.addIssue({
       code: 'custom',
-      message: 'Complete guardian details are required',
+      message: 'Complete new Guardian details are required',
       path: ['guardianName']
     });
   }

@@ -1,6 +1,6 @@
 'use client';
 
-import {useActionState} from 'react';
+import {useActionState, useState} from 'react';
 import {useTranslations} from 'next-intl';
 
 import {Badge} from '@/components/ui/badge';
@@ -8,10 +8,14 @@ import {Button} from '@/components/ui/button';
 import {FormFeedback} from '@/components/ui/form-feedback';
 import {
   addStudentGuardianAction,
+  linkExistingStudentGuardianAction,
   unlinkStudentGuardianAction,
   updateStudentGuardianAction
 } from '@/features/guardians/guardian.actions';
-import type {StudentGuardianLink} from '@/features/guardians/guardian.types';
+import type {
+  GuardianListItem,
+  StudentGuardianLink
+} from '@/features/guardians/guardian.types';
 import type {Locale} from '@/i18n/config';
 import {initialActionState} from '@/lib/validation/action-state';
 
@@ -45,6 +49,7 @@ function GuardianEditor({
             {t('name')}
             <input defaultValue={guardian.name} name="name" required />
           </label>
+
           <label>
             {t('email')}
             <input
@@ -55,6 +60,7 @@ function GuardianEditor({
               type="email"
             />
           </label>
+
           <label>
             {t('phone')}
             <input
@@ -65,6 +71,7 @@ function GuardianEditor({
               type="tel"
             />
           </label>
+
           <label>
             {t('reportLanguage')}
             <select
@@ -76,6 +83,7 @@ function GuardianEditor({
               <option value="both">{languages('both')}</option>
             </select>
           </label>
+
           <label>
             <input
               defaultChecked={guardian.isPrimary}
@@ -84,6 +92,7 @@ function GuardianEditor({
             />{' '}
             {t('primaryGuardian')}
           </label>
+
           <label>
             <input
               defaultChecked={guardian.receivesReports}
@@ -105,18 +114,161 @@ function GuardianEditor({
   );
 }
 
+function ExistingGuardianLinkForm({
+  guardian,
+  locale,
+  studentId,
+  isFirstGuardian
+}: {
+  guardian: GuardianListItem;
+  locale: Locale;
+  studentId: string;
+  isFirstGuardian: boolean;
+}) {
+  const t = useTranslations('guardians');
+  const common = useTranslations('common');
+  const [state, action, pending] = useActionState(
+    linkExistingStudentGuardianAction,
+    initialActionState
+  );
+
+  return (
+    <div className="record-card stack-list">
+      <div>
+        <strong>{guardian.name}</strong>{' '}
+        {!guardian.isActive ? (
+          <Badge variant="warning">{t('archived')}</Badge>
+        ) : null}
+      </div>
+
+      <div>{guardian.email}</div>
+
+      <div>
+        <strong>{t('phone')}:</strong>{' '}
+        {guardian.phone ?? common('none')}
+      </div>
+
+      <form action={action} className="record-form">
+        <input name="locale" type="hidden" value={locale} />
+        <input name="studentId" type="hidden" value={studentId} />
+        <input name="guardianId" type="hidden" value={guardian.id} />
+
+        <div className="form-grid">
+          <label>
+            <input
+              defaultChecked={isFirstGuardian}
+              name="isPrimary"
+              type="checkbox"
+            />{' '}
+            {t('primaryGuardian')}
+          </label>
+
+          <label>
+            <input
+              defaultChecked
+              name="receivesReports"
+              type="checkbox"
+            />{' '}
+            {t('receivesReports')}
+          </label>
+        </div>
+
+        <FormFeedback state={state} />
+
+        <Button disabled={pending} type="submit">
+          {pending
+            ? common('saving')
+            : guardian.isActive
+              ? t('linkGuardian')
+              : t('restoreAndLink')}
+        </Button>
+      </form>
+    </div>
+  );
+}
+
+function ExistingGuardianLinker({
+  availableGuardians,
+  guardians,
+  locale,
+  studentId
+}: {
+  availableGuardians: GuardianListItem[];
+  guardians: StudentGuardianLink[];
+  locale: Locale;
+  studentId: string;
+}) {
+  const t = useTranslations('guardians');
+  const [query, setQuery] = useState('');
+
+  const normalizedQuery = query.trim().toLocaleLowerCase();
+
+  const matchingGuardians = availableGuardians.filter((guardian) => {
+    if (!normalizedQuery) return true;
+
+    return (
+      guardian.name.toLocaleLowerCase().includes(normalizedQuery) ||
+      guardian.email.toLocaleLowerCase().includes(normalizedQuery)
+    );
+  });
+
+  return (
+    <details>
+      <summary>{t('linkExistingGuardian')}</summary>
+
+      <div className="record-form">
+        <label>
+          {t('searchExistingGuardian')}
+          <input
+            name="guardianSearch"
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder={t('searchExistingGuardianPlaceholder')}
+            type="search"
+            value={query}
+          />
+        </label>
+
+        <p className="field-help">
+          {t('searchExistingGuardianHelp')}
+        </p>
+
+        {availableGuardians.length === 0 ? (
+          <p>{t('noAvailableGuardians')}</p>
+        ) : matchingGuardians.length === 0 ? (
+          <p>{t('noGuardianSearchResults')}</p>
+        ) : (
+          <div className="stack-list">
+            {matchingGuardians.map((guardian) => (
+              <ExistingGuardianLinkForm
+                guardian={guardian}
+                isFirstGuardian={guardians.length === 0}
+                key={guardian.id}
+                locale={locale}
+                studentId={studentId}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </details>
+  );
+}
+
 export function StudentGuardianManager({
   locale,
   studentId,
-  guardians
+  guardians,
+  availableGuardians
 }: {
   locale: Locale;
   studentId: string;
   guardians: StudentGuardianLink[];
+  availableGuardians: GuardianListItem[];
 }) {
   const t = useTranslations('guardians');
   const common = useTranslations('common');
   const languages = useTranslations('reportLanguages');
+
   const [state, action, pending] = useActionState(
     addStudentGuardianAction,
     initialActionState
@@ -124,23 +276,26 @@ export function StudentGuardianManager({
 
   return (
     <div className="stack-list">
-      {guardians.length === 0 ? <p>{t('noLinked')}</p> : (
+      {guardians.length === 0 ? (
+        <p>{t('noLinked')}</p>
+      ) : (
         <div className="stack-list">
           {guardians.map((guardian) => (
             <div className="record-card stack-list" key={guardian.id}>
               <div>
-                <strong>{guardian.name}</strong>
-                {' '}
+                <strong>{guardian.name}</strong>{' '}
                 {guardian.isPrimary ? (
                   <Badge variant="info">{t('primaryGuardian')}</Badge>
                 ) : null}
               </div>
 
               <div>{guardian.email}</div>
+
               <div>
                 <strong>{t('phone')}:</strong>{' '}
                 {guardian.phone ?? common('none')}
               </div>
+
               <div>
                 <strong>{t('reportLanguage')}:</strong>{' '}
                 {languages(guardian.reportLanguage)}
@@ -156,12 +311,26 @@ export function StudentGuardianManager({
                 studentId={studentId}
               />
 
-              <form action={unlinkStudentGuardianAction}>
+              <form
+                action={unlinkStudentGuardianAction}
+                onSubmit={(event) => {
+                  if (
+                    !window.confirm(
+                      t('removeGuardianConfirm', {
+                        name: guardian.name
+                      })
+                    )
+                  ) {
+                    event.preventDefault();
+                  }
+                }}
+              >
                 <input name="locale" type="hidden" value={locale} />
                 <input name="studentId" type="hidden" value={studentId} />
                 <input name="guardianId" type="hidden" value={guardian.id} />
+
                 <Button type="submit" variant="secondary">
-                  {t('unlinkGuardian')}
+                  {t('removeGuardianFromStudent')}
                 </Button>
               </form>
             </div>
@@ -169,8 +338,16 @@ export function StudentGuardianManager({
         </div>
       )}
 
+      <ExistingGuardianLinker
+        availableGuardians={availableGuardians}
+        guardians={guardians}
+        locale={locale}
+        studentId={studentId}
+      />
+
       <details>
-        <summary>{t('addGuardianToStudent')}</summary>
+        <summary>{t('addNewGuardian')}</summary>
+
         <form action={action} className="record-form">
           <input name="locale" type="hidden" value={locale} />
           <input name="studentId" type="hidden" value={studentId} />
@@ -180,14 +357,27 @@ export function StudentGuardianManager({
               {t('name')}
               <input name="name" required />
             </label>
+
             <label>
               {t('email')}
-              <input autoComplete="email" name="email" required type="email" />
+              <input
+                autoComplete="email"
+                name="email"
+                required
+                type="email"
+              />
             </label>
+
             <label>
               {t('phone')}
-              <input autoComplete="tel" name="phone" required type="tel" />
+              <input
+                autoComplete="tel"
+                name="phone"
+                required
+                type="tel"
+              />
             </label>
+
             <label>
               {t('reportLanguage')}
               <select defaultValue="en" name="reportLanguage">
@@ -196,6 +386,7 @@ export function StudentGuardianManager({
                 <option value="both">{languages('both')}</option>
               </select>
             </label>
+
             <label>
               <input
                 defaultChecked={guardians.length === 0}
@@ -204,6 +395,7 @@ export function StudentGuardianManager({
               />{' '}
               {t('primaryGuardian')}
             </label>
+
             <label>
               <input
                 defaultChecked
@@ -217,7 +409,7 @@ export function StudentGuardianManager({
           <FormFeedback state={state} />
 
           <Button disabled={pending} type="submit">
-            {pending ? common('saving') : t('addGuardianToStudent')}
+            {pending ? common('saving') : t('addNewGuardian')}
           </Button>
         </form>
       </details>

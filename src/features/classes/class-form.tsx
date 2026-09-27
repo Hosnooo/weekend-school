@@ -29,6 +29,12 @@ export function ClassForm({locale}: {locale: Locale}) {
         <FormField htmlFor="class-name-ar" label={t('nameAr')}>
           <input id="class-name-ar" dir="rtl" name="nameAr" />
         </FormField>
+        <FormField htmlFor="class-starts-on" label={t('startsOn')}>
+          <input id="class-starts-on" name="startsOn" required type="date" />
+        </FormField>
+        <FormField htmlFor="class-ends-on" label={t('endsOnOptional')}>
+          <input id="class-ends-on" name="endsOn" type="date" />
+        </FormField>
       </div>
       <FormFeedback state={state} />
       <div className="form-actions">

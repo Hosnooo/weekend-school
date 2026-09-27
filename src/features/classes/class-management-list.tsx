@@ -27,6 +27,12 @@ export function ClassManagementList({
   const className = (item: ClassSummary) =>
     locale === 'ar' && item.nameAr ? item.nameAr : item.nameEn;
 
+  const formatDate = (value: string) =>
+    new Intl.DateTimeFormat(locale, {
+      dateStyle: 'medium',
+      timeZone: 'UTC'
+    }).format(new Date(`${value}T12:00:00Z`));
+
   async function applyLifecycle() {
     if (!lifecycleTarget) return;
 
@@ -53,6 +59,14 @@ export function ClassManagementList({
       key: 'students',
       header: t('activeStudents'),
       render: (item) => item.activeStudentCount
+    },
+    {
+      key: 'period',
+      header: t('period'),
+      render: (item) =>
+        `${formatDate(item.startsOn)} – ${
+          item.endsOn ? formatDate(item.endsOn) : t('ongoing')
+        }`
     },
     {
       key: 'subjects',

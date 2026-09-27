@@ -17,6 +17,13 @@ export const studentGuardianLinkSchema = guardianSchema.extend({
   receivesReports: z.boolean()
 });
 
+export const studentGuardianExistingLinkSchema = z.object({
+  studentId: databaseUuid,
+  guardianId: databaseUuid,
+  isPrimary: z.boolean(),
+  receivesReports: z.boolean()
+});
+
 export const studentGuardianUpdateSchema = studentGuardianLinkSchema.extend({
   guardianId: databaseUuid
 });
@@ -27,5 +34,8 @@ export const studentGuardianUnlinkSchema = z.object({
 });
 
 export type GuardianInput = z.infer<typeof guardianSchema>;
+export type StudentGuardianExistingLinkInput = z.infer<
+  typeof studentGuardianExistingLinkSchema
+>;
 export type StudentGuardianLinkInput = z.infer<typeof studentGuardianLinkSchema>;
 export type StudentGuardianUpdateInput = z.infer<typeof studentGuardianUpdateSchema>;

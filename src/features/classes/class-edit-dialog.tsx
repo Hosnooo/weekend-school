@@ -14,12 +14,16 @@ export function ClassEditDialog({
   locale,
   classId,
   nameEn,
-  nameAr
+  nameAr,
+  startsOn,
+  endsOn
 }: {
   locale: Locale;
   classId: string;
   nameEn: string;
   nameAr: string | null;
+  startsOn: string;
+  endsOn: string | null;
 }) {
   const t = useTranslations('classes');
   const common = useTranslations('common');
@@ -69,6 +73,25 @@ export function ClassEditDialog({
               dir="rtl"
               id="edit-class-name-ar"
               name="nameAr"
+            />
+          </FormField>
+
+          <FormField htmlFor="edit-class-starts-on" label={t('startsOn')}>
+            <input
+              defaultValue={startsOn}
+              id="edit-class-starts-on"
+              name="startsOn"
+              required
+              type="date"
+            />
+          </FormField>
+
+          <FormField htmlFor="edit-class-ends-on" label={t('endsOnOptional')}>
+            <input
+              defaultValue={endsOn ?? ''}
+              id="edit-class-ends-on"
+              name="endsOn"
+              type="date"
             />
           </FormField>
         </div>

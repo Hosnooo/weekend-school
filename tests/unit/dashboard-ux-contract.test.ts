@@ -80,4 +80,24 @@ describe('Administrator dashboard UX contract', () => {
 
     expect(page).not.toContain("locale === 'ar'");
   });
+
+  it('orders the dashboard around administrator operations', () => {
+    const page = read(
+      'src/app/[locale]/(protected)/(admin)/dashboard/page.tsx'
+    );
+
+    expect(page).not.toMatch(/<PageHeader[\\s\\S]*?actions=/);
+
+    const attention = page.indexOf('attention-heading');
+    const overview = page.indexOf('school-overview-heading');
+    const week = page.indexOf('dashboard-week-heading');
+    const quickActions = page.indexOf('quick-actions-heading');
+
+    expect(attention).toBeGreaterThan(-1);
+    expect(overview).toBeGreaterThan(attention);
+    expect(week).toBeGreaterThan(overview);
+    expect(quickActions).toBeGreaterThan(week);
+
+    expect(page.indexOf('href="/students/new"')).toBeGreaterThan(quickActions);
+  });
 });

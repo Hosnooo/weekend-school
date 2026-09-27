@@ -50,54 +50,9 @@ export default async function DashboardPage({
   return (
     <section className="admin-page">
       <PageHeader
-        actions={
-          <Link
-            className="button button-primary action-link"
-            href="/students/new"
-          >
-            {t('addStudent')}
-          </Link>
-        }
         description={`${schoolName} · ${t('description')}`}
         title={navigation('dashboard')}
       />
-
-      <section
-        aria-labelledby="quick-actions-heading"
-        className="subsection"
-      >
-        <SectionHeader title={t('quickActions')} />
-
-        <div className="page-actions">
-          <Link
-            className="button button-secondary action-link"
-            href="/teachers/new"
-          >
-            {t('addTeacher')}
-          </Link>
-
-          <Link
-            className="button button-secondary action-link"
-            href="/teaching-assignments"
-          >
-            {t('assignTeacher')}
-          </Link>
-
-          <Link
-            className="button button-secondary action-link"
-            href="/classes/new"
-          >
-            {t('addClass')}
-          </Link>
-
-          <Link
-            className="button button-secondary action-link"
-            href="/reports"
-          >
-            {t('reports')}
-          </Link>
-        </div>
-      </section>
 
       <section aria-labelledby="attention-heading" className="subsection">
         <div id="attention-heading">
@@ -284,6 +239,51 @@ export default async function DashboardPage({
           />
         )}
       </section>
+
+      <section
+        aria-labelledby="quick-actions-heading"
+        className="subsection"
+      >
+        <SectionHeader title={t('quickActions')} />
+
+        <div className="page-actions">
+          <Link
+            className="button button-secondary action-link"
+            href="/students/new"
+          >
+            {t('addStudent')}
+          </Link>
+
+          <Link
+            className="button button-secondary action-link"
+            href="/teachers/new"
+          >
+            {t('addTeacher')}
+          </Link>
+
+          <Link
+            className="button button-secondary action-link"
+            href="/teaching-assignments"
+          >
+            {t('assignTeacher')}
+          </Link>
+
+          <Link
+            className="button button-secondary action-link"
+            href="/classes/new"
+          >
+            {t('addClass')}
+          </Link>
+
+          <Link
+            className="button button-secondary action-link"
+            href="/reports"
+          >
+            {t('reports')}
+          </Link>
+        </div>
+      </section>
+
     </section>
   );
 }

@@ -23,6 +23,8 @@ describe('student-centered Guardian workflow', () => {
   it('allows creating a Student without a Guardian', () => {
     const result = createStudentEnrollmentSchema.safeParse({
       ...baseStudent,
+      guardianMode: 'none',
+      guardianId: '',
       guardianName: '',
       guardianEmail: '',
       guardianPhone: '',
@@ -35,6 +37,8 @@ describe('student-centered Guardian workflow', () => {
   it('rejects partial Guardian details during Student creation', () => {
     const result = createStudentEnrollmentSchema.safeParse({
       ...baseStudent,
+      guardianMode: 'new',
+      guardianId: '',
       guardianName: 'Fatima Ahmed',
       guardianEmail: 'fatima@example.test',
       guardianPhone: '',
@@ -47,6 +51,8 @@ describe('student-centered Guardian workflow', () => {
   it('accepts a complete Guardian including phone during Student creation', () => {
     const result = createStudentEnrollmentSchema.safeParse({
       ...baseStudent,
+      guardianMode: 'new',
+      guardianId: '',
       guardianName: 'Fatima Ahmed',
       guardianEmail: 'fatima@example.test',
       guardianPhone: '+1 780 555 0100',

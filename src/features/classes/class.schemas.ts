@@ -11,7 +11,29 @@ const bilingualNameSchema = z.object({
   nameAr: optionalText
 });
 
-export const classSchema = bilingualNameSchema;
+const isoDate = z.string().trim().regex(/^\d{4}-\d{2}-\d{2}$/);
+
+const optionalIsoDate = z.preprocess(
+  (value) =>
+    typeof value === 'string' && value.trim() === '' ? null : value,
+  isoDate.nullable()
+);
+
+export const classSchema = bilingualNameSchema
+  .extend({
+    startsOn: isoDate,
+    endsOn: optionalIsoDate
+  })
+  .superRefine((value, context) => {
+    if (value.endsOn !== null && value.endsOn < value.startsOn) {
+      context.addIssue({
+        code: 'custom',
+        path: ['endsOn'],
+        message: 'Class end date cannot be before start date'
+      });
+    }
+  });
+
 export const subjectSchema = bilingualNameSchema;
 
 export const classSubjectSchema = z.object({

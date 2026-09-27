@@ -7,7 +7,10 @@ import {PageHeader} from '@/components/ui/page-header';
 import {SectionHeader} from '@/components/ui/section-header';
 import {StatusBadge} from '@/components/ui/status-badge';
 import {getStudentEnrollmentState} from '@/features/enrollment/enrollment.repository';
-import {listStudentGuardians} from '@/features/guardians/guardian.repository';
+import {
+  listGuardians,
+  listStudentGuardians
+} from '@/features/guardians/guardian.repository';
 import {StudentGuardianManager} from '@/features/guardians/student-guardian-manager';
 import {getStudent} from '@/features/students/student.repository';
 import {todayInTimeZone} from '@/features/weekly-updates/weekly-update.model';
@@ -36,10 +39,18 @@ export default async function StudentDetailPage({params}: {
   if (!student) notFound();
 
   const today = todayInTimeZone(timeZone);
-  const [enrollment, guardians] = await Promise.all([
+  const [enrollment, guardians, guardianDirectory] = await Promise.all([
     getStudentEnrollmentState(profile.schoolId, student.id, today),
-    listStudentGuardians(profile.schoolId, student.id)
+    listStudentGuardians(profile.schoolId, student.id),
+    listGuardians(profile.schoolId)
   ]);
+
+  const linkedGuardianIds = new Set(
+    guardians.map((guardian) => guardian.id)
+  );
+  const availableGuardians = guardianDirectory.filter(
+    (guardian) => !linkedGuardianIds.has(guardian.id)
+  );
 
   const studentName =
     locale === 'ar' && student.firstNameAr && student.lastNameAr
@@ -159,6 +170,7 @@ export default async function StudentDetailPage({params}: {
         <Card>
           <SectionHeader title={guardiansT('title')} />
           <StudentGuardianManager
+            availableGuardians={availableGuardians}
             guardians={guardians}
             locale={locale}
             studentId={student.id}

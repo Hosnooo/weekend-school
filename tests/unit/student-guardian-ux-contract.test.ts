@@ -82,6 +82,47 @@ describe('student, enrollment, and Guardian UX contract', () => {
     expect(repository).toContain('phone');
   });
 
+  it('explicitly links existing Guardians without duplicate records', () => {
+    const detail = source(routes.studentDetail);
+    const newStudent = source(
+      'src/app/[locale]/(protected)/(admin)/students/new/page.tsx'
+    );
+    const form = source('src/features/students/student-form.tsx');
+    const manager = source(
+      'src/features/guardians/student-guardian-manager.tsx'
+    );
+    const actions = source(
+      'src/features/guardians/guardian.actions.ts'
+    );
+    const repository = source(
+      'src/features/guardians/guardian.repository.ts'
+    );
+
+    expect(detail).toContain('listGuardians');
+    expect(detail).toContain('availableGuardians=');
+
+    expect(newStudent).toContain('listGuardians');
+    expect(newStudent).toContain('availableGuardians=');
+
+    expect(manager).toContain('availableGuardians');
+    expect(manager).toContain('linkExistingStudentGuardianAction');
+    expect(manager).toContain("t('linkExistingGuardian')");
+    expect(manager).toContain("t('searchExistingGuardian')");
+    expect(manager).toContain('name="guardianId"');
+
+    expect(form).toContain('availableGuardians');
+    expect(form).toContain('guardianId');
+    expect(form).toContain("guardianMode === 'none'");
+    expect(form).toContain("guardianMode === 'existing'");
+    expect(form).toContain("guardianMode === 'new'");
+    expect(form).toContain('guardianSearch');
+    expect(form).toContain('guardianEmail');
+    expect(form).toContain("guardiansT('useExistingGuardian')");
+
+    expect(actions).toContain('linkExistingStudentGuardianAction');
+    expect(repository).toContain('linkExistingGuardianToStudent');
+  });
+
   it('keeps the standalone Guardians route informational', () => {
     const guardiansPage = source(routes.guardians);
 

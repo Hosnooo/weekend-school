@@ -6,6 +6,7 @@ import {z} from 'zod';
 
 import {
   createGuardian,
+  linkExistingGuardianToStudent,
   linkGuardianToStudent,
   setGuardianActive,
   unlinkGuardianFromStudent,
@@ -15,6 +16,7 @@ import {
 import {
   guardianSchema,
   guardianUpdateSchema,
+  studentGuardianExistingLinkSchema,
   studentGuardianLinkSchema,
   studentGuardianUnlinkSchema,
   studentGuardianUpdateSchema
@@ -137,6 +139,31 @@ export async function addStudentGuardianAction(
 
   try {
     const guardianId = await linkGuardianToStudent(parsed.data);
+    refresh(locale, guardianId, parsed.data.studentId);
+  } catch (error) {
+    return guardianMutationFailure(error);
+  }
+
+  return initialActionState;
+}
+
+export async function linkExistingStudentGuardianAction(
+  _state: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const locale = localeFrom(formData);
+  await requireProfile(locale, 'ADMIN');
+
+  const parsed = studentGuardianExistingLinkSchema.safeParse({
+    studentId: formData.get('studentId'),
+    guardianId: formData.get('guardianId'),
+    isPrimary: checked(formData, 'isPrimary'),
+    receivesReports: checked(formData, 'receivesReports')
+  });
+  if (!parsed.success) return validationFailure();
+
+  try {
+    const guardianId = await linkExistingGuardianToStudent(parsed.data);
     refresh(locale, guardianId, parsed.data.studentId);
   } catch (error) {
     return guardianMutationFailure(error);
