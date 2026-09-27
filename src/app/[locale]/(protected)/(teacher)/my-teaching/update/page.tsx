@@ -4,6 +4,7 @@ import {z} from 'zod';
 
 import {Card} from '@/components/ui/card';
 import {PageHeader} from '@/components/ui/page-header';
+import {getActiveReportTemplate} from '@/features/reports/report-template.repository';
 import {WeeklyUpdateForm} from '@/features/weekly-updates/weekly-update-form';
 import {getWeeklySubmission} from '@/features/weekly-updates/weekly-update.repository';
 import {isLocale} from '@/i18n/config';
@@ -46,13 +47,16 @@ export default async function WeeklyTeachingUpdatePage({
 
   if (!teacherIds.includes(teacher.data)) notFound();
 
-  const submission = await getWeeklySubmission(
-    profile.schoolId,
-    teacher.data,
-    classSubject.data,
-    subjectGroup.data,
-    week.data
-  );
+  const [submission, template] = await Promise.all([
+    getWeeklySubmission(
+      profile.schoolId,
+      teacher.data,
+      classSubject.data,
+      subjectGroup.data,
+      week.data
+    ),
+    getActiveReportTemplate(profile.schoolId)
+  ]);
 
   if (!submission) notFound();
 
@@ -85,6 +89,7 @@ export default async function WeeklyTeachingUpdatePage({
           locale={locale}
           readOnly={submission.status === 'SUBMITTED'}
           submission={submission}
+          template={template}
         />
       </Card>
     </section>

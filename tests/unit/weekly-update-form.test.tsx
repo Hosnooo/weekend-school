@@ -22,8 +22,18 @@ vi.mock(
   })
 );
 
+import {defaultReportTemplateConfig} from '@/features/reports/report-template.types';
 import {WeeklyUpdateForm} from '@/features/weekly-updates/weekly-update-form';
 import {saveWeeklyUpdateAction} from '@/features/weekly-updates/weekly-update.actions';
+
+const template = {
+  ...defaultReportTemplateConfig(),
+  mainReportLabelEn: 'Weekly learning',
+  mainReportHelpEn: 'Tell families what happened this week.',
+  performanceLabelEn: 'Progress level',
+  studentCommentLabelEn: 'Individual note',
+  studentCommentHelpEn: 'Only add a note when this student needs one.'
+};
 
 const submission = {
   id: '',
@@ -66,6 +76,7 @@ function renderEnglish() {
       <WeeklyUpdateForm
         locale="en"
         submission={submission}
+        template={template}
       />
     </NextIntlClientProvider>
   );
@@ -176,6 +187,45 @@ describe('weekly update form', () => {
     ).toBeVisible();
   });
 
+  it('uses template wording and hides disabled optional fields', () => {
+    render(
+      <NextIntlClientProvider locale="en" messages={messages}>
+        <WeeklyUpdateForm
+          locale="en"
+          submission={submission}
+          template={{
+            ...template,
+            performanceEnabled: false,
+            studentCommentsEnabled: false
+          }}
+        />
+      </NextIntlClientProvider>
+    );
+
+    expect(screen.getByText('Weekly learning')).toBeVisible();
+    expect(
+      screen.getByText('Tell families what happened this week.')
+    ).toBeVisible();
+
+    expect(
+      screen.getByLabelText('Default performance')
+    ).not.toBeVisible();
+
+    expect(
+      screen.getByRole('combobox', {
+        name: 'Individual performance — Ahmad Ali',
+        hidden: true
+      })
+    ).not.toBeVisible();
+
+    expect(
+      screen.getByRole('textbox', {
+        name: 'Parent-facing comment (English) — Ahmad Ali',
+        hidden: true
+      })
+    ).not.toBeVisible();
+  });
+
   it('keeps navigation protection after a failed save', async () => {
     vi.mocked(saveWeeklyUpdateAction).mockResolvedValueOnce({
       status: 'error',
@@ -234,6 +284,7 @@ describe('weekly update form', () => {
             locale="ar"
             readOnly
             submission={submission}
+            template={template}
           />
         </NextIntlClientProvider>
       </div>

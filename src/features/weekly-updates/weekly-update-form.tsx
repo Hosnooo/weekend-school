@@ -11,6 +11,7 @@ import {useTranslations} from 'next-intl';
 
 import {Button} from '@/components/ui/button';
 import {Card} from '@/components/ui/card';
+import type {ReportTemplateConfig} from '@/features/reports/report-template.types';
 
 import {
   markAllPresent,
@@ -33,13 +34,16 @@ const initialWeeklyActionState: WeeklyActionState = {
 export function WeeklyUpdateForm({
   locale,
   submission,
+  template,
   readOnly = false
 }: {
   locale: 'en' | 'ar';
   submission: WeeklySubmission;
+  template: ReportTemplateConfig;
   readOnly?: boolean;
 }) {
   const t = useTranslations('weekly');
+  const language = useTranslations('language');
   const formRef = useRef<HTMLFormElement>(null);
   const submittingRef = useRef(false);
 
@@ -168,6 +172,39 @@ export function WeeklyUpdateForm({
       : student.nameEn;
   };
 
+  const localizedTemplateText = (
+    english: string | null,
+    arabic: string | null
+  ) => locale === 'ar' && arabic ? arabic : english;
+
+  const mainReportLabel =
+    localizedTemplateText(
+      template.mainReportLabelEn,
+      template.mainReportLabelAr
+    ) ?? template.mainReportLabelEn;
+
+  const mainReportHelp = localizedTemplateText(
+    template.mainReportHelpEn,
+    template.mainReportHelpAr
+  );
+
+  const performanceLabel =
+    localizedTemplateText(
+      template.performanceLabelEn,
+      template.performanceLabelAr
+    ) ?? template.performanceLabelEn;
+
+  const studentCommentLabel =
+    localizedTemplateText(
+      template.studentCommentLabelEn,
+      template.studentCommentLabelAr
+    ) ?? template.studentCommentLabelEn;
+
+  const studentCommentHelp = localizedTemplateText(
+    template.studentCommentHelpEn,
+    template.studentCommentHelpAr
+  );
+
   return (
     <form
       action={action}
@@ -218,7 +255,11 @@ export function WeeklyUpdateForm({
       />
 
       <Card className="subsection">
-        <h2>{t('groupProgress')}</h2>
+        <h2>{mainReportLabel}</h2>
+
+        {mainReportHelp ? (
+          <p className="field-help">{mainReportHelp}</p>
+        ) : null}
 
         <label>
           {t('progressEn')}
@@ -242,8 +283,8 @@ export function WeeklyUpdateForm({
         </label>
       </Card>
 
-      <Card className="subsection">
-        <h2>{t('defaultPerformance')}</h2>
+      <Card className="subsection" hidden={!template.performanceEnabled}>
+        <h2>{performanceLabel}</h2>
 
         <select
           aria-label={t('defaultPerformance')}
@@ -273,6 +314,9 @@ export function WeeklyUpdateForm({
           <div>
             <h2>{t('students')}</h2>
             <p className="field-help">{t('studentsHelp')}</p>
+            {template.studentCommentsEnabled && studentCommentHelp ? (
+              <p className="field-help">{studentCommentHelp}</p>
+            ) : null}
           </div>
 
           {!readOnly && submission.roster.length > 0 ? (
@@ -302,9 +346,15 @@ export function WeeklyUpdateForm({
                 <tr>
                   <th>{t('student')}</th>
                   <th>{t('attendance')}</th>
-                  <th>{t('performanceOverride')}</th>
-                  <th>{t('commentEn')}</th>
-                  <th>{t('commentAr')}</th>
+                  <th hidden={!template.performanceEnabled}>
+                    {t('performanceOverride')}
+                  </th>
+                  <th hidden={!template.studentCommentsEnabled}>
+                    {studentCommentLabel} — {language('english')}
+                  </th>
+                  <th hidden={!template.studentCommentsEnabled}>
+                    {studentCommentLabel} — {language('arabic')}
+                  </th>
                 </tr>
               </thead>
 
@@ -348,7 +398,7 @@ export function WeeklyUpdateForm({
                         </select>
                       </td>
 
-                      <td>
+                      <td hidden={!template.performanceEnabled}>
                         <select
                           aria-label={`${t('performanceOverride')} — ${studentName}`}
                           disabled={readOnly}
@@ -377,7 +427,7 @@ export function WeeklyUpdateForm({
                         </select>
                       </td>
 
-                      <td>
+                      <td hidden={!template.studentCommentsEnabled}>
                         <textarea
                           aria-label={`${t('commentEn')} — ${studentName}`}
                           disabled={readOnly}
@@ -391,7 +441,7 @@ export function WeeklyUpdateForm({
                         />
                       </td>
 
-                      <td>
+                      <td hidden={!template.studentCommentsEnabled}>
                         <textarea
                           aria-label={`${t('commentAr')} — ${studentName}`}
                           dir="rtl"

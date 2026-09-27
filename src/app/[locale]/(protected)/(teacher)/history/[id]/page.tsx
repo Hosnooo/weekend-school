@@ -4,6 +4,7 @@ import {notFound} from 'next/navigation';
 import {Alert} from '@/components/ui/alert';
 import {Card} from '@/components/ui/card';
 import {PageHeader} from '@/components/ui/page-header';
+import {getActiveReportTemplate} from '@/features/reports/report-template.repository';
 import {reopenWeeklySubmissionAction} from '@/features/weekly-updates/weekly-update.actions';
 import {WeeklyUpdateForm} from '@/features/weekly-updates/weekly-update-form';
 import {getWeeklySubmissionById} from '@/features/weekly-updates/weekly-update.repository';
@@ -25,11 +26,14 @@ export default async function HistoryDetail({
 
   const {profile, teacherIds} = await requireTeachingAccount(locale);
 
-  const submission = await getWeeklySubmissionById(
-    profile.schoolId,
-    teacherIds,
-    id
-  );
+  const [submission, template] = await Promise.all([
+    getWeeklySubmissionById(
+      profile.schoolId,
+      teacherIds,
+      id
+    ),
+    getActiveReportTemplate(profile.schoolId)
+  ]);
 
   if (!submission || submission.status !== 'SUBMITTED') {
     notFound();
@@ -119,6 +123,7 @@ export default async function HistoryDetail({
           locale={locale}
           readOnly
           submission={submission}
+          template={template}
         />
       </Card>
     </section>
