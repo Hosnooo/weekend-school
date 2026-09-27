@@ -15,20 +15,24 @@ function read(relative: string) {
 }
 
 describe('Reports workflow UX contract', () => {
-  it('presents Reports as explicit Prepare → Review → Finalize → Send stages', () => {
+  it('presents Reports as a progressive editable workflow with finalization as the lock', () => {
     const page = read(
       'src/app/[locale]/(protected)/(admin)/reports/page.tsx'
     );
 
     expect(page).not.toContain('AdminPage');
     expect(page).toContain('PageHeader');
-    expect(page).toContain('Tabs');
     expect(page).toContain('DataTable');
     expect(page).toContain('Alert');
+    expect(page).toContain('ReportStudentReviewTable');
+
+    expect(page).not.toContain('Tabs');
+    expect(page).not.toContain('reviewReportBatchAction');
+    expect(page).not.toContain("t('moveToReview')");
 
     expect(page).toContain("t('prepareStage')");
-    expect(page).toContain("t('reviewStage')");
-    expect(page).toContain("t('finalizeStage')");
+    expect(page).toContain("t('refreshSources')");
+    expect(page).toContain("t('finalizeReports')");
     expect(page).toContain("t('sendStage')");
   });
 

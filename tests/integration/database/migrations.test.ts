@@ -96,7 +96,10 @@ describe('migration contract', () => {
       '20260927050424_student_guardian_centered_workflow.sql',
       '20260927072000_class_operating_dates.sql',
       '20260927080000_guardian_identity_lifecycle.sql',
-      '20260927090000_student_guardian_creation_identity.sql'
+      '20260927090000_student_guardian_creation_identity.sql',
+      '20260927110000_existing_student_enrollment.sql',
+      '20260927113000_weekly_roster_teacher_student_rows.sql',
+      '20260927114000_reversible_report_workflow.sql'
     ]);
   });
 

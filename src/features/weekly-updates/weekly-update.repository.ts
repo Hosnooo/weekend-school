@@ -288,3 +288,19 @@ export async function saveWeeklyUpdate(input: WeeklyUpdateInput) {
   if (error) throw error;
   return data as string;
 }
+
+
+export async function reopenWeeklySubmission(
+  submissionId: string
+) {
+  const db = await createServerSupabaseClient();
+
+  const {error} = await db.rpc(
+    'reopen_weekly_submission',
+    {
+      p_submission_id: submissionId
+    }
+  );
+
+  if (error) throw error;
+}

@@ -78,11 +78,13 @@ describe('report composer',()=>{
     });
   });
 
-  it('shows source selection and custom official text controls in the admin composer',()=>{
+  it('shows submitted Teacher information without dead form controls',()=>{
     render(<ReportComposer sources={sources}/>);
-    expect(screen.getByRole('checkbox',{name:/Teacher One/})).toBeVisible();
-    expect(screen.getByRole('checkbox',{name:/Teacher Two/})).toBeVisible();
-    expect(screen.getByLabelText('Custom official progress (English)')).toBeVisible();
-    expect(screen.getByLabelText('Custom official progress (Arabic)')).toBeVisible();
+    expect(screen.getByText('Teacher One')).toBeVisible();
+    expect(screen.getByText('Teacher Two')).toBeVisible();
+    expect(screen.getByText('Letters and sounds')).toBeVisible();
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Custom official progress (English)')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Custom official progress (Arabic)')).not.toBeInTheDocument();
   });
 });

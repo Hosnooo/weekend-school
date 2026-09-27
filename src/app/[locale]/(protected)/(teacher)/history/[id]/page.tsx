@@ -1,19 +1,26 @@
 import {getTranslations} from 'next-intl/server';
 import {notFound} from 'next/navigation';
 
+import {Alert} from '@/components/ui/alert';
 import {Card} from '@/components/ui/card';
 import {PageHeader} from '@/components/ui/page-header';
+import {reopenWeeklySubmissionAction} from '@/features/weekly-updates/weekly-update.actions';
 import {WeeklyUpdateForm} from '@/features/weekly-updates/weekly-update-form';
 import {getWeeklySubmissionById} from '@/features/weekly-updates/weekly-update.repository';
 import {isLocale} from '@/i18n/config';
 import {requireTeachingAccount} from '@/lib/auth/require-profile';
 
 export default async function HistoryDetail({
-  params
+  params,
+  searchParams
 }: {
   params: Promise<{locale: string; id: string}>;
+  searchParams: Promise<{error?: string}>;
 }) {
-  const {locale, id} = await params;
+  const [{locale, id}, query] = await Promise.all([
+    params,
+    searchParams
+  ]);
   if (!isLocale(locale)) notFound();
 
   const {profile, teacherIds} = await requireTeachingAccount(locale);
@@ -57,6 +64,55 @@ export default async function HistoryDetail({
         description={t('weekOf', {date: weekLabel})}
         title={title}
       />
+
+      {query.error === 'reopen' ? (
+        <Alert variant="warning">
+          {t('reopenBlocked')}
+        </Alert>
+      ) : null}
+
+      <form
+        action={reopenWeeklySubmissionAction}
+        className="page-actions"
+      >
+        <input
+          name="locale"
+          type="hidden"
+          value={locale}
+        />
+        <input
+          name="submissionId"
+          type="hidden"
+          value={submission.id}
+        />
+        <input
+          name="teacherId"
+          type="hidden"
+          value={submission.teacherId}
+        />
+        <input
+          name="classSubjectId"
+          type="hidden"
+          value={submission.classSubjectId}
+        />
+        <input
+          name="subjectGroupId"
+          type="hidden"
+          value={submission.subjectGroupId ?? ''}
+        />
+        <input
+          name="weekStart"
+          type="hidden"
+          value={submission.weekStart}
+        />
+
+        <button
+          className="button button-secondary"
+          type="submit"
+        >
+          {t('reopenAndEdit')}
+        </button>
+      </form>
 
       <Card className="content-section">
         <WeeklyUpdateForm

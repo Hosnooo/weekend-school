@@ -31,7 +31,14 @@ describe('weekly update redesign contract', () => {
     expect(form).toContain("t('attendance')");
     expect(form).toContain("t('groupProgress')");
     expect(form).toContain("t('defaultPerformance')");
-    expect(form).toContain("t('exceptions')");
+    expect(form).toContain("t('students')");
+    expect(form).toContain("t('performanceOverride')");
+    expect(form).toContain("t('commentEn')");
+    expect(form).toContain("t('commentAr')");
+    expect(form).toContain("t('noStudentsForWeek')");
+    expect(form).toContain('<table');
+    expect(form).not.toContain("t('exceptions')");
+    expect(form).not.toContain('exception-toggle');
 
     expect(form).toContain('markAllPresent');
     expect(form).toContain('toSparseExceptions');

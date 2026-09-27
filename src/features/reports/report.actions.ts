@@ -11,6 +11,7 @@ import {
   approveAllSubmittedSources,
   createReportBatch,
   finalizeReportBatch,
+  getReportBatchWorkspace,
   reviewReportBatch,
   type ReportBatchScope
 } from './report-batch.repository';
@@ -59,6 +60,15 @@ export async function prepareReportBatchAction(formData: FormData) {
       periodStart: period.data.periodStart,
       periodEnd: period.data.periodEnd
     });
+
+    const workspace = await getReportBatchWorkspace(
+      profile.schoolId,
+      batchId
+    );
+
+    if (workspace?.sources.length === 1) {
+      await approveAllSubmittedSources(profile.schoolId, batchId);
+    }
   } catch (error) {
     console.error('Unable to prepare report batch', {error});
     redirect(`/${locale}/reports?periodStart=${period.data.periodStart}&periodEnd=${period.data.periodEnd}&error=save`);

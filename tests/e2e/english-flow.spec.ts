@@ -43,7 +43,6 @@ test('English redesigned workflow reaches a finalized Class report', async ({pag
   await expect(page.getByText('Blue reading lesson')).toBeVisible();
   await expect(page.getByText('Second independent Blue source')).toBeVisible();
   await page.getByRole('button', {name: 'Use all submitted sources'}).click();
-  await page.getByRole('button', {name: 'Move to review'}).click();
   await page.getByRole('button', {name: 'Finalize reports'}).click();
   await expect(page.getByText('Finalized', {exact: true}).first()).toBeVisible();
   await page.getByRole('link', {name: 'Preview'}).first().click();

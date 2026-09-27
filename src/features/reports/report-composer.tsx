@@ -51,6 +51,32 @@ export type ReportBatchStudentReadiness = {
   missingDataCount: number;
 };
 
+export type ReportStudentReviewRow =
+  ReportBatchStudentReadiness & {
+    studentNameEn: string;
+    studentNameAr: string | null;
+    presentCount: number;
+    absentCount: number;
+    performance: ReportPerformance | null;
+    commentEn: string | null;
+    commentAr: string | null;
+  };
+
+export type ReportStudentReviewLabels = {
+  title: string;
+  help: string;
+  student: string;
+  attendance: string;
+  performance: string;
+  comment: string;
+  status: string;
+  ready: string;
+  needsReview: string;
+  noComment: string;
+  attendanceValue: (present: number, absent: number) => string;
+  performanceValue: (performance: ReportPerformance | null) => string;
+};
+
 export type ReportBatchReadinessSummary = {
   readyAutomatically: number;
   personalizedComments: number;
@@ -199,33 +225,119 @@ export function ReportComposer({
   labels?: ReportComposerLabels;
 }) {
   return (
-    <div className="report-composer">
-      <fieldset className="report-source-list">
-        <legend>{labels.sources}</legend>
+    <section className="report-source-section">
+      <h3>{labels.sources}</h3>
+
+      <div className="report-source-grid">
         {sources.map((source) => (
-          <label className="report-source-option" key={source.id}>
-            <input
-              aria-label={labels.useTeacher(source.teacherName)}
-              name="selectedSourceIds"
-              type="checkbox"
-              value={source.id}
-            />
-            <span>
-              <strong>{source.teacherName}</strong>
-              {source.progressEn ? <span>{source.progressEn}</span> : null}
-              {source.progressAr ? <span dir="rtl">{source.progressAr}</span> : null}
-            </span>
-          </label>
+          <article className="report-source-card" key={source.id}>
+            <strong>{source.teacherName}</strong>
+
+            {source.progressEn ? (
+              <p>{source.progressEn}</p>
+            ) : null}
+
+            {source.progressAr ? (
+              <p dir="rtl">{source.progressAr}</p>
+            ) : null}
+
+            {source.performance ? (
+              <span className="report-source-performance">
+                {source.performance}
+              </span>
+            ) : null}
+          </article>
         ))}
-      </fieldset>
-      <label htmlFor="report-custom-progress-en">
-        {labels.customProgressEn}
-        <textarea id="report-custom-progress-en" name="customProgressEn" />
-      </label>
-      <label htmlFor="report-custom-progress-ar">
-        {labels.customProgressAr}
-        <textarea dir="rtl" id="report-custom-progress-ar" name="customProgressAr" />
-      </label>
-    </div>
+      </div>
+    </section>
+  );
+}
+
+export function ReportStudentReviewTable({
+  students,
+  locale,
+  labels
+}: {
+  students: ReportStudentReviewRow[];
+  locale: 'en' | 'ar';
+  labels: ReportStudentReviewLabels;
+}) {
+  return (
+    <section className="report-student-review">
+      <div className="section-heading">
+        <div>
+          <h3>{labels.title}</h3>
+          <p>{labels.help}</p>
+        </div>
+      </div>
+
+      <div className="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>{labels.student}</th>
+              <th>{labels.attendance}</th>
+              <th>{labels.performance}</th>
+              <th>{labels.comment}</th>
+              <th>{labels.status}</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {students.map((student) => {
+              const needsReview =
+                student.missingDataCount > 0 ||
+                student.attendanceConflictCount > 0;
+
+              const comment =
+                locale === 'ar'
+                  ? student.commentAr ?? student.commentEn
+                  : student.commentEn ?? student.commentAr;
+
+              return (
+                <tr key={student.studentId}>
+                  <td>
+                    <strong>
+                      {locale === 'ar' && student.studentNameAr
+                        ? student.studentNameAr
+                        : student.studentNameEn}
+                    </strong>
+                  </td>
+
+                  <td>
+                    {labels.attendanceValue(
+                      student.presentCount,
+                      student.absentCount
+                    )}
+                  </td>
+
+                  <td>
+                    {labels.performanceValue(student.performance)}
+                  </td>
+
+                  <td>
+                    {comment ?? labels.noComment}
+                  </td>
+
+                  <td>
+                    <span
+                      className={
+                        needsReview
+                          ? 'status-badge status-inactive'
+                          : 'status-badge status-active'
+                      }
+                    >
+                      {needsReview
+                        ? labels.needsReview
+                        : labels.ready}
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </section>
   );
 }

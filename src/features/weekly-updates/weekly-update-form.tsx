@@ -77,10 +77,6 @@ export function WeeklyUpdateForm({
     )
   );
 
-  const [expanded, setExpanded] = useState<Set<string>>(
-    () => new Set(submission.exceptions.map(({studentId}) => studentId))
-  );
-
   const change = () => {
     setDirty(true);
     setChangeRevision((revision) => revision + 1);
@@ -222,59 +218,6 @@ export function WeeklyUpdateForm({
       />
 
       <Card className="subsection">
-        <div className="section-heading">
-          <h2>{t('attendance')}</h2>
-
-          {!readOnly ? (
-            <Button
-              onClick={() => {
-                setAttendance(
-                  markAllPresent(
-                    submission.roster.map(({id}) => id)
-                  )
-                );
-                change();
-              }}
-              type="button"
-              variant="secondary"
-            >
-              {t('markAllPresent')}
-            </Button>
-          ) : null}
-        </div>
-
-        <div className="attendance-list">
-          {attendance.map((item) => (
-            <label key={item.studentId}>
-              <span>{name(item.studentId)}</span>
-
-              <select
-                disabled={readOnly}
-                onChange={(event) =>
-                  setStatus(
-                    item.studentId,
-                    event.target.value as AttendanceStatus
-                  )
-                }
-                required
-                value={item.status}
-              >
-                <option value="">—</option>
-
-                {(['PRESENT', 'ABSENT'] as const).map(
-                  (status) => (
-                    <option key={status} value={status}>
-                      {t(`attendanceStatus.${status}`)}
-                    </option>
-                  )
-                )}
-              </select>
-            </label>
-          ))}
-        </div>
-      </Card>
-
-      <Card className="subsection">
         <h2>{t('groupProgress')}</h2>
 
         <label>
@@ -326,105 +269,149 @@ export function WeeklyUpdateForm({
       </Card>
 
       <Card className="subsection">
-        <h2>{t('exceptions')}</h2>
-        <p>{t('optional')}</p>
-
-        {exceptions.map((item) => (
-          <div className="exception-row" key={item.studentId}>
-            <button
-              aria-expanded={expanded.has(item.studentId)}
-              className="exception-toggle"
-              disabled={readOnly}
-              onClick={() =>
-                setExpanded((current) => {
-                  const next = new Set(current);
-
-                  if (next.has(item.studentId)) {
-                    next.delete(item.studentId);
-                  } else {
-                    next.add(item.studentId);
-                  }
-
-                  return next;
-                })
-              }
-              type="button"
-            >
-              <span>{name(item.studentId)}</span>
-              <span aria-hidden="true">
-                {expanded.has(item.studentId) ? '−' : '+'}
-              </span>
-            </button>
-
-            {expanded.has(item.studentId) ? (
-              <div className="exception-fields">
-                <label>
-                  {t('performanceOverride')}
-
-                  <select
-                    disabled={readOnly}
-                    onChange={(event) =>
-                      setException(item.studentId, {
-                        performanceOverride: (
-                          event.target.value || null
-                        ) as Performance | null
-                      })
-                    }
-                    value={item.performanceOverride ?? ''}
-                  >
-                    <option value="">
-                      {t('useDefault')}
-                    </option>
-
-                    {(
-                      [
-                        'EXCELLENT',
-                        'GOOD',
-                        'DEVELOPING',
-                        'NEEDS_SUPPORT'
-                      ] as Performance[]
-                    ).map((value) => (
-                      <option key={value} value={value}>
-                        {t(`performance.${value}`)}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label>
-                  {t('commentEn')}
-
-                  <textarea
-                    disabled={readOnly}
-                    onChange={(event) =>
-                      setException(item.studentId, {
-                        commentEn: event.target.value
-                      })
-                    }
-                    rows={2}
-                    value={item.commentEn ?? ''}
-                  />
-                </label>
-
-                <label>
-                  {t('commentAr')}
-
-                  <textarea
-                    dir="rtl"
-                    disabled={readOnly}
-                    onChange={(event) =>
-                      setException(item.studentId, {
-                        commentAr: event.target.value
-                      })
-                    }
-                    rows={2}
-                    value={item.commentAr ?? ''}
-                  />
-                </label>
-              </div>
-            ) : null}
+        <div className="section-heading">
+          <div>
+            <h2>{t('students')}</h2>
+            <p className="field-help">{t('studentsHelp')}</p>
           </div>
-        ))}
+
+          {!readOnly && submission.roster.length > 0 ? (
+            <Button
+              onClick={() => {
+                setAttendance(
+                  markAllPresent(
+                    submission.roster.map(({id}) => id)
+                  )
+                );
+                change();
+              }}
+              type="button"
+              variant="secondary"
+            >
+              {t('markAllPresent')}
+            </Button>
+          ) : null}
+        </div>
+
+        {submission.roster.length === 0 ? (
+          <p className="empty-state">{t('noStudentsForWeek')}</p>
+        ) : (
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>{t('student')}</th>
+                  <th>{t('attendance')}</th>
+                  <th>{t('performanceOverride')}</th>
+                  <th>{t('commentEn')}</th>
+                  <th>{t('commentAr')}</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {submission.roster.map((student) => {
+                  const attendanceItem = attendance.find(
+                    ({studentId}) => studentId === student.id
+                  )!;
+                  const exceptionItem = exceptions.find(
+                    ({studentId}) => studentId === student.id
+                  )!;
+                  const studentName = name(student.id);
+
+                  return (
+                    <tr key={student.id}>
+                      <td>
+                        <strong>{studentName}</strong>
+                      </td>
+
+                      <td>
+                        <select
+                          aria-label={`${t('attendance')} — ${studentName}`}
+                          disabled={readOnly}
+                          onChange={(event) =>
+                            setStatus(
+                              student.id,
+                              event.target.value as AttendanceStatus
+                            )
+                          }
+                          required
+                          value={attendanceItem.status}
+                        >
+                          <option value="">—</option>
+                          {(['PRESENT', 'ABSENT'] as const).map(
+                            (status) => (
+                              <option key={status} value={status}>
+                                {t(`attendanceStatus.${status}`)}
+                              </option>
+                            )
+                          )}
+                        </select>
+                      </td>
+
+                      <td>
+                        <select
+                          aria-label={`${t('performanceOverride')} — ${studentName}`}
+                          disabled={readOnly}
+                          onChange={(event) =>
+                            setException(student.id, {
+                              performanceOverride: (
+                                event.target.value || null
+                              ) as Performance | null
+                            })
+                          }
+                          value={exceptionItem.performanceOverride ?? ''}
+                        >
+                          <option value="">{t('useDefault')}</option>
+                          {(
+                            [
+                              'EXCELLENT',
+                              'GOOD',
+                              'DEVELOPING',
+                              'NEEDS_SUPPORT'
+                            ] as Performance[]
+                          ).map((value) => (
+                            <option key={value} value={value}>
+                              {t(`performance.${value}`)}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+
+                      <td>
+                        <textarea
+                          aria-label={`${t('commentEn')} — ${studentName}`}
+                          disabled={readOnly}
+                          onChange={(event) =>
+                            setException(student.id, {
+                              commentEn: event.target.value
+                            })
+                          }
+                          rows={2}
+                          value={exceptionItem.commentEn ?? ''}
+                        />
+                      </td>
+
+                      <td>
+                        <textarea
+                          aria-label={`${t('commentAr')} — ${studentName}`}
+                          dir="rtl"
+                          disabled={readOnly}
+                          onChange={(event) =>
+                            setException(student.id, {
+                              commentAr: event.target.value
+                            })
+                          }
+                          rows={2}
+                          value={exceptionItem.commentAr ?? ''}
+                        />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </Card>
 
       {!readOnly ? (

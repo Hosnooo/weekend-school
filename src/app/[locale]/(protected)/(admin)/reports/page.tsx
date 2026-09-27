@@ -7,7 +7,6 @@ import {Card} from '@/components/ui/card';
 import {DataTable} from '@/components/ui/data-table';
 import {EmptyState} from '@/components/ui/empty-state';
 import {PageHeader} from '@/components/ui/page-header';
-import {Tabs} from '@/components/ui/tabs';
 import {
   sendReadyReportsAction,
   sendReportAction
@@ -17,12 +16,13 @@ import {
   approveAllReportSourcesAction,
   finalizeReportBatchAction,
   prepareReportBatchAction,
-  reviewReportBatchAction
 } from '@/features/reports/report.actions';
 import {
   ReportBatchSummary,
   ReportComposer,
-  type ReportComposerLabels
+  ReportStudentReviewTable,
+  type ReportComposerLabels,
+  type ReportStudentReviewLabels
 } from '@/features/reports/report-composer';
 import {getReportBatchWorkspace} from '@/features/reports/report-batch.repository';
 import {
@@ -151,9 +151,31 @@ export default async function ReportsPage({
   const statusLabel =
     workspace?.batch.status === 'FINALIZED'
       ? t('finalized')
-      : workspace?.batch.status === 'REVIEW'
-        ? t('review')
-        : t('draft');
+      : t('inProgress');
+
+  const weekly = await getTranslations({
+    locale,
+    namespace: 'weekly'
+  });
+
+  const studentReviewLabels: ReportStudentReviewLabels = {
+    title: t('studentReview'),
+    help: t('studentReviewHelp'),
+    student: t('student'),
+    attendance: t('attendance'),
+    performance: t('performance'),
+    comment: t('comment'),
+    status: t('status'),
+    ready: t('ready'),
+    needsReview: t('needsReview'),
+    noComment: t('noComment'),
+    attendanceValue: (present, absent) =>
+      t('attendanceCounts', {present, absent}),
+    performanceValue: (performance) =>
+      performance
+        ? weekly(`performance.${performance}`)
+        : '—'
+  };
 
   const sourceLabels: ReportComposerLabels = {
     sources: t('sourceBlocks'),
@@ -177,14 +199,7 @@ export default async function ReportsPage({
     );
   });
 
-  const activeStage =
-    workspace?.batch.status === 'FINALIZED'
-      ? 'send'
-      : workspace?.batch.status === 'REVIEW'
-        ? 'finalize'
-        : workspace
-          ? 'review'
-          : 'prepare';
+
 
   return (
     <section className="admin-page">
@@ -201,32 +216,7 @@ export default async function ReportsPage({
         title={t('title')}
       />
 
-      <Tabs
-        defaultValue={activeStage}
-        label={t('title')}
-        items={[
-          {
-            value: 'prepare',
-            label: t('prepareStage'),
-            content: <p>{t('prepareStageHelp')}</p>
-          },
-          {
-            value: 'review',
-            label: t('reviewStage'),
-            content: <p>{t('reviewStageHelp')}</p>
-          },
-          {
-            value: 'finalize',
-            label: t('finalizeStage'),
-            content: <p>{t('finalizeStageHelp')}</p>
-          },
-          {
-            value: 'send',
-            label: t('sendStage'),
-            content: <p>{t('sendStageHelp')}</p>
-          }
-        ]}
-      />
+
 
       {query.error ? (
         <Alert variant="danger">
@@ -250,8 +240,9 @@ export default async function ReportsPage({
         </Alert>
       ) : null}
 
-      <Card className="content-section">
-        <h2>{t('prepareStage')}</h2>
+      {!workspace ? (
+        <Card className="content-section">
+          <h2>{t('prepareStage')}</h2>
 
         <form
           action={prepareReportBatchAction}
@@ -344,16 +335,29 @@ export default async function ReportsPage({
             {t('prepareBatch')}
           </button>
         </form>
-      </Card>
+        </Card>
+      ) : null}
 
       {workspace ? (
-        <Card className="content-section">
+        <Card className="content-section report-workspace">
           <div className="dashboard-week-heading">
             <div>
-              <h2>{t('batchReview')}</h2>
-              <p>
+              <h2>
+                {locale === 'ar' && workspace.classInfo.nameAr
+                  ? workspace.classInfo.nameAr
+                  : workspace.classInfo.nameEn}
+              </h2>
+              <p className="report-batch-meta">
                 {workspace.batch.periodStart} –{' '}
                 {workspace.batch.periodEnd}
+                {' · '}
+                {t('studentCount', {
+                  count: workspace.summaryStudents.length
+                })}
+                {' · '}
+                {t('sourceCount', {
+                  count: workspace.sources.length
+                })}
               </p>
             </div>
 
@@ -376,13 +380,21 @@ export default async function ReportsPage({
           {workspace.sources.length === 0 ? (
             <EmptyState title={t('noSources')} />
           ) : (
-            <ReportComposer
-              labels={sourceLabels}
-              sources={workspace.sources}
-            />
+            <>
+              <ReportComposer
+                labels={sourceLabels}
+                sources={workspace.sources}
+              />
+
+              <ReportStudentReviewTable
+                labels={studentReviewLabels}
+                locale={locale}
+                students={workspace.summaryStudents}
+              />
+            </>
           )}
 
-          {workspace.batch.status === 'DRAFT' &&
+          {workspace.batch.status !== 'FINALIZED' &&
           workspace.sources.length > 0 ? (
             <div className="page-actions">
               <form action={approveAllReportSourcesAction}>
@@ -391,32 +403,28 @@ export default async function ReportsPage({
                   className="button button-secondary"
                   type="submit"
                 >
-                  {t('useAllSources')}
+                  {t('refreshSources')}
                 </button>
               </form>
 
-              <form action={reviewReportBatchAction}>
+              <form action={finalizeReportBatchAction}>
                 {batchHidden}
                 <button
                   className="button button-primary"
+                  disabled={
+                    workspace.approvals.length === 0 ||
+                    workspace.summaryStudents.some(
+                      (student) =>
+                        student.missingDataCount > 0 ||
+                        student.attendanceConflictCount > 0
+                    )
+                  }
                   type="submit"
                 >
-                  {t('moveToReview')}
+                  {t('finalizeReports')}
                 </button>
               </form>
             </div>
-          ) : null}
-
-          {workspace.batch.status === 'REVIEW' ? (
-            <form action={finalizeReportBatchAction}>
-              {batchHidden}
-              <button
-                className="button button-primary"
-                type="submit"
-              >
-                {t('finalizeReports')}
-              </button>
-            </form>
           ) : null}
         </Card>
       ) : null}
