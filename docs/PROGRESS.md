@@ -1,10 +1,10 @@
 # Implementation Progress
 
-Last updated: 2026-09-24
+Last updated: 2026-09-26
 
 ## Current status
 
-The Class -> Subject -> optional Group redesign has been followed by the approved independent-role correction on `codex/independent-role-records`. Application authorization now treats Profiles as login/audit identity only and grants Administrator/Teacher capability through explicit independent business records and account links. Implementation Tasks 1-6 are complete on the branch; Task 7 documentation and final release verification are in progress. Hosted production has not been changed by this correction.
+The full website UX redesign, Class -> Subject -> optional Group architecture, and independent Administrator/Teacher role model are released to production on `main`. The production release is commit `88c3429f8cf6e40fbfe8f5b90af4adbf545560a2`. Local quality, PostgreSQL/RLS, browser E2E, branch CI, main-branch CI, Vercel production deployment, and live HTTP smoke verification all passed.
 
 ## Planning completed
 
@@ -294,3 +294,32 @@ Verification:
 - UX responsive/RTL Playwright audit — 6/6 passed.
 - Accessibility Playwright audit — 6/6 passed.
 - `git diff --check` — passed.
+
+## 2026-09-26 — Full website UX redesign: Task 16 production release complete
+
+Release commit: `88c3429f8cf6e40fbfe8f5b90af4adbf545560a2`.
+
+Final local verification:
+- `pnpm lint` — passed.
+- `pnpm typecheck` — passed.
+- `pnpm test` — 60 files, 268 tests passed.
+- `pnpm build` — passed; 68/68 pages generated.
+- `pnpm test:db` — 15 files, 221 PostgreSQL/RLS tests passed after the canonical legacy-history fixture and forward migrations.
+- `pnpm test:e2e` — all 35 browser workflows passed on a freshly reset and seeded local Supabase database.
+- The `ReportPreviewFrame` iframe-root disappearance regression was reproduced RED, fixed with a minimal null guard, and retained as a passing unit regression test.
+
+Release-candidate verification:
+- Branch `codex/full-website-ux-redesign` was pushed at the same release SHA.
+- Manually dispatched GitHub Redesign CI run `36282510382` completed successfully.
+- Quality, Database/RLS, and E2E jobs all passed.
+
+Production release:
+- `main` was confirmed to be 66 commits behind the verified branch and 0 commits ahead, so release integration was a clean fast-forward with no merge commit or new code tree.
+- `main` advanced from `c225afea11ad772c8e804ab3636523e616eec1ec` to `88c3429f8cf6e40fbfe8f5b90af4adbf545560a2`.
+- Automatic GitHub Redesign CI run `36285427064` completed successfully on `main`; Quality, Database/RLS, and E2E jobs all passed.
+- Vercel production deployment `dpl_5s7Dn5xeCRvLa3Rgp2CoPWUzYU3A` reached `READY` for the same release SHA with no alias error.
+- Production aliases include `weekend-school-nine.vercel.app`, `weekend-school-mce-school.vercel.app`, and `weekend-school-git-main-mce-school.vercel.app`.
+- A live production fetch returned HTTP 200 and rendered the MCE Weekend School English login page with the Arabic language switch available.
+
+Task 16 release verification is complete.
+
