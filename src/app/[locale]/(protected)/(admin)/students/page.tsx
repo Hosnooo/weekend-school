@@ -31,12 +31,14 @@ export default async function StudentsPage({
   return (
     <section className="admin-page">
       <PageHeader
-        actions={(
-          <>
-            <Link className="button button-secondary action-link" href="/guardians">{t('manageGuardians')}</Link>
-            <Link className="button button-primary action-link" href="/students/new">{t('addStudent')}</Link>
-          </>
-        )}
+        actions={
+          <Link
+            className="button button-primary action-link"
+            href="/students/new"
+          >
+            {t('addStudent')}
+          </Link>
+        }
         description={t('description')}
         title={t('title')}
       />

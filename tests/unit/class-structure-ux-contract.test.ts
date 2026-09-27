@@ -15,6 +15,7 @@ describe('Class / Subject / Group UX contract', () => {
 
     expect(page).not.toContain('AdminPage');
     expect(page).toContain('PageHeader');
+    expect(page.match(/href="\/classes\/new"/g) ?? []).toHaveLength(1);
 
     expect(
       page.includes('DataTable') ||

@@ -37,6 +37,7 @@ describe('student, enrollment, and Guardian UX contract', () => {
     expect(detail).not.toContain('StudentEnrollmentEditor');
 
     expect(edit).toContain('StudentForm');
+    expect(edit).toContain("description={t('editDescription')}");
     expect(edit).not.toContain('StudentEnrollmentEditor');
     expect(edit).not.toContain('getStudentEnrollmentState');
     expect(edit).not.toContain('listEnrollmentClasses');
@@ -57,6 +58,8 @@ describe('student, enrollment, and Guardian UX contract', () => {
 
     expect(studentsPage).toContain('PageHeader');
     expect(studentsPage).toContain('StudentManagementList');
+    expect(studentsPage).not.toContain('href="/guardians"');
+    expect(studentsPage).not.toContain("t('manageGuardians')");
     expect(studentsPage).not.toContain('<table');
     expect(studentList).toContain('DataTable');
     expect(studentList).toContain('DropdownMenu');
@@ -118,6 +121,15 @@ describe('student, enrollment, and Guardian UX contract', () => {
     expect(form).toContain('guardianSearch');
     expect(form).toContain('guardianEmail');
     expect(form).toContain("guardiansT('useExistingGuardian')");
+
+    const guardianPosition = form.indexOf(
+      "<legend>{t('guardianOptional')}</legend>"
+    );
+    const enrollmentPosition = form.indexOf(
+      "<legend>{t('enrollment')}</legend>"
+    );
+    expect(guardianPosition).toBeGreaterThan(-1);
+    expect(enrollmentPosition).toBeGreaterThan(guardianPosition);
 
     expect(actions).toContain('linkExistingStudentGuardianAction');
     expect(repository).toContain('linkExistingGuardianToStudent');

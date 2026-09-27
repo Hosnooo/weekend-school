@@ -40,17 +40,7 @@ export default async function ClassesPage({
       />
 
       {classes.length === 0 ? (
-        <EmptyState
-          action={
-            <Link
-              className="button button-primary action-link"
-              href="/classes/new"
-            >
-              {t('createClass')}
-            </Link>
-          }
-          title={t('empty')}
-        />
+        <EmptyState title={t('empty')} />
       ) : (
         <ClassManagementList classes={classes} locale={locale} />
       )}

@@ -32,7 +32,7 @@ export default async function EditStudentPage({params}: {
           {label: studentName, href: `/${locale}/students/${student.id}`},
           {label: t('editTitle')}
         ]}
-        description={t('description')}
+        description={t('editDescription')}
         title={t('editTitle')}
       />
       <StudentForm cancelHref={`/students/${student.id}`} locale={locale} student={student} />
