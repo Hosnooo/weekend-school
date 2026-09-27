@@ -14,7 +14,9 @@ test('student exception remains sparse and visible in submitted history', async 
     exceptionStudent: 'Omar Hassan'
   });
 
-  const row = page.getByRole('row', {name: /Foundations.*Arabic Reading.*Blue.*March/}).first();
+  const row = page
+    .getByRole('row', {name: /March.*Foundations.*Arabic Reading.*Blue/})
+    .first();
   await row.getByRole('link', {name: 'View'}).click();
   const exceptionToggle = page.getByRole('button', {name: 'Omar Hassan'});
   await expect(exceptionToggle).toBeDisabled();

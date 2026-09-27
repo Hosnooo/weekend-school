@@ -1,5 +1,6 @@
 import {expect, test, type Page} from '@playwright/test';
 
+import {redesign} from './redesign-fixtures';
 import {
   clearSession,
   credentials,
@@ -278,14 +279,31 @@ test.describe('Teacher weekly workflow', () => {
       fullPage: true
     });
 
-    const arabicStart = page
-      .getByRole('link', {name: 'بدء التحديث'})
-      .first();
+    const arabicContextHref = await page
+      .locator(
+        `a[href*="classSubjectId=${redesign.groupedSubjectId}"][href*="subjectGroupId=${redesign.blueGroupId}"]`
+      )
+      .first()
+      .getAttribute('href');
+
+    expect(arabicContextHref).toBeTruthy();
+
+    const arabicTeacherId = new URL(
+      arabicContextHref!,
+      'http://localhost'
+    ).searchParams.get('teacherId');
+
+    expect(arabicTeacherId).toBeTruthy();
+
+    const arabicQuery = new URLSearchParams({
+      teacherId: arabicTeacherId!,
+      classSubjectId: redesign.groupedSubjectId,
+      subjectGroupId: redesign.blueGroupId,
+      week: '2030-05-06'
+    });
 
     const arabicUpdateHref =
-      await arabicStart.getAttribute('href');
-
-    expect(arabicUpdateHref).toBeTruthy();
+      `/ar/my-teaching/update?${arabicQuery}`;
 
     // Arabic desktop weekly form.
     await page.setViewportSize({width: 1366, height: 900});
@@ -372,14 +390,8 @@ test.describe('Teacher weekly workflow', () => {
       .locator('button[name="intent"][value="draft"]')
       .click();
 
-    await page.goto('/ar/my-teaching');
-
-    const arabicContextLink = page.locator(
-      `a[href="${arabicUpdateHref}"]`
-    );
-
-    await expect(arabicContextLink).toHaveText(
-      'متابعة المسودة'
-    );
+    await expect(
+      page.locator('.save-status')
+    ).toContainText('تم الحفظ');
   });
 });

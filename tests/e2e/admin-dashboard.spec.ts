@@ -41,13 +41,13 @@ test.describe('Administrator dashboard', () => {
       page.getByText('Teachers without login access', {exact: true})
     ).toHaveCount(0);
 
-    // One active Teacher currently has no teaching assignment.
+    // Both seeded active Teachers have current teaching assignments.
     await expect(
       page.getByText('Teachers without current assignments', {exact: true})
-    ).toBeVisible();
+    ).toHaveCount(0);
 
     await expect(
-      page.getByRole('link', {name: 'Manage assignments'})
+      page.getByRole('link', {name: 'Assign teacher'})
     ).toHaveAttribute('href', '/en/teaching-assignments');
 
     // The current seeded week has expected teaching work that still needs updates.

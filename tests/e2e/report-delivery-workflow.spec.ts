@@ -1,3 +1,4 @@
+import {createClient} from '@supabase/supabase-js';
 import {expect, test, type Page} from '@playwright/test';
 
 import {credentials, login} from './helpers';
@@ -11,6 +12,91 @@ const englishReportId =
 const arabicReportId =
   '70000000-0000-0000-0000-000000000002';
 
+const failedReportId =
+  '70000000-0000-0000-0000-000000000003';
+
+const schoolId =
+  'a0000000-0000-0000-0000-000000000001';
+
+const reportFixtureIds = [
+  englishReportId,
+  arabicReportId,
+  failedReportId
+];
+
+function serviceClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!url || !key) {
+    throw new Error(
+      'Local Supabase service credentials are required for report E2E setup.'
+    );
+  }
+
+  return createClient(url, key, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false
+    }
+  });
+}
+
+function reportSnapshot(
+  studentId: string,
+  nameEn: string,
+  nameAr: string,
+  language: 'en' | 'ar' | 'both'
+) {
+  return {
+    version: 1,
+    school: {
+      nameEn: 'Weekend School',
+      nameAr: 'مدرسة نهاية الأسبوع'
+    },
+    student: {
+      id: studentId,
+      nameEn,
+      nameAr
+    },
+    period: {
+      start: '2026-09-01',
+      end: '2026-09-30'
+    },
+    language,
+    groups: [],
+    attendance: {
+      present: 0,
+      absent: 0,
+      late: 0,
+      excused: 0,
+      sessions: 0
+    },
+    progress: [],
+    currentPerformance: 'GOOD',
+    comments: [],
+    generatedAt: '2026-09-30T18:00:00.000Z'
+  };
+}
+
+async function cleanupReportFixtures() {
+  const supabase = serviceClient();
+
+  const {error: deliveryError} = await supabase
+    .from('email_deliveries')
+    .delete()
+    .in('report_id', reportFixtureIds);
+
+  if (deliveryError) throw deliveryError;
+
+  const {error: reportError} = await supabase
+    .from('reports')
+    .delete()
+    .in('id', reportFixtureIds);
+
+  if (reportError) throw reportError;
+}
+
 async function assertNoHorizontalOverflow(page: Page) {
   const overflow = await page.evaluate(
     () =>
@@ -22,6 +108,123 @@ async function assertNoHorizontalOverflow(page: Page) {
 }
 
 test.describe('Reports and Delivery Status', () => {
+  test.beforeAll(async () => {
+    const supabase = serviceClient();
+
+    await cleanupReportFixtures();
+
+    const {error: reportError} = await supabase
+      .from('reports')
+      .insert([
+        {
+          id: englishReportId,
+          school_id: schoolId,
+          student_id: 'e0000000-0000-0000-0000-000000000001',
+          period_start: '2026-09-01',
+          period_end: '2026-09-30',
+          language: 'en',
+          status: 'SENT',
+          snapshot_json: reportSnapshot(
+            'e0000000-0000-0000-0000-000000000001',
+            'Sara Ali',
+            'سارة علي',
+            'en'
+          ),
+          generated_at: '2026-09-30T18:00:00.000Z',
+          sent_at: '2026-09-30T18:05:00.000Z',
+          revision: 1,
+          snapshot_version: 1
+        },
+        {
+          id: arabicReportId,
+          school_id: schoolId,
+          student_id: 'e0000000-0000-0000-0000-000000000002',
+          period_start: '2026-09-01',
+          period_end: '2026-09-30',
+          language: 'ar',
+          status: 'READY',
+          snapshot_json: reportSnapshot(
+            'e0000000-0000-0000-0000-000000000002',
+            'Omar Hassan',
+            'عمر حسن',
+            'ar'
+          ),
+          generated_at: '2026-09-30T18:01:00.000Z',
+          revision: 1,
+          snapshot_version: 1
+        },
+        {
+          id: failedReportId,
+          school_id: schoolId,
+          student_id: 'e0000000-0000-0000-0000-000000000003',
+          period_start: '2026-09-01',
+          period_end: '2026-09-30',
+          language: 'both',
+          status: 'FAILED',
+          snapshot_json: reportSnapshot(
+            'e0000000-0000-0000-0000-000000000003',
+            'Lina Khalil',
+            'لينا خليل',
+            'both'
+          ),
+          generated_at: '2026-09-30T18:02:00.000Z',
+          revision: 1,
+          snapshot_version: 1
+        }
+      ]);
+
+    if (reportError) throw reportError;
+
+    const {error: deliveryError} = await supabase
+      .from('email_deliveries')
+      .insert([
+        {
+          id: '71000000-0000-0000-0000-000000000001',
+          school_id: schoolId,
+          report_id: englishReportId,
+          student_id: 'e0000000-0000-0000-0000-000000000001',
+          period_start: '2026-09-01',
+          period_end: '2026-09-30',
+          guardian_id: 'f0000000-0000-0000-0000-000000000001',
+          recipient_email: 'guardian01@example.test',
+          provider: 'e2e',
+          provider_message_id: 'e2e-sent-1',
+          status: 'SENT',
+          sent_at: '2026-09-30T18:05:00.000Z'
+        },
+        {
+          id: '71000000-0000-0000-0000-000000000002',
+          school_id: schoolId,
+          report_id: arabicReportId,
+          student_id: 'e0000000-0000-0000-0000-000000000002',
+          period_start: '2026-09-01',
+          period_end: '2026-09-30',
+          guardian_id: 'f0000000-0000-0000-0000-000000000002',
+          recipient_email: 'guardian02@example.test',
+          provider: 'e2e',
+          status: 'PENDING'
+        },
+        {
+          id: '71000000-0000-0000-0000-000000000003',
+          school_id: schoolId,
+          report_id: failedReportId,
+          student_id: 'e0000000-0000-0000-0000-000000000003',
+          period_start: '2026-09-01',
+          period_end: '2026-09-30',
+          guardian_id: 'f0000000-0000-0000-0000-000000000003',
+          recipient_email: 'guardian03@example.test',
+          provider: 'e2e',
+          status: 'FAILED',
+          error_message: 'Test delivery failure'
+        }
+      ]);
+
+    if (deliveryError) throw deliveryError;
+  });
+
+  test.afterAll(async () => {
+    await cleanupReportFixtures();
+  });
   test(
     'renders staged reports, preview, and delivery filters in EN/AR',
     async ({page}, testInfo) => {

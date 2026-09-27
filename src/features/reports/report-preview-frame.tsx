@@ -24,6 +24,7 @@ export function ReportPreviewFrame({
 
       const body = document.body;
       const root = document.documentElement;
+      if (!root) return;
 
       const height = Math.max(
         body?.scrollHeight ?? 0,

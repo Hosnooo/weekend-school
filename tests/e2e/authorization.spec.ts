@@ -12,7 +12,11 @@ test('Group-only teacher cannot cross context, role, or co-teacher ownership bou
     week: redesign.authorizationWeek,
     progressEn: 'Teacher-one private submission'
   });
-  const ownedHistoryHref = await page.getByRole('row', {name: /Arabic Reading.*Blue.*April/}).first().getByRole('link', {name: 'View'}).getAttribute('href');
+  const ownedHistoryHref = await page
+    .getByRole('row', {name: /April.*Foundations.*Arabic Reading.*Blue/})
+    .first()
+    .getByRole('link', {name: 'View'})
+    .getAttribute('href');
   expect(ownedHistoryHref).toBeTruthy();
 
   await clearSession(page);

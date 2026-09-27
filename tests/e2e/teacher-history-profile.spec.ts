@@ -45,7 +45,7 @@ test.describe('Teacher History and Profile', () => {
     await submitTeachingUpdate(page, {
       locale: 'en',
       classSubjectId: redesign.wholeClassSubjectId,
-      week: redesign.happyWeek,
+      week: '2031-06-02',
       progressEn: 'Task 11 English history verification'
     });
 
@@ -58,15 +58,15 @@ test.describe('Teacher History and Profile', () => {
     ).toBeVisible();
 
     await expect(
-      page.getByText('Submitted', {exact: true})
+      page.getByText('Submitted', {exact: true}).first()
     ).toBeVisible();
 
     await expect(
-      page.getByText('Foundations', {exact: true})
+      page.getByText('Foundations', {exact: true}).first()
     ).toBeVisible();
 
     await expect(
-      page.getByText('Faith & Character', {exact: true})
+      page.getByText('Faith & Character', {exact: true}).first()
     ).toBeVisible();
 
     await assertNoHorizontalOverflow(page);
@@ -179,7 +179,7 @@ test.describe('Teacher History and Profile', () => {
       locale: 'ar',
       classSubjectId: redesign.groupedSubjectId,
       subjectGroupId: redesign.blueGroupId,
-      week: redesign.arabicWeek,
+      week: '2031-07-07',
       progressAr: 'تحقق السجل للمهمة 11'
     });
 
@@ -197,7 +197,7 @@ test.describe('Teacher History and Profile', () => {
     ).toBeVisible();
 
     await expect(
-      page.getByText('تم الإرسال', {exact: true})
+      page.getByText('تم الإرسال', {exact: true}).first()
     ).toBeVisible();
 
     await assertNoHorizontalOverflow(page);
@@ -274,7 +274,7 @@ test.describe('Teacher History and Profile', () => {
     ).toBeVisible();
 
     await expect(
-      page.getByText('تم الإرسال', {exact: true})
+      page.getByText('تم الإرسال', {exact: true}).first()
     ).toBeVisible();
 
     await assertNoHorizontalOverflow(page);

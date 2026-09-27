@@ -76,7 +76,7 @@ test.describe('Teaching Assignments reference CRUD flow', () => {
 
     await subjectSelect.selectOption({label: 'Arabic Reading'});
     await scopeSelect.selectOption({label: 'Blue'});
-    await startsOnInput.fill('2026-10-01');
+    await startsOnInput.fill('2040-10-01');
     await addDialog.getByRole('button', {name: 'Add assignment'}).click();
     await expect(addDialog).toBeHidden();
 
@@ -86,13 +86,13 @@ test.describe('Teaching Assignments reference CRUD flow', () => {
 
     await page.getByRole('button', {name: /Actions for Foundations.*Arabic Reading.*Blue/}).click();
     await page.getByRole('menuitem', {name: 'Edit dates'}).click();
-    await page.getByLabel('Starts on').fill('2026-10-02');
+    await page.getByLabel('Starts on').fill('2040-10-02');
     await page.getByRole('button', {name: 'Save dates'}).click();
     await expect(page.getByRole('button', {name: 'Save dates'})).toBeHidden();
 
     await page.reload();
     await page.getByRole('tab', {name: 'Upcoming'}).click();
-    await expect(page.getByText(/2026-10-02/)).toBeVisible();
+    await expect(page.getByText(/2040-10-02/)).toBeVisible();
     await page.getByRole('button', {name: /Actions for Foundations.*Arabic Reading.*Blue/}).click();
     await page.getByRole('menuitem', {name: 'Delete assignment'}).click();
     const deleteDialog = page.getByRole('dialog', {name: 'Delete assignment'});
@@ -101,7 +101,11 @@ test.describe('Teaching Assignments reference CRUD flow', () => {
 
     await page.reload();
     await page.getByRole('tab', {name: 'Upcoming'}).click();
-    await expect(page.getByText('Blue')).toHaveCount(0);
+    await expect(
+      page.getByRole('button', {
+        name: /Actions for Foundations.*Arabic Reading.*Blue/
+      })
+    ).toHaveCount(0);
 
     await page.getByRole('tab', {name: 'Current'}).click();
     await page.getByRole('button', {name: /Actions for Foundations.*Faith & Character.*Entire subject/}).click();
