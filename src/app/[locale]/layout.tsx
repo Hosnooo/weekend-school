@@ -6,6 +6,9 @@ import {notFound} from 'next/navigation';
 import {getLocaleDirection} from '@/i18n/config';
 import {routing} from '@/i18n/routing';
 
+import '@fontsource/noto-sans-arabic/400.css';
+import '@fontsource/noto-sans-arabic/600.css';
+
 import '../globals.css';
 import '../design-system.css';
 

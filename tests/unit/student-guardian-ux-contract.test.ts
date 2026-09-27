@@ -143,4 +143,20 @@ describe('student, enrollment, and Guardian UX contract', () => {
     expect(guardiansPage).not.toContain('GuardianManagementList');
     expect(guardiansPage).not.toContain('/guardians/new');
   });
+  it('keeps Guardian radio choices compact and aligned', () => {
+    const form = source('src/features/students/student-form.tsx');
+    const css = source('src/app/globals.css');
+
+    expect(form).toContain('className="guardian-mode-options"');
+    expect(form).toContain('className="guardian-mode-option"');
+    expect(form).toContain('className="guardian-directory-options"');
+    expect(form).toContain('className="guardian-directory-option"');
+    expect(form).toContain('className="guardian-directory-copy"');
+    expect(form).not.toContain('className="choice-item record-card"');
+
+    expect(css).toContain(":not([type='radio'])");
+    expect(css).toContain('.record-form label.guardian-mode-option');
+    expect(css).toContain('.record-form label.guardian-directory-option');
+  });
+
 });

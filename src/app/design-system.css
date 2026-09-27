@@ -1,6 +1,9 @@
 :root {
-  --surface-subtle: #f1f4f7;
+  --surface-subtle: #f4f6f8;
   --surface-raised: #ffffff;
+  --border-subtle: #e7eaee;
+  --control-height: 2.5rem;
+  --control-height-compact: 2.25rem;
   --info: #075985;
   --info-surface: #e0f2fe;
   --radius-sm: 0.5rem;
@@ -9,17 +12,17 @@
   --shadow-layer: 0 1rem 3rem rgba(23, 32, 51, 0.18);
 }
 
-.button-default { min-height: 2.75rem; }
-.button-compact { min-height: 2.25rem; padding: 0.4rem 0.75rem; }
+.button-default { min-height: var(--control-height); }
+.button-compact { min-height: var(--control-height-compact); padding: 0.35rem 0.7rem; }
 .button-icon { inline-size: 2.75rem; block-size: 2.75rem; padding: 0; }
 .button-ghost { color: var(--text); background: transparent; border-color: transparent; }
 .button-ghost:hover:not(:disabled) { background: var(--surface-subtle); }
 
 .input,
 .select {
-  min-height: 2.75rem;
+  min-height: var(--control-height);
   width: 100%;
-  padding-inline: 0.75rem;
+  padding-inline: 0.7rem;
   color: var(--text);
   background: var(--surface);
   border: 1px solid var(--border);
@@ -30,20 +33,21 @@
 .select:disabled { cursor: not-allowed; opacity: 0.6; }
 
 .card {
-  padding: 1.25rem;
+  padding: 1rem;
   background: var(--surface-raised);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
 }
 
 .badge {
   display: inline-flex;
   align-items: center;
-  min-height: 1.75rem;
-  padding-inline: 0.6rem;
+  min-height: 1.5rem;
+  padding-inline: 0.5rem;
   border-radius: 999px;
-  font-size: 0.8125rem;
-  font-weight: 700;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
 }
 .badge-neutral { color: var(--muted); background: var(--surface-subtle); }
 .badge-success { color: var(--success); background: var(--success-surface); }
@@ -70,11 +74,48 @@
   gap: 1rem;
 }
 .page-header { margin-block-end: 1.5rem; }
-.page-header-main { display: grid; gap: 0.65rem; min-inline-size: 0; }
-.page-header h1,
-.section-header h2 { margin: 0; }
+.page-header-main { display: grid; gap: 0.5rem; min-inline-size: 0; }
+
+.page-header h1 {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.section-header h2 {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+[dir='ltr'] .page-header h1 {
+  letter-spacing: -0.02em;
+}
+
 .page-header p,
-.section-header p { margin-block: 0.35rem 0; color: var(--muted); line-height: 1.5; }
+.section-header p {
+  max-inline-size: 52rem;
+  margin-block: 0.3rem 0;
+  color: var(--muted);
+  font-size: 0.9375rem;
+  line-height: 1.55;
+}
+
+.record-name {
+  color: var(--text);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.record-meta {
+  color: var(--muted);
+  font-size: 0.8125rem;
+  font-weight: 400;
+  line-height: 1.45;
+}
 .page-header-actions,
 .section-header-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; }
 
@@ -91,9 +132,9 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 1.25rem;
+  padding: 1rem;
   background: var(--surface);
-  border: 1px dashed var(--border);
+  border: 1px dashed var(--border-subtle);
   border-radius: var(--radius-md);
 }
 .empty-state-v2 h2 { margin: 0; font-size: 1rem; }
@@ -103,10 +144,52 @@
 .data-table-wrap {
   overflow: hidden;
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
 }
-.data-table caption { padding: 0.75rem 1rem; text-align: start; font-weight: 700; }
+
+.data-table caption {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.data-table th {
+  color: var(--muted);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.data-table td {
+  padding-block: 0.7rem;
+}
+
+.data-table td:first-child strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.data-table td:first-child a {
+  text-decoration: none;
+}
+
+.data-table td:first-child a:hover {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.data-table tbody tr {
+  transition: background-color 120ms ease;
+}
+
+.data-table tbody tr:hover {
+  background: var(--surface-subtle);
+}
+
 .data-table th:last-child,
 .data-table td:last-child { inline-size: 1%; white-space: nowrap; }
 

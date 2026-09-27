@@ -164,8 +164,8 @@ export function StudentForm({
               value={guardianMode === 'existing' ? guardianId : ''}
             />
 
-            <div className="form-grid">
-              <label>
+            <div className="guardian-mode-options">
+              <label className="guardian-mode-option">
                 <input
                   checked={guardianMode === 'none'}
                   name="guardianModeChoice"
@@ -178,7 +178,7 @@ export function StudentForm({
                 {guardiansT('noGuardian')}
               </label>
 
-              <label>
+              <label className="guardian-mode-option">
                 <input
                   checked={guardianMode === 'existing'}
                   disabled={availableGuardians.length === 0}
@@ -189,7 +189,7 @@ export function StudentForm({
                 {guardiansT('linkExistingGuardian')}
               </label>
 
-              <label>
+              <label className="guardian-mode-option">
                 <input
                   checked={guardianMode === 'new'}
                   name="guardianModeChoice"
@@ -227,10 +227,10 @@ export function StudentForm({
                 {matchingGuardians.length === 0 ? (
                   <p>{guardiansT('noGuardianSearchResults')}</p>
                 ) : (
-                  <div className="stack-list">
+                  <div className="guardian-directory-options">
                     {matchingGuardians.map((guardian) => (
                       <label
-                        className="record-card"
+                        className="guardian-directory-option"
                         key={guardian.id}
                       >
                         <input
@@ -238,16 +238,16 @@ export function StudentForm({
                           name="guardianSelection"
                           onChange={() => setGuardianId(guardian.id)}
                           type="radio"
-                        />{' '}
-                        <strong>{guardian.name}</strong>
-                        {' — '}
-                        {guardian.email}
-                        {!guardian.isActive ? (
-                          <>
-                            {' '}
-                            ({guardiansT('archived')})
-                          </>
-                        ) : null}
+                        />
+                        <span className="guardian-directory-copy">
+                          <strong className="record-name">{guardian.name}</strong>
+                          <span className="record-meta">
+                            {guardian.email}
+                            {!guardian.isActive
+                              ? ` · ${guardiansT('archived')}`
+                              : ''}
+                          </span>
+                        </span>
                       </label>
                     ))}
                   </div>
@@ -314,16 +314,16 @@ export function StudentForm({
                     <p>
                       {guardiansT('existingEmailFound')}
                     </p>
-                    <div>
-                      <strong>{existingGuardianForEmail.name}</strong>
-                      {' — '}
-                      {existingGuardianForEmail.email}
-                      {!existingGuardianForEmail.isActive ? (
-                        <>
-                          {' '}
-                          ({guardiansT('archived')})
-                        </>
-                      ) : null}
+                    <div className="guardian-directory-copy">
+                      <strong className="record-name">
+                        {existingGuardianForEmail.name}
+                      </strong>
+                      <span className="record-meta">
+                        {existingGuardianForEmail.email}
+                        {!existingGuardianForEmail.isActive
+                          ? ` · ${guardiansT('archived')}`
+                          : ''}
+                      </span>
                     </div>
                     <Button
                       onClick={() => {
