@@ -32,12 +32,20 @@ export default async function StudentsPage({
     <section className="admin-page">
       <PageHeader
         actions={
-          <Link
-            className="button button-primary action-link"
-            href="/students/new"
-          >
-            {t('addStudent')}
-          </Link>
+          <div className="button-row">
+            <Link
+              className="button button-secondary action-link"
+              href="/students/import"
+            >
+              {t('importCsv')}
+            </Link>
+            <Link
+              className="button button-primary action-link"
+              href="/students/new"
+            >
+              {t('addStudent')}
+            </Link>
+          </div>
         }
         description={t('description')}
         title={t('title')}
