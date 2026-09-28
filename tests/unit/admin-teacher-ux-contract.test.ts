@@ -48,7 +48,7 @@ describe('administrator and teacher UX completion contract', () => {
   it('evaluates current teaching against today while keeping the weekly submission keyed to week start', () => {
     const myTeaching = source('src/app/[locale]/(protected)/(teacher)/my-teaching/page.tsx');
     expect(myTeaching).toMatch(
-      /listMyTeaching\(profile\.schoolId,\s*teacherIds,\s*today,\s*weekStart\)/
+      /listMyTeaching\(\s*profile\.schoolId,\s*teacherIds,\s*today,\s*weekStart\s*\)/
     );
   });
 

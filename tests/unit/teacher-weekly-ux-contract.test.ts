@@ -27,7 +27,7 @@ describe('Teacher This Week UX contract', () => {
     expect(weeklyActionForStatus('SUBMITTED')).toBe('viewSubmittedUpdate');
   });
 
-  it('renders This Week as a translated shared-component work queue', () => {
+  it('renders My Teaching as the flexible Teaching Updates work queue', () => {
     const page = read(
       'src/app/[locale]/(protected)/(teacher)/my-teaching/page.tsx'
     );
@@ -35,19 +35,23 @@ describe('Teacher This Week UX contract', () => {
     expect(page).not.toContain('AdminPage');
     expect(page).toContain('PageHeader');
     expect(page).toContain('Card');
-    expect(page).toContain('StatusBadge');
+    expect(page).toContain('createTeachingUpdateAction');
+    expect(page).toContain('listOpenTeachingUpdates');
+    expect(page).toContain('submissionId');
     expect(page).toContain('EmptyState');
 
-    expect(page).toContain('weeklyActionForStatus');
-    expect(page).toContain('{t(actionKey)}');
+    expect(page).toContain('createTeachingUpdateAction');
+    expect(page).toContain('listOpenTeachingUpdates');
+    expect(page).toContain('submissionId');
 
     const en = JSON.parse(read('messages/en.json'));
     const ar = JSON.parse(read('messages/ar.json'));
 
     for (const messages of [en, ar]) {
-      expect(messages.weekly.startUpdate).toBeTruthy();
-      expect(messages.weekly.continueDraft).toBeTruthy();
-      expect(messages.weekly.viewSubmittedUpdate).toBeTruthy();
+      expect(messages.teachingUpdates.title).toBeTruthy();
+      expect(messages.teachingUpdates.newUpdate).toBeTruthy();
+      expect(messages.teachingUpdates.openUpdates).toBeTruthy();
+      expect(messages.teachingUpdates.continue).toBeTruthy();
     }
 
     expect(page).toContain('context.classNameEn');

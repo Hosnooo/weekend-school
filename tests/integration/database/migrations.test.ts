@@ -106,7 +106,8 @@ describe('migration contract', () => {
       '20260927131000_unified_destructive_delete.sql',
       '20260927132000_roster_csv_import.sql',
       '20260927220000_subject_only_teacher_groups.sql',
-      '20260927221000_flexible_teaching_updates.sql'
+      '20260927221000_flexible_teaching_updates.sql',
+    '20260927222000_teaching_update_mutations.sql'
     ]);
   });
 

@@ -4,13 +4,18 @@ import {notFound} from 'next/navigation';
 import {Card} from '@/components/ui/card';
 import {EmptyState} from '@/components/ui/empty-state';
 import {PageHeader} from '@/components/ui/page-header';
-import {StatusBadge} from '@/components/ui/status-badge';
+import {Button} from '@/components/ui/button';
 import {schoolWeekForDate} from '@/features/dashboard/dashboard.model';
 import {TeacherSubjectGroupManager} from '@/features/classes/teacher-subject-group-manager';
 import {listTeacherSubjectGroupManagement} from '@/features/classes/class.repository';
 import {
-  todayInTimeZone,
-  weeklyActionForStatus
+  createTeachingUpdateAction
+} from '@/features/teaching-updates/teaching-update.actions';
+import {
+  listOpenTeachingUpdates
+} from '@/features/teaching-updates/teaching-update.repository';
+import {
+  todayInTimeZone
 } from '@/features/weekly-updates/weekly-update.model';
 import {
   getSchoolTimezone,
@@ -33,10 +38,27 @@ export default async function MyTeachingPage({
   const today = todayInTimeZone(timeZone);
   const weekStart = schoolWeekForDate(today).start;
 
-  const [contexts, t] = await Promise.all([
-    listMyTeaching(profile.schoolId, teacherIds, today, weekStart),
-    getTranslations({locale, namespace: 'weekly'})
-  ]);
+  const [contexts, openTeachingUpdates, t, teachingUpdates] =
+    await Promise.all([
+      listMyTeaching(
+        profile.schoolId,
+        teacherIds,
+        today,
+        weekStart
+      ),
+      listOpenTeachingUpdates(
+        profile.schoolId,
+        teacherIds
+      ),
+      getTranslations({
+        locale,
+        namespace: 'weekly'
+      }),
+      getTranslations({
+        locale,
+        namespace: 'teachingUpdates'
+      })
+    ]);
 
   const classSubjectIds = [
     ...new Set(contexts.map(({classSubjectId}) => classSubjectId))
@@ -53,9 +75,82 @@ export default async function MyTeachingPage({
   return (
     <section className="admin-page">
       <PageHeader
-        description={t('myTeachingDescription')}
-        title={t('thisWeek')}
+        description={teachingUpdates('myTeachingDescription')}
+        title={teachingUpdates('title')}
       />
+
+      {openTeachingUpdates.length > 0 ? (
+        <div className="stack">
+          <h2>{teachingUpdates('openUpdates')}</h2>
+
+          <div className="group-cards">
+            {openTeachingUpdates.map((update) => {
+              const context =
+                contexts.find(
+                  (item) =>
+                    item.classSubjectId ===
+                      update.classSubjectId &&
+                    item.subjectGroupId ===
+                      update.subjectGroupId
+                ) ??
+                contexts.find(
+                  (item) =>
+                    item.classSubjectId ===
+                    update.classSubjectId
+                );
+
+              return (
+                <Card
+                  className="group-card"
+                  key={update.id}
+                >
+                  <div>
+                    <h3>
+                      {context
+                        ? localName(
+                            context.subjectNameEn,
+                            context.subjectNameAr
+                          )
+                        : teachingUpdates(
+                            'teachingUpdate'
+                          )}
+                    </h3>
+
+                    {context ? (
+                      <p>
+                        {localName(
+                          context.classNameEn,
+                          context.classNameAr
+                        )}
+                      </p>
+                    ) : null}
+
+                    <p>
+                      {update.coverageKind ===
+                      'DATES'
+                        ? teachingUpdates(
+                            'exactDates'
+                          )
+                        : teachingUpdates('range')}
+                      {': '}
+                      {update.periodStart}
+                      {' — '}
+                      {update.periodEnd}
+                    </p>
+                  </div>
+
+                  <Link
+                    className="button button-primary action-link"
+                    href={`/my-teaching/update?submissionId=${update.id}`}
+                  >
+                    {teachingUpdates('continue')}
+                  </Link>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
 
       {contexts.length === 0 ? (
         <EmptyState
@@ -63,45 +158,24 @@ export default async function MyTeachingPage({
           title={t('noTeaching')}
         />
       ) : (
-        <div className="group-cards">
-          {contexts.map((context) => {
-            const actionKey = weeklyActionForStatus(context.status);
+        <div className="stack">
+          <h2>{teachingUpdates('newUpdate')}</h2>
 
-            return (
+          <div className="group-cards">
+            {contexts.map((context) => (
               <Card
                 className="group-card"
                 key={`${context.teacherId}:${context.classSubjectId}:${context.subjectGroupId ?? 'whole'}`}
               >
-                <div className="section-heading">
-                  <div>
-                    <h2>
-                      {localName(
-                        context.subjectNameEn,
-                        context.subjectNameAr
-                      )}
-                    </h2>
-                    <p>
-                      {localName(
-                        context.classNameEn,
-                        context.classNameAr
-                      )}
-                    </p>
-                  </div>
+                <div>
+                  <h3>
+                    {localName(
+                      context.subjectNameEn,
+                      context.subjectNameAr
+                    )}
+                  </h3>
 
-                  <StatusBadge
-                    status={
-                      context.status === 'SUBMITTED'
-                        ? 'active'
-                        : 'inactive'
-                    }
-                  >
-                    {t(`submissionStatus.${context.status}`)}
-                  </StatusBadge>
-                </div>
-
-                <div className="detail-list">
                   <p>
-                    <strong>{t('class')}:</strong>{' '}
                     {localName(
                       context.classNameEn,
                       context.classNameAr
@@ -109,35 +183,59 @@ export default async function MyTeachingPage({
                   </p>
 
                   <p>
-                    <strong>{t('subject')}:</strong>{' '}
-                    {localName(
-                      context.subjectNameEn,
-                      context.subjectNameAr
-                    )}
-                  </p>
-
-                  <p>
-                    <strong>{t('group')}:</strong>{' '}
                     {context.subjectGroupId
                       ? localName(
                           context.groupNameEn ?? '',
                           context.groupNameAr
                         )
-                      : t('wholeClass')}
+                      : teachingUpdates(
+                          'wholeSubject'
+                        )}
                   </p>
 
-                  <p>{t('studentCount', {count: context.studentCount})}</p>
+                  <p>
+                    {t('studentCount', {
+                      count: context.studentCount
+                    })}
+                  </p>
                 </div>
 
-                <Link
-                  className="button button-primary action-link"
-                  href={`/my-teaching/update?teacherId=${context.teacherId}&classSubjectId=${context.classSubjectId}&subjectGroupId=${context.subjectGroupId ?? ''}&week=${context.weekStart}`}
-                >
-                  {t(actionKey)}
-                </Link>
+                <form action={createTeachingUpdateAction}>
+                  <input
+                    name="locale"
+                    type="hidden"
+                    value={locale}
+                  />
+                  <input
+                    name="teacherId"
+                    type="hidden"
+                    value={context.teacherId}
+                  />
+                  <input
+                    name="classSubjectId"
+                    type="hidden"
+                    value={context.classSubjectId}
+                  />
+                  <input
+                    name="subjectGroupId"
+                    type="hidden"
+                    value={
+                      context.subjectGroupId ?? ''
+                    }
+                  />
+                  <input
+                    name="onDate"
+                    type="hidden"
+                    value={today}
+                  />
+
+                  <Button type="submit">
+                    {teachingUpdates('newUpdate')}
+                  </Button>
+                </form>
               </Card>
-            );
-          })}
+            ))}
+          </div>
         </div>
       )}
 

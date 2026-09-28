@@ -16,7 +16,7 @@ describe('weekly update redesign contract', () => {
     expect(page).not.toContain('AdminPage');
     expect(page).toContain('PageHeader');
     expect(page).toContain('Card');
-    expect(page).toContain('WeeklyUpdateForm');
+    expect(page).toContain('TeachingUpdateEditor');
   });
 
   it('composes the weekly form as structured cards without changing its domain controls', () => {
