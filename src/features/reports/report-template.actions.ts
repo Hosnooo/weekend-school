@@ -40,7 +40,17 @@ export async function saveReportTemplateAction(
     introEn: formData.get('introEn'),
     introAr: formData.get('introAr'),
     closingEn: formData.get('closingEn'),
-    closingAr: formData.get('closingAr')
+    closingAr: formData.get('closingAr'),
+    emailSubjectEn: formData.get('emailSubjectEn'),
+    emailSubjectAr: formData.get('emailSubjectAr'),
+    emailGreetingEn: formData.get('emailGreetingEn'),
+    emailGreetingAr: formData.get('emailGreetingAr'),
+    emailMessageEn: formData.get('emailMessageEn'),
+    emailMessageAr: formData.get('emailMessageAr'),
+    emailClosingEn: formData.get('emailClosingEn'),
+    emailClosingAr: formData.get('emailClosingAr'),
+    emailSignoffEn: formData.get('emailSignoffEn'),
+    emailSignoffAr: formData.get('emailSignoffAr')
   });
 
   if (!parsed.success) return validationFailure();

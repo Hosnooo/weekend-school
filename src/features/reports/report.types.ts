@@ -79,6 +79,16 @@ export type ReportSnapshotV2 = {
     introAr: string | null;
     closingEn: string | null;
     closingAr: string | null;
+    emailSubjectEn?: string;
+    emailSubjectAr?: string | null;
+    emailGreetingEn?: string | null;
+    emailGreetingAr?: string | null;
+    emailMessageEn?: string | null;
+    emailMessageAr?: string | null;
+    emailClosingEn?: string | null;
+    emailClosingAr?: string | null;
+    emailSignoffEn?: string | null;
+    emailSignoffAr?: string | null;
   };
   author: 'MCE Weekend School';
   generatedAt: string;

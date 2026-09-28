@@ -164,6 +164,8 @@ export async function getAdminReportWorkspace(
 
   let commentOverrides: Array<{
     student_id: string;
+    performance: ReportPerformance | null;
+    performance_overridden: boolean;
     comment_en: string | null;
     comment_ar: string | null;
   }> = [];
@@ -171,7 +173,9 @@ export async function getAdminReportWorkspace(
   if (approval) {
     const {data, error} = await db
       .from('report_student_overrides')
-      .select('student_id,comment_en,comment_ar')
+      .select(
+        'student_id,performance,performance_overridden,comment_en,comment_ar'
+      )
       .eq('school_id', schoolId)
       .eq('approval_id', approval.id);
 
@@ -192,6 +196,9 @@ export async function getAdminReportWorkspace(
     return override
       ? {
           ...student,
+          performance: override.performance_overridden
+            ? override.performance
+            : student.performance,
           commentEn: override.comment_en,
           commentAr: override.comment_ar
         }
@@ -371,9 +378,11 @@ export async function saveAdminReportWorkspace(input: {
   batchId: string;
   mainReportEn: string | null;
   mainReportAr: string | null;
-  performance: ReportPerformance | null;
+  includePerformance: boolean;
+  includeStudentComments: boolean;
   studentComments: Array<{
     studentId: string;
+    performance: ReportPerformance | null;
     commentEn: string | null;
     commentAr: string | null;
   }>;
@@ -422,8 +431,7 @@ export async function saveAdminReportWorkspace(input: {
     .from('report_section_approvals')
     .update({
       approved_progress_en: clean(input.mainReportEn),
-      approved_progress_ar: clean(input.mainReportAr),
-      performance: input.performance
+      approved_progress_ar: clean(input.mainReportAr)
     })
     .eq('school_id', input.schoolId)
     .eq('id', approval.id);
@@ -436,8 +444,18 @@ export async function saveAdminReportWorkspace(input: {
     school_id: input.schoolId,
     approval_id: approval.id,
     student_id: comment.studentId,
-    comment_en: clean(comment.commentEn),
-    comment_ar: clean(comment.commentAr)
+    ...(input.includePerformance
+      ? {
+          performance: comment.performance,
+          performance_overridden: true
+        }
+      : {}),
+    ...(input.includeStudentComments
+      ? {
+          comment_en: clean(comment.commentEn),
+          comment_ar: clean(comment.commentAr)
+        }
+      : {})
   }));
 
   const {error: overrideError} = await db

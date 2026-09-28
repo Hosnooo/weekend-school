@@ -27,6 +27,16 @@ type ReportTemplateRow = {
   intro_ar: string | null;
   closing_en: string | null;
   closing_ar: string | null;
+  email_subject_en: string;
+  email_subject_ar: string | null;
+  email_greeting_en: string | null;
+  email_greeting_ar: string | null;
+  email_message_en: string | null;
+  email_message_ar: string | null;
+  email_closing_en: string | null;
+  email_closing_ar: string | null;
+  email_signoff_en: string | null;
+  email_signoff_ar: string | null;
 };
 
 const columns = [
@@ -47,7 +57,17 @@ const columns = [
   'intro_en',
   'intro_ar',
   'closing_en',
-  'closing_ar'
+  'closing_ar',
+  'email_subject_en',
+  'email_subject_ar',
+  'email_greeting_en',
+  'email_greeting_ar',
+  'email_message_en',
+  'email_message_ar',
+  'email_closing_en',
+  'email_closing_ar',
+  'email_signoff_en',
+  'email_signoff_ar'
 ].join(',');
 
 function toConfig(row: ReportTemplateRow): ReportTemplateConfig {
@@ -69,7 +89,17 @@ function toConfig(row: ReportTemplateRow): ReportTemplateConfig {
     introEn: row.intro_en,
     introAr: row.intro_ar,
     closingEn: row.closing_en,
-    closingAr: row.closing_ar
+    closingAr: row.closing_ar,
+    emailSubjectEn: row.email_subject_en,
+    emailSubjectAr: row.email_subject_ar,
+    emailGreetingEn: row.email_greeting_en,
+    emailGreetingAr: row.email_greeting_ar,
+    emailMessageEn: row.email_message_en,
+    emailMessageAr: row.email_message_ar,
+    emailClosingEn: row.email_closing_en,
+    emailClosingAr: row.email_closing_ar,
+    emailSignoffEn: row.email_signoff_en,
+    emailSignoffAr: row.email_signoff_ar
   };
 }
 
@@ -91,7 +121,17 @@ function toRow(input: ReportTemplateInput) {
     intro_en: input.introEn,
     intro_ar: input.introAr,
     closing_en: input.closingEn,
-    closing_ar: input.closingAr
+    closing_ar: input.closingAr,
+    email_subject_en: input.emailSubjectEn,
+    email_subject_ar: input.emailSubjectAr,
+    email_greeting_en: input.emailGreetingEn,
+    email_greeting_ar: input.emailGreetingAr,
+    email_message_en: input.emailMessageEn,
+    email_message_ar: input.emailMessageAr,
+    email_closing_en: input.emailClosingEn,
+    email_closing_ar: input.emailClosingAr,
+    email_signoff_en: input.emailSignoffEn,
+    email_signoff_ar: input.emailSignoffAr
   };
 }
 

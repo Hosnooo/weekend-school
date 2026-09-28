@@ -11,6 +11,7 @@ import {Input} from '@/components/ui/input';
 import type {Locale} from '@/i18n/config';
 import {initialActionState} from '@/lib/validation/action-state';
 
+import {ReportEmailTemplateEditor} from './report-email-template-editor';
 import {saveReportTemplateAction} from './report-template.actions';
 import type {ReportTemplateConfig} from './report-template.types';
 
@@ -237,6 +238,8 @@ export function ReportTemplateForm({
             </FormField>
           ))}
         </div>
+
+        <ReportEmailTemplateEditor template={template} />
 
         <FormFeedback state={state} />
 

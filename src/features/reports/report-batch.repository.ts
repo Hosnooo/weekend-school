@@ -643,7 +643,7 @@ export async function finalizeReportBatch(schoolId: string, batchId: string) {
     db.from('attendance_resolutions').select('class_subject_id,subject_group_id,week_start,student_id,resolved_status').eq('school_id', schoolId).gte('week_start', workspace.batch.periodStart).lte('week_start', workspace.batch.periodEnd).in('class_subject_id', classSubjectIds),
     db.from('student_guardians').select('student_id,guardian_id,receives_reports').eq('school_id', schoolId),
     db.from('guardians').select('id,report_language,is_active').eq('school_id', schoolId),
-    db.from('report_student_overrides').select('approval_id,student_id,progress_en,progress_ar,performance,comment_en,comment_ar').eq('school_id', schoolId).in('approval_id', approvalIds)
+    db.from('report_student_overrides').select('approval_id,student_id,progress_en,progress_ar,performance,performance_overridden,comment_en,comment_ar').eq('school_id', schoolId).in('approval_id', approvalIds)
   ]);
   for (const result of [studentsResult, enrollmentsResult, exclusionsResult, membershipsResult, observationResult, resolutionResult, guardianLinkResult, guardianResult, overrideResult]) {
     requireNoError(result.error);
@@ -730,7 +730,9 @@ export async function finalizeReportBatch(schoolId: string, batchId: string) {
         groupNameAr: source.groupNameAr,
         approvedProgressEn: clean(explicitOverride?.progress_en) ?? approval.approvedProgressEn,
         approvedProgressAr: clean(explicitOverride?.progress_ar) ?? approval.approvedProgressAr,
-        performance: (explicitOverride?.performance as ReportPerformance | null | undefined) ?? sourcePerformance ?? approval.performance,
+        performance: explicitOverride?.performance_overridden
+          ? (explicitOverride.performance as ReportPerformance | null)
+          : sourcePerformance ?? approval.performance,
         attendance: {present, absent, sessions: present + absent},
         commentEn: appendText(approval.commentEn, clean(explicitOverride?.comment_en) ?? sourceCommentEn),
         commentAr: appendText(approval.commentAr, clean(explicitOverride?.comment_ar) ?? sourceCommentAr),
@@ -778,7 +780,17 @@ export async function finalizeReportBatch(schoolId: string, batchId: string) {
           introEn: template.introEn,
           introAr: template.introAr,
           closingEn: template.closingEn,
-          closingAr: template.closingAr
+          closingAr: template.closingAr,
+          emailSubjectEn: template.emailSubjectEn,
+          emailSubjectAr: template.emailSubjectAr,
+          emailGreetingEn: template.emailGreetingEn,
+          emailGreetingAr: template.emailGreetingAr,
+          emailMessageEn: template.emailMessageEn,
+          emailMessageAr: template.emailMessageAr,
+          emailClosingEn: template.emailClosingEn,
+          emailClosingAr: template.emailClosingAr,
+          emailSignoffEn: template.emailSignoffEn,
+          emailSignoffAr: template.emailSignoffAr
         },
         generatedAt
       });

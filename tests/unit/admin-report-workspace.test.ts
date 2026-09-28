@@ -44,6 +44,7 @@ describe('admin report workspace', () => {
           presentCount: 2,
           absentCount: 0,
           attendanceConflictCount: 0,
+          performance: null,
           commentEn: 'Strong week',
           commentAr: null
         },
@@ -54,6 +55,7 @@ describe('admin report workspace', () => {
           presentCount: 1,
           absentCount: 1,
           attendanceConflictCount: 1,
+          performance: null,
           commentEn: '   ',
           commentAr: null
         }
@@ -160,8 +162,9 @@ describe('admin report workspace loading contract', () => {
     );
 
     expect(source).toContain(
-      "select('student_id,comment_en,comment_ar')"
+      'performance_overridden,comment_en,comment_ar'
     );
+    expect(source).toContain('includeStudentComments');
     expect(source).toContain('attendance_resolutions');
     expect(source).toContain('attendanceConflicts');
   });

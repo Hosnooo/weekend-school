@@ -63,15 +63,59 @@ export async function restoreArchivedStudentAction(formData: FormData) {
   redirect(`/${locale}/archives`);
 }
 
-export async function permanentlyDeleteArchivedStudentAction(formData: FormData) {
+export async function permanentlyDeleteArchivedStudentAction(
+  formData: FormData
+) {
   const locale = localeFrom(formData);
   await requireProfile(locale, 'ADMIN');
+
   const entityId = idFrom(formData);
-  const confirmation = String(formData.get('confirmation') ?? '');
+  const confirmation = String(
+    formData.get('confirmation') ?? ''
+  );
+  const expectedConfirmation = String(
+    formData.get('expectedConfirmation') ?? ''
+  );
   const impact = await getDeleteImpact(entityId);
-  validatePermanentDeleteRequest({entityId, isArchived: impact.isArchived, confirmation});
-  await permanentlyDeleteArchivedStudent(entityId, confirmation);
-  redirect(`/${locale}/archives`);
+
+  try {
+    validatePermanentDeleteRequest({
+      entityName: expectedConfirmation,
+      isArchived: impact.isArchived,
+      confirmation
+    });
+    await permanentlyDeleteArchivedStudent(
+      entityId,
+      confirmation
+    );
+  } catch (error) {
+    const code =
+      typeof error === 'object' &&
+      error !== null &&
+      'code' in error
+        ? String(error.code)
+        : null;
+
+    const message =
+      error instanceof Error ? error.message : '';
+
+    if (
+      code === '22023' ||
+      /confirmation/i.test(message)
+    ) {
+      redirect(
+        `/${locale}/archives?error=confirmation`
+      );
+    }
+
+    console.error(
+      'Unable to permanently delete archived student',
+      {error}
+    );
+    redirect(`/${locale}/archives?error=delete`);
+  }
+
+  redirect(`/${locale}/archives?deleted=1`);
 }
 
 export async function archiveManagedEntityAction(formData: FormData) {
@@ -91,19 +135,60 @@ export async function restoreManagedEntityAction(formData: FormData) {
   redirect(`/${locale}/archives`);
 }
 
-export async function permanentlyDeleteManagedEntityAction(formData: FormData) {
+export async function permanentlyDeleteManagedEntityAction(
+  formData: FormData
+) {
   const locale = localeFrom(formData);
   await requireProfile(locale, 'ADMIN');
+
   const entityType = managedEntityFrom(formData);
   const entityId = idFrom(formData);
-  const confirmation = String(formData.get('confirmation') ?? '');
-  if (confirmation !== `DELETE ${entityId}`) redirect(`/${locale}/archives?error=confirmation`);
+  const confirmation = String(
+    formData.get('confirmation') ?? ''
+  );
+  const expectedConfirmation = String(
+    formData.get('expectedConfirmation') ?? ''
+  );
+
   try {
-    await permanentlyDeleteManagedEntity(entityType, entityId, confirmation);
+    validatePermanentDeleteRequest({
+      entityName: expectedConfirmation,
+      isArchived: true,
+      confirmation
+    });
+
+    await permanentlyDeleteManagedEntity(
+      entityType,
+      entityId,
+      confirmation
+    );
   } catch (error) {
-    console.error('Unable to permanently delete archived record', {error});
-    redirect(`/${locale}/archives?error=dependencies`);
+    const code =
+      typeof error === 'object' &&
+      error !== null &&
+      'code' in error
+        ? String(error.code)
+        : null;
+
+    const message =
+      error instanceof Error ? error.message : '';
+
+    if (
+      code === '22023' ||
+      /confirmation/i.test(message)
+    ) {
+      redirect(
+        `/${locale}/archives?error=confirmation`
+      );
+    }
+
+    console.error(
+      'Unable to permanently delete archived record',
+      {error}
+    );
+    redirect(`/${locale}/archives?error=delete`);
   }
+
   revalidateLifecycle(locale);
   redirect(`/${locale}/archives?deleted=1`);
 }

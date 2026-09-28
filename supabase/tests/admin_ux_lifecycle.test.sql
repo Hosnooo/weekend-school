@@ -53,11 +53,11 @@ select ok((public.get_delete_impact('CLASS','f3000000-0000-4000-8000-00000000000
 select ok((public.get_delete_impact('SUBJECT','f4000000-0000-4000-8000-000000000001')->>'canPermanentlyDelete')::boolean,'isolated archived Subject is safe to delete');
 select ok((public.get_delete_impact('GROUP','f6000000-0000-4000-8000-000000000001')->>'canPermanentlyDelete')::boolean,'isolated archived Group is safe to delete');
 
-select lives_ok($$select public.permanently_delete_archived_entity('TEACHER','f1000000-0000-4000-8000-000000000001','DELETE f1000000-0000-4000-8000-000000000001')$$,'safe archived Teacher can be permanently deleted');
-select lives_ok($$select public.permanently_delete_archived_entity('GUARDIAN','f2000000-0000-4000-8000-000000000001','DELETE f2000000-0000-4000-8000-000000000001')$$,'safe archived Guardian can be permanently deleted');
-select lives_ok($$select public.permanently_delete_archived_entity('CLASS','f3000000-0000-4000-8000-000000000001','DELETE f3000000-0000-4000-8000-000000000001')$$,'safe archived Class can be permanently deleted');
-select lives_ok($$select public.permanently_delete_archived_entity('SUBJECT','f4000000-0000-4000-8000-000000000001','DELETE f4000000-0000-4000-8000-000000000001')$$,'safe archived Subject can be permanently deleted');
-select lives_ok($$select public.permanently_delete_archived_entity('GROUP','f6000000-0000-4000-8000-000000000001','DELETE f6000000-0000-4000-8000-000000000001')$$,'safe archived Group can be permanently deleted');
+select lives_ok($$select public.permanently_delete_archived_entity('TEACHER','f1000000-0000-4000-8000-000000000001','Lifecycle Teacher')$$,'safe archived Teacher can be permanently deleted');
+select lives_ok($$select public.permanently_delete_archived_entity('GUARDIAN','f2000000-0000-4000-8000-000000000001','Lifecycle Guardian')$$,'safe archived Guardian can be permanently deleted');
+select lives_ok($$select public.permanently_delete_archived_entity('CLASS','f3000000-0000-4000-8000-000000000001','Lifecycle Class')$$,'safe archived Class can be permanently deleted');
+select lives_ok($$select public.permanently_delete_archived_entity('SUBJECT','f4000000-0000-4000-8000-000000000001','Lifecycle Subject')$$,'safe archived Subject can be permanently deleted');
+select lives_ok($$select public.permanently_delete_archived_entity('GROUP','f6000000-0000-4000-8000-000000000001','Lifecycle Group')$$,'safe archived Group can be permanently deleted');
 
 reset role;
 select results_eq($$select count(*)::bigint from public.teachers where id='f1000000-0000-4000-8000-000000000001'$$,array[0::bigint],'Teacher row removed');

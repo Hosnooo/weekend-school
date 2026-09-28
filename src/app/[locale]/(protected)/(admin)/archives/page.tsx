@@ -33,6 +33,7 @@ type PageLabels = ArchivePanelLabels & {
   actions: string;
   safe: string;
   blocked: string;
+  destructive: string;
   delete: string;
   blockedReason: string;
   dependencyLabels: Record<string, string>;
@@ -69,6 +70,7 @@ export default async function ArchivesPage({
     actions: t('actions'),
     safe: t('safe'),
     blocked: t('blocked'),
+    destructive: t('destructive'),
     delete: t('permanentDelete'),
     blockedReason: t('blockedReason'),
     dependencyLabels: {
@@ -80,6 +82,13 @@ export default async function ArchivesPage({
       classSubjects: t('dependency.classSubjects'),
       enrollments: t('dependency.enrollments'),
       memberships: t('dependency.memberships'),
+      groups: t('dependency.groups'),
+      attendanceResolutions:
+        t('dependency.attendanceResolutions'),
+      reportBatches: t('dependency.reportBatches'),
+      reports: t('dependency.reports'),
+      emailDeliveries:
+        t('dependency.emailDeliveries'),
       defaultUse: t('dependency.defaultUse')
     },
     title: t('archivedStudents'),
@@ -113,6 +122,12 @@ export default async function ArchivesPage({
         </p>
       ) : null}
 
+      {query.error === 'delete' ? (
+        <p className="form-error" role="alert">
+          {t('deleteError')}
+        </p>
+      ) : null}
+
       {query.deleted === '1' ? (
         <p className="success-message" role="status">
           {t('deleted')}
@@ -139,6 +154,7 @@ export default async function ArchivesPage({
           actions: copy.actions,
           safe: copy.safe,
           blocked: copy.blocked,
+          destructive: copy.destructive,
           restore: copy.restore,
           permanentDelete: copy.delete,
           confirmation: copy.confirmation,

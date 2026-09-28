@@ -38,7 +38,7 @@ select results_eq(
 );
 
 select throws_ok(
-  $$select public.permanently_delete_archived_entity('STUDENT','e0000000-0000-0000-0000-000000000001','DELETE e0000000-0000-0000-0000-000000000001')$$,
+  $$select public.permanently_delete_archived_entity('STUDENT','e0000000-0000-0000-0000-000000000001','Sara Ali')$$,
   '23514',
   null,
   'active student cannot be permanently deleted'
@@ -62,14 +62,14 @@ select ok(
 );
 
 select throws_ok(
-  $$select public.permanently_delete_archived_entity('STUDENT','e0000000-0000-0000-0000-000000000001','DELETE wrong-id')$$,
+  $$select public.permanently_delete_archived_entity('STUDENT','e0000000-0000-0000-0000-000000000001','Wrong Student')$$,
   '22023',
   null,
   'permanent deletion requires exact explicit confirmation'
 );
 
 select lives_ok(
-  $$select public.permanently_delete_archived_entity('STUDENT','e0000000-0000-0000-0000-000000000001','DELETE e0000000-0000-0000-0000-000000000001')$$,
+  $$select public.permanently_delete_archived_entity('STUDENT','e0000000-0000-0000-0000-000000000001','Sara Ali')$$,
   'confirmed archived student deletion succeeds transactionally'
 );
 

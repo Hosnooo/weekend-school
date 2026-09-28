@@ -27,6 +27,7 @@ export type AdminReportWorkspaceModel = {
     presentCount: number;
     absentCount: number;
     conflictCount: number;
+    performance: ReportPerformance | null;
   }>;
   attendanceConflicts: AttendanceConflict[];
   reportIds: string[];
@@ -55,6 +56,7 @@ type WorkspaceInput = {
     presentCount: number;
     absentCount: number;
     attendanceConflictCount: number;
+    performance: ReportPerformance | null;
     commentEn: string | null;
     commentAr: string | null;
   }>;
@@ -119,7 +121,8 @@ export function buildAdminReportWorkspaceModel({
       studentNameAr: student.studentNameAr,
       presentCount: student.presentCount,
       absentCount: student.absentCount,
-      conflictCount: student.attendanceConflictCount
+      conflictCount: student.attendanceConflictCount,
+      performance: student.performance
     })),
     attendanceConflicts,
     reportIds: reports.map(({id}) => id),

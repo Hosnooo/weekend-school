@@ -101,17 +101,10 @@ function workspacePayloadFrom(formData: FormData) {
 
   if (!batchId.success || !period.success) return null;
 
-  const rawPerformance = String(
-    formData.get('performance') ?? ''
-  ).trim();
-
-  let performance: ReportPerformance | null = null;
-
-  if (rawPerformance) {
-    const parsed = performanceSchema.safeParse(rawPerformance);
-    if (!parsed.success) return null;
-    performance = parsed.data;
-  }
+  const includePerformance =
+    formData.get('includePerformance') === '1';
+  const includeStudentComments =
+    formData.get('includeStudentComments') === '1';
 
   const studentIds = [
     ...new Set(
@@ -130,22 +123,49 @@ function workspacePayloadFrom(formData: FormData) {
     validStudentIds.push(parsed.data);
   }
 
-  return {
-    batchId: batchId.data,
-    periodStart: period.data.periodStart,
-    periodEnd: period.data.periodEnd,
-    mainReportEn: cleanText(formData.get('mainReportEn')),
-    mainReportAr: cleanText(formData.get('mainReportAr')),
-    performance,
-    studentComments: validStudentIds.map((studentId) => ({
+  const studentComments: Array<{
+    studentId: string;
+    performance: ReportPerformance | null;
+    commentEn: string | null;
+    commentAr: string | null;
+  }> = [];
+
+  for (const studentId of validStudentIds) {
+    let performance: ReportPerformance | null = null;
+
+    if (includePerformance) {
+      const rawPerformance = String(
+        formData.get(`performance:${studentId}`) ?? ''
+      ).trim();
+
+      if (rawPerformance) {
+        const parsed = performanceSchema.safeParse(rawPerformance);
+        if (!parsed.success) return null;
+        performance = parsed.data;
+      }
+    }
+
+    studentComments.push({
       studentId,
+      performance,
       commentEn: cleanText(
         formData.get(`commentEn:${studentId}`)
       ),
       commentAr: cleanText(
         formData.get(`commentAr:${studentId}`)
       )
-    }))
+    });
+  }
+
+  return {
+    batchId: batchId.data,
+    periodStart: period.data.periodStart,
+    periodEnd: period.data.periodEnd,
+    mainReportEn: cleanText(formData.get('mainReportEn')),
+    mainReportAr: cleanText(formData.get('mainReportAr')),
+    includePerformance,
+    includeStudentComments,
+    studentComments
   };
 }
 
@@ -228,7 +248,8 @@ export async function saveAdminReportWorkspaceAction(
       batchId: payload.batchId,
       mainReportEn: payload.mainReportEn,
       mainReportAr: payload.mainReportAr,
-      performance: payload.performance,
+      includePerformance: payload.includePerformance,
+      includeStudentComments: payload.includeStudentComments,
       studentComments: payload.studentComments
     });
   } catch (error) {
@@ -275,7 +296,8 @@ export async function finalizeAdminReportWorkspaceAction(
       batchId: payload.batchId,
       mainReportEn: payload.mainReportEn,
       mainReportAr: payload.mainReportAr,
-      performance: payload.performance,
+      includePerformance: payload.includePerformance,
+      includeStudentComments: payload.includeStudentComments,
       studentComments: payload.studentComments
     });
 

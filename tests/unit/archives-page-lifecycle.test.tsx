@@ -16,7 +16,8 @@ vi.mock('next-intl/server', () => ({
       status: 'Status',
       actions: 'Actions',
       safe: 'Safe to delete',
-      blocked: 'Deletion blocked',
+      blocked: 'Unavailable',
+      destructive: 'Deletes related data',
       permanentDelete: 'Permanently delete',
       blockedReason:
         'Permanent deletion is blocked by protected dependencies.',
@@ -43,9 +44,11 @@ vi.mock('next-intl/server', () => ({
       reports: 'Reports',
       emailDeliveries: 'Email deliveries',
       confirmation: 'Confirmation',
-      confirmationError: 'Enter the exact deletion confirmation.',
+      confirmationError: 'Type the record name exactly as shown.',
       dependenciesError:
-        'Permanent deletion is blocked by protected dependencies.',
+        'Unable to permanently delete this record.',
+      deleteError:
+        'Unable to permanently delete this record.',
       deleted: 'Archived record permanently deleted.'
     };
 
@@ -140,7 +143,7 @@ describe('Archives lifecycle workflow', () => {
     ).toBeEnabled();
   });
 
-  it('keeps permanent delete discoverable but blocked and explains the exact impact', async () => {
+  it('shows destructive impact and keeps permanent delete enabled', async () => {
     vi.mocked(listManagedArchivedRecords).mockResolvedValue([
       {
         entityType: 'CLASS',
@@ -168,14 +171,16 @@ describe('Archives lifecycle workflow', () => {
     );
 
     expect(screen.getByText('Archived Foundations')).toBeVisible();
-    expect(screen.getByText('Deletion blocked')).toBeVisible();
+    expect(
+      screen.getByText('Deletes related data')
+    ).toBeVisible();
 
     const deleteButton = screen.getByRole('button', {
       name: 'Permanently delete'
     });
 
     expect(deleteButton).toBeVisible();
-    expect(deleteButton).toBeDisabled();
+    expect(deleteButton).toBeEnabled();
 
     expect(
       screen.getByText(/class subjects.*2/i)

@@ -1,6 +1,7 @@
 import type {ManagedArchivedRecord} from './archive.repository';
 
-type FormAction = (formData: FormData) => void | Promise<void>;
+type FormAction =
+  (formData: FormData) => void | Promise<void>;
 
 export type ManagedArchiveTableLabels = {
   sectionTitle: string;
@@ -12,6 +13,7 @@ export type ManagedArchiveTableLabels = {
   actions: string;
   safe: string;
   blocked: string;
+  destructive: string;
   restore: string;
   permanentDelete: string;
   confirmation: string;
@@ -46,7 +48,10 @@ export function ManagedArchiveTable({
   permanentDeleteAction?: FormAction;
 }) {
   return (
-    <section className="subsection" aria-label={labels.sectionTitle}>
+    <section
+      className="subsection"
+      aria-label={labels.sectionTitle}
+    >
       <h2>{labels.sectionTitle}</h2>
 
       {records.length === 0 ? (
@@ -66,11 +71,16 @@ export function ManagedArchiveTable({
 
             <tbody>
               {records.map((record) => {
-                const dependencyItems = visibleDependencies(record, labels);
-                const blocked = !record.impact.canPermanentlyDelete;
+                const dependencyItems =
+                  visibleDependencies(record, labels);
+                const blocked = !record.impact.isArchived;
+                const destructive =
+                  record.impact.dependencyCount > 0;
 
                 return (
-                  <tr key={`${record.entityType}:${record.id}`}>
+                  <tr
+                    key={`${record.entityType}:${record.id}`}
+                  >
                     <td>{record.entityType}</td>
 
                     <td>
@@ -80,28 +90,37 @@ export function ManagedArchiveTable({
                     <td>
                       {record.impact.dependencyCount}
 
-                      {blocked ? (
-                        dependencyItems.length > 0 ? (
-                          <ul className="form-help">
-                            {dependencyItems.map((item) => (
-                              <li key={item.key}>
-                                {item.label}: {item.count}
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <p className="form-help">{labels.blockedReason}</p>
-                        )
+                      {dependencyItems.length > 0 ? (
+                        <ul className="form-help">
+                          {dependencyItems.map((item) => (
+                            <li key={item.key}>
+                              {item.label}: {item.count}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : null}
+
+                      {blocked &&
+                      dependencyItems.length === 0 ? (
+                        <p className="form-help">
+                          {labels.blockedReason}
+                        </p>
                       ) : null}
                     </td>
 
                     <td>
                       <span
                         className={`status-badge ${
-                          blocked ? 'status-inactive' : 'status-active'
+                          blocked || destructive
+                            ? 'status-inactive'
+                            : 'status-active'
                         }`}
                       >
-                        {blocked ? labels.blocked : labels.safe}
+                        {blocked
+                          ? labels.blocked
+                          : destructive
+                            ? labels.destructive
+                            : labels.safe}
                       </span>
                     </td>
 
@@ -151,12 +170,17 @@ export function ManagedArchiveTable({
                             type="hidden"
                             value={record.id}
                           />
+                          <input
+                            name="expectedConfirmation"
+                            type="hidden"
+                            value={record.name}
+                          />
 
                           <input
                             aria-label={labels.confirmation}
                             disabled={blocked}
                             name="confirmation"
-                            placeholder={`DELETE ${record.id}`}
+                            placeholder={record.name}
                             required={!blocked}
                           />
 

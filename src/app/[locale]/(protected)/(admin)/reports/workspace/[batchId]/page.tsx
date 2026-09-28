@@ -299,25 +299,47 @@ export default async function AdminReportWorkspacePage({
 
                 {workspace.template.performanceEnabled ? (
                   <section>
-                    <label>
-                      {performanceLabel}
-                      <select
-                        defaultValue={
-                          workspace.performance ?? ''
-                        }
-                        name="performance"
-                      >
-                        <option value="">—</option>
+                    <h2>{performanceLabel}</h2>
+                    <input
+                      name="includePerformance"
+                      type="hidden"
+                      value="1"
+                    />
 
-                        {performanceValues.map((value) => (
-                          <option key={value} value={value}>
-                            {weekly(
-                              `performance.${value}`
+                    <div className="stack-list">
+                      {workspace.attendanceSummary.map((student) => (
+                        <label
+                          className="record-card"
+                          key={student.studentId}
+                        >
+                          <strong>
+                            {localize(
+                              student.studentNameEn,
+                              student.studentNameAr
                             )}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
+                          </strong>
+
+                          <input
+                            name="studentId"
+                            type="hidden"
+                            value={student.studentId}
+                          />
+
+                          <select
+                            defaultValue={student.performance ?? ''}
+                            name={`performance:${student.studentId}`}
+                          >
+                            <option value="">—</option>
+
+                            {performanceValues.map((value) => (
+                              <option key={value} value={value}>
+                                {weekly(`performance.${value}`)}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      ))}
+                    </div>
                   </section>
                 ) : null}
 
@@ -333,6 +355,11 @@ export default async function AdminReportWorkspacePage({
 
                 {workspace.template.studentCommentsEnabled ? (
                   <section>
+                    <input
+                      name="includeStudentComments"
+                      type="hidden"
+                      value="1"
+                    />
                     <h2>{studentCommentLabel}</h2>
 
                     {workspace.studentComments.length === 0 ? (

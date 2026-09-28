@@ -61,6 +61,7 @@ describe('archives and exports admin panels', () => {
       students={[{
         id: 'student-1',
         name: 'Amina Hassan',
+        confirmationName: 'Amina Hassan',
         impact: {
           entityType: 'STUDENT',
           entityId: 'student-1',

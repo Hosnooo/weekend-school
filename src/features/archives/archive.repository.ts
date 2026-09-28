@@ -49,7 +49,12 @@ export async function listArchivedStudents(schoolId: string, locale: Locale) {
     .select('id, first_name_en, last_name_en, first_name_ar, last_name_ar')
     .eq('school_id', schoolId).eq('is_active', false).order('last_name_en').order('first_name_en');
   if (error) throw error;
-  return Promise.all((data ?? []).map(async (row) => ({id: row.id, name: localizedStudentName(row, locale), impact: await getDeleteImpact(row.id)})));
+  return Promise.all((data ?? []).map(async (row) => ({
+    id: row.id,
+    name: localizedStudentName(row, locale),
+    confirmationName: `${row.first_name_en} ${row.last_name_en}`,
+    impact: await getDeleteImpact(row.id)
+  })));
 }
 
 export async function restoreArchivedStudent(entityId: string) {

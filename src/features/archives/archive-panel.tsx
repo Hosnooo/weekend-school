@@ -19,6 +19,7 @@ export type ArchivePanelLabels = DeleteImpactLabels & {
 export type ArchivedStudentItem = {
   id: string;
   name: string;
+  confirmationName: string;
   impact: DeleteImpact;
 };
 
@@ -63,12 +64,17 @@ export function ArchivePanel({
           <form action={permanentDeleteAction} className="period-form">
             <input name="locale" type="hidden" value={locale}/>
             <input name="id" type="hidden" value={student.id}/>
+            <input
+              name="expectedConfirmation"
+              type="hidden"
+              value={student.confirmationName}
+            />
             <label>
               {labels.confirmation}
               <input
                 autoComplete="off"
                 name="confirmation"
-                placeholder={`DELETE ${student.id}`}
+                placeholder={student.confirmationName}
                 required
                 type="text"
               />

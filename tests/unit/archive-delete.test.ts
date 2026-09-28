@@ -6,25 +6,38 @@ import {
 } from '@/features/archives/archive.service';
 
 describe('archive deletion safety', () => {
-  it('requires an archived target and exact explicit confirmation', () => {
-    const entityId = 'e0000000-0000-0000-0000-000000000001';
-    const confirmation = buildPermanentDeleteConfirmation(entityId);
+  it('requires an archived target and exact record-name confirmation', () => {
+    const entityName = 'Sara Ali';
+    const confirmation =
+      buildPermanentDeleteConfirmation(entityName);
 
-    expect(confirmation).toBe(`DELETE ${entityId}`);
-    expect(() => validatePermanentDeleteRequest({
-      entityId,
-      isArchived: false,
+    expect(confirmation).toBe('Sara Ali');
+
+    expect(() =>
+      validatePermanentDeleteRequest({
+        entityName,
+        isArchived: false,
+        confirmation
+      })
+    ).toThrow(/archived/i);
+
+    expect(() =>
+      validatePermanentDeleteRequest({
+        entityName,
+        isArchived: true,
+        confirmation: 'Sara'
+      })
+    ).toThrow(/confirmation/i);
+
+    expect(
+      validatePermanentDeleteRequest({
+        entityName,
+        isArchived: true,
+        confirmation
+      })
+    ).toEqual({
+      entityName,
       confirmation
-    })).toThrow(/archived/i);
-    expect(() => validatePermanentDeleteRequest({
-      entityId,
-      isArchived: true,
-      confirmation: 'DELETE something-else'
-    })).toThrow(/confirmation/i);
-    expect(validatePermanentDeleteRequest({
-      entityId,
-      isArchived: true,
-      confirmation
-    })).toEqual({entityId, confirmation});
+    });
   });
 });
