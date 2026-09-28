@@ -304,13 +304,13 @@ select ok(
   'exact Group assignment grants access to that Group'
 );
 select ok(
-  not public.teacher_can_teach_context(
+  public.teacher_can_teach_context(
     '79000000-0000-0000-0000-000000000001',
     '73000000-0000-0000-0000-000000000001',
     '74000000-0000-0000-0000-000000000002',
     date '2026-09-15'
   ),
-  'exact Group assignment does not grant a sibling Group'
+  'historical Group assignment grants sibling Group access because authority is Subject-wide'
 );
 
 select * from finish();

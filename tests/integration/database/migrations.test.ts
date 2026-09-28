@@ -104,7 +104,9 @@ describe('migration contract', () => {
       '20260927121000_admin_report_workflow.sql',
       '20260927130000_report_delivery_customization.sql',
       '20260927131000_unified_destructive_delete.sql',
-      '20260927132000_roster_csv_import.sql'
+      '20260927132000_roster_csv_import.sql',
+      '20260927220000_subject_only_teacher_groups.sql',
+      '20260927221000_flexible_teaching_updates.sql'
     ]);
   });
 
@@ -147,6 +149,36 @@ describe('migration contract', () => {
     expect(sql).toContain('weekly_submissions_one_teacher_context_week');
     expect(sql).toContain('weekly_submission_students_attendance_check');
     expect(sql).toMatch(/create function public\.validate_weekly_submission_context\b/i);
+  });
+
+  it('defines the flexible Teaching Update contract in forward migrations', async () => {
+    const {filenames, sql} = await readMigrations();
+
+    expect(filenames).toContain(
+      '20260927220000_subject_only_teacher_groups.sql'
+    );
+    expect(filenames).toContain(
+      '20260927221000_flexible_teaching_updates.sql'
+    );
+
+    expect(sql).toMatch(
+      /create table public\.teaching_update_request_sets\b/i
+    );
+    expect(sql).toMatch(
+      /create table public\.weekly_submission_dates\b/i
+    );
+    expect(sql).toMatch(
+      /create or replace function public\.request_teaching_update\b/i
+    );
+    expect(sql).toMatch(
+      /create or replace function public\.submit_teaching_update\b/i
+    );
+    expect(sql).toMatch(
+      /create or replace function public\.dismiss_teaching_update\b/i
+    );
+    expect(sql).toMatch(
+      /drop constraint if exists\s+weekly_submissions_one_teacher_context_week/i
+    );
   });
 
   it('revokes anonymous execution from security definer functions and future defaults', async () => {

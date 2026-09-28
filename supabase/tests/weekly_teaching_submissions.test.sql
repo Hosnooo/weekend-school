@@ -88,14 +88,14 @@ select lives_ok($teacher_two$
   );
 $teacher_two$, 'co-teacher can author the same teaching context in the same week');
 
-select throws_ok($duplicate$
+select lives_ok($duplicate$
   insert into public.weekly_submissions (
     school_id, class_subject_id, subject_group_id, teacher_id, week_start
   ) values (
     'a0000000-0000-0000-0000-000000000001', 'a3000000-0000-0000-0000-000000000001',
     'a4000000-0000-0000-0000-000000000001', 'c0000000-0000-0000-0000-000000000002', date '2026-09-20'
   );
-$duplicate$, '23505', null, 'one teacher cannot duplicate one logical context/week submission');
+$duplicate$, 'one teacher may create overlapping Teaching Updates for the same context and dates');
 
 select lives_ok($whole_class$
   insert into public.weekly_submissions (
@@ -148,20 +148,19 @@ select set_config('request.jwt.claim.role', 'authenticated', true);
 select set_config('request.jwt.claim.sub', 'b0000000-0000-0000-0000-000000000002', true);
 
 select results_eq(
-  $$select id from public.weekly_submissions
+  $$select count(*)::bigint from public.weekly_submissions
     where class_subject_id = 'a3000000-0000-0000-0000-000000000001'
       and subject_group_id = 'a4000000-0000-0000-0000-000000000001'
-      and week_start = date '2026-09-20'
-    order by id$$,
-  array['a8000000-0000-0000-0000-000000000001'::uuid],
-  'teacher history visibility excludes a co-teacher submission in the same context/week'
+      and week_start = date '2026-09-20'$$,
+  array[2::bigint],
+  'teacher history shows both own overlapping updates while excluding the co-teacher row'
 );
 
 select results_eq(
   $$select student_id from public.get_weekly_submission_roster(
     'a3000000-0000-0000-0000-000000000001',
     'a4000000-0000-0000-0000-000000000001',
-    date '2026-10-04'
+    date '2026-09-14'
   ) order by student_id$$,
   array['e0000000-0000-0000-0000-000000000001'::uuid],
   'authorized teacher receives only the dated roster for the teaching context'
@@ -172,7 +171,7 @@ select lives_ok($save_submission$
     null,
     'a3000000-0000-0000-0000-000000000001',
     'a4000000-0000-0000-0000-000000000001',
-    date '2026-10-04',
+    date '2026-09-14',
     'Reviewed memorization',
     null,
     'GOOD'::public.performance_level,
@@ -187,7 +186,7 @@ select results_eq(
     where ws.teacher_id = 'c0000000-0000-0000-0000-000000000002'
       and ws.class_subject_id = 'a3000000-0000-0000-0000-000000000001'
       and ws.subject_group_id = 'a4000000-0000-0000-0000-000000000001'
-      and ws.week_start = date '2026-10-04'$$,
+      and ws.week_start = date '2026-09-14'$$,
   array['SUBMITTED'::text],
   'atomic save finalizes the teacher-owned submission'
 );

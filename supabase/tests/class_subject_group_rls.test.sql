@@ -105,8 +105,8 @@ select results_eq(
       '84000000-0000-0000-0000-000000000001',
       '84000000-0000-0000-0000-000000000002'
     )$$,
-  array[1::bigint],
-  'Group teacher sees exactly one Group from the Subject'
+  array[2::bigint],
+  'historical Group-assigned teacher sees every Group in the Subject'
 );
 select results_eq(
   $$select count(*)::bigint from public.students
@@ -115,14 +115,14 @@ select results_eq(
       'e0000000-0000-0000-0000-000000000014',
       'e0000000-0000-0000-0000-000000000015'
     )$$,
-  array[1::bigint],
-  'Group teacher sees only non-excluded participating students in that Group'
+  array[2::bigint],
+  'historical Group-assigned teacher sees all non-excluded Subject participants'
 );
 select results_eq(
   $$select count(*)::bigint from public.subject_group_memberships
     where subject_group_id = '84000000-0000-0000-0000-000000000002'$$,
-  array[0::bigint],
-  'Group teacher cannot read sibling Group memberships'
+  array[1::bigint],
+  'historical Group-assigned teacher can read sibling Group memberships'
 );
 select results_eq(
   $$select count(*)::bigint from public.teaching_assignments$$,
