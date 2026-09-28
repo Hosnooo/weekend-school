@@ -75,20 +75,17 @@ export function TeachingAssignmentEditor({
   const [classId, setClassId] = useState(classes[0]?.id ?? '');
   const subjectsForClass = classSubjects.filter((subject) => (subject.classId ?? subject.classNameEn) === classId);
   const [classSubjectId, setClassSubjectId] = useState(subjectsForClass[0]?.id ?? '');
-  const [subjectGroupId, setSubjectGroupId] = useState('');
   const selectedSubject = classSubjects.find((subject) => subject.id === classSubjectId) ?? null;
   const label = (en: string, ar: string | null) => locale === 'ar' && ar ? ar : en;
   const duplicateCoverage = assignments.some((assignment) => {
     if (!selectedSubject || assignment.classSubjectId !== selectedSubject.id || !isEffective(assignment, today)) return false;
-    if (assignment.subjectGroupId === null) return true;
-    return subjectGroupId !== '' && assignment.subjectGroupId === subjectGroupId;
+    return true;
   });
 
   function changeClass(next: string) {
     setClassId(next);
     const nextSubject = classSubjects.find((subject) => (subject.classId ?? subject.classNameEn) === next);
     setClassSubjectId(nextSubject?.id ?? '');
-    setSubjectGroupId('');
   }
 
   return <section className="subsection">
@@ -101,12 +98,8 @@ export function TeachingAssignmentEditor({
         <label>{t('class')}<select onChange={(event) => changeClass(event.target.value)} value={classId}>
           {classes.map((item) => <option key={item.id} value={item.id}>{label(item.nameEn, item.nameAr)}</option>)}
         </select></label>
-        <label>{t('subject')}<select name="classSubjectId" onChange={(event) => {setClassSubjectId(event.target.value); setSubjectGroupId('');}} value={classSubjectId}>
+        <label>{t('subject')}<select name="classSubjectId" onChange={(event) => setClassSubjectId(event.target.value)} value={classSubjectId}>
           {subjectsForClass.map((subject) => <option key={subject.id} value={subject.id}>{label(subject.subjectNameEn, subject.subjectNameAr)}</option>)}
-        </select></label>
-        <label>{t('scope')}<select name="subjectGroupId" onChange={(event) => setSubjectGroupId(event.target.value)} value={subjectGroupId}>
-          <option value="">{t('entireSubject')}</option>
-          {selectedSubject?.groups.map((group) => <option key={group.id} value={group.id}>{label(group.nameEn, group.nameAr)}</option>)}
         </select></label>
         <label>{t('startsOn')}<input defaultValue={today} name="startsOn" required type="date"/></label>
       </div>
@@ -117,15 +110,13 @@ export function TeachingAssignmentEditor({
 
     <h3>{t('assignmentHistory')}</h3>
     {assignments.length === 0 ? <p className="empty-state">{t('noAssignments')}</p> : <div className="table-wrap"><table>
-      <thead><tr><th>{t('class')}</th><th>{t('subject')}</th><th>{t('scope')}</th><th>{t('startsOn')}</th><th>{t('endsOn')}</th><th>{common('actions')}</th></tr></thead>
+      <thead><tr><th>{t('class')}</th><th>{t('subject')}</th><th>{t('startsOn')}</th><th>{t('endsOn')}</th><th>{common('actions')}</th></tr></thead>
       <tbody>{assignments.map((assignment) => {
         const subject = classSubjects.find((item) => item.id === assignment.classSubjectId);
-        const group = subject?.groups.find((item) => item.id === assignment.subjectGroupId) ?? null;
         const active = isEffective(assignment, today);
         return <tr key={assignment.id}>
           <td>{subject ? label(subject.classNameEn, subject.classNameAr) : common('notAssigned')}</td>
           <td>{subject ? label(subject.subjectNameEn, subject.subjectNameAr) : common('notAssigned')}</td>
-          <td>{assignment.subjectGroupId === null ? t('entireSubject') : group ? label(group.nameEn, group.nameAr) : common('notAssigned')}</td>
           <td>{assignment.startsOn}</td>
           <td>{assignment.endsOn ?? '—'}</td>
           <td>{active ? <form action={endTeacherAssignmentAction}>

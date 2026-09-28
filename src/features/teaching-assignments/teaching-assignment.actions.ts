@@ -60,7 +60,6 @@ export async function createTeachingAssignmentMutationAction(
   const parsed = teachingAssignmentSchema.safeParse({
     teacherId: formData.get('teacherId'),
     classSubjectId: formData.get('classSubjectId'),
-    subjectGroupId: formData.get('subjectGroupId'),
     startsOn: formData.get('startsOn'),
     endsOn: formData.get('endsOn')
   });

@@ -85,7 +85,6 @@ export function TeachingAssignmentWorkspace({
     (item) => (item.classId ?? item.classNameEn) === (classes[0]?.id ?? '')
   )?.id ?? '';
   const [classSubjectId, setClassSubjectId] = useState(initialSubjectId);
-  const [subjectGroupId, setSubjectGroupId] = useState('');
 
   const subjectsForClass = classSubjects.filter(
     (item) => (item.classId ?? item.classNameEn) === classId
@@ -102,18 +101,10 @@ export function TeachingAssignmentWorkspace({
     return classSubjects.find((item) => item.id === assignment.classSubjectId) ?? null;
   }
 
-  function scopeFor(assignment: TeachingAssignment) {
-    const subject = subjectFor(assignment);
-    if (!subject) return common('notAssigned');
-    if (assignment.subjectGroupId === null) return t('entireSubject');
-    const group = subject.groups.find((item) => item.id === assignment.subjectGroupId);
-    return group ? localName(group.nameEn, group.nameAr) : common('notAssigned');
-  }
-
   function contextFor(assignment: TeachingAssignment) {
     const subject = subjectFor(assignment);
     if (!subject) return common('notAssigned');
-    return `${localName(subject.classNameEn, subject.classNameAr)} · ${localName(subject.subjectNameEn, subject.subjectNameAr)} · ${scopeFor(assignment)}`;
+    return `${localName(subject.classNameEn, subject.classNameAr)} · ${localName(subject.subjectNameEn, subject.subjectNameAr)}`;
   }
 
   function chooseClass(nextClassId: string) {
@@ -122,7 +113,6 @@ export function TeachingAssignmentWorkspace({
       (item) => (item.classId ?? item.classNameEn) === nextClassId
     )?.id ?? '';
     setClassSubjectId(nextSubject);
-    setSubjectGroupId('');
   }
 
   function messageFor(error: TeachingAssignmentMutationError) {
@@ -159,7 +149,6 @@ export function TeachingAssignmentWorkspace({
       () => createTeachingAssignmentMutationAction(formData),
       () => {
         setAddOpen(false);
-        setSubjectGroupId('');
       }
     );
   }
@@ -200,7 +189,6 @@ export function TeachingAssignmentWorkspace({
           return subject ? (
             <div>
               <strong>{localName(subject.classNameEn, subject.classNameAr)} · {localName(subject.subjectNameEn, subject.subjectNameAr)}</strong>
-              <div>{scopeFor(assignment)}</div>
             </div>
           ) : common('notAssigned');
         }
@@ -303,21 +291,11 @@ export function TeachingAssignmentWorkspace({
                 name="classSubjectId"
                 onChange={(event) => {
                   setClassSubjectId(event.target.value);
-                  setSubjectGroupId('');
                 }}
                 value={selectedSubject?.id ?? ''}
               >
                 {subjectsForClass.map((subject) => (
                   <option key={subject.id} value={subject.id}>{localName(subject.subjectNameEn, subject.subjectNameAr)}</option>
-                ))}
-              </select>
-            </label>
-            <label>
-              {t('scope')}
-              <select name="subjectGroupId" onChange={(event) => setSubjectGroupId(event.target.value)} value={subjectGroupId}>
-                <option value="">{t('entireSubject')}</option>
-                {selectedSubject?.groups.map((group) => (
-                  <option key={group.id} value={group.id}>{localName(group.nameEn, group.nameAr)}</option>
                 ))}
               </select>
             </label>

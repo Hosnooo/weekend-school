@@ -1,6 +1,6 @@
 import {z} from 'zod';
 
-import {databaseUuid, optionalUuid} from '@/lib/validation/fields';
+import {databaseUuid} from '@/lib/validation/fields';
 
 const nullableDate = z.preprocess(
   (value) => value === '' || value === undefined ? null : value,
@@ -10,7 +10,6 @@ const nullableDate = z.preprocess(
 export const teachingAssignmentSchema = z.object({
   teacherId: databaseUuid,
   classSubjectId: databaseUuid,
-  subjectGroupId: optionalUuid,
   startsOn: z.iso.date(),
   endsOn: nullableDate
 });

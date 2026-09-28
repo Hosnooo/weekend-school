@@ -75,6 +75,7 @@ describe('flexible teaching assignments', () => {
 
     expect(contexts.map(({classSubjectId, subjectGroupId}) => ({classSubjectId, subjectGroupId}))).toEqual([
       {classSubjectId: quran.id, subjectGroupId: quran.groups[0]!.id},
+      {classSubjectId: quran.id, subjectGroupId: quran.groups[1]!.id},
       {classSubjectId: arabic.id, subjectGroupId: null},
       {classSubjectId: islamic.id, subjectGroupId: islamic.groups[0]!.id}
     ]);
@@ -87,8 +88,23 @@ describe('flexible teaching assignments', () => {
       assignment(teacherB, quran.id, shared)
     ];
 
-    expect(expandEffectiveTeachingContexts({teacherId: teacherA, assignments, classSubjects: [quran], onDate: '2026-09-23'})).toHaveLength(1);
-    expect(expandEffectiveTeachingContexts({teacherId: teacherB, assignments, classSubjects: [quran], onDate: '2026-09-23'})).toHaveLength(1);
+    expect(
+      expandEffectiveTeachingContexts({
+        teacherId: teacherA,
+        assignments,
+        classSubjects: [quran],
+        onDate: '2026-09-23'
+      }).map(({subjectGroupId}) => subjectGroupId)
+    ).toEqual(quran.groups.map(({id}) => id));
+
+    expect(
+      expandEffectiveTeachingContexts({
+        teacherId: teacherB,
+        assignments,
+        classSubjects: [quran],
+        onDate: '2026-09-23'
+      }).map(({subjectGroupId}) => subjectGroupId)
+    ).toEqual(quran.groups.map(({id}) => id));
   });
 
   it('expands a whole-Subject assignment to every active Group and deduplicates an exact Group assignment', () => {
@@ -163,4 +179,20 @@ describe('flexible teaching assignments', () => {
     expect(() => validateTeachingAssignmentDateRange('2026-09-24', '2026-09-23'))
       .toThrow(/end date/i);
   });
+
+  it('treats one historical Group-scoped assignment as authority over every active Group in its Subject', () => {
+    const contexts = expandEffectiveTeachingContexts({
+      teacherId: teacherA,
+      assignments: [
+        assignment(teacherA, quran.id, quran.groups[0]!.id)
+      ],
+      classSubjects: [quran],
+      onDate: '2026-09-23'
+    });
+
+    expect(contexts.map(({subjectGroupId}) => subjectGroupId)).toEqual(
+      quran.groups.map(({id}) => id)
+    );
+  });
+
 });

@@ -109,15 +109,13 @@ export async function listTeachingAssignments(
   return (data as AssignmentRow[]).map(assignmentFromRow);
 }
 
-export async function assignTeacher(schoolId: string, input: TeachingAssignmentInput) {
+export async function assignTeacher(_schoolId: string, input: TeachingAssignmentInput) {
   const supabase = await createServerSupabaseClient();
-  const {error} = await supabase.from('teaching_assignments').insert({
-    school_id: schoolId,
-    teacher_id: input.teacherId,
-    class_subject_id: input.classSubjectId,
-    subject_group_id: input.subjectGroupId,
-    starts_on: input.startsOn,
-    ends_on: input.endsOn
+  const {error} = await supabase.rpc('save_teaching_assignment', {
+    p_teacher_id: input.teacherId,
+    p_class_subject_id: input.classSubjectId,
+    p_starts_on: input.startsOn,
+    p_ends_on: input.endsOn
   });
   if (error) throw error;
 }

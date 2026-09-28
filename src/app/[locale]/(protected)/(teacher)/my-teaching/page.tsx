@@ -6,6 +6,8 @@ import {EmptyState} from '@/components/ui/empty-state';
 import {PageHeader} from '@/components/ui/page-header';
 import {StatusBadge} from '@/components/ui/status-badge';
 import {schoolWeekForDate} from '@/features/dashboard/dashboard.model';
+import {TeacherSubjectGroupManager} from '@/features/classes/teacher-subject-group-manager';
+import {listTeacherSubjectGroupManagement} from '@/features/classes/class.repository';
 import {
   todayInTimeZone,
   weeklyActionForStatus
@@ -35,6 +37,15 @@ export default async function MyTeachingPage({
     listMyTeaching(profile.schoolId, teacherIds, today, weekStart),
     getTranslations({locale, namespace: 'weekly'})
   ]);
+
+  const classSubjectIds = [
+    ...new Set(contexts.map(({classSubjectId}) => classSubjectId))
+  ];
+  const groupManagement = await Promise.all(
+    classSubjectIds.map((classSubjectId) =>
+      listTeacherSubjectGroupManagement(classSubjectId, today)
+    )
+  );
 
   const localName = (en: string, ar: string | null) =>
     locale === 'ar' && ar ? ar : en;
@@ -129,6 +140,30 @@ export default async function MyTeachingPage({
           })}
         </div>
       )}
+
+      {groupManagement.length > 0 ? (
+        <div className="stack">
+          {groupManagement.map((management) => {
+            const context = contexts.find(
+              ({classSubjectId}) =>
+                classSubjectId === management.classSubjectId
+            );
+
+            return context ? (
+              <TeacherSubjectGroupManager
+                classNameAr={context.classNameAr}
+                classNameEn={context.classNameEn}
+                key={management.classSubjectId}
+                locale={locale}
+                management={management}
+                subjectNameAr={context.subjectNameAr}
+                subjectNameEn={context.subjectNameEn}
+                today={today}
+              />
+            ) : null;
+          })}
+        </div>
+      ) : null}
     </section>
   );
 }

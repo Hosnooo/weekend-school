@@ -5,10 +5,10 @@ import {redirect} from 'next/navigation';
 import {z} from 'zod';
 
 import {classSchema,classSubjectSchema,defaultGroupSchema,subjectGroupSchema,subjectSchema} from '@/features/classes/class.schemas';
-import {setManagedRecordActive,updateClassRecord,updateSubjectGroupRecord,updateSubjectRecord} from '@/features/classes/class.repository';
+import {archiveTeacherSubjectGroup,createTeacherSubjectGroup,moveTeacherSubjectGroupStudent,removeTeacherSubjectGroupStudent,renameTeacherSubjectGroup,restoreTeacherSubjectGroup,setManagedRecordActive,updateClassRecord,updateSubjectGroupRecord,updateSubjectRecord} from '@/features/classes/class.repository';
 import {addSubjectToClass,changeDefaultGroup,createClassForSchool,createGroupForClassSubject,createSubjectForSchool} from '@/features/classes/class.service';
 import {isLocale} from '@/i18n/config';
-import {requireProfile} from '@/lib/auth/require-profile';
+import {requireProfile,requireTeachingAccount} from '@/lib/auth/require-profile';
 import type {ActionState} from '@/lib/validation/action-state';
 import {saveFailure,validationFailure} from '@/lib/validation/action-state';
 import {databaseUuid} from '@/lib/validation/fields';
@@ -29,3 +29,92 @@ export async function updateSubjectAction(formData:FormData){const locale=locale
 export async function setSubjectActiveAction(formData:FormData){const locale=localeFrom(formData);await requireProfile(locale,'ADMIN');const parsed=z.object({classId:databaseUuid,subjectId:databaseUuid,isActive:z.enum(['true','false'])}).safeParse({classId:formData.get('classId'),subjectId:formData.get('subjectId'),isActive:formData.get('isActive')});if(!parsed.success)return;await setManagedRecordActive('SUBJECT',parsed.data.subjectId,parsed.data.isActive==='true');refresh(locale,parsed.data.classId);}
 export async function updateSubjectGroupAction(formData:FormData){const locale=localeFrom(formData);const profile=await requireProfile(locale,'ADMIN');const parsed=z.object({classId:databaseUuid,subjectGroupId:databaseUuid,nameEn:subjectSchema.shape.nameEn,nameAr:subjectSchema.shape.nameAr}).safeParse({classId:formData.get('classId'),subjectGroupId:formData.get('subjectGroupId'),nameEn:formData.get('nameEn'),nameAr:formData.get('nameAr')});if(!parsed.success)return;await updateSubjectGroupRecord(profile.schoolId,parsed.data.subjectGroupId,{nameEn:parsed.data.nameEn,nameAr:parsed.data.nameAr});refresh(locale,parsed.data.classId);}
 export async function setSubjectGroupActiveAction(formData:FormData){const locale=localeFrom(formData);await requireProfile(locale,'ADMIN');const parsed=z.object({classId:databaseUuid,subjectGroupId:databaseUuid,isActive:z.enum(['true','false'])}).safeParse({classId:formData.get('classId'),subjectGroupId:formData.get('subjectGroupId'),isActive:formData.get('isActive')});if(!parsed.success)return;await setManagedRecordActive('GROUP',parsed.data.subjectGroupId,parsed.data.isActive==='true');refresh(locale,parsed.data.classId);}
+
+
+function refreshTeacherGroups(locale:'en'|'ar'){
+  revalidatePath(`/${locale}/my-teaching`);
+}
+
+export async function createTeacherSubjectGroupAction(formData:FormData){
+  const locale=localeFrom(formData);
+  await requireTeachingAccount(locale);
+  const parsed=subjectGroupSchema.safeParse({
+    classSubjectId:formData.get('classSubjectId'),
+    nameEn:formData.get('nameEn'),
+    nameAr:formData.get('nameAr')
+  });
+  if(!parsed.success)return;
+  await createTeacherSubjectGroup(parsed.data);
+  refreshTeacherGroups(locale);
+}
+
+export async function renameTeacherSubjectGroupAction(formData:FormData){
+  const locale=localeFrom(formData);
+  await requireTeachingAccount(locale);
+  const parsed=z.object({
+    subjectGroupId:databaseUuid,
+    nameEn:subjectSchema.shape.nameEn,
+    nameAr:subjectSchema.shape.nameAr
+  }).safeParse({
+    subjectGroupId:formData.get('subjectGroupId'),
+    nameEn:formData.get('nameEn'),
+    nameAr:formData.get('nameAr')
+  });
+  if(!parsed.success)return;
+  await renameTeacherSubjectGroup(parsed.data);
+  refreshTeacherGroups(locale);
+}
+
+export async function archiveTeacherSubjectGroupAction(formData:FormData){
+  const locale=localeFrom(formData);
+  await requireTeachingAccount(locale);
+  const parsed=databaseUuid.safeParse(formData.get('subjectGroupId'));
+  if(!parsed.success)return;
+  await archiveTeacherSubjectGroup(parsed.data);
+  refreshTeacherGroups(locale);
+}
+
+export async function restoreTeacherSubjectGroupAction(formData:FormData){
+  const locale=localeFrom(formData);
+  await requireTeachingAccount(locale);
+  const parsed=databaseUuid.safeParse(formData.get('subjectGroupId'));
+  if(!parsed.success)return;
+  await restoreTeacherSubjectGroup(parsed.data);
+  refreshTeacherGroups(locale);
+}
+
+export async function moveTeacherSubjectGroupStudentAction(formData:FormData){
+  const locale=localeFrom(formData);
+  await requireTeachingAccount(locale);
+  const parsed=z.object({
+    classSubjectId:databaseUuid,
+    studentId:databaseUuid,
+    subjectGroupId:databaseUuid,
+    onDate:z.iso.date()
+  }).safeParse({
+    classSubjectId:formData.get('classSubjectId'),
+    studentId:formData.get('studentId'),
+    subjectGroupId:formData.get('subjectGroupId'),
+    onDate:formData.get('onDate')
+  });
+  if(!parsed.success)return;
+  await moveTeacherSubjectGroupStudent(parsed.data);
+  refreshTeacherGroups(locale);
+}
+
+export async function removeTeacherSubjectGroupStudentAction(formData:FormData){
+  const locale=localeFrom(formData);
+  await requireTeachingAccount(locale);
+  const parsed=z.object({
+    classSubjectId:databaseUuid,
+    studentId:databaseUuid,
+    onDate:z.iso.date()
+  }).safeParse({
+    classSubjectId:formData.get('classSubjectId'),
+    studentId:formData.get('studentId'),
+    onDate:formData.get('onDate')
+  });
+  if(!parsed.success)return;
+  await removeTeacherSubjectGroupStudent(parsed.data);
+  refreshTeacherGroups(locale);
+}

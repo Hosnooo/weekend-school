@@ -43,3 +43,37 @@ export type ClassDetail = {
   isActive: boolean;
   subjects: ClassSubjectSummary[];
 };
+
+
+export type TeacherSubjectGroup = {
+  id: string;
+  nameEn: string;
+  nameAr: string | null;
+  isActive: boolean;
+};
+
+export type TeacherSubjectStudent = {
+  id: string;
+  nameEn: string;
+  nameAr: string | null;
+  currentGroupId: string | null;
+};
+
+export type TeacherSubjectMembershipHistory = {
+  id: string;
+  studentId: string;
+  studentNameEn: string;
+  studentNameAr: string | null;
+  subjectGroupId: string;
+  groupNameEn: string;
+  groupNameAr: string | null;
+  startsOn: string;
+  endsOn: string | null;
+};
+
+export type TeacherSubjectGroupManagement = {
+  classSubjectId: string;
+  groups: TeacherSubjectGroup[];
+  students: TeacherSubjectStudent[];
+  membershipHistory: TeacherSubjectMembershipHistory[];
+};

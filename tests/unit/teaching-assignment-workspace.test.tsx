@@ -73,7 +73,7 @@ function renderWorkspace(locale: 'en' | 'ar' = 'en') {
 }
 
 async function openCurrentActions(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole('button', {name: /Actions for Level 1.*Quran.*Quran A/i}));
+  await user.click(screen.getByRole('button', {name: /Actions for Level 1.*Quran/i}));
   return screen.getByRole('menu');
 }
 
@@ -88,12 +88,12 @@ describe('teaching assignment workspace reference CRUD flow', () => {
     const user = userEvent.setup();
     renderWorkspace();
     expect(screen.getByRole('tab', {name: 'Current'})).toHaveAttribute('aria-selected', 'true');
-    expect(screen.getByText('Quran A')).toBeVisible();
+    expect(screen.getByText(/Level 1.*Quran/)).toBeVisible();
     expect(screen.queryByText(/Level 1.*Arabic/)).not.toBeInTheDocument();
     expect(screen.queryByText('Quran B')).not.toBeInTheDocument();
     await user.click(screen.getByRole('tab', {name: 'Upcoming'}));
     expect(screen.getByText(/Level 1.*Arabic/)).toBeVisible();
-    expect(screen.queryByText('Quran A')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Level 1.*Quran/)).not.toBeInTheDocument();
   });
 
   it('does not render date inputs until Edit dates is chosen', async () => {
@@ -115,7 +115,7 @@ describe('teaching assignment workspace reference CRUD flow', () => {
     expect(dialog).toBeVisible();
     expect(within(dialog).getByLabelText('Class')).toBeVisible();
     expect(within(dialog).getByLabelText('Subject')).toBeVisible();
-    expect(within(dialog).getByLabelText('Scope')).toBeVisible();
+    expect(within(dialog).queryByLabelText('Scope')).not.toBeInTheDocument();
     expect(within(dialog).getByLabelText('Starts on')).toBeVisible();
     expect(within(dialog).getByLabelText('Ends on (optional)')).toBeVisible();
     expect(within(dialog).getByLabelText('Class')).toHaveFocus();

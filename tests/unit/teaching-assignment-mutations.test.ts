@@ -29,17 +29,32 @@ describe('teaching assignment mutation errors', () => {
     expect(classifyTeachingAssignmentMutationError(error)).toBe(expected);
   });
 
+  it('creates assignments from Teacher + Class Subject + dates without Group scope', () => {
+    const parsed = teachingAssignmentSchema.parse({
+      teacherId: assignment.teacherId,
+      classSubjectId: assignment.classSubjectId,
+      subjectGroupId: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+      startsOn: '2026-09-10',
+      endsOn: '2026-09-20'
+    });
+
+    expect(parsed).toEqual({
+      teacherId: assignment.teacherId,
+      classSubjectId: assignment.classSubjectId,
+      startsOn: '2026-09-10',
+      endsOn: '2026-09-20'
+    });
+  });
+
   it('accepts an optional end date when creating an assignment', () => {
     expect(teachingAssignmentSchema.parse({
       teacherId: assignment.teacherId,
       classSubjectId: assignment.classSubjectId,
-      subjectGroupId: null,
       startsOn: '2026-09-10',
       endsOn: '2026-09-20'
     })).toEqual({
       teacherId: assignment.teacherId,
       classSubjectId: assignment.classSubjectId,
-      subjectGroupId: null,
       startsOn: '2026-09-10',
       endsOn: '2026-09-20'
     });
@@ -63,7 +78,7 @@ describe('teaching assignment protected history', () => {
     })).toBe(true);
   });
 
-  it('protects only the matching group for a group-scoped assignment', () => {
+  it('protects sibling Group history for a historical Group-scoped assignment', () => {
     const groupAssignment = {
       ...assignment,
       subjectGroupId: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd'
@@ -79,7 +94,7 @@ describe('teaching assignment protected history', () => {
       classSubjectId: assignment.classSubjectId,
       subjectGroupId: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
       weekStart: '2026-09-14'
-    })).toBe(false);
+    })).toBe(true);
   });
 
   it('uses week-overlap semantics rather than requiring the assignment on week start', () => {

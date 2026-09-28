@@ -209,4 +209,82 @@ describe('administrator and teacher UX completion contract', () => {
       expect(actions).toContain(`function ${actionName}`);
     }
   });
+  it('makes new Teaching Assignments Class Subject scoped with no Group selector', () => {
+    const schema = source(
+      'src/features/teaching-assignments/teaching-assignment.schemas.ts'
+    );
+    const workspace = source(
+      'src/features/teaching-assignments/teaching-assignment-workspace.tsx'
+    );
+    const teacherForm = source('src/features/teachers/teacher-form.tsx');
+    const repository = source(
+      'src/features/teaching-assignments/teaching-assignment.repository.ts'
+    );
+
+    expect(schema).not.toContain('subjectGroupId');
+    expect(workspace).not.toContain('name="subjectGroupId"');
+    expect(teacherForm).not.toContain('name="subjectGroupId"');
+    expect(workspace).not.toContain("t('scope')");
+    expect(workspace).not.toContain('scopeFor');
+    expect(teacherForm).not.toContain("t('scope')");
+
+    expect(repository).toContain("rpc('save_teaching_assignment'");
+  });
+
+  it('gives an assigned Teacher Subject Group management without Admin Class controls', () => {
+    const managerPath =
+      'src/features/classes/teacher-subject-group-manager.tsx';
+
+    expect(
+      existsSync(resolve(root, managerPath)),
+      `${managerPath} should exist`
+    ).toBe(true);
+
+    if (!existsSync(resolve(root, managerPath))) return;
+
+    const manager = source(managerPath);
+    const actions = source('src/features/classes/class.actions.ts');
+    const repository = source('src/features/classes/class.repository.ts');
+    const myTeaching = source(
+      'src/app/[locale]/(protected)/(teacher)/my-teaching/page.tsx'
+    );
+
+    expect(myTeaching).toContain('TeacherSubjectGroupManager');
+
+    for (const actionName of [
+      'createTeacherSubjectGroupAction',
+      'renameTeacherSubjectGroupAction',
+      'archiveTeacherSubjectGroupAction',
+      'restoreTeacherSubjectGroupAction',
+      'moveTeacherSubjectGroupStudentAction',
+      'removeTeacherSubjectGroupStudentAction'
+    ]) {
+      expect(actions).toContain(`function ${actionName}`);
+      expect(manager).toContain(actionName);
+    }
+
+    for (const rpcName of [
+      'teacher_create_subject_group',
+      'teacher_rename_subject_group',
+      'teacher_archive_subject_group',
+      'teacher_restore_subject_group',
+      'teacher_move_subject_group_student',
+      'teacher_remove_subject_group_student'
+    ]) {
+      expect(repository).toContain(`'${rpcName}'`);
+    }
+
+    expect(manager).toContain("t('ungrouped')");
+    expect(manager).toContain("t('membershipHistory')");
+    expect(manager).toContain('currentGroupId');
+    expect(manager).toContain('startsOn');
+    expect(manager).toContain('endsOn');
+
+    expect(repository).toContain('listTeacherSubjectGroupManagement');
+
+    expect(manager).not.toContain('setDefaultGroupAction');
+    expect(manager).not.toContain('setSubjectActiveAction');
+    expect(manager).not.toContain('updateSubjectAction');
+  });
+
 });

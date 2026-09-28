@@ -1,6 +1,6 @@
 import 'server-only';
 
-import type {ClassDetail,ClassSummary,SubjectOption} from '@/features/classes/class.types';
+import type {ClassDetail,ClassSummary,SubjectOption,TeacherSubjectGroupManagement} from '@/features/classes/class.types';
 import type {ClassInput,ClassSubjectInput,DefaultGroupInput,SubjectGroupInput,SubjectInput} from '@/features/classes/class.schemas';
 import {createServerSupabaseClient} from '@/lib/supabase/server';
 
@@ -19,3 +19,180 @@ export async function updateClassRecord(schoolId:string,id:string,input:ClassInp
 export async function updateSubjectRecord(schoolId:string,id:string,input:SubjectInput){const db=await createServerSupabaseClient();const{data,error}=await db.from('subjects').update({name_en:input.nameEn,name_ar:input.nameAr}).eq('school_id',schoolId).eq('id',id).select('id').maybeSingle();if(error)throw error;if(!data)throw new Error('Subject not found');}
 export async function updateSubjectGroupRecord(schoolId:string,id:string,input:{nameEn:string;nameAr:string|null}){const db=await createServerSupabaseClient();const{data,error}=await db.from('subject_groups').update({name_en:input.nameEn,name_ar:input.nameAr}).eq('school_id',schoolId).eq('id',id).select('id').maybeSingle();if(error)throw error;if(!data)throw new Error('Group not found');}
 export async function setManagedRecordActive(entityType:'CLASS'|'SUBJECT'|'GROUP',id:string,isActive:boolean){const db=await createServerSupabaseClient();if(isActive){const{error}=await db.rpc('restore_entity',{p_entity_type:entityType,p_entity_id:id});if(error)throw error;}else{const{error}=await db.rpc('archive_entity',{p_entity_type:entityType,p_entity_id:id});if(error)throw error;}}
+
+
+export async function createTeacherSubjectGroup(input:{classSubjectId:string;nameEn:string;nameAr:string|null}) {
+  const db=await createServerSupabaseClient();
+  const {data,error}=await db.rpc('teacher_create_subject_group',{
+    p_class_subject_id:input.classSubjectId,
+    p_name_en:input.nameEn,
+    p_name_ar:input.nameAr
+  });
+  if(error)throw error;
+  return data as string;
+}
+
+export async function renameTeacherSubjectGroup(input:{subjectGroupId:string;nameEn:string;nameAr:string|null}) {
+  const db=await createServerSupabaseClient();
+  const {error}=await db.rpc('teacher_rename_subject_group',{
+    p_subject_group_id:input.subjectGroupId,
+    p_name_en:input.nameEn,
+    p_name_ar:input.nameAr
+  });
+  if(error)throw error;
+}
+
+export async function archiveTeacherSubjectGroup(subjectGroupId:string) {
+  const db=await createServerSupabaseClient();
+  const {error}=await db.rpc('teacher_archive_subject_group',{
+    p_subject_group_id:subjectGroupId
+  });
+  if(error)throw error;
+}
+
+export async function restoreTeacherSubjectGroup(subjectGroupId:string) {
+  const db=await createServerSupabaseClient();
+  const {error}=await db.rpc('teacher_restore_subject_group',{
+    p_subject_group_id:subjectGroupId
+  });
+  if(error)throw error;
+}
+
+export async function moveTeacherSubjectGroupStudent(input:{
+  classSubjectId:string;
+  studentId:string;
+  subjectGroupId:string;
+  onDate:string;
+}) {
+  const db=await createServerSupabaseClient();
+  const {error}=await db.rpc('teacher_move_subject_group_student',{
+    p_class_subject_id:input.classSubjectId,
+    p_student_id:input.studentId,
+    p_subject_group_id:input.subjectGroupId,
+    p_on_date:input.onDate
+  });
+  if(error)throw error;
+}
+
+export async function removeTeacherSubjectGroupStudent(input:{
+  classSubjectId:string;
+  studentId:string;
+  onDate:string;
+}) {
+  const db=await createServerSupabaseClient();
+  const {error}=await db.rpc('teacher_remove_subject_group_student',{
+    p_class_subject_id:input.classSubjectId,
+    p_student_id:input.studentId,
+    p_on_date:input.onDate
+  });
+  if(error)throw error;
+}
+
+export async function listTeacherSubjectGroupManagement(
+  classSubjectId:string,
+  onDate:string
+):Promise<TeacherSubjectGroupManagement> {
+  const db=await createServerSupabaseClient();
+
+  const [groupsResult,rosterResult,membershipsResult]=await Promise.all([
+    db.from('subject_groups')
+      .select('id,name_en,name_ar,is_active')
+      .eq('class_subject_id',classSubjectId)
+      .order('name_en'),
+    db.rpc('get_weekly_submission_roster',{
+      p_class_subject_id:classSubjectId,
+      p_subject_group_id:null,
+      p_on_date:onDate
+    }),
+    db.from('subject_group_memberships')
+      .select(`
+        id,
+        student_id,
+        subject_group_id,
+        starts_on,
+        ends_on,
+        students(first_name_en,last_name_en,first_name_ar,last_name_ar),
+        subject_groups!subject_group_memberships_group_context_fk(name_en,name_ar)
+      `)
+      .eq('class_subject_id',classSubjectId)
+      .order('starts_on',{ascending:false})
+  ]);
+
+  if(groupsResult.error)throw groupsResult.error;
+  if(rosterResult.error)throw rosterResult.error;
+  if(membershipsResult.error)throw membershipsResult.error;
+
+  const groups=(groupsResult.data as Array<{
+    id:string;
+    name_en:string;
+    name_ar:string|null;
+    is_active:boolean;
+  }>).map((row)=>({
+    id:row.id,
+    nameEn:row.name_en,
+    nameAr:row.name_ar,
+    isActive:row.is_active
+  }));
+
+  const membershipRows=membershipsResult.data as unknown as Array<{
+    id:string;
+    student_id:string;
+    subject_group_id:string;
+    starts_on:string;
+    ends_on:string|null;
+    students:{
+      first_name_en:string;
+      last_name_en:string;
+      first_name_ar:string|null;
+      last_name_ar:string|null;
+    }|null;
+    subject_groups:{name_en:string;name_ar:string|null}|null;
+  }>;
+
+  const currentGroupByStudent=new Map<string,string>();
+  for(const row of membershipRows){
+    if(
+      row.starts_on<=onDate &&
+      (row.ends_on===null||row.ends_on>=onDate)
+    ){
+      currentGroupByStudent.set(row.student_id,row.subject_group_id);
+    }
+  }
+
+  const students=(rosterResult.data as Array<{
+    student_id:string;
+    first_name_en:string;
+    last_name_en:string;
+    first_name_ar:string|null;
+    last_name_ar:string|null;
+  }>).map((row)=>({
+    id:row.student_id,
+    nameEn:`${row.first_name_en} ${row.last_name_en}`,
+    nameAr:row.first_name_ar&&row.last_name_ar
+      ?`${row.first_name_ar} ${row.last_name_ar}`
+      :null,
+    currentGroupId:currentGroupByStudent.get(row.student_id)??null
+  }));
+
+  return{
+    classSubjectId,
+    groups,
+    students,
+    membershipHistory:membershipRows.flatMap((row)=>{
+      if(!row.students||!row.subject_groups)return[];
+      return[{
+        id:row.id,
+        studentId:row.student_id,
+        studentNameEn:`${row.students.first_name_en} ${row.students.last_name_en}`,
+        studentNameAr:row.students.first_name_ar&&row.students.last_name_ar
+          ?`${row.students.first_name_ar} ${row.students.last_name_ar}`
+          :null,
+        subjectGroupId:row.subject_group_id,
+        groupNameEn:row.subject_groups.name_en,
+        groupNameAr:row.subject_groups.name_ar,
+        startsOn:row.starts_on,
+        endsOn:row.ends_on
+      }];
+    })
+  };
+}

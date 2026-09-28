@@ -86,13 +86,6 @@ export function teachingAssignmentProtectsSubmittedHistory(
   }
 ) {
   if (assignment.classSubjectId !== submission.classSubjectId) return false;
-  if (
-    assignment.subjectGroupId !== null &&
-    assignment.subjectGroupId !== submission.subjectGroupId
-  ) {
-    return false;
-  }
-
   const weekEnd = addIsoDays(submission.weekStart, 6);
   return assignment.startsOn <= weekEnd &&
     (assignment.endsOn === null || assignment.endsOn >= submission.weekStart);
@@ -134,51 +127,38 @@ export function expandEffectiveTeachingContexts({
     if (!subject) continue;
 
     const groups = subject.groups.filter(({isActive}) => isActive);
-    if (assignment.subjectGroupId === null) {
-      if (groups.length === 0) {
-        contexts.set(`${teacherId}:${subject.id}:whole`, {
-          teacherId,
-          classSubjectId: subject.id,
-          subjectGroupId: null,
-          classNameEn: subject.classNameEn,
-          classNameAr: subject.classNameAr,
-          subjectNameEn: subject.subjectNameEn,
-          subjectNameAr: subject.subjectNameAr,
-          groupNameEn: null,
-          groupNameAr: null
-        });
-        continue;
-      }
 
-      for (const group of groups) {
-        contexts.set(`${teacherId}:${subject.id}:${group.id}`, {
-          teacherId,
-          classSubjectId: subject.id,
-          subjectGroupId: group.id,
-          classNameEn: subject.classNameEn,
-          classNameAr: subject.classNameAr,
-          subjectNameEn: subject.subjectNameEn,
-          subjectNameAr: subject.subjectNameAr,
-          groupNameEn: group.nameEn,
-          groupNameAr: group.nameAr
-        });
-      }
+    // Assignment authority is Class Subject-wide. Historical rows that still
+    // carry subjectGroupId are intentionally treated exactly like new
+    // Subject-only rows. Group remains an organizational teaching context.
+    if (groups.length === 0) {
+      contexts.set(`${teacherId}:${subject.id}:whole`, {
+        teacherId,
+        classSubjectId: subject.id,
+        subjectGroupId: null,
+        classNameEn: subject.classNameEn,
+        classNameAr: subject.classNameAr,
+        subjectNameEn: subject.subjectNameEn,
+        subjectNameAr: subject.subjectNameAr,
+        groupNameEn: null,
+        groupNameAr: null
+      });
       continue;
     }
 
-    const group = groups.find(({id}) => id === assignment.subjectGroupId);
-    if (!group) continue;
-    contexts.set(`${teacherId}:${subject.id}:${group.id}`, {
-      teacherId,
-      classSubjectId: subject.id,
-      subjectGroupId: group.id,
-      classNameEn: subject.classNameEn,
-      classNameAr: subject.classNameAr,
-      subjectNameEn: subject.subjectNameEn,
-      subjectNameAr: subject.subjectNameAr,
-      groupNameEn: group.nameEn,
-      groupNameAr: group.nameAr
-    });
+    for (const group of groups) {
+      contexts.set(`${teacherId}:${subject.id}:${group.id}`, {
+        teacherId,
+        classSubjectId: subject.id,
+        subjectGroupId: group.id,
+        classNameEn: subject.classNameEn,
+        classNameAr: subject.classNameAr,
+        subjectNameEn: subject.subjectNameEn,
+        subjectNameAr: subject.subjectNameAr,
+        groupNameEn: group.nameEn,
+        groupNameAr: group.nameAr
+      });
+    }
   }
 
   return [...contexts.values()];
