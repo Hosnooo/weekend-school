@@ -836,7 +836,13 @@
     "csv": "ملفات CSV",
     "pdfs": "ملفات PDF للتقارير النهائية",
     "fileOptions": "خيارات الملفات",
-    "submit": "إنشاء التصدير"
+    "submit": "إنشاء التصدير",
+    "rosterTitle": "تصدير قائمة الطلاب",
+    "rosterDescription": "نزّل قائمة المدرسة الحالية أو قائمة فصل حالي. يظهر كل طالب مرة واحدة مع ولي الأمر الأساسي والفصل الحالي والمجموعة الحالية لكل مادة.",
+    "rosterSchool": "قائمة المدرسة",
+    "rosterClasses": "قوائم الفصول",
+    "downloadSchoolRoster": "تنزيل قائمة المدرسة",
+    "downloadClassRoster": "تنزيل قائمة الفصل"
   },
   "teachingAssignmentsIndex": {
     "title": "تعيينات التدريس",

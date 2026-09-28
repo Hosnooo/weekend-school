@@ -103,7 +103,8 @@ describe('migration contract', () => {
       '20260927120000_reporting_workflow_finalization.sql',
       '20260927121000_admin_report_workflow.sql',
       '20260927130000_report_delivery_customization.sql',
-      '20260927131000_unified_destructive_delete.sql'
+      '20260927131000_unified_destructive_delete.sql',
+      '20260927132000_roster_csv_import.sql'
     ]);
   });
 

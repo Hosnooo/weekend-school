@@ -8,6 +8,7 @@ import {
   type ExportPanelLabels
 } from '@/features/exports/export-panel';
 import {listExportOptions} from '@/features/exports/export.repository';
+import {RosterExportPanel} from '@/features/roster-csv/roster-export-panel';
 import {isLocale} from '@/i18n/config';
 import {requireAdministrator} from '@/lib/auth/require-profile';
 
@@ -69,6 +70,19 @@ export default async function ExportsPage({
         locale={locale}
         options={options}
         action={createExportAction}
+      />
+
+      <RosterExportPanel
+        classes={options.classes}
+        labels={{
+          title: t('rosterTitle'),
+          description: t('rosterDescription'),
+          schoolRoster: t('rosterSchool'),
+          classRosters: t('rosterClasses'),
+          downloadSchool: t('downloadSchoolRoster'),
+          downloadClass: t('downloadClassRoster')
+        }}
+        locale={locale}
       />
     </AdminPage>
   );

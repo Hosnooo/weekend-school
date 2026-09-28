@@ -836,7 +836,13 @@
     "csv": "CSV files",
     "pdfs": "Finalized report PDFs",
     "fileOptions": "File options",
-    "submit": "Create export"
+    "submit": "Create export",
+    "rosterTitle": "Roster export",
+    "rosterDescription": "Download the current school roster or a current Class roster. Each student appears once with their primary Guardian, current Class, and current per-Subject Group.",
+    "rosterSchool": "School roster",
+    "rosterClasses": "Class rosters",
+    "downloadSchoolRoster": "Download school roster",
+    "downloadClassRoster": "Download Class roster"
   },
   "teachingAssignmentsIndex": {
     "title": "Teaching Assignments",
