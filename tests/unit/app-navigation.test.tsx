@@ -48,6 +48,7 @@ describe('AppNavigation', () => {
       'Administrators',
       'Classes & Subjects',
       'Teaching Assignments',
+      'Teaching Updates',
       'Reports',
       'Delivery status',
       'Export Data',

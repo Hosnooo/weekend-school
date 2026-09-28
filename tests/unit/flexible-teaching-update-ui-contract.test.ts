@@ -134,16 +134,24 @@ describe('flexible Teaching Update application contract', () => {
       `${featureRoot}/teaching-update.actions.ts`;
     const myTeachingPath =
       'src/app/[locale]/(protected)/(teacher)/my-teaching/page.tsx';
+    const taskListPath =
+      `${featureRoot}/teaching-update-task-list.tsx`;
 
     expect(
       exists(actionsPath),
       `${actionsPath} should exist`
     ).toBe(true);
 
-    if (!exists(actionsPath)) return;
+    expect(
+      exists(taskListPath),
+      `${taskListPath} should exist`
+    ).toBe(true);
+
+    if (!exists(actionsPath) || !exists(taskListPath)) return;
 
     const actions = source(actionsPath);
     const myTeaching = source(myTeachingPath);
+    const taskList = source(taskListPath);
 
     expect(actions).toContain(
       'saveTeachingUpdateDraftAction'
@@ -155,8 +163,8 @@ describe('flexible Teaching Update application contract', () => {
       'dismissTeachingUpdateAction'
     );
 
-    expect(myTeaching).toContain('TeachingUpdate');
-    expect(myTeaching).toContain('submissionId');
+    expect(myTeaching).toContain('TeachingUpdateTaskList');
+    expect(taskList).toContain('submissionId');
   });
 
   it('keeps overlaps informational rather than blocking creation', () => {
@@ -179,4 +187,19 @@ describe('flexible Teaching Update application contract', () => {
       'disabled={overlaps.length > 0}'
     );
   });
+
+  it('keeps shared Admin-requested OPEN items visible to assigned Teachers', () => {
+    const repository = source(
+      'src/features/teaching-updates/teaching-update.repository.ts'
+    );
+
+    expect(repository).toContain(
+      'listOpenTeachingUpdates'
+    );
+
+    expect(repository).not.toContain(
+      ".in('teacher_id', teacherIds)"
+    );
+  });
+
 });

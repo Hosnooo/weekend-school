@@ -2,6 +2,7 @@ import {getTranslations} from 'next-intl/server';
 import {notFound} from 'next/navigation';
 
 import {Card} from '@/components/ui/card';
+import {TeachingUpdateTaskList} from '@/features/teaching-updates/teaching-update-task-list';
 import {EmptyState} from '@/components/ui/empty-state';
 import {PageHeader} from '@/components/ui/page-header';
 import {Button} from '@/components/ui/button';
@@ -22,7 +23,6 @@ import {
   listMyTeaching
 } from '@/features/weekly-updates/weekly-update.repository';
 import {isLocale} from '@/i18n/config';
-import {Link} from '@/i18n/navigation';
 import {requireTeachingAccount} from '@/lib/auth/require-profile';
 
 export default async function MyTeachingPage({
@@ -79,78 +79,11 @@ export default async function MyTeachingPage({
         title={teachingUpdates('title')}
       />
 
-      {openTeachingUpdates.length > 0 ? (
-        <div className="stack">
-          <h2>{teachingUpdates('openUpdates')}</h2>
-
-          <div className="group-cards">
-            {openTeachingUpdates.map((update) => {
-              const context =
-                contexts.find(
-                  (item) =>
-                    item.classSubjectId ===
-                      update.classSubjectId &&
-                    item.subjectGroupId ===
-                      update.subjectGroupId
-                ) ??
-                contexts.find(
-                  (item) =>
-                    item.classSubjectId ===
-                    update.classSubjectId
-                );
-
-              return (
-                <Card
-                  className="group-card"
-                  key={update.id}
-                >
-                  <div>
-                    <h3>
-                      {context
-                        ? localName(
-                            context.subjectNameEn,
-                            context.subjectNameAr
-                          )
-                        : teachingUpdates(
-                            'teachingUpdate'
-                          )}
-                    </h3>
-
-                    {context ? (
-                      <p>
-                        {localName(
-                          context.classNameEn,
-                          context.classNameAr
-                        )}
-                      </p>
-                    ) : null}
-
-                    <p>
-                      {update.coverageKind ===
-                      'DATES'
-                        ? teachingUpdates(
-                            'exactDates'
-                          )
-                        : teachingUpdates('range')}
-                      {': '}
-                      {update.periodStart}
-                      {' — '}
-                      {update.periodEnd}
-                    </p>
-                  </div>
-
-                  <Link
-                    className="button button-primary action-link"
-                    href={`/my-teaching/update?submissionId=${update.id}`}
-                  >
-                    {teachingUpdates('continue')}
-                  </Link>
-                </Card>
-              );
-            })}
-          </div>
-        </div>
-      ) : null}
+      <TeachingUpdateTaskList
+        contexts={contexts}
+        locale={locale}
+        updates={openTeachingUpdates}
+      />
 
       {contexts.length === 0 ? (
         <EmptyState

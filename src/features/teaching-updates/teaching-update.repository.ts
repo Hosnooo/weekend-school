@@ -156,7 +156,7 @@ type TeachingUpdateSubmissionRow = {
 
 export type TeachingUpdateListItem = {
   id: string;
-  teacherId: string;
+  teacherId: string | null;
   classSubjectId: string;
   subjectGroupId: string | null;
   coverageKind: TeachingUpdateCoverageKind;
@@ -378,14 +378,13 @@ export async function listOpenTeachingUpdates(
     .select('*')
     .eq('school_id', schoolId)
     .eq('status', 'DRAFT')
-    .in('teacher_id', teacherIds)
     .order('week_start', {ascending: false});
 
   if (error) throw error;
 
   const rows = (data ?? []) as unknown as Array<{
     id: string;
-    teacher_id: string;
+    teacher_id: string | null;
     class_subject_id: string;
     subject_group_id: string | null;
     coverage_kind: TeachingUpdateCoverageKind;

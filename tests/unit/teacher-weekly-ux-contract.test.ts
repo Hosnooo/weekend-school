@@ -37,12 +37,20 @@ describe('Teacher This Week UX contract', () => {
     expect(page).toContain('Card');
     expect(page).toContain('createTeachingUpdateAction');
     expect(page).toContain('listOpenTeachingUpdates');
-    expect(page).toContain('submissionId');
+    expect(page).toContain('TeachingUpdateTaskList');
     expect(page).toContain('EmptyState');
+
+    const taskList = readFileSync(
+      'src/features/teaching-updates/teaching-update-task-list.tsx',
+      'utf8'
+    );
+
+    expect(taskList).toContain('submissionId');
 
     expect(page).toContain('createTeachingUpdateAction');
     expect(page).toContain('listOpenTeachingUpdates');
-    expect(page).toContain('submissionId');
+    expect(page).toContain('TeachingUpdateTaskList');
+    expect(taskList).toContain('submissionId');
 
     const en = JSON.parse(read('messages/en.json'));
     const ar = JSON.parse(read('messages/ar.json'));

@@ -10,6 +10,7 @@ export type NavigationMessageKey =
   | 'administrators'
   | 'classesSubjects'
   | 'teachingAssignments'
+  | 'teachingUpdates'
   | 'reports'
   | 'deliveryStatus'
   | 'exportData'
@@ -46,7 +47,8 @@ const administratorSections: readonly NavigationSection[] = [
     id: 'school',
     items: [
       {href: '/classes', messageKey: 'classesSubjects'},
-      {href: '/teaching-assignments', messageKey: 'teachingAssignments'}
+      {href: '/teaching-assignments', messageKey: 'teachingAssignments'},
+      {href: '/teaching-updates', messageKey: 'teachingUpdates'}
     ]
   },
   {
