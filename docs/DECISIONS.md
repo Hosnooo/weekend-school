@@ -211,3 +211,9 @@ The detailed authoritative correction is `docs/superpowers/specs/2026-09-23-inde
 **Status:** Accepted — 2026-09-29
 
 The UI refactor interprets Dashboard attention as work that can be acted on now. A Teaching Update request set appears there when it has open requests and its period has started in the school's timezone. Future OPEN requests remain available in Teaching Updates but do not appear as urgent Dashboard work. Draft and review Class Report Cycles appear under In progress; finalized cycles remain in Reports history. Existing server rules for editing and submission remain unchanged. This presentation replaces the fixed-week and global delivery-count Dashboard sections of D-023.
+
+## D-028 — Historical Group names remain presentation context
+
+**Status:** Accepted — 2026-09-29
+
+New Teaching Assignments remain Class Subject-scoped and never request a Group. Existing assignment rows that carry `subject_group_id` show the recorded Group name, including an archived Group, as historical provenance. The displayed label states that teaching access covers the entire Subject. Effective teaching contexts continue to filter inactive Groups, so retaining their names for display does not restore participation or change authorization.

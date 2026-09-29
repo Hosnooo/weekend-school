@@ -96,6 +96,10 @@ export function TeachingAssignmentWorkspace({
 
   const localName = (english: string, arabic: string | null) =>
     locale === 'ar' && arabic ? arabic : english;
+  const formatDate = (value: string) => new Intl.DateTimeFormat(locale, {
+    dateStyle: 'medium',
+    timeZone: 'UTC'
+  }).format(new Date(`${value}T12:00:00Z`));
 
   function subjectFor(assignment: TeachingAssignment) {
     return classSubjects.find((item) => item.id === assignment.classSubjectId) ?? null;
@@ -104,7 +108,14 @@ export function TeachingAssignmentWorkspace({
   function contextFor(assignment: TeachingAssignment) {
     const subject = subjectFor(assignment);
     if (!subject) return common('notAssigned');
-    return `${localName(subject.classNameEn, subject.classNameAr)} · ${localName(subject.subjectNameEn, subject.subjectNameAr)}`;
+    const context = `${localName(subject.classNameEn, subject.classNameAr)} · ${localName(subject.subjectNameEn, subject.subjectNameAr)}`;
+    return `${context} · ${recordedGroupFor(assignment) ?? t('entireSubject')}`;
+  }
+
+  function recordedGroupFor(assignment: TeachingAssignment) {
+    if (!assignment.subjectGroupId) return null;
+    const group = subjectFor(assignment)?.groups.find(({id}) => id === assignment.subjectGroupId);
+    return group ? t('recordedGroup', {name: localName(group.nameEn, group.nameAr)}) : t('recordedGroupUnavailable');
   }
 
   function chooseClass(nextClassId: string) {
@@ -186,9 +197,11 @@ export function TeachingAssignmentWorkspace({
         header: t('teachingContext'),
         render: (assignment) => {
           const subject = subjectFor(assignment);
+          const recordedGroup = recordedGroupFor(assignment);
           return subject ? (
             <div>
-              <strong>{localName(subject.classNameEn, subject.classNameAr)} · {localName(subject.subjectNameEn, subject.subjectNameAr)}</strong>
+              <strong className="record-name">{localName(subject.classNameEn, subject.classNameAr)} · {localName(subject.subjectNameEn, subject.subjectNameAr)}</strong>
+              {recordedGroup ? <p className="record-meta">{recordedGroup}</p> : null}
             </div>
           ) : common('notAssigned');
         }
@@ -212,7 +225,15 @@ export function TeachingAssignmentWorkspace({
             </div>
           </form>
         ) : (
-          <span>{assignment.startsOn} — {assignment.endsOn ?? t('ongoing')}</span>
+          <span className="assignment-date-range">
+            <time dateTime={assignment.startsOn}><bdi>{formatDate(assignment.startsOn)}</bdi></time>
+            <span className="assignment-date-end">
+              {'– '}
+              {assignment.endsOn ? (
+                <time dateTime={assignment.endsOn}><bdi>{formatDate(assignment.endsOn)}</bdi></time>
+              ) : t('ongoing')}
+            </span>
+          </span>
         )
       },
       {

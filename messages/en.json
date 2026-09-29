@@ -478,6 +478,8 @@
     "subject": "Subject",
     "scope": "Scope",
     "entireSubject": "Entire subject",
+    "recordedGroup": "Recorded Group: {name} (Subject-wide access)",
+    "recordedGroupUnavailable": "Recorded Group unavailable (Subject-wide access)",
     "startsOn": "Starts on",
     "endsOn": "Ends on",
     "endsOnOptional": "Ends on (optional)",

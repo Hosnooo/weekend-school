@@ -342,3 +342,12 @@ Task 16 release verification is complete.
 - On a reset and E2E-seeded local Supabase database, Dashboard and Teacher browser flows passed together (2/2), then the Student/Guardian flow passed (1/1) after the test fixture was restored. English and Arabic desktop/narrow screenshots were inspected for Dashboard, People details, list actions, RTL ordering, and overflow.
 - No migrations, RLS, or repository persistence code changed in this task, so a separate database gate was not required.
 
+## 2026-09-29 — Full-site UI refactor: Task 4 School and assignments
+
+- Changed Class detail from boxed Subject cards to divided Subject rows with optional Group rows and contextual actions. The Teaching Assignments index now uses the shared compact table and puts Teacher identity first.
+- New assignment creation remains Class Subject-scoped with no Group input. Existing Group-scoped assignment rows now display the recorded Group name, including an archived Group, while explaining that access covers the whole Subject. D-028 records the presentation rule; the effective-context service still excludes inactive Groups.
+- Assignment dates now display in the active locale. Narrow RTL date ranges wrap between complete dates. Focused tests were observed failing before the Subject-row, provenance, and localized-date changes, then passed.
+- `pnpm test` passed 92 files and 405 tests. `pnpm lint`, `pnpm typecheck`, `pnpm build`, and `git diff --check` passed.
+- On local E2E fixtures, Class/Subject/Group and Teaching Assignment browser flows passed together (2/2) against the final production build. English and Arabic desktop/narrow screenshots were inspected, including Class actions, assignment menus, and RTL dates. The assignment E2E setup preserves immutable submitted history and cleans up its temporary future assignment.
+- No migration or RLS policy changed; the browser tests exercised the assignment repository against local Supabase.
+

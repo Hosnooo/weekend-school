@@ -356,13 +356,11 @@ tbody tr:last-child td {
   gap: 1rem;
 }
 
-.subject-grid {
+.subject-list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
-  gap: 1rem;
+  border-block-start: 1px solid var(--border-subtle);
 }
 
-.subject-card,
 .inline-form-card,
 .disclosure-card {
   background: var(--surface);
@@ -370,22 +368,28 @@ tbody tr:last-child td {
   border-radius: 0.75rem;
 }
 
-.subject-card {
+.subject-row {
   display: grid;
-  gap: 1rem;
-  padding: 1.25rem;
+  gap: var(--space-4);
+  min-inline-size: 0;
+  padding-block: var(--space-5);
+  border-block-end: 1px solid var(--border-subtle);
 }
 
-.subject-card-heading {
+.subject-row-heading {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
 }
 
-.subject-card-heading h3 {
+.subject-row-heading h3 {
   margin: 0;
+  font-size: 1.05rem;
+  font-weight: 650;
 }
+
+.subject-row > .button { justify-self: start; }
 
 .inline-form-card {
   display: flex;
@@ -703,7 +707,7 @@ tbody tr:last-child td {
   }
 
   .inline-form-card,
-  .subject-card-heading,
+  .subject-row-heading,
   .group-list-item {
     align-items: stretch;
     flex-direction: column;

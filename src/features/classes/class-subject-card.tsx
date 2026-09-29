@@ -119,8 +119,8 @@ export function ClassSubjectCard({
     : '';
 
   return (
-    <article className="subject-card">
-      <header className="subject-card-heading">
+    <article className="subject-row">
+      <header className="subject-row-heading">
         <div>
           <h3>{subjectName}</h3>
           <p className="muted-text">

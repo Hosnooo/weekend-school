@@ -62,11 +62,11 @@ const assignments: TeachingAssignment[] = [
   {id: '66666666-6666-4666-8666-666666666663', teacherId, classSubjectId: quranId, subjectGroupId: quranGroupB, startsOn: '2026-08-01', endsOn: '2026-08-31'}
 ];
 
-function renderWorkspace(locale: 'en' | 'ar' = 'en') {
+function renderWorkspace(locale: 'en' | 'ar' = 'en', availableSubjects = classSubjects) {
   return render(
     <div dir={locale === 'ar' ? 'rtl' : 'ltr'}>
       <NextIntlClientProvider locale={locale} messages={locale === 'ar' ? arabicMessages : messages}>
-        <TeachingAssignmentWorkspace assignments={assignments} classSubjects={classSubjects} locale={locale} teacherId={teacherId} today="2026-09-24" />
+        <TeachingAssignmentWorkspace assignments={assignments} classSubjects={availableSubjects} locale={locale} teacherId={teacherId} today="2026-09-24" />
       </NextIntlClientProvider>
     </div>
   );
@@ -107,6 +107,29 @@ describe('teaching assignment workspace reference CRUD flow', () => {
     expect(screen.getByLabelText('Ends on (optional)')).toHaveValue('');
   });
 
+  it('shows recorded Group provenance while keeping assignment authority Subject-wide', () => {
+    renderWorkspace();
+    expect(screen.getByText('Recorded Group: Quran A (Subject-wide access)')).toBeVisible();
+  });
+
+  it('formats displayed assignment dates for the active locale', () => {
+    const expected = new Intl.DateTimeFormat('ar', {dateStyle: 'medium', timeZone: 'UTC'})
+      .format(new Date('2026-09-01T12:00:00Z'));
+    const {container} = renderWorkspace('ar');
+    expect(container.querySelector('time[datetime="2026-09-01"]')).toHaveTextContent(expected);
+  });
+
+  it('keeps an archived recorded Group name readable in past assignments', async () => {
+    const user = userEvent.setup();
+    const archivedSubjects = classSubjects.map((subject) => subject.id === quranId ? {
+      ...subject,
+      groups: subject.groups.map((group) => group.id === quranGroupB ? {...group, isActive: false} : group)
+    } : subject);
+    renderWorkspace('en', archivedSubjects);
+    await user.click(screen.getByRole('tab', {name: 'Past'}));
+    expect(screen.getByText('Recorded Group: Quran B (Subject-wide access)')).toBeVisible();
+  });
+
   it('opens Add assignment in a focused dialog', async () => {
     const user = userEvent.setup();
     renderWorkspace();
@@ -139,7 +162,7 @@ describe('teaching assignment workspace reference CRUD flow', () => {
     await user.type(screen.getByLabelText('Starts on'), '2026-09-05');
     await user.click(screen.getByRole('button', {name: 'Cancel'}));
     expect(screen.queryByLabelText('Starts on')).not.toBeInTheDocument();
-    expect(screen.getByText(/2026-09-01/)).toBeVisible();
+    expect(screen.getByText('Sep 1, 2026')).toBeVisible();
   });
 
   it('renders overlap and protected-history errors with different translated messages', async () => {

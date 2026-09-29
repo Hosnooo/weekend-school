@@ -104,7 +104,7 @@ export default async function ClassDetailPage({
         {classDetail.subjects.length === 0 ? (
           <EmptyState title={t('noSubjects')} />
         ) : (
-          <div className="subject-grid">
+          <div className="subject-list">
             {classDetail.subjects.map((subject) => (
               <ClassSubjectCard
                 classId={classDetail.id}

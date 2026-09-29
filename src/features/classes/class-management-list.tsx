@@ -51,7 +51,7 @@ export function ClassManagementList({
       header: t('name'),
       render: (item) => (
         <Link href={`/classes/${item.id}`}>
-          <strong>{className(item)}</strong>
+          <strong className="record-name">{className(item)}</strong>
         </Link>
       )
     },

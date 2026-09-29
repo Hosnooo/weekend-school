@@ -40,6 +40,9 @@ describe('Class / Subject / Group UX contract', () => {
 
     expect(surface).not.toContain('<details');
     expect(subjectCard).toContain('DropdownMenu');
+    expect(page).toContain('subject-list');
+    expect(subjectCard).toContain('subject-row');
+    expect(page).not.toContain('subject-grid');
 
     // Hierarchy and teaching coverage must remain visible.
     expect(subjectCard).toContain("t('groupCount'");
@@ -47,6 +50,16 @@ describe('Class / Subject / Group UX contract', () => {
 
     // Assignment management remains directly reachable from the Class surface.
     expect(page).toContain('/teaching-assignments');
+  });
+
+  it('uses a compact Teacher assignment index with record identity first', () => {
+    const page = read('src/app/[locale]/(protected)/(admin)/teaching-assignments/page.tsx');
+
+    expect(page).toContain('PageHeader');
+    expect(page).toContain('DataTable');
+    expect(page).toContain('record-name');
+    expect(page).not.toContain('AdminPage');
+    expect(page).not.toContain('<table>');
   });
 
   it('keeps the legacy Groups routes as locale-preserving canonical redirects', () => {

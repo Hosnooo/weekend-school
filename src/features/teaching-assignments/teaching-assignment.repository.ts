@@ -78,7 +78,6 @@ export async function listTeachingClassSubjects(schoolId: string): Promise<Teach
       subjectNameAr: row.subjects.name_ar,
       isActive: row.is_active,
       groups: row.subject_groups
-        .filter(({is_active}) => is_active)
         .map((group) => ({
           id: group.id,
           nameEn: group.name_en,
