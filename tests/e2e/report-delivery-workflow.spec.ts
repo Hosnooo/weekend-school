@@ -98,13 +98,15 @@ async function cleanupReportFixtures() {
 }
 
 async function assertNoHorizontalOverflow(page: Page) {
-  const overflow = await page.evaluate(
-    () =>
-      document.documentElement.scrollWidth -
-      document.documentElement.clientWidth
-  );
+  const {overflow, offenders} = await page.evaluate(() => ({
+    overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    offenders: [...document.querySelectorAll('*')]
+      .filter((element) => element.getBoundingClientRect().right > document.documentElement.clientWidth + 1)
+      .slice(-12)
+      .map((element) => `${element.tagName.toLowerCase()}.${element.className} ${Math.round(element.getBoundingClientRect().right)}px`)
+  }));
 
-  expect(overflow).toBeLessThanOrEqual(1);
+  expect(overflow, offenders.join(', ')).toBeLessThanOrEqual(1);
 }
 
 test.describe('Reports and Delivery Status', () => {
@@ -238,29 +240,12 @@ test.describe('Reports and Delivery Status', () => {
         page.getByRole('heading', {level: 1, name: 'Reports'})
       ).toBeVisible();
 
-      for (const name of ['Prepare', 'Review', 'Finalize', 'Send']) {
-        await expect(
-          page.getByRole('tab', {name, exact: true})
-        ).toBeVisible();
-      }
-
-      await expect(
-        page.getByRole('button', {
-          name: 'Send ready reports'
-        })
-      ).toBeVisible();
-
-      await expect(
-        page.getByText('Sara Ali', {exact: true})
-      ).toBeVisible();
-
-      await expect(
-        page.getByText('Omar Hassan', {exact: true})
-      ).toBeVisible();
-
-      await expect(
-        page.getByText('Lina Khalil', {exact: true})
-      ).toBeVisible();
+      const englishHistory = page.locator('details.report-cycle-history');
+      await expect(englishHistory.locator('summary')).toHaveText('Historical Subject and Group reports');
+      await expect(englishHistory.getByRole('button', {name: 'Apply'})).toBeHidden();
+      await englishHistory.locator('summary').click();
+      await expect(englishHistory.getByRole('button', {name: 'Apply'})).toBeVisible();
+      await expect(englishHistory.getByRole('button', {name: 'Open report'}).first()).toBeVisible();
 
       await expect(
         page.getByRole('link', {
@@ -270,18 +255,6 @@ test.describe('Reports and Delivery Status', () => {
         'href',
         '/en/reports/delivery-status'
       );
-
-      await page.getByRole('tab', {
-        name: 'Review',
-        exact: true
-      }).click();
-
-      await expect(
-        page.getByText(
-          'Review submitted teaching sources and approve the content to use.',
-          {exact: true}
-        )
-      ).toBeVisible();
 
       await assertNoHorizontalOverflow(page);
 
@@ -380,9 +353,9 @@ test.describe('Reports and Delivery Status', () => {
         page.getByRole('heading', {level: 1, name: 'Reports'})
       ).toBeVisible();
 
-      await expect(
-        page.getByText('Lina Khalil', {exact: true})
-      ).toBeVisible();
+      const englishMobileHistory = page.locator('details.report-cycle-history');
+      await englishMobileHistory.locator('summary').click();
+      await expect(englishMobileHistory.getByRole('button', {name: 'Apply'})).toBeVisible();
 
       await assertNoHorizontalOverflow(page);
 
@@ -441,28 +414,11 @@ test.describe('Reports and Delivery Status', () => {
         })
       ).toBeVisible();
 
-      for (const name of [
-        'الإعداد',
-        'المراجعة',
-        'الاعتماد النهائي',
-        'الإرسال'
-      ]) {
-        await expect(
-          page.getByRole('tab', {name, exact: true})
-        ).toBeVisible();
-      }
-
-      await expect(
-        page.getByText('سارة علي', {exact: true})
-      ).toBeVisible();
-
-      await expect(
-        page.getByText('عمر حسن', {exact: true})
-      ).toBeVisible();
-
-      await expect(
-        page.getByText('لينا خليل', {exact: true})
-      ).toBeVisible();
+      const arabicHistory = page.locator('details.report-cycle-history');
+      await expect(arabicHistory.locator('summary')).toHaveText('تقارير المواد والمجموعات السابقة');
+      await arabicHistory.locator('summary').click();
+      await expect(arabicHistory.getByRole('button', {name: 'تطبيق'})).toBeVisible();
+      await expect(arabicHistory.getByRole('button', {name: 'فتح التقرير'}).first()).toBeVisible();
 
       await assertNoHorizontalOverflow(page);
 
@@ -548,9 +504,9 @@ test.describe('Reports and Delivery Status', () => {
         })
       ).toBeVisible();
 
-      await expect(
-        page.getByText('لينا خليل', {exact: true})
-      ).toBeVisible();
+      const arabicMobileHistory = page.locator('details.report-cycle-history');
+      await arabicMobileHistory.locator('summary').click();
+      await expect(arabicMobileHistory.getByRole('button', {name: 'تطبيق'})).toBeVisible();
 
       await assertNoHorizontalOverflow(page);
 

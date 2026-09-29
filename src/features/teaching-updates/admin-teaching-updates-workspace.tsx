@@ -1,11 +1,11 @@
 'use client';
 
-import {useMemo, useState} from 'react';
+import {useState} from 'react';
 import {useTranslations} from 'next-intl';
 
 import {Badge, type BadgeVariant} from '@/components/ui/badge';
 import {Button} from '@/components/ui/button';
-import {Card} from '@/components/ui/card';
+import {Alert} from '@/components/ui/alert';
 import {DataTable, type DataTableColumn} from '@/components/ui/data-table';
 import {Dialog, DialogClose} from '@/components/ui/dialog';
 import {EmptyState} from '@/components/ui/empty-state';
@@ -21,8 +21,9 @@ import type {
   AdminTeachingUpdateStatus
 } from './admin-teaching-update.types';
 import {RequestTeachingUpdateDialog} from './request-teaching-update-dialog';
+import {formatTeachingUpdateDate, formatTeachingUpdateRange} from './teaching-update-date';
 
-type StatusFilter = 'ALL' | AdminTeachingUpdateStatus;
+type StatusFilter = 'ALL' | 'SUBMITTED' | 'DISMISSED';
 type SourceFilter = 'ALL' | AdminTeachingUpdateSource;
 
 function statusVariant(status: AdminTeachingUpdateStatus): BadgeVariant {
@@ -52,19 +53,16 @@ export function AdminTeachingUpdatesWorkspace({
   const localName = (en: string, ar: string | null) =>
     locale === 'ar' && ar ? ar : en;
 
-  const summary = useMemo(() => ({
-    open: updates.filter((item) => item.status === 'OPEN').length,
-    submitted: updates.filter((item) => item.status === 'SUBMITTED').length,
-    dismissed: updates.filter((item) => item.status === 'DISMISSED').length,
-    attention: updates.filter(
-      (item) => item.status === 'OPEN' && item.source === 'ADMIN_REQUEST'
-    ).length
-  }), [updates]);
-
-  const filtered = updates.filter((item) =>
+  const activeLocale = locale === 'ar' ? 'ar' : 'en';
+  const openTeachingUpdates = updates
+    .filter((item) => item.status === 'OPEN')
+    .sort((a, b) => Number(b.source === 'ADMIN_REQUEST') - Number(a.source === 'ADMIN_REQUEST'));
+  const historyTeachingUpdates = updates.filter((item) =>
+    item.status !== 'OPEN' &&
     (status === 'ALL' || item.status === status) &&
     (source === 'ALL' || item.source === source)
   );
+  const activeRequests = requestSets.filter((item) => item.submittedCount < item.totalCount);
 
   const statusLabel = (value: AdminTeachingUpdateStatus) =>
     value === 'SUBMITTED'
@@ -127,8 +125,8 @@ export function AdminTeachingUpdatesWorkspace({
       header: t('coverageShort'),
       render: (update) =>
         update.coverageKind === 'DATES'
-          ? update.exactDates.join(', ')
-          : `${update.periodStart} — ${update.periodEnd}`
+          ? update.exactDates.map((date) => formatTeachingUpdateDate(date, activeLocale)).join(', ')
+          : formatTeachingUpdateRange(update.periodStart, update.periodEnd, activeLocale)
     },
     {
       key: 'actions',
@@ -148,108 +146,86 @@ export function AdminTeachingUpdatesWorkspace({
 
   return (
     <div className="stack">
-      {notice ? <Card><strong>{notice}</strong></Card> : null}
+      {notice ? <Alert variant="info">{notice}</Alert> : null}
 
-      <div style={{display: 'flex', justifyContent: 'flex-end'}}>
+      <div className="page-actions">
         <RequestTeachingUpdateDialog contexts={contexts} locale={locale}/>
       </div>
 
-      <div className="group-cards">
-        {[
-          [t('summaryOpen'), summary.open],
-          [t('summarySubmitted'), summary.submitted],
-          [t('summaryDismissed'), summary.dismissed],
-          [t('summaryNeedsAttention'), summary.attention]
-        ].map(([label, value]) => (
-          <Card key={String(label)}>
-            <div className="stack">
-              <strong style={{fontSize: '1.8rem'}}>{value}</strong>
-              <span>{label}</span>
-            </div>
-          </Card>
-        ))}
-      </div>
+      <section className="detail-section admin-update-active-list">
+        <h2>{t('currentWork')}</h2>
+        {openTeachingUpdates.length === 0 ? (
+          <EmptyState title={t('noOpenUpdates')} />
+        ) : (
+          <DataTable
+            columns={columns}
+            getRowKey={(row) => row.id}
+            rows={openTeachingUpdates}
+          />
+        )}
+      </section>
 
-      {requestSets.length > 0 ? (
-        <div className="stack">
+      {activeRequests.length > 0 ? (
+        <section className="detail-section admin-update-requests">
           <h2>{t('recentRequests')}</h2>
-          <div className="group-cards">
-            {requestSets.slice(0, 4).map((requestSet) => (
-              <Card key={requestSet.id}>
-                <div className="stack">
-                  <strong>
+          <div className="compact-record-list">
+            {activeRequests.map((requestSet) => (
+              <div className="compact-record-row" key={requestSet.id}>
+                <div>
+                  <strong className="record-name">
                     {localName(requestSet.classNameEn, requestSet.classNameAr)}
                     {' · '}
                     {localName(requestSet.subjectNameEn, requestSet.subjectNameAr)}
                   </strong>
-                  <progress
-                    max={Math.max(requestSet.totalCount, 1)}
-                    style={{width: '100%'}}
-                    value={requestSet.submittedCount}
-                  />
-                  <span>
+                  <p className="record-meta">
                     {t('progress', {
                       submitted: requestSet.submittedCount,
                       total: requestSet.totalCount
                     })}
-                  </span>
+                  </p>
                 </div>
-              </Card>
+                <progress
+                  aria-label={t('progress', {
+                    submitted: requestSet.submittedCount,
+                    total: requestSet.totalCount
+                  })}
+                  max={Math.max(requestSet.totalCount, 1)}
+                  value={requestSet.submittedCount}
+                />
+              </div>
             ))}
           </div>
-        </div>
+        </section>
       ) : null}
 
-      <Card>
+      <details className="secondary-disclosure admin-update-history">
+        <summary>{t('history')}</summary>
         <div className="stack">
-          <strong>{t('filters')}</strong>
           <div className="form-grid">
             <label>
               <span>{t('status')}</span>
-              <select
-                value={status}
-                onChange={(event) =>
-                  setStatus(event.target.value as StatusFilter)
-                }
-              >
+              <select value={status} onChange={(event) => setStatus(event.target.value as StatusFilter)}>
                 <option value="ALL">{t('all')}</option>
-                <option value="OPEN">{t('open')}</option>
                 <option value="SUBMITTED">{t('submitted')}</option>
                 <option value="DISMISSED">{t('dismissed')}</option>
               </select>
             </label>
-
             <label>
               <span>{t('source')}</span>
-              <select
-                value={source}
-                onChange={(event) =>
-                  setSource(event.target.value as SourceFilter)
-                }
-              >
+              <select value={source} onChange={(event) => setSource(event.target.value as SourceFilter)}>
                 <option value="ALL">{t('all')}</option>
                 <option value="TEACHER">{t('teacherCreated')}</option>
                 <option value="ADMIN_REQUEST">{t('adminRequested')}</option>
               </select>
             </label>
           </div>
+          {historyTeachingUpdates.length === 0 ? (
+            <EmptyState title={t('noUpdates')} description={t('noUpdatesHelp')} />
+          ) : (
+            <DataTable columns={columns} getRowKey={(row) => row.id} rows={historyTeachingUpdates} />
+          )}
         </div>
-      </Card>
-
-      {filtered.length === 0 ? (
-        <EmptyState
-          description={t('noUpdatesHelp')}
-          title={t('noUpdates')}
-        />
-      ) : (
-        <Card>
-          <DataTable
-            columns={columns}
-            getRowKey={(row) => row.id}
-            rows={filtered}
-          />
-        </Card>
-      )}
+      </details>
 
       <TeachingUpdateDetails
         locale={locale}

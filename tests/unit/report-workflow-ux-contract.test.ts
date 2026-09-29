@@ -25,7 +25,8 @@ describe('Reports workflow UX contract', () => {
 
     // Reports is the compact work queue.
     expect(page).toContain('PageHeader');
-    expect(page).toContain('Card');
+    expect(page).toContain('report-cycle-active');
+    expect(page).toContain('report-cycle-history');
     expect(page).toContain('listAdminReportContexts');
     expect(page).toContain('openAdminReportContextAction');
     expect(page).toContain('sendAdminReportBatchAction');

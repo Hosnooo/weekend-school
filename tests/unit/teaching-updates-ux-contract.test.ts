@@ -39,7 +39,10 @@ describe('Teaching Updates usable workspace', () => {
     expect(workspace).toContain('DataTable');
     expect(workspace).toContain('Badge');
     expect(workspace).toContain('Dialog');
-    expect(workspace).toContain('summary');
+    expect(workspace).toContain('openTeachingUpdates');
+    expect(workspace).toContain('historyTeachingUpdates');
+    expect(workspace).toContain('admin-update-active-list');
+    expect(workspace).not.toContain('group-cards');
     expect(workspace).toContain('RequestTeachingUpdateDialog');
     expect(workspace).toContain('TeachingUpdateDetails');
   });
@@ -69,7 +72,7 @@ describe('Teaching Updates usable workspace', () => {
 
     const workspace = source(path);
 
-    expect(workspace).toContain('<progress');
+    expect(workspace).toContain('requestSet.submittedCount');
     expect(workspace).toContain("t('progress'");
     expect(workspace).not.toContain('requestHelp');
   });

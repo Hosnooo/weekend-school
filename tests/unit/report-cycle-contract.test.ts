@@ -120,6 +120,8 @@ describe('Class Report Cycle contract', () => {
     expect(component).toContain(
       'requestReportCycleMissingUpdateAction'
     );
+    expect(component).toContain('report-source-row');
+    expect(component).toContain('formatTeachingUpdateDate');
   });
 
   it('uses Report Cycles as the primary Admin Reports creation flow', () => {
@@ -144,6 +146,10 @@ describe('Class Report Cycle contract', () => {
     expect(page).toContain(
       'periodEnd'
     );
+    expect(page).toContain('report-cycle-create');
+    expect(page).toContain('report-cycle-active');
+    expect(page).toContain('report-cycle-history');
+    expect(page.indexOf('report-cycle-active')).toBeLessThan(page.indexOf('report-cycle-create'));
   });
 
   it('places Sources before the existing student review and delivery workflow', () => {

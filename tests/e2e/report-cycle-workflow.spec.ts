@@ -91,6 +91,8 @@ test.beforeAll(async () => {
 test(
   'Admin creates a Report Cycle and controls Teaching Update sources',
   async ({page}) => {
+    const runtimeErrors: string[] = [];
+    page.on('pageerror', (error) => runtimeErrors.push(error.message));
     await login(
       page,
       'en',
@@ -98,6 +100,11 @@ test(
     );
 
     await page.goto('/en/reports');
+
+    const createDisclosure = page.locator('details.report-cycle-create');
+    await expect(createDisclosure).toBeVisible({timeout: 5_000});
+    await expect(createDisclosure.locator('form')).toBeHidden();
+    await createDisclosure.locator('summary').click();
 
     const createCycleForm = page.locator('form').filter({
       has: page.getByRole('button', {
@@ -136,15 +143,15 @@ test(
     ).toBeVisible();
 
     const sourceCard = page
-      .locator('.record-card')
+      .locator('.report-source-row')
       .filter({
         hasText: 'Faith & Character'
       })
       .first();
 
     await expect(sourceCard).toContainText('Included');
-    await expect(sourceCard).toContainText(cycleStart);
-    await expect(sourceCard).toContainText(cycleEnd);
+    await expect(sourceCard).toContainText(new Intl.DateTimeFormat('en', {dateStyle: 'medium', timeZone: 'UTC'}).format(new Date(`${cycleStart}T12:00:00Z`)));
+    await expect(sourceCard).toContainText(new Intl.DateTimeFormat('en', {dateStyle: 'medium', timeZone: 'UTC'}).format(new Date(`${cycleEnd}T12:00:00Z`)));
 
     await sourceCard
       .getByRole('button', {name: 'Exclude'})
@@ -211,5 +218,6 @@ test(
     await expect(
       frame.getByText('Report cycle source lesson')
     ).toBeVisible();
+    expect(runtimeErrors).toEqual([]);
   }
 );

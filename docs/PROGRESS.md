@@ -359,3 +359,11 @@ Task 16 release verification is complete.
 - `pnpm lint`, `pnpm typecheck`, and `pnpm build` passed. `pnpm test` passed 94 files and 408 tests after updating stale source contracts. `git diff --check` passed.
 - Local Supabase was reset to migration `202609230027`, the historical Teacher-ID fixture was loaded, forward migrations were applied, and real `pnpm test:db` passed 30 files and 410 PostgreSQL/RLS assertions. Hosted Supabase and container lifecycle were untouched.
 
+## 2026-09-29 — Full-site UI refactor: Task 6 Admin Teaching Updates and Report Cycles
+
+- Admin Teaching Updates now places OPEN work and incomplete requests before submitted/dismissed history. Report Cycles lead with the cycle list, followed by disclosed creation and historical Subject/Group reports. Sources show inclusion, context, teacher, and localized coverage in compact rows; the workspace groups student reports, preview, send, and contextual delivery history.
+- The new EN/AR responsive browser test initially failed because one strict Playwright locator matched both history filters. The assertion now checks the filters' collapsed and expanded states individually. The older delivery E2E contract was updated from obsolete Reports-index tabs to the current historical-report disclosure while retaining delivery filtering, report preview, and desktop/mobile coverage.
+- The updated delivery test exposed 83px of horizontal overflow at 360px with historical reports expanded. The disclosure's grid minimum width was corrected; the same browser path then passed. Screenshots of EN/AR desktop and narrow Admin Teaching Updates, Report Cycles, historical reports, delivery, and preview were inspected. The Report Cycle test exercised create, exclude, include, generate, and preview actions and checked for page errors.
+- Focused report and Teaching Update contracts passed 25/25. The complete Task 6 browser set passed 4/4 against the refreshed production build. `pnpm typecheck`, `pnpm lint`, and `pnpm build` passed. The first concurrent `pnpm test` run had two timeouts; both tests passed alone, and an uncontended full rerun passed 94 files and 408 tests.
+- This task changed UI presentation, copy, CSS, and browser/unit contracts only. It did not change migrations, RLS, repositories, or persistence, so a new database gate was not required for Task 6.
+

@@ -1,7 +1,7 @@
 import {getTranslations} from 'next-intl/server';
 
 import {Badge} from '@/components/ui/badge';
-import {Card} from '@/components/ui/card';
+import {formatTeachingUpdateDate, formatTeachingUpdateRange} from '@/features/teaching-updates/teaching-update-date';
 
 import {
   requestReportCycleMissingUpdateAction,
@@ -38,45 +38,48 @@ export async function ReportCycleSources({
     en: string | null,
     ar: string | null
   ) => locale === 'ar' && ar ? ar : en ?? ar ?? '—';
+  const activeLocale = locale === 'ar' ? 'ar' : 'en';
 
   return (
-    <Card className="content-section">
+    <section className="detail-section report-cycle-sources">
       <div className="section-heading">
         <div>
           <h2>{t('sourcesStage')}</h2>
           <p>{t('sourcesHelp')}</p>
         </div>
 
-        <Badge variant="info">
+        <span className="record-meta">
           {sources.filter(({included}) => included).length}
           {' / '}
           {sources.length}
-        </Badge>
+          {' '}
+          {t('sourceIncluded')}
+        </span>
       </div>
 
       {sources.length === 0 ? (
         <p>{t('noCycleSources')}</p>
       ) : (
-        <div className="stack-list">
+        <div className="report-source-list">
           {sources.map((source) => {
             const coverage =
               source.coverageKind === 'DATES'
-                ? source.coveredDates.join(', ')
-                : `${source.periodStart} – ${source.periodEnd}`;
+                ? source.coveredDates.map((date) => formatTeachingUpdateDate(date, activeLocale)).join(', ')
+                : formatTeachingUpdateRange(source.periodStart, source.periodEnd, activeLocale);
 
             return (
               <article
-                className="record-card"
+                className="report-source-row"
                 key={source.id}
               >
-                <div className="record-card-main">
+                <div className="report-source-main">
                   <div className="row-actions">
-                    <strong>
+                    <strong className="record-name">
                       {localize(
                         source.subjectNameEn,
                         source.subjectNameAr
                       )}
-                      {source.groupNameEn
+                      {source.subjectGroupId
                         ? ` · ${localize(
                             source.groupNameEn,
                             source.groupNameAr
@@ -103,7 +106,7 @@ export async function ReportCycleSources({
                     ) : null}
                   </div>
 
-                  <p className="report-batch-meta">
+                  <p className="record-meta">
                     {coverage}
                     {' · '}
                     {source.teacherName}
@@ -164,19 +167,19 @@ export async function ReportCycleSources({
             <p>{t('missingUpdatesHelp')}</p>
           </div>
 
-          <div className="stack-list">
+          <div className="report-source-list">
             {missingContexts.map((context) => (
               <article
-                className="record-card"
+                className="report-source-row"
                 key={`${context.classSubjectId}:${context.subjectGroupId ?? 'whole'}`}
               >
-                <div className="record-card-main">
-                  <strong>
+                <div className="report-source-main">
+                  <strong className="record-name">
                     {localize(
                       context.subjectNameEn,
                       context.subjectNameAr
                     )}
-                    {context.groupNameEn
+                    {context.subjectGroupId
                       ? ` · ${localize(
                           context.groupNameEn,
                           context.groupNameAr
@@ -230,6 +233,6 @@ export async function ReportCycleSources({
           </div>
         </section>
       ) : null}
-    </Card>
+    </section>
   );
 }

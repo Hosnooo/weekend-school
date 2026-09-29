@@ -5,7 +5,6 @@ import {
   Badge,
   type BadgeVariant
 } from '@/components/ui/badge';
-import {Card} from '@/components/ui/card';
 import {ConfirmSubmitButton} from '@/components/ui/confirm-submit-button';
 import {EmptyState} from '@/components/ui/empty-state';
 import {PageHeader} from '@/components/ui/page-header';
@@ -20,6 +19,7 @@ import {
 import {listClassReportCycles} from '@/features/reports/report-batch.repository';
 import {getReportingTimezone} from '@/features/reports/report.repository';
 import {monthPeriod} from '@/features/reports/report.service';
+import {formatTeachingUpdateRange} from '@/features/teaching-updates/teaching-update-date';
 import {todayInTimeZone} from '@/features/weekly-updates/weekly-update.model';
 import {isLocale} from '@/i18n/config';
 import {Link} from '@/i18n/navigation';
@@ -143,13 +143,61 @@ export default async function ReportsPage({
         title={t('title')}
       />
 
-      <Card className="content-section">
+      <section className="report-cycle-active detail-section">
         <div className="section-heading">
           <div>
-            <h2>{t('createReportCycle')}</h2>
-            <p>{t('createReportCycleHelp')}</p>
+            <h2>{t('reportCyclesTitle')}</h2>
+            <p>{t('reportCyclesHelp')}</p>
           </div>
         </div>
+
+        {cycles.length === 0 ? (
+          <EmptyState title={t('noReportCycles')} />
+        ) : (
+          <div className="stack-list">
+            {cycles.map((cycle) => (
+              <article
+                className="report-cycle-row"
+                key={cycle.id}
+              >
+                <div>
+                  <div className="row-actions">
+                    <strong className="record-name">
+                      {localize(
+                        cycle.classNameEn,
+                        cycle.classNameAr
+                      )}
+                    </strong>
+
+                    <Badge
+                      variant={cycleStatusVariant(
+                        cycle.status
+                      )}
+                    >
+                      {t(
+                        `cycleStatus.${cycle.status}`
+                      )}
+                    </Badge>
+                  </div>
+
+                  <p className="record-meta">{formatTeachingUpdateRange(cycle.periodStart, cycle.periodEnd, locale)}</p>
+                </div>
+
+                <Link
+                  className="button button-secondary action-link"
+                  href={`/reports/workspace/${cycle.id}`}
+                >
+                  {t('openCycle')}
+                </Link>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <details className="report-cycle-create">
+        <summary>{t('createReportCycle')}</summary>
+        <p className="record-meta">{t('createReportCycleHelp')}</p>
 
         <form
           action={createClassReportCycleAction}
@@ -215,65 +263,21 @@ export default async function ReportsPage({
             {t('createCycle')}
           </button>
         </form>
-      </Card>
+      </details>
 
-      <Card className="content-section">
-        <div className="section-heading">
-          <div>
-            <h2>{t('reportCyclesTitle')}</h2>
-            <p>{t('reportCyclesHelp')}</p>
-          </div>
-        </div>
+      {query.error ? (
+        <p className="form-error">
+          {query.error === 'validation'
+            ? t('validation')
+            : t('saveError')}
+        </p>
+      ) : null}
 
-        {cycles.length === 0 ? (
-          <EmptyState title={t('noReportCycles')} />
-        ) : (
-          <div className="stack-list">
-            {cycles.map((cycle) => (
-              <article
-                className="record-card"
-                key={cycle.id}
-              >
-                <div className="record-card-main">
-                  <div className="row-actions">
-                    <strong>
-                      {localize(
-                        cycle.classNameEn,
-                        cycle.classNameAr
-                      )}
-                    </strong>
+      <details className="report-cycle-history">
+        <summary>{t('historicalReportsTitle')}</summary>
+        <p className="record-meta">{t('historicalReportsHelp')}</p>
 
-                    <Badge
-                      variant={cycleStatusVariant(
-                        cycle.status
-                      )}
-                    >
-                      {t(
-                        `cycleStatus.${cycle.status}`
-                      )}
-                    </Badge>
-                  </div>
-
-                  <p className="report-batch-meta">
-                    {cycle.periodStart}
-                    {' – '}
-                    {cycle.periodEnd}
-                  </p>
-                </div>
-
-                <Link
-                  className="button button-secondary action-link"
-                  href={`/reports/workspace/${cycle.id}`}
-                >
-                  {t('openCycle')}
-                </Link>
-              </article>
-            ))}
-          </div>
-        )}
-      </Card>
-
-      <Card className="content-section">
+      <section className="detail-section report-history-filter">
         <h2>{t('periodFilter')}</h2>
 
         <form className="record-form" method="get">
@@ -306,23 +310,9 @@ export default async function ReportsPage({
             {t('applyPeriod')}
           </button>
         </form>
-      </Card>
+      </section>
 
-      {query.error ? (
-        <p className="form-error">
-          {query.error === 'validation'
-            ? t('validation')
-            : t('saveError')}
-        </p>
-      ) : null}
-
-      <Card className="content-section">
-        <div className="section-heading">
-          <div>
-            <h2>{t('historicalReportsTitle')}</h2>
-            <p>{t('historicalReportsHelp')}</p>
-          </div>
-        </div>
+      <section className="detail-section">
 
         {contexts.length === 0 ? (
           <EmptyState title={t('noContexts')} />
@@ -465,7 +455,8 @@ export default async function ReportsPage({
             </table>
           </div>
         )}
-      </Card>
+      </section>
+      </details>
     </section>
   );
 }

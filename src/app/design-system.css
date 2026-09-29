@@ -173,6 +173,52 @@
 .teacher-group-management summary { min-height: var(--control-height); padding-block: var(--space-4); cursor: pointer; font-weight: 600; }
 .teacher-group-management-content { padding-block-start: var(--space-3); }
 
+.compact-record-list,
+.report-source-list,
+.report-cycle-report-list { border-block-start: 1px solid var(--border-subtle); }
+.compact-record-row,
+.report-source-row,
+.report-cycle-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); min-inline-size: 0; padding-block: var(--space-3); border-block-end: 1px solid var(--border-subtle); }
+.compact-record-row > div,
+.report-source-main,
+.report-cycle-row > div { min-inline-size: 0; }
+.compact-record-row .record-meta,
+.report-source-row .record-meta,
+.report-cycle-row .record-meta { margin-block: var(--space-1) 0; }
+.compact-record-row progress { inline-size: 8rem; max-inline-size: 30%; }
+.report-source-row form,
+.report-cycle-row .button { flex: none; }
+.secondary-disclosure,
+.report-cycle-create,
+.report-cycle-history { min-inline-size: 0; border-block-start: 1px solid var(--border-subtle); }
+.secondary-disclosure summary,
+.report-cycle-create summary,
+.report-cycle-history summary { min-height: var(--control-height); padding-block: var(--space-4); cursor: pointer; font-weight: 650; }
+.secondary-disclosure > .stack,
+.report-cycle-create > form,
+.report-cycle-history > .detail-section { margin-block-start: var(--space-4); }
+.report-cycle-create > .record-meta,
+.report-cycle-history > .record-meta { margin-block: 0 var(--space-4); }
+.report-cycle-active,
+.report-cycle-sources,
+.report-cycle-student-reports { display: grid; gap: var(--space-4); }
+.report-cycle-active h2,
+.report-cycle-sources h2,
+.report-cycle-student-reports h2 { margin: 0; font-size: 1.0625rem; }
+.report-cycle-student-reports h3 { margin: 0 0 var(--space-3); font-size: 0.9375rem; }
+.report-cycle-send,
+.report-cycle-delivery { padding-block-start: var(--space-5); border-block-start: 1px solid var(--border-subtle); }
+.report-cycle-delivery .button { margin-block-start: var(--space-3); }
+
+@media (max-width: 640px) {
+  .compact-record-row,
+  .report-source-row,
+  .report-cycle-row { align-items: stretch; flex-direction: column; }
+  .compact-record-row progress { inline-size: 100%; max-inline-size: 100%; }
+  .report-source-row form .button,
+  .report-cycle-row .button { inline-size: 100%; }
+}
+
 @media (max-width: 640px) {
   .teacher-task-row { align-items: stretch; flex-direction: column; }
   .teacher-task-row .button { align-self: stretch; }
