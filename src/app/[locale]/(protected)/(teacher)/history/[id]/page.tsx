@@ -2,12 +2,14 @@ import {getTranslations} from 'next-intl/server';
 import {notFound} from 'next/navigation';
 
 import {Alert} from '@/components/ui/alert';
-import {Card} from '@/components/ui/card';
 import {PageHeader} from '@/components/ui/page-header';
 import {getActiveReportTemplate} from '@/features/reports/report-template.repository';
 import {reopenWeeklySubmissionAction} from '@/features/weekly-updates/weekly-update.actions';
-import {WeeklyUpdateForm} from '@/features/weekly-updates/weekly-update-form';
-import {getWeeklySubmissionById} from '@/features/weekly-updates/weekly-update.repository';
+import {TeachingUpdateEditor} from '@/features/teaching-updates/teaching-update-editor';
+import {getTeachingUpdate} from '@/features/teaching-updates/teaching-update.repository';
+import {formatTeachingUpdateRange} from '@/features/teaching-updates/teaching-update-date';
+import {todayInTimeZone} from '@/features/weekly-updates/weekly-update.model';
+import {getSchoolTimezone} from '@/features/weekly-updates/weekly-update.repository';
 import {isLocale} from '@/i18n/config';
 import {requireTeachingAccount} from '@/lib/auth/require-profile';
 
@@ -26,16 +28,17 @@ export default async function HistoryDetail({
 
   const {profile, teacherIds} = await requireTeachingAccount(locale);
 
-  const [submission, template] = await Promise.all([
-    getWeeklySubmissionById(
+  const [submission, template, timeZone] = await Promise.all([
+    getTeachingUpdate(
       profile.schoolId,
       teacherIds,
       id
     ),
-    getActiveReportTemplate(profile.schoolId)
+    getActiveReportTemplate(profile.schoolId),
+    getSchoolTimezone(profile.schoolId)
   ]);
 
-  if (!submission || submission.status !== 'SUBMITTED') {
+  if (!submission || submission.status !== 'SUBMITTED' || !submission.teacherId) {
     notFound();
   }
 
@@ -58,14 +61,16 @@ export default async function HistoryDetail({
       : t('wholeClass')
   ].join(' · ');
 
-  const weekLabel = new Intl.DateTimeFormat(locale, {
-    dateStyle: 'long'
-  }).format(new Date(`${submission.weekStart}T12:00:00Z`));
+  const coverageLabel = formatTeachingUpdateRange(
+    submission.periodStart,
+    submission.periodEnd,
+    locale
+  );
 
   return (
     <section className="admin-page">
       <PageHeader
-        description={t('weekOf', {date: weekLabel})}
+        description={coverageLabel}
         title={title}
       />
 
@@ -107,7 +112,7 @@ export default async function HistoryDetail({
         <input
           name="weekStart"
           type="hidden"
-          value={submission.weekStart}
+          value={submission.periodStart}
         />
 
         <button
@@ -118,14 +123,15 @@ export default async function HistoryDetail({
         </button>
       </form>
 
-      <Card className="content-section">
-        <WeeklyUpdateForm
+      <div className="detail-section history-detail-content">
+        <TeachingUpdateEditor
           locale={locale}
-          readOnly
-          submission={submission}
+          teacherId={submission.teacherId}
+          today={todayInTimeZone(timeZone)}
+          update={submission}
           template={template}
         />
-      </Card>
+      </div>
     </section>
   );
 }

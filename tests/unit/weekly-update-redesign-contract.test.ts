@@ -15,7 +15,7 @@ describe('weekly update redesign contract', () => {
 
     expect(page).not.toContain('AdminPage');
     expect(page).toContain('PageHeader');
-    expect(page).toContain('Card');
+    expect(page).not.toContain('Card');
     expect(page).toContain('TeachingUpdateEditor');
   });
 

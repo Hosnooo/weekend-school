@@ -64,7 +64,7 @@ describe('AppNavigation', () => {
     renderNavigation('en', {isAdmin: false, teacherIds: ['teacher-1']});
 
     expect(screen.getAllByRole('heading').map((heading) => heading.textContent)).toEqual(['My Teaching']);
-    expect(screen.getByRole('link', {name: 'This Week'})).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', {name: 'Updates'})).toHaveAttribute('aria-current', 'page');
     expect(screen.getByRole('link', {name: 'History'})).toBeInTheDocument();
     expect(screen.getByRole('link', {name: 'My Profile'})).toBeInTheDocument();
     expect(screen.queryByRole('link', {name: 'Students'})).not.toBeInTheDocument();

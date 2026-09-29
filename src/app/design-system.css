@@ -138,6 +138,48 @@
 .assignment-date-range time,
 .assignment-date-end { white-space: nowrap; }
 
+.teacher-task-section { display: grid; gap: var(--space-3); }
+.teacher-task-section h2 { margin: 0; font-size: 1.0625rem; }
+.teacher-task-list { border-block-start: 1px solid var(--border-subtle); }
+.teacher-task-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding-block: var(--space-4); border-block-end: 1px solid var(--border-subtle); }
+.teacher-task-main { min-inline-size: 0; }
+.teacher-task-main h3 { margin: var(--space-2) 0 var(--space-1); font-size: 1rem; }
+.teacher-task-main .record-meta { margin: var(--space-1) 0; }
+.teacher-task-badges { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+.teacher-task-row .button { flex: none; }
+.teacher-new-update-list { border-block-start: 1px solid var(--border-subtle); }
+.teacher-new-update-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding-block: var(--space-3); border-block-end: 1px solid var(--border-subtle); }
+.teacher-new-update-row h3 { margin: 0 0 var(--space-1); font-size: 1rem; }
+.teacher-new-update-row .record-meta { margin: 0; }
+.teacher-new-update-row form { flex: none; }
+.teaching-update-form { gap: 0; }
+.teaching-update-form .teacher-update-section { display: grid; gap: var(--space-4); padding-block: var(--space-6); padding-inline: 0; background: transparent; border: 0; border-block-end: 1px solid var(--border-subtle); border-radius: 0; }
+.teaching-update-form .teacher-update-section[hidden] { display: none; }
+.teaching-update-form .teacher-update-section:first-of-type { padding-block-start: 0; }
+.teaching-update-form .teacher-update-section h2 { margin: 0; font-size: 1.0625rem; }
+.teacher-update-submit { padding-block: var(--space-5); }
+.teacher-student-table-wrap { min-inline-size: 0; }
+.teacher-student-table td[hidden],
+.teacher-student-table th[hidden] { display: none; }
+.teacher-student-table td select,
+.teacher-student-table td textarea { min-inline-size: 0; }
+.teacher-student-table td:last-child { inline-size: auto; white-space: normal; }
+.history-detail-content { margin-block-start: var(--space-5); }
+.teacher-profile-list { border-block-start: 1px solid var(--border-subtle); }
+.teacher-profile-row { padding-block: var(--space-3); border-block-end: 1px solid var(--border-subtle); }
+.teacher-profile-row h3 { margin: 0; }
+.teacher-profile-row .record-meta { margin-block: var(--space-1) 0; }
+.teacher-group-management { border-block-start: 1px solid var(--border-subtle); }
+.teacher-group-management summary { min-height: var(--control-height); padding-block: var(--space-4); cursor: pointer; font-weight: 600; }
+.teacher-group-management-content { padding-block-start: var(--space-3); }
+
+@media (max-width: 640px) {
+  .teacher-task-row { align-items: stretch; flex-direction: column; }
+  .teacher-task-row .button { align-self: stretch; }
+  .teacher-new-update-row { align-items: stretch; flex-direction: column; }
+  .teacher-new-update-row form .button { width: 100%; }
+}
+
 .page-header-actions,
 .section-header-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; }
 

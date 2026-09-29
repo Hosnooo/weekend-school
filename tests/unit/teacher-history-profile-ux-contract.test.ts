@@ -16,10 +16,13 @@ describe('Teacher History and Profile UX contract', () => {
     expect(page).not.toContain('AdminPage');
     expect(page).toContain('PageHeader');
     expect(page).toContain('DataTable');
-    expect(page).toContain('StatusBadge');
+    expect(page).toContain('Badge');
     expect(page).toContain('EmptyState');
 
-    expect(page).toContain('weekStart');
+    expect(page).toContain('listSubmittedTeachingUpdates');
+    expect(page).toContain('coverageKind');
+    expect(page).toContain('periodStart');
+    expect(page).toContain('periodEnd');
     expect(page).toContain('classNameEn');
     expect(page).toContain('subjectNameEn');
     expect(page).toContain('groupNameEn');
@@ -33,9 +36,10 @@ describe('Teacher History and Profile UX contract', () => {
 
     expect(page).not.toContain('AdminPage');
     expect(page).toContain('PageHeader');
-    expect(page).toContain('Card');
-    expect(page).toContain('WeeklyUpdateForm');
-    expect(page).toContain('readOnly');
+    expect(page).toContain('detail-section');
+    expect(page).toContain('getTeachingUpdate');
+    expect(page).toContain('TeachingUpdateEditor');
+    expect(page).toContain("submission.status !== 'SUBMITTED'");
   });
 
   it('renders My Profile from translations with shared read-only components', () => {
@@ -45,7 +49,7 @@ describe('Teacher History and Profile UX contract', () => {
 
     expect(page).not.toContain('AdminPage');
     expect(page).toContain('PageHeader');
-    expect(page).toContain('Card');
+    expect(page).toContain('detail-section');
     expect(page).toContain('StatusBadge');
     expect(page).toContain('EmptyState');
     expect(page).toContain('getTranslations');

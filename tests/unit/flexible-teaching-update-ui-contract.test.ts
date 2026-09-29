@@ -197,7 +197,8 @@ describe('flexible Teaching Update application contract', () => {
       'listOpenTeachingUpdates'
     );
 
-    expect(repository).not.toContain(
+    const openList = repository.slice(repository.indexOf('export async function listOpenTeachingUpdates'));
+    expect(openList).not.toContain(
       ".in('teacher_id', teacherIds)"
     );
   });

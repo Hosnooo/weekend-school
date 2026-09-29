@@ -17,7 +17,7 @@ export type NavigationMessageKey =
   | 'archives'
   | 'schoolSettings'
   | 'settings'
-  | 'thisWeek'
+  | 'updates'
   | 'history'
   | 'myProfile';
 
@@ -71,7 +71,7 @@ const administratorSections: readonly NavigationSection[] = [
 const teachingSection: NavigationSection = {
   id: 'myTeaching',
   items: [
-    {href: '/my-teaching', messageKey: 'thisWeek'},
+    {href: '/my-teaching', messageKey: 'updates'},
     {href: '/history', messageKey: 'history'},
     {href: '/profile', messageKey: 'myProfile'}
   ]
@@ -94,7 +94,7 @@ const legacyAdminItems: readonly NavigationItem[] = [
   {href: '/settings', messageKey: 'settings'}
 ];
 const legacyTeacherItems: readonly NavigationItem[] = [
-  {href: '/my-teaching', messageKey: 'thisWeek'},
+  {href: '/my-teaching', messageKey: 'updates'},
   {href: '/history', messageKey: 'history'}
 ];
 

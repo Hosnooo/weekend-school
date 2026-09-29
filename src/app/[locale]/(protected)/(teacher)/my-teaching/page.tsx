@@ -1,7 +1,6 @@
 import {getTranslations} from 'next-intl/server';
 import {notFound} from 'next/navigation';
 
-import {Card} from '@/components/ui/card';
 import {TeachingUpdateTaskList} from '@/features/teaching-updates/teaching-update-task-list';
 import {EmptyState} from '@/components/ui/empty-state';
 import {PageHeader} from '@/components/ui/page-header';
@@ -38,7 +37,7 @@ export default async function MyTeachingPage({
   const today = todayInTimeZone(timeZone);
   const weekStart = schoolWeekForDate(today).start;
 
-  const [contexts, openTeachingUpdates, t, teachingUpdates] =
+  const [contexts, openTeachingUpdates, t, teachingUpdates, classLabels] =
     await Promise.all([
       listMyTeaching(
         profile.schoolId,
@@ -57,6 +56,10 @@ export default async function MyTeachingPage({
       getTranslations({
         locale,
         namespace: 'teachingUpdates'
+      }),
+      getTranslations({
+        locale,
+        namespace: 'classes'
       })
     ]);
 
@@ -91,16 +94,16 @@ export default async function MyTeachingPage({
           title={t('noTeaching')}
         />
       ) : (
-        <div className="stack">
+        <section className="teacher-task-section">
           <h2>{teachingUpdates('newUpdate')}</h2>
 
-          <div className="group-cards">
+          <div className="teacher-new-update-list">
             {contexts.map((context) => (
-              <Card
-                className="group-card"
+              <article
+                className="teacher-new-update-row"
                 key={`${context.teacherId}:${context.classSubjectId}:${context.subjectGroupId ?? 'whole'}`}
               >
-                <div>
+                <div className="teacher-task-main">
                   <h3>
                     {localName(
                       context.subjectNameEn,
@@ -108,14 +111,12 @@ export default async function MyTeachingPage({
                     )}
                   </h3>
 
-                  <p>
+                  <p className="record-meta">
                     {localName(
                       context.classNameEn,
                       context.classNameAr
                     )}
-                  </p>
-
-                  <p>
+                    {' · '}
                     {context.subjectGroupId
                       ? localName(
                           context.groupNameEn ?? '',
@@ -124,12 +125,6 @@ export default async function MyTeachingPage({
                       : teachingUpdates(
                           'wholeSubject'
                         )}
-                  </p>
-
-                  <p>
-                    {t('studentCount', {
-                      count: context.studentCount
-                    })}
                   </p>
                 </div>
 
@@ -162,18 +157,20 @@ export default async function MyTeachingPage({
                     value={today}
                   />
 
-                  <Button type="submit">
+                  <Button type="submit" variant="secondary">
                     {teachingUpdates('newUpdate')}
                   </Button>
                 </form>
-              </Card>
+              </article>
             ))}
           </div>
-        </div>
+        </section>
       )}
 
       {groupManagement.length > 0 ? (
-        <div className="stack">
+        <details className="teacher-group-management">
+          <summary>{classLabels('manageMyGroups')}</summary>
+          <div className="stack teacher-group-management-content">
           {groupManagement.map((management) => {
             const context = contexts.find(
               ({classSubjectId}) =>
@@ -193,7 +190,8 @@ export default async function MyTeachingPage({
               />
             ) : null;
           })}
-        </div>
+          </div>
+        </details>
       ) : null}
     </section>
   );

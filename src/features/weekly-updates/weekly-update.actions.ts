@@ -71,19 +71,7 @@ export async function reopenWeeklySubmissionAction(
   revalidatePath(`/${locale}/my-teaching`);
   revalidatePath(`/${locale}/history`);
 
-  const query = new URLSearchParams({
-    teacherId: teacherId.data,
-    classSubjectId: classSubjectId.data,
-    week: weekStart
-  });
-
-  if (subjectGroupId.data) {
-    query.set('subjectGroupId', subjectGroupId.data);
-  }
-
-  redirect(
-    `/${locale}/my-teaching/update?${query.toString()}`
-  );
+  redirect(`/${locale}/my-teaching/update?submissionId=${submissionId.data}`);
 }
 
 export async function saveWeeklyUpdateAction(_state: WeeklyActionState, formData: FormData): Promise<WeeklyActionState> {

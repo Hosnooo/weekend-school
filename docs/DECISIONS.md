@@ -217,3 +217,9 @@ The UI refactor interprets Dashboard attention as work that can be acted on now.
 **Status:** Accepted — 2026-09-29
 
 New Teaching Assignments remain Class Subject-scoped and never request a Group. Existing assignment rows that carry `subject_group_id` show the recorded Group name, including an archived Group, as historical provenance. The displayed label states that teaching access covers the entire Subject. Effective teaching contexts continue to filter inactive Groups, so retaining their names for display does not restore participation or change authorization.
+
+## D-029 — Teacher history follows flexible Teaching Update coverage
+
+**Status:** Accepted — 2026-09-29
+
+Teacher History lists submitted Teaching Updates by their saved RANGE or DATES coverage, including older weekly records backfilled as RANGE. Detail reads the same Teaching Update record and keeps submitted content read-only; an allowed reopen returns to the submission-identity editor. The navigation label is “Updates” rather than “This Week”. Incomplete OPEN drafts may be saved without attendance, while submission still requires completed, eligible coverage. The draft RPC receives snake_case attendance and exception fields as its SQL contract requires; this corrects a persistence failure observed in the local Teacher workflow. No migration or RLS policy changes are needed.

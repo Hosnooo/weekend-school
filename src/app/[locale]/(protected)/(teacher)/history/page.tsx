@@ -2,10 +2,11 @@ import {getTranslations} from 'next-intl/server';
 import {notFound} from 'next/navigation';
 
 import {DataTable} from '@/components/ui/data-table';
+import {Badge} from '@/components/ui/badge';
 import {EmptyState} from '@/components/ui/empty-state';
 import {PageHeader} from '@/components/ui/page-header';
-import {StatusBadge} from '@/components/ui/status-badge';
-import {listTeacherHistory} from '@/features/weekly-updates/weekly-update.repository';
+import {listSubmittedTeachingUpdates} from '@/features/teaching-updates/teaching-update.repository';
+import {formatTeachingUpdateRange} from '@/features/teaching-updates/teaching-update-date';
 import {isLocale} from '@/i18n/config';
 import {Link} from '@/i18n/navigation';
 import {requireTeachingAccount} from '@/lib/auth/require-profile';
@@ -20,19 +21,15 @@ export default async function HistoryPage({
 
   const {profile, teacherIds} = await requireTeachingAccount(locale);
 
-  const [history, t, common] = await Promise.all([
-    listTeacherHistory(profile.schoolId, teacherIds),
+  const [history, t, common, updates] = await Promise.all([
+    listSubmittedTeachingUpdates(profile.schoolId, teacherIds),
     getTranslations({locale, namespace: 'weekly'}),
-    getTranslations({locale, namespace: 'common'})
+    getTranslations({locale, namespace: 'common'}),
+    getTranslations({locale, namespace: 'teachingUpdates'})
   ]);
 
   const localName = (en: string, ar: string | null) =>
     locale === 'ar' && ar ? ar : en;
-
-  const formatWeek = (weekStart: string) =>
-    new Intl.DateTimeFormat(locale, {
-      dateStyle: 'long'
-    }).format(new Date(`${weekStart}T12:00:00Z`));
 
   return (
     <section className="admin-page">
@@ -47,40 +44,42 @@ export default async function HistoryPage({
         <DataTable
           columns={[
             {
-              key: 'week',
-              header: t('week'),
-              render: (item) => formatWeek(item.weekStart)
-            },
-            {
-              key: 'class',
-              header: t('class'),
-              render: (item) =>
-                localName(item.classNameEn, item.classNameAr)
-            },
-            {
-              key: 'subject',
+              key: 'context',
               header: t('subject'),
-              render: (item) =>
-                localName(item.subjectNameEn, item.subjectNameAr)
+              render: (item) => (
+                <div>
+                  <strong className="record-name">{localName(item.subjectNameEn, item.subjectNameAr)}</strong>
+                  <p className="record-meta">
+                    {localName(item.classNameEn, item.classNameAr)}
+                    {' · '}
+                    {item.subjectGroupId
+                      ? localName(item.groupNameEn ?? '', item.groupNameAr)
+                      : t('wholeClass')}
+                  </p>
+                </div>
+              )
             },
             {
-              key: 'group',
-              header: t('group'),
-              render: (item) =>
-                item.subjectGroupId
-                  ? localName(
-                      item.groupNameEn ?? '',
-                      item.groupNameAr
-                    )
-                  : t('wholeClass')
+              key: 'coverage',
+              header: updates('coverage'),
+              render: (item) => (
+                <div>
+                  <strong className="record-name">
+                    {item.coverageKind === 'DATES' ? updates('exactDates') : updates('range')}
+                  </strong>
+                  <p className="record-meta">
+                    {formatTeachingUpdateRange(item.periodStart, item.periodEnd, locale)}
+                  </p>
+                </div>
+              )
             },
             {
               key: 'status',
               header: common('status'),
               render: () => (
-                <StatusBadge status="active">
+                <Badge variant="neutral">
                   {t('submitted')}
-                </StatusBadge>
+                </Badge>
               )
             },
             {

@@ -9,7 +9,7 @@ import type {
   TeachingUpdateStorageStatus
 } from './teaching-update.types';
 import type {TeachingUpdateDraftInput} from './teaching-update.schemas';
-import {toSparseExceptions} from '@/features/weekly-updates/weekly-update.model';
+import {toDatabasePayload, toSparseExceptions} from '@/features/weekly-updates/weekly-update.model';
 
 function applicationStatus(
   status: TeachingUpdateStorageStatus
@@ -21,6 +21,7 @@ export async function saveTeachingUpdateDraft(
   input: TeachingUpdateDraftInput
 ) {
   const db = await createServerSupabaseClient();
+  const payload = toDatabasePayload(input.attendance, toSparseExceptions(input.exceptions));
   const {data, error} = await db.rpc(
     'save_teaching_update_draft',
     {
@@ -39,10 +40,8 @@ export async function saveTeachingUpdateDraft(
       p_progress_ar: input.progressAr ?? '',
       p_default_performance:
         input.defaultPerformance,
-      p_attendance: input.attendance,
-      p_exceptions: toSparseExceptions(
-        input.exceptions
-      ),
+      p_attendance: payload.attendance,
+      p_exceptions: payload.exceptions,
       p_expected_version: input.expectedVersion
     }
   );
@@ -167,6 +166,22 @@ export type TeachingUpdateListItem = {
   adminNote: string | null;
 };
 
+export type SubmittedTeachingUpdateHistoryItem = {
+  id: string;
+  teacherId: string;
+  coverageKind: TeachingUpdateCoverageKind;
+  periodStart: string;
+  periodEnd: string;
+  submittedAt: string | null;
+  classNameEn: string;
+  classNameAr: string | null;
+  subjectNameEn: string;
+  subjectNameAr: string | null;
+  subjectGroupId: string | null;
+  groupNameEn: string | null;
+  groupNameAr: string | null;
+};
+
 type ContextRow = {
   class_subject_id: string;
   subject_group_id: string | null;
@@ -177,6 +192,58 @@ type ContextRow = {
   group_name_en: string | null;
   group_name_ar: string | null;
 };
+
+export async function listSubmittedTeachingUpdates(
+  schoolId: string,
+  teacherIds: string[]
+): Promise<SubmittedTeachingUpdateHistoryItem[]> {
+  if (teacherIds.length === 0) return [];
+
+  const db = await createServerSupabaseClient();
+  const {data, error} = await db
+    .from('weekly_submissions')
+    .select('id,teacher_id,coverage_kind,period_start,period_end,submitted_at')
+    .eq('school_id', schoolId)
+    .in('teacher_id', teacherIds)
+    .eq('status', 'SUBMITTED')
+    .order('submitted_at', {ascending: false});
+  if (error) throw error;
+
+  const rows = (data ?? []) as Array<{
+    id: string;
+    teacher_id: string;
+    coverage_kind: TeachingUpdateCoverageKind;
+    period_start: string;
+    period_end: string;
+    submitted_at: string | null;
+  }>;
+
+  const history = await Promise.all(rows.map(async (row) => {
+    const {data: contextData, error: contextError} = await db.rpc(
+      'get_weekly_submission_context',
+      {p_submission_id: row.id}
+    );
+    if (contextError) throw contextError;
+    const context = (contextData as ContextRow[] | null)?.[0];
+    if (!context) return null;
+    return {
+      id: row.id,
+      teacherId: row.teacher_id,
+      coverageKind: row.coverage_kind,
+      periodStart: row.period_start,
+      periodEnd: row.period_end,
+      submittedAt: row.submitted_at,
+      classNameEn: context.class_name_en,
+      classNameAr: context.class_name_ar,
+      subjectNameEn: context.subject_name_en,
+      subjectNameAr: context.subject_name_ar,
+      subjectGroupId: context.subject_group_id,
+      groupNameEn: context.group_name_en,
+      groupNameAr: context.group_name_ar
+    };
+  }));
+  return history.filter((item): item is SubmittedTeachingUpdateHistoryItem => item !== null);
+}
 
 export async function getTeachingUpdate(
   schoolId: string,

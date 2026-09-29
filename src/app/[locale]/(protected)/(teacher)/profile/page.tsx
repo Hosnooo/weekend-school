@@ -1,7 +1,6 @@
 import {getTranslations} from 'next-intl/server';
 import {notFound} from 'next/navigation';
 
-import {Card} from '@/components/ui/card';
 import {EmptyState} from '@/components/ui/empty-state';
 import {PageHeader} from '@/components/ui/page-header';
 import {StatusBadge} from '@/components/ui/status-badge';
@@ -42,12 +41,13 @@ export default async function TeacherProfilePage({
         title={t('title')}
       />
 
-      <Card className="subsection">
+      <div className="detail-layout">
+      <section className="detail-section">
         <h2>{t('identity')}</h2>
 
         <div className="detail-list">
           <p>
-            <strong>{profile.displayName}</strong>
+            <strong className="record-name">{profile.displayName}</strong>
           </p>
 
           <p>
@@ -59,21 +59,21 @@ export default async function TeacherProfilePage({
             )}
           </p>
         </div>
-      </Card>
+      </section>
 
-      <Card className="subsection">
+      <section className="detail-section">
         <h2>{t('teacherRecords')}</h2>
 
         {teacherRecords.length === 0 ? (
           <EmptyState title={t('noTeacherRecords')} />
         ) : (
-          <div className="group-cards">
+          <div className="teacher-profile-list">
             {teacherRecords.map((teacher) => (
-              <Card className="group-card" key={teacher.id}>
+              <div className="teacher-profile-row" key={teacher.id}>
                 <div className="section-heading">
                   <div>
-                    <h3>{teacher.displayName}</h3>
-                    <p>{teacher.email ?? common('none')}</p>
+                    <h3 className="record-name">{teacher.displayName}</h3>
+                    <p className="record-meta">{teacher.email ?? common('none')}</p>
                   </div>
 
                   <StatusBadge
@@ -86,11 +86,12 @@ export default async function TeacherProfilePage({
                       : common('inactive')}
                   </StatusBadge>
                 </div>
-              </Card>
+              </div>
             ))}
           </div>
         )}
-      </Card>
+      </section>
+      </div>
     </section>
   );
 }

@@ -9,7 +9,7 @@ function read(path: string) {
   return readFileSync(join(process.cwd(), path), 'utf8');
 }
 
-describe('Teacher This Week UX contract', () => {
+describe('Teacher Teaching Update UX contract', () => {
   it('maps each submission state to exactly one next action', () => {
     const weeklyActionForStatus = (
       weeklyModel as typeof weeklyModel & {
@@ -34,7 +34,7 @@ describe('Teacher This Week UX contract', () => {
 
     expect(page).not.toContain('AdminPage');
     expect(page).toContain('PageHeader');
-    expect(page).toContain('Card');
+    expect(page).toContain('teacher-new-update-list');
     expect(page).toContain('createTeachingUpdateAction');
     expect(page).toContain('listOpenTeachingUpdates');
     expect(page).toContain('TeachingUpdateTaskList');
@@ -65,7 +65,7 @@ describe('Teacher This Week UX contract', () => {
     expect(page).toContain('context.classNameEn');
     expect(page).toContain('context.subjectNameEn');
     expect(page).toContain('context.groupNameEn');
-    expect(page).toContain('context.studentCount');
+    expect(page).not.toContain('context.studentCount');
 
     expect(page).not.toContain("locale==='ar'?'");
   });

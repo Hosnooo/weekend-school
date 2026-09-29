@@ -30,8 +30,8 @@ for (const visualCase of desktopCases) {
 }
 
 const mobileCases = [
-  {locale: 'en' as const, heading: 'My Teaching', open: 'Open navigation', nav: 'Main navigation', thisWeek: 'This Week', students: 'Students'},
-  {locale: 'ar' as const, heading: 'تدريسي', open: 'فتح قائمة التنقل', nav: 'التنقل الرئيسي', thisWeek: 'هذا الأسبوع', students: 'الطلاب'}
+  {locale: 'en' as const, heading: 'My Teaching', open: 'Open navigation', nav: 'Main navigation', updates: 'Updates', students: 'Students'},
+  {locale: 'ar' as const, heading: 'تدريسي', open: 'فتح قائمة التنقل', nav: 'التنقل الرئيسي', updates: 'التحديثات', students: 'الطلاب'}
 ];
 
 for (const visualCase of mobileCases) {
@@ -48,7 +48,7 @@ for (const visualCase of mobileCases) {
     const drawer = page.getByRole('dialog', {name: visualCase.nav});
     await expect(drawer).toBeVisible();
     await expect(drawer.getByRole('heading', {name: visualCase.heading})).toBeVisible();
-    await expect(drawer.getByRole('link', {name: visualCase.thisWeek})).toHaveAttribute('aria-current', 'page');
+    await expect(drawer.getByRole('link', {name: visualCase.updates})).toHaveAttribute('aria-current', 'page');
     await expect(drawer.getByRole('link', {name: visualCase.students})).toHaveCount(0);
 
     const hasHorizontalOverflow = await page.evaluate(

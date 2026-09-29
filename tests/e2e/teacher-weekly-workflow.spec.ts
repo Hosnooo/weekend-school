@@ -1,397 +1,113 @@
 import {expect, test, type Page} from '@playwright/test';
 
-import {redesign} from './redesign-fixtures';
-import {
-  clearSession,
-  credentials,
-  login
-} from './helpers';
+import {clearSession, credentials, login} from './helpers';
 
 async function assertNoHorizontalOverflow(page: Page) {
-  const overflow = await page.evaluate(
-    () =>
-      document.documentElement.scrollWidth -
-      document.documentElement.clientWidth
+  const overflow = await page.evaluate(() =>
+    document.documentElement.scrollWidth - document.documentElement.clientWidth
   );
-
   expect(overflow).toBeLessThanOrEqual(1);
 }
 
-async function assertStickyDoesNotCoverLastStudent(page: Page) {
-  const lastFields = page.locator('.exception-fields').last();
-  const lastControl = lastFields.locator('textarea').last();
-  const sticky = page.locator('.sticky-actions');
+test.describe('Teacher Teaching Update workflow', () => {
+  test('creates and continues flexible updates in English and Arabic at desktop and 360px', async ({page}, testInfo) => {
+    test.setTimeout(300_000);
+    const runtimeErrors: string[] = [];
+    page.on('pageerror', (error) => runtimeErrors.push(error.message));
+    page.on('console', (message) => {
+      if (message.type() === 'error') runtimeErrors.push(message.text());
+    });
 
-  await expect(lastFields).toBeVisible();
-  await expect(lastControl).toBeVisible();
-  await expect(sticky).toBeVisible();
-
-  await lastControl.evaluate((element) => {
-    element.scrollIntoView({block: 'center'});
-  });
-
-  const controlBox = await lastControl.boundingBox();
-  const stickyBox = await sticky.boundingBox();
-
-  expect(controlBox).not.toBeNull();
-  expect(stickyBox).not.toBeNull();
-
-  if (controlBox && stickyBox) {
-    expect(controlBox.y + controlBox.height).toBeLessThanOrEqual(
-      stickyBox.y + 1
-    );
-  }
-}
-
-test.describe('Teacher weekly workflow', () => {
-  test('supports EN/AR desktop and 360px weekly work', async ({
-    page
-  }, testInfo) => {
-    // English desktop queue.
     await page.setViewportSize({width: 1366, height: 900});
     await login(page, 'en', credentials.englishTeacher);
     await page.goto('/en/my-teaching');
 
-    await expect(
-      page.getByRole('heading', {
-        level: 1,
-        name: 'This week'
-      })
-    ).toBeVisible();
-
-    const startLinks = page.getByRole('link', {
-      name: 'Start update'
-    });
-
-    expect(await startLinks.count()).toBeGreaterThan(0);
-
+    await expect(page.getByRole('heading', {level: 1, name: 'Teaching Updates'})).toBeVisible();
+    await expect(page.locator('.teacher-new-update-list')).toBeVisible();
+    await expect(page.locator('.teacher-new-update-list').getByText('students', {exact: false})).toHaveCount(0);
+    const englishGroups = page.locator('.teacher-group-management');
+    await expect(englishGroups.locator('summary')).toHaveText('Manage groups', {timeout: 10_000});
+    await expect(englishGroups.getByRole('button', {name: 'Create group'}).first()).toBeHidden();
+    await englishGroups.locator('summary').click();
+    await expect(englishGroups.getByRole('button', {name: 'Create group'}).first()).toBeVisible();
+    await englishGroups.locator('summary').click();
     await assertNoHorizontalOverflow(page);
+    await page.screenshot({path: testInfo.outputPath('en-teacher-queue-desktop.png'), fullPage: true});
 
-    await page.screenshot({
-      path: testInfo.outputPath(
-        'en-teacher-this-week-desktop.png'
-      ),
-      fullPage: true
-    });
-
-    // English 360px queue.
     await page.setViewportSize({width: 360, height: 800});
     await page.goto('/en/my-teaching');
+    await assertNoHorizontalOverflow(page);
+    await page.screenshot({path: testInfo.outputPath('en-teacher-queue-mobile.png'), fullPage: true});
 
-    await expect(
-      page.getByRole('heading', {
-        level: 1,
-        name: 'This week'
-      })
-    ).toBeVisible();
+    await page.getByRole('button', {name: 'New Teaching Update'}).first().click();
+    await expect(page).toHaveURL(/\/en\/my-teaching\/update\?submissionId=/);
+    const englishUpdateHref = page.url();
+
+    await expect(page.getByRole('radio', {name: 'Date range'})).toBeChecked();
+    await page.getByRole('radio', {name: 'Selected dates'}).check();
+    await page.getByLabel('Date', {exact: true}).fill('2040-10-02');
+    await page.getByRole('button', {name: 'Add date'}).click();
+    await expect(page.getByRole('button', {name: 'Submit update'})).toBeDisabled();
 
     await assertNoHorizontalOverflow(page);
+    await page.screenshot({path: testInfo.outputPath('en-teacher-update-mobile.png'), fullPage: true});
 
-    await page.screenshot({
-      path: testInfo.outputPath(
-        'en-teacher-this-week-mobile.png'
-      ),
-      fullPage: true
-    });
+    await page.getByRole('button', {name: 'Save update'}).click();
+    await expect(page.locator('.save-status')).toContainText('Saved');
+    await page.goto('/en/my-teaching');
+    await expect(page.locator(`a[href="${new URL(englishUpdateHref).pathname}${new URL(englishUpdateHref).search}"]`)).toBeVisible();
+    await expect(page.getByText(/Selected dates · .*2040/).first()).toBeVisible();
 
-    const firstStart = page
-      .getByRole('link', {name: 'Start update'})
-      .first();
-
-    const englishUpdateHref =
-      await firstStart.getAttribute('href');
-
-    expect(englishUpdateHref).toBeTruthy();
-
-    // English desktop weekly form.
     await page.setViewportSize({width: 1366, height: 900});
-    await page.goto(englishUpdateHref!);
-
-    await expect(
-      page.getByRole('button', {name: 'Mark all present'})
-    ).toBeVisible();
-
+    await page.goto(englishUpdateHref);
     await assertNoHorizontalOverflow(page);
+    await page.screenshot({path: testInfo.outputPath('en-teacher-update-desktop.png'), fullPage: true});
 
-    await page.screenshot({
-      path: testInfo.outputPath(
-        'en-teacher-weekly-update-desktop.png'
-      ),
-      fullPage: true
-    });
-
-    await page.setViewportSize({width: 360, height: 800});
-    await page.goto(englishUpdateHref!);
-
-    // English mobile weekly form.
-    await expect(
-      page.getByRole('button', {
-        name: 'Mark all present'
-      })
-    ).toBeVisible();
-
-    await page
-      .getByRole('button', {name: 'Mark all present'})
-      .click();
-
-    const attendance = page.locator(
-      '.attendance-list select'
-    );
-
-    const attendanceCount = await attendance.count();
-    expect(attendanceCount).toBeGreaterThan(0);
-
-    for (let i = 0; i < attendanceCount; i += 1) {
-      await expect(attendance.nth(i)).toHaveValue('PRESENT');
-    }
-
-    await page
-      .getByLabel('Default performance')
-      .selectOption('GOOD');
-
-    await page
-      .getByLabel('What did you cover? (English)')
-      .fill('Task 10 mobile workflow verification');
-
-    const lastException = page
-      .locator('.exception-toggle')
-      .last();
-
-    await lastException.scrollIntoViewIfNeeded();
-    await lastException.click();
-
-    await page
-      .getByLabel('Performance override')
-      .selectOption('EXCELLENT');
-
-    await assertStickyDoesNotCoverLastStudent(page);
-    await assertNoHorizontalOverflow(page);
-
-    expect(
-      await page.evaluate(
-        () => document.activeElement?.classList.contains('skip-link') ?? false
-      )
-    ).toBe(false);
-
-    await page.screenshot({
-      path: testInfo.outputPath(
-        'en-teacher-weekly-update-mobile.png'
-      ),
-      fullPage: true
-    });
-
-    // Explicit draft save.
-    await page
-      .getByRole('button', {name: 'Save draft'})
-      .click();
-
-    await expect(
-      page.locator('.save-status')
-    ).toContainText('Saved');
-
-    // Queue now offers Continue draft for the same context.
     await page.goto('/en/my-teaching');
-
-    const englishContextLink = page.locator(
-      `a[href="${englishUpdateHref}"]`
-    );
-
-    await expect(englishContextLink).toHaveText(
-      'Continue draft'
-    );
-
-    await englishContextLink.click();
-
-    // Submit completes the workflow.
-    await page
-      .getByRole('button', {name: 'Submit'})
-      .click();
-
+    await page.getByRole('button', {name: 'New Teaching Update'}).first().click();
+    await expect(page.getByRole('radio', {name: 'Date range'})).toBeChecked();
+    await page.getByRole('button', {name: 'Mark all present'}).click();
+    await page.getByLabel('What did you cover? (English)').fill('Flexible Teaching Update E2E');
+    await page.getByLabel('Default performance').selectOption('GOOD');
+    await page.getByRole('button', {name: 'Save update'}).click();
+    await expect(page.locator('.save-status')).toContainText('Saved');
+    await page.getByRole('button', {name: 'Submit update'}).click();
     await expect(page).toHaveURL(/\/en\/history$/);
 
-    await page.goto('/en/my-teaching');
-
-    const submittedContextLink = page.locator(
-      `a[href="${englishUpdateHref}"]`
-    );
-
-    await expect(submittedContextLink).toHaveText(
-      'View submitted update'
-    );
-
-    await submittedContextLink.click();
-
-    await expect(
-      page.getByRole('button', {name: 'Save draft'})
-    ).toHaveCount(0);
-
-    await expect(
-      page.getByRole('button', {name: 'Submit'})
-    ).toHaveCount(0);
-
-    await expect(
-      page.locator('.weekly-form > .status-badge')
-    ).toHaveText('Submitted');
-
-    // Arabic Teacher.
     await clearSession(page);
-
-    await page.setViewportSize({width: 1366, height: 900});
     await login(page, 'ar', credentials.arabicTeacher);
     await page.goto('/ar/my-teaching');
-
-    await expect(page.locator('html')).toHaveAttribute(
-      'dir',
-      'rtl'
-    );
-
-    await expect(
-      page.getByRole('heading', {
-        level: 1,
-        name: 'هذا الأسبوع'
-      })
-    ).toBeVisible();
-
+    await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
+    await expect(page.getByRole('heading', {level: 1, name: 'تحديثات التدريس'})).toBeVisible();
+    await expect(page.locator('.teacher-new-update-list')).toBeVisible();
+    const arabicGroups = page.locator('.teacher-group-management');
+    await expect(arabicGroups.locator('summary')).toHaveText('إدارة المجموعات');
+    await expect(arabicGroups.getByRole('button', {name: 'إنشاء مجموعة'}).first()).toBeHidden();
+    await arabicGroups.locator('summary').click();
+    await expect(arabicGroups.getByRole('button', {name: 'إنشاء مجموعة'}).first()).toBeVisible();
+    await arabicGroups.locator('summary').click();
     await assertNoHorizontalOverflow(page);
+    await page.screenshot({path: testInfo.outputPath('ar-teacher-queue-desktop.png'), fullPage: true});
 
-    await page.screenshot({
-      path: testInfo.outputPath(
-        'ar-teacher-this-week-desktop.png'
-      ),
-      fullPage: true
-    });
-
-    // Arabic 360px queue.
     await page.setViewportSize({width: 360, height: 800});
     await page.goto('/ar/my-teaching');
-
-    await expect(page.locator('html')).toHaveAttribute(
-      'dir',
-      'rtl'
-    );
-
     await assertNoHorizontalOverflow(page);
+    await page.screenshot({path: testInfo.outputPath('ar-teacher-queue-mobile.png'), fullPage: true});
 
-    await page.screenshot({
-      path: testInfo.outputPath(
-        'ar-teacher-this-week-mobile.png'
-      ),
-      fullPage: true
-    });
+    await page.getByRole('button', {name: 'تحديث تدريس جديد'}).first().click();
+    await expect(page).toHaveURL(/\/ar\/my-teaching\/update\?submissionId=/);
+    await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
+    await expect(page.getByRole('radio', {name: 'نطاق تاريخ'})).toBeChecked();
+    await page.getByRole('radio', {name: 'تواريخ محددة'}).check();
+    await page.getByLabel('التاريخ', {exact: true}).fill('2040-10-02');
+    await page.getByRole('button', {name: 'إضافة تاريخ'}).click();
+    await expect(page.getByRole('button', {name: 'إرسال التحديث'})).toBeDisabled();
+    await assertNoHorizontalOverflow(page);
+    await page.screenshot({path: testInfo.outputPath('ar-teacher-update-mobile.png'), fullPage: true});
 
-    const arabicContextHref = await page
-      .locator(
-        `a[href*="classSubjectId=${redesign.groupedSubjectId}"][href*="subjectGroupId=${redesign.blueGroupId}"]`
-      )
-      .first()
-      .getAttribute('href');
-
-    expect(arabicContextHref).toBeTruthy();
-
-    const arabicTeacherId = new URL(
-      arabicContextHref!,
-      'http://localhost'
-    ).searchParams.get('teacherId');
-
-    expect(arabicTeacherId).toBeTruthy();
-
-    const arabicQuery = new URLSearchParams({
-      teacherId: arabicTeacherId!,
-      classSubjectId: redesign.groupedSubjectId,
-      subjectGroupId: redesign.blueGroupId,
-      week: '2030-05-06'
-    });
-
-    const arabicUpdateHref =
-      `/ar/my-teaching/update?${arabicQuery}`;
-
-    // Arabic desktop weekly form.
     await page.setViewportSize({width: 1366, height: 900});
-    await page.goto(arabicUpdateHref!);
-
-    await expect(page.locator('html')).toHaveAttribute(
-      'dir',
-      'rtl'
-    );
-
-    await expect(
-      page.getByRole('button', {
-        name: 'تحديد الجميع حاضرين'
-      })
-    ).toBeVisible();
-
     await assertNoHorizontalOverflow(page);
-
-    await page.screenshot({
-      path: testInfo.outputPath(
-        'ar-teacher-weekly-update-desktop.png'
-      ),
-      fullPage: true
-    });
-
-    await page.setViewportSize({width: 360, height: 800});
-    await page.goto(arabicUpdateHref!);
-
-    await expect(page.locator('html')).toHaveAttribute(
-      'dir',
-      'rtl'
-    );
-
-    await page
-      .getByRole('button', {
-        name: 'تحديد الجميع حاضرين'
-      })
-      .click();
-
-    const arabicAttendance = page.locator(
-      '.attendance-list select'
-    );
-
-    const arabicAttendanceCount =
-      await arabicAttendance.count();
-
-    expect(arabicAttendanceCount).toBeGreaterThan(0);
-
-    for (
-      let i = 0;
-      i < arabicAttendanceCount;
-      i += 1
-    ) {
-      await expect(
-        arabicAttendance.nth(i)
-      ).toHaveValue('PRESENT');
-    }
-
-    const arabicLastException = page
-      .locator('.exception-toggle')
-      .last();
-
-    await arabicLastException.scrollIntoViewIfNeeded();
-    await arabicLastException.click();
-
-    await assertStickyDoesNotCoverLastStudent(page);
-    await assertNoHorizontalOverflow(page);
-
-    expect(
-      await page.evaluate(
-        () => document.activeElement?.classList.contains('skip-link') ?? false
-      )
-    ).toBe(false);
-
-    await page.screenshot({
-      path: testInfo.outputPath(
-        'ar-teacher-weekly-update-mobile.png'
-      ),
-      fullPage: true
-    });
-
-    // Save an Arabic draft without relying on translated button text.
-    await page
-      .locator('button[name="intent"][value="draft"]')
-      .click();
-
-    await expect(
-      page.locator('.save-status')
-    ).toContainText('تم الحفظ');
+    await page.screenshot({path: testInfo.outputPath('ar-teacher-update-desktop.png'), fullPage: true});
+    expect(runtimeErrors).toEqual([]);
   });
 });

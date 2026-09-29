@@ -10,7 +10,7 @@ import {useRouter} from 'next/navigation';
 import {useTranslations} from 'next-intl';
 
 import {Button} from '@/components/ui/button';
-import {Card} from '@/components/ui/card';
+import {Alert} from '@/components/ui/alert';
 import type {ReportTemplateConfig} from '@/features/reports/report-template.types';
 import {
   markAllPresent
@@ -30,6 +30,7 @@ import {
   type TeachingUpdate,
   type TeachingUpdateCoverageKind
 } from './teaching-update.types';
+import {formatTeachingUpdateDate} from './teaching-update-date';
 
 export function TeachingUpdateEditor({
   locale,
@@ -209,19 +210,19 @@ export function TeachingUpdateEditor({
     ) ?? template.studentCommentLabelEn;
 
   return (
-    <div className="stack">
+    <div className="stack teaching-update-workspace">
       {update.requestedByProfileId ? (
-        <Card className="subsection">
+        <Alert variant="info">
           <strong>{t('adminRequest')}</strong>
           {update.adminNote ? (
             <p>{update.adminNote}</p>
           ) : null}
-        </Card>
+        </Alert>
       ) : null}
 
       <form
         action={saveAction}
-        className="weekly-form"
+        className="weekly-form teaching-update-form"
         onChange={() => setDirty(true)}
       >
         <input
@@ -287,7 +288,7 @@ export function TeachingUpdateEditor({
           </>
         ) : null}
 
-        <Card className="subsection">
+        <section className="teacher-update-section">
           <h2>{t('coverage')}</h2>
 
           <div className="form-grid">
@@ -400,7 +401,7 @@ export function TeachingUpdateEditor({
                       className="compact-form"
                       key={date}
                     >
-                      <span>{date}</span>
+                      <time dateTime={date}>{formatTeachingUpdateDate(date, locale)}</time>
 
                       {!readOnly ? (
                         <Button
@@ -424,9 +425,9 @@ export function TeachingUpdateEditor({
               )}
             </div>
           )}
-        </Card>
+        </section>
 
-        <Card className="subsection">
+        <section className="teacher-update-section">
           <h2>{mainReportLabel}</h2>
 
           {mainReportHelp ? (
@@ -455,10 +456,10 @@ export function TeachingUpdateEditor({
               rows={4}
             />
           </label>
-        </Card>
+        </section>
 
-        <Card
-          className="subsection"
+        <section
+          className="teacher-update-section"
           hidden={!template.performanceEnabled}
         >
           <h2>{performanceLabel}</h2>
@@ -486,9 +487,9 @@ export function TeachingUpdateEditor({
               </option>
             ))}
           </select>
-        </Card>
+        </section>
 
-        <Card className="subsection">
+        <section className="teacher-update-section">
           <div className="section-heading">
             <div>
               <h2>{weekly('students')}</h2>
@@ -520,8 +521,8 @@ export function TeachingUpdateEditor({
               {weekly('noStudentsForWeek')}
             </p>
           ) : (
-            <div className="table-wrap">
-              <table>
+            <div className="data-table-wrap teacher-student-table-wrap">
+              <table className="data-table teacher-student-table">
                 <thead>
                   <tr>
                     <th>{weekly('student')}</th>
@@ -573,11 +574,11 @@ export function TeachingUpdateEditor({
 
                     return (
                       <tr key={student.id}>
-                        <td>
-                          <strong>{name}</strong>
+                        <td data-label={weekly('student')}>
+                          <strong className="record-name">{name}</strong>
                         </td>
 
-                        <td>
+                        <td data-label={weekly('attendance')}>
                           <select
                             aria-label={`${weekly('attendance')} — ${name}`}
                             disabled={readOnly}
@@ -587,7 +588,6 @@ export function TeachingUpdateEditor({
                                 (event.target.value as AttendanceStatus)
                               )
                             }
-                            required
                             value={
                               attendanceItem.status
                             }
@@ -607,6 +607,7 @@ export function TeachingUpdateEditor({
                         </td>
 
                         <td
+                          data-label={weekly('performanceOverride')}
                           hidden={
                             !template.performanceEnabled
                           }
@@ -658,6 +659,7 @@ export function TeachingUpdateEditor({
                         </td>
 
                         <td
+                          data-label={`${studentCommentLabel} — ${language('english')}`}
                           hidden={
                             !template
                               .studentCommentsEnabled
@@ -684,6 +686,7 @@ export function TeachingUpdateEditor({
                         </td>
 
                         <td
+                          data-label={`${studentCommentLabel} — ${language('arabic')}`}
                           hidden={
                             !template
                               .studentCommentsEnabled
@@ -716,7 +719,7 @@ export function TeachingUpdateEditor({
               </table>
             </div>
           )}
-        </Card>
+        </section>
 
         {state.overlaps.length > 0 ? (
           <div className="alert alert-warning">
@@ -770,7 +773,7 @@ export function TeachingUpdateEditor({
       </form>
 
       {update.status === 'OPEN' ? (
-        <Card className="subsection">
+        <section className="teacher-update-submit">
           <div className="form-actions">
             <form action={submitTeachingUpdateAction}>
               <input
@@ -861,7 +864,7 @@ export function TeachingUpdateEditor({
                     : t('submitUnavailable')}
             </p>
           ) : null}
-        </Card>
+        </section>
       ) : (
         <p className="status-badge status-active">
           {t(`status.${update.status}`)}

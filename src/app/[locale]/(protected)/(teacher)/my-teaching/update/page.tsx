@@ -1,9 +1,9 @@
 import {getTranslations} from 'next-intl/server';
 import {notFound} from 'next/navigation';
 
-import {Card} from '@/components/ui/card';
 import {PageHeader} from '@/components/ui/page-header';
 import {getActiveReportTemplate} from '@/features/reports/report-template.repository';
+import {formatTeachingUpdateRange} from '@/features/teaching-updates/teaching-update-date';
 import {
   TeachingUpdateEditor
 } from '@/features/teaching-updates/teaching-update-editor';
@@ -95,10 +95,8 @@ export default async function TeachingUpdatePage({
 
   const coverage =
     update.coverageKind === 'DATES'
-      ? t('dateCount', {
-          count: update.dates.length
-        })
-      : `${update.periodStart} — ${update.periodEnd}`;
+      ? `${t('dateCount', {count: update.dates.length})} · ${formatTeachingUpdateRange(update.periodStart, update.periodEnd, locale)}`
+      : formatTeachingUpdateRange(update.periodStart, update.periodEnd, locale);
 
   return (
     <section className="admin-page">
@@ -107,15 +105,13 @@ export default async function TeachingUpdatePage({
         title={contextName}
       />
 
-      <Card className="content-section">
-        <TeachingUpdateEditor
-          locale={locale}
-          teacherId={teacherId}
-          template={template}
-          today={today}
-          update={update}
-        />
-      </Card>
+      <TeachingUpdateEditor
+        locale={locale}
+        teacherId={teacherId}
+        template={template}
+        today={today}
+        update={update}
+      />
     </section>
   );
 }
