@@ -2,7 +2,6 @@ import {getTranslations} from 'next-intl/server';
 import {notFound} from 'next/navigation';
 
 import {Badge} from '@/components/ui/badge';
-import {Card} from '@/components/ui/card';
 import {PageHeader} from '@/components/ui/page-header';
 import {SectionHeader} from '@/components/ui/section-header';
 import {StatusBadge} from '@/components/ui/status-badge';
@@ -88,8 +87,8 @@ export default async function StudentDetailPage({params}: {
         title={studentName}
       />
 
-      <div className="form-grid">
-        <Card>
+      <div className="detail-layout">
+        <section className="detail-section">
           <SectionHeader title={teachersT('identityContact')} />
           <p><strong>{t('firstNameEn')}:</strong> {student.firstNameEn}</p>
           <p><strong>{t('lastNameEn')}:</strong> {student.lastNameEn}</p>
@@ -101,9 +100,9 @@ export default async function StudentDetailPage({params}: {
             <strong>{t('lastNameAr')}:</strong>{' '}
             {student.lastNameAr ?? common('none')}
           </p>
-        </Card>
+        </section>
 
-        <Card>
+        <section className="detail-section">
           <SectionHeader title={t('enrollment')} />
           <p>
             <strong>{t('currentClass')}:</strong>{' '}
@@ -159,15 +158,9 @@ export default async function StudentDetailPage({params}: {
             </div>
           ) : null}
 
-          <Link
-            className="button button-secondary action-link"
-            href={`/students/${student.id}/enrollment`}
-          >
-            {t('manageEnrollment')}
-          </Link>
-        </Card>
+        </section>
 
-        <Card>
+        <section className="detail-section">
           <SectionHeader title={guardiansT('title')} />
           <StudentGuardianManager
             availableGuardians={availableGuardians}
@@ -175,14 +168,14 @@ export default async function StudentDetailPage({params}: {
             locale={locale}
             studentId={student.id}
           />
-        </Card>
+        </section>
 
-        <Card>
+        <section className="detail-section">
           <SectionHeader title={teachersT('lifecycle')} />
           <StatusBadge status={student.isActive ? 'active' : 'inactive'}>
             {student.isActive ? common('active') : common('inactive')}
           </StatusBadge>
-        </Card>
+        </section>
       </div>
     </section>
   );

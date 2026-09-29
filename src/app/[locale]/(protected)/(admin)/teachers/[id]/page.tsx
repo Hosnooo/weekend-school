@@ -2,7 +2,6 @@ import {getTranslations} from 'next-intl/server';
 import {notFound} from 'next/navigation';
 
 import {Badge} from '@/components/ui/badge';
-import {Card} from '@/components/ui/card';
 import {PageHeader} from '@/components/ui/page-header';
 import {SectionHeader} from '@/components/ui/section-header';
 import {StatusBadge} from '@/components/ui/status-badge';
@@ -38,13 +37,7 @@ export default async function TeacherDetailPage({params}: {
   return (
     <section className="admin-page">
       <PageHeader
-        actions={(
-          <>
-            <Link className="button button-secondary action-link" href={`/teachers/${teacher.id}/edit`}>{common('edit')}</Link>
-            <Link className="button button-secondary action-link" href={`/teachers/${teacher.id}/access`}>{t('manageLoginAccess')}</Link>
-            <Link className="button button-primary action-link" href={`/teachers/${teacher.id}/assignments`}>{t('assignments')}</Link>
-          </>
-        )}
+        actions={<Link className="button button-primary action-link" href={`/teachers/${teacher.id}/edit`}>{common('edit')}</Link>}
         breadcrumbLabel={t('breadcrumbLabel')}
         breadcrumbs={[
           {label: t('title'), href: `/${locale}/teachers`},
@@ -54,15 +47,15 @@ export default async function TeacherDetailPage({params}: {
         title={teacher.displayName}
       />
 
-      <div className="form-grid">
-        <Card>
+      <div className="detail-layout">
+        <section className="detail-section">
           <SectionHeader title={t('identityContact')} />
           <p><strong>{t('displayName')}:</strong> {teacher.displayName}</p>
           <p><strong>{t('email')}:</strong> {teacher.email ?? common('none')}</p>
           <p><strong>{t('preferredLanguage')}:</strong> {language(teacher.preferredLanguage === 'ar' ? 'arabic' : 'english')}</p>
-        </Card>
+        </section>
 
-        <Card>
+        <section className="detail-section">
           <SectionHeader title={t('loginAccess')} />
           <p>
             <Badge variant={teacher.authUserId ? 'info' : 'warning'}>
@@ -71,17 +64,17 @@ export default async function TeacherDetailPage({params}: {
           </p>
           <p>{accessState ? t(accessState) : t('accessUnlinkedHelp')}</p>
           <Link className="button button-secondary action-link" href={`/teachers/${teacher.id}/access`}>{t('manageLoginAccess')}</Link>
-        </Card>
+        </section>
 
-        <Card>
+        <section className="detail-section">
           <SectionHeader title={t('teachingSummary')} />
           <p>{t('currentAssignmentCount', {count: classified.current.length})}</p>
           <p>{t('upcomingAssignmentCount', {count: classified.upcoming.length})}</p>
           <p>{t('pastAssignmentCount', {count: classified.past.length})}</p>
           <Link className="button button-secondary action-link" href={`/teachers/${teacher.id}/assignments`}>{t('manageTeachingAssignments')}</Link>
-        </Card>
+        </section>
 
-        <Card>
+        <section className="detail-section">
           <SectionHeader title={t('lifecycle')} />
           <p>
             <StatusBadge status={teacher.isActive ? 'active' : 'inactive'}>
@@ -89,7 +82,7 @@ export default async function TeacherDetailPage({params}: {
             </StatusBadge>
           </p>
           <p>{teacher.isActive ? t('activeLifecycleHelp') : t('archivedLifecycleHelp')}</p>
-        </Card>
+        </section>
       </div>
     </section>
   );

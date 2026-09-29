@@ -190,9 +190,27 @@ describe('administrator and teacher UX completion contract', () => {
   });
 
   it('puts the most common administrator jobs directly on the dashboard', () => {
-    const dashboard = source('src/app/[locale]/(protected)/(admin)/dashboard/page.tsx');
-    for (const href of ['/students/new', '/teachers/new', '/teaching-assignments', '/classes/new', '/reports']) {
+    const dashboard = source('src/app/[locale]/(protected)/(admin)/dashboard/page.tsx') +
+      source('src/features/dashboard/dashboard-workspace.tsx');
+    for (const href of ['/students/new', '/teachers/new', '/reports', '/teaching-updates']) {
       expect(dashboard).toContain(`href=\"${href}\"`);
+    }
+    expect(dashboard).toContain('selectDashboardWork');
+    expect(dashboard).not.toContain('dashboard-stats');
+    expect(dashboard).not.toContain("t('schoolOverview')");
+    expect(dashboard).not.toContain('summary.failedDeliveries');
+    expect(dashboard).not.toContain("t('thisWeek')");
+  });
+
+  it('puts record names ahead of metadata in Teacher and Administrator lists', () => {
+    for (const path of [
+      'src/features/teachers/teacher-management-list.tsx',
+      'src/features/administrators/administrator-management-list.tsx'
+    ]) {
+      const list = source(path);
+      expect(list).toContain('className="record-name"');
+      expect(list).toContain('className="record-meta"');
+      expect(list).toContain('DropdownMenu');
     }
   });
 

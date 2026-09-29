@@ -44,8 +44,8 @@ export function GuardianManagementList({locale, guardians}: {locale: Locale; gua
       header: t('name'),
       render: (guardian) => (
         <div>
-          <Link href={`/guardians/${guardian.id}`}><strong>{guardian.name}</strong></Link>
-          <div><a href={`mailto:${guardian.email}`}>{guardian.email}</a></div>
+          <Link href={`/guardians/${guardian.id}`}><strong className="record-name">{guardian.name}</strong></Link>
+          <div className="record-meta"><a href={`mailto:${guardian.email}`}>{guardian.email}</a></div>
         </div>
       )
     },

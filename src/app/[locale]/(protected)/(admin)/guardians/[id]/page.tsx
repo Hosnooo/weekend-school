@@ -1,7 +1,6 @@
 import {getTranslations} from 'next-intl/server';
 import {notFound} from 'next/navigation';
 
-import {Card} from '@/components/ui/card';
 import {PageHeader} from '@/components/ui/page-header';
 import {SectionHeader} from '@/components/ui/section-header';
 import {StatusBadge} from '@/components/ui/status-badge';
@@ -35,7 +34,7 @@ export default async function GuardianDetailPage({params}: {
     <section className="admin-page">
       <PageHeader
         breadcrumbLabel={t('breadcrumbLabel')}
-        actions={<Link className="button button-secondary action-link" href={`/guardians/${guardian.id}/edit`}>{common('edit')}</Link>}
+        actions={<Link className="button button-primary action-link" href={`/guardians/${guardian.id}/edit`}>{common('edit')}</Link>}
         breadcrumbs={[
           {label: t('title'), href: `/${locale}/guardians`},
           {label: guardian.name}
@@ -44,15 +43,15 @@ export default async function GuardianDetailPage({params}: {
         title={guardian.name}
       />
 
-      <div className="form-grid">
-        <Card>
+      <div className="detail-layout">
+        <section className="detail-section">
           <SectionHeader title={teachersT('identityContact')} />
           <p><strong>{t('name')}:</strong> {guardian.name}</p>
           <p><strong>{t('email')}:</strong> <a href={`mailto:${guardian.email}`}>{guardian.email}</a></p>
           <p><strong>{t('reportLanguage')}:</strong> {reportLanguages(guardian.reportLanguage)}</p>
-        </Card>
+        </section>
 
-        <Card>
+        <section className="detail-section">
           <SectionHeader title={studentsT('title')} />
           {guardian.students.length === 0 ? <p>{studentsT('empty')}</p> : (
             <div className="stack-list">
@@ -67,14 +66,14 @@ export default async function GuardianDetailPage({params}: {
               ))}
             </div>
           )}
-        </Card>
+        </section>
 
-        <Card>
+        <section className="detail-section">
           <SectionHeader title={teachersT('lifecycle')} />
           <StatusBadge status={guardian.isActive ? 'active' : 'inactive'}>
             {guardian.isActive ? common('active') : common('inactive')}
           </StatusBadge>
-        </Card>
+        </section>
       </div>
     </section>
   );

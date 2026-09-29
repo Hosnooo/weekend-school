@@ -65,6 +65,7 @@ describe('student, enrollment, and Guardian UX contract', () => {
     expect(studentList).toContain('DropdownMenu');
     expect(studentList).toContain('/enrollment');
     expect(studentList).toContain('/edit');
+    expect(studentList).toContain('className="record-name"');
   });
 
   it('centers Guardian management on the Student record', () => {
@@ -142,6 +143,8 @@ describe('student, enrollment, and Guardian UX contract', () => {
     expect(guardiansPage).toContain("t('standaloneNoticeTitle')");
     expect(guardiansPage).not.toContain('GuardianManagementList');
     expect(guardiansPage).not.toContain('/guardians/new');
+    expect(guardiansPage).toContain('EmptyState');
+    expect(guardiansPage).not.toContain('<Card>');
   });
   it('keeps Guardian radio choices compact and aligned', () => {
     const form = source('src/features/students/student-form.tsx');

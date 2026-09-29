@@ -46,7 +46,7 @@ export function StudentManagementList({locale, students}: {locale: Locale; stude
       key: 'student',
       header: t('name'),
       render: (student) => (
-        <Link href={`/students/${student.id}`}><strong>{localName(student)}</strong></Link>
+        <Link href={`/students/${student.id}`}><strong className="record-name">{localName(student)}</strong></Link>
       )
     },
     {

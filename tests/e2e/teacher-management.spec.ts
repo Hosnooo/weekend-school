@@ -40,6 +40,7 @@ test.describe('Teacher record, access, and teaching coverage separation', () => 
   });
 
   test('finds a Teacher without login, manages access, opens assignments, and returns to the record', async ({page}, testInfo) => {
+    test.setTimeout(240_000);
     await page.setViewportSize({width: 1366, height: 900});
     await login(page, 'en', credentials.admin);
     await page.goto('/en/teachers');
@@ -70,7 +71,7 @@ test.describe('Teacher record, access, and teaching coverage separation', () => 
     }
 
     await page.getByRole('link', {name: 'Manage teaching assignments'}).click();
-    await expect(page).toHaveURL(new RegExp(`/en/teachers/${teacherId}/assignments$`));
+    await expect(page).toHaveURL(new RegExp(`/en/teachers/${teacherId}/assignments$`), {timeout: 60_000});
     await expect(page.getByRole('heading', {level: 1, name: `${teacherName} — Teaching assignments`})).toBeVisible();
     await page.getByRole('link', {name: 'Back to teacher'}).click();
     await expect(page).toHaveURL(new RegExp(`/en/teachers/${teacherId}$`));

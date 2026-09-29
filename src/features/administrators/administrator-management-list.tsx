@@ -90,10 +90,10 @@ export function AdministratorManagementList({
       header: t('displayName'),
       render: (administrator) => (
         <div>
-          <strong>
+          <strong className="record-name">
             <Link href={`/administrators/${administrator.id}`}>{administrator.displayName}</Link>
           </strong>
-          <div>{administrator.email ?? common('none')}</div>
+          <div className="record-meta">{administrator.email ?? common('none')}</div>
         </div>
       )
     },

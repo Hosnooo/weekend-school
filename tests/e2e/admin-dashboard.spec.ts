@@ -25,15 +25,15 @@ test.describe('Administrator dashboard', () => {
     ).toBeVisible();
 
     await expect(
-      page.getByRole('heading', {level: 2, name: 'Attention'})
+      page.getByRole('heading', {level: 2, name: 'Needs attention', exact: true})
     ).toBeVisible();
 
     await expect(
-      page.getByRole('heading', {level: 2, name: 'School overview'})
+      page.getByRole('heading', {level: 2, name: 'In progress'})
     ).toBeVisible();
 
     await expect(
-      page.getByRole('heading', {level: 2, name: 'This week'})
+      page.getByRole('heading', {level: 2, name: 'Quick actions'})
     ).toBeVisible();
 
     // All active Teachers currently have login linkage.
@@ -46,22 +46,15 @@ test.describe('Administrator dashboard', () => {
       page.getByText('Teachers without current assignments', {exact: true})
     ).toHaveCount(0);
 
-    await expect(
-      page.getByRole('link', {name: 'Assign teacher'})
-    ).toHaveAttribute('href', '/en/teaching-assignments');
-
-    // The current seeded week has expected teaching work that still needs updates.
-    await expect(
-      page.getByText('Missing weekly updates', {exact: true})
-    ).toBeVisible();
-
-    await expect(
-      page.getByRole('link', {name: 'Review this week'})
-    ).toHaveAttribute('href', '#this-week');
+    await expect(page.getByRole('heading', {name: 'School overview'})).toHaveCount(0);
+    await expect(page.getByRole('heading', {name: 'This week'})).toHaveCount(0);
 
     await expect(
       page.getByRole('link', {name: 'Add student'})
     ).toHaveAttribute('href', '/en/students/new');
+    await expect(
+      page.getByRole('link', {name: 'Create Report Cycle'})
+    ).toHaveAttribute('href', '/en/reports');
 
     await assertNoHorizontalOverflow(page);
 
@@ -78,9 +71,7 @@ test.describe('Administrator dashboard', () => {
       page.getByRole('heading', {level: 1, name: 'Dashboard'})
     ).toBeVisible();
 
-    await expect(
-      page.getByText('Missing weekly updates', {exact: true})
-    ).toBeVisible();
+    await expect(page.getByRole('heading', {level: 2, name: 'Quick actions'})).toBeVisible();
 
     await assertNoHorizontalOverflow(page);
 
@@ -103,9 +94,7 @@ test.describe('Administrator dashboard', () => {
       page.getByRole('heading', {level: 2, name: 'بحاجة إلى متابعة'})
     ).toBeVisible();
 
-    await expect(
-      page.getByText('تحديثات أسبوعية مفقودة', {exact: true})
-    ).toBeVisible();
+    await expect(page.getByRole('heading', {level: 2, name: 'قيد العمل'})).toBeVisible();
 
     await assertNoHorizontalOverflow(page);
 
@@ -120,9 +109,7 @@ test.describe('Administrator dashboard', () => {
 
     await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
 
-    await expect(
-      page.getByText('تحديثات أسبوعية مفقودة', {exact: true})
-    ).toBeVisible();
+    await expect(page.getByRole('heading', {level: 2, name: 'إجراءات سريعة'})).toBeVisible();
 
     await assertNoHorizontalOverflow(page);
 

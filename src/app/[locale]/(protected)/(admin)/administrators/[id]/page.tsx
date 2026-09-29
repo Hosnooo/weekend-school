@@ -2,7 +2,6 @@ import {getTranslations} from 'next-intl/server';
 import {notFound} from 'next/navigation';
 
 import {Badge} from '@/components/ui/badge';
-import {Card} from '@/components/ui/card';
 import {PageHeader} from '@/components/ui/page-header';
 import {SectionHeader} from '@/components/ui/section-header';
 import {StatusBadge} from '@/components/ui/status-badge';
@@ -33,16 +32,7 @@ export default async function AdministratorDetailPage({params}: {
   return (
     <section className="admin-page">
       <PageHeader
-        actions={(
-          <>
-            <Link className="button button-primary action-link" href={`/administrators/${administrator.id}/edit`}>
-              {common('edit')}
-            </Link>
-            <Link className="button button-secondary action-link" href={`/administrators/${administrator.id}/access`}>
-              {t('manageLoginAccess')}
-            </Link>
-          </>
-        )}
+        actions={<Link className="button button-primary action-link" href={`/administrators/${administrator.id}/edit`}>{common('edit')}</Link>}
         breadcrumbLabel={t('breadcrumbLabel')}
         breadcrumbs={[
           {label: t('title'), href: `/${locale}/administrators`},
@@ -52,14 +42,14 @@ export default async function AdministratorDetailPage({params}: {
         title={administrator.displayName}
       />
 
-      <div className="form-grid">
-        <Card>
+      <div className="detail-layout">
+        <section className="detail-section">
           <SectionHeader title={t('identityContact')} />
           <p><strong>{t('displayName')}:</strong> {administrator.displayName}</p>
           <p><strong>{t('email')}:</strong> {administrator.email ?? common('none')}</p>
-        </Card>
+        </section>
 
-        <Card>
+        <section className="detail-section">
           <SectionHeader title={t('loginAccess')} />
           <p>
             <Badge variant={administrator.authUserId ? 'info' : 'warning'}>
@@ -70,9 +60,9 @@ export default async function AdministratorDetailPage({params}: {
           <Link className="button button-secondary action-link" href={`/administrators/${administrator.id}/access`}>
             {t('manageLoginAccess')}
           </Link>
-        </Card>
+        </section>
 
-        <Card>
+        <section className="detail-section">
           <SectionHeader title={t('lifecycle')} />
           <p>
             <StatusBadge status={administrator.isActive ? 'active' : 'inactive'}>
@@ -80,7 +70,7 @@ export default async function AdministratorDetailPage({params}: {
             </StatusBadge>
           </p>
           <p>{administrator.isActive ? t('activeLifecycleHelp') : t('inactiveLifecycleHelp')}</p>
-        </Card>
+        </section>
       </div>
     </section>
   );

@@ -333,3 +333,12 @@ Task 16 release verification is complete.
 - A first cold browser run timed out while the login action was pending; the shared E2E login wait now allows cold compilation. A later post-build dev-server run returned transient 404s for protected routes; after restarting that temporary app server, protected routes responded and the standard 8-case Playwright command passed. Generated `next-env.d.ts` changes were restored.
 - No schema, RLS, or persistence code changed, so the database gate was not applicable to this task.
 
+## 2026-09-29 — Full-site UI refactor: Task 3 Dashboard and People
+
+- Replaced Dashboard metric/week tiles with Needs attention, In progress, and Quick actions. Current open Teaching Update requests and unfinished Report Cycles are shown with contextual links; future requests do not appear as urgent work. Decision D-027 records that interpretation.
+- Aligned Student, Guardian, Teacher, and Administrator lists and view-only details around record identity, compact sections, and contextual edit, enrollment, login, assignment, and lifecycle actions. Existing permission and persistence behavior stayed in place.
+- Repaired misplaced Student CSV import translations in both locale catalogs. Updated Dashboard and Student/Guardian browser contracts to the current UI labels and confirmation flow. Increased Playwright waits for observed cold Next route compilation.
+- Dashboard-work test was observed failing before implementation, then passed. The full unit/contract gate passed 92 files and 401 tests. `pnpm lint`, `pnpm typecheck`, `pnpm build`, and `git diff --check` passed.
+- On a reset and E2E-seeded local Supabase database, Dashboard and Teacher browser flows passed together (2/2), then the Student/Guardian flow passed (1/1) after the test fixture was restored. English and Arabic desktop/narrow screenshots were inspected for Dashboard, People details, list actions, RTL ordering, and overflow.
+- No migrations, RLS, or repository persistence code changed in this task, so a separate database gate was not required.
+

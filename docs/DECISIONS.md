@@ -205,3 +205,9 @@ Navigation is the union of explicit capabilities: Administrator-only gets admini
 Export is intentionally simple and Administrator-only. Any login with active Administrator capability can see and use all export-related UI/actions/downloads; any login without Administrator capability receives no export UI and no export access. Teacher capability does not grant export permission.
 
 The detailed authoritative correction is `docs/superpowers/specs/2026-09-23-independent-role-records-design.md`. Production remains unchanged until the complete branch is verified and an explicit production release is authorized.
+
+## D-027 — Dashboard attention follows current requested work
+
+**Status:** Accepted — 2026-09-29
+
+The UI refactor interprets Dashboard attention as work that can be acted on now. A Teaching Update request set appears there when it has open requests and its period has started in the school's timezone. Future OPEN requests remain available in Teaching Updates but do not appear as urgent Dashboard work. Draft and review Class Report Cycles appear under In progress; finalized cycles remain in Reports history. Existing server rules for editing and submission remain unchanged. This presentation replaces the fixed-week and global delivery-count Dashboard sections of D-023.

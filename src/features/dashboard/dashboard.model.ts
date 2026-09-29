@@ -5,6 +5,21 @@ export type DashboardGroup = {
   submitted: boolean;
 };
 
+export function selectDashboardWork(
+  requests: Array<{id: string; periodStart: string; openCount: number}>,
+  cycles: Array<{id: string; status: 'DRAFT' | 'REVIEW' | 'FINALIZED'}>,
+  today: string
+) {
+  return {
+    openRequestIds: requests
+      .filter((request) => request.openCount > 0 && request.periodStart <= today)
+      .map((request) => request.id),
+    activeCycleIds: cycles
+      .filter((cycle) => cycle.status !== 'FINALIZED')
+      .map((cycle) => cycle.id)
+  };
+}
+
 type TeachingUpdateContext = {
   teacherId: string;
   classSubjectId: string;

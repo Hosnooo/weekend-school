@@ -1,7 +1,7 @@
 import {getTranslations} from 'next-intl/server';
 import {notFound} from 'next/navigation';
 
-import {Card} from '@/components/ui/card';
+import {EmptyState} from '@/components/ui/empty-state';
 import {PageHeader} from '@/components/ui/page-header';
 import {isLocale} from '@/i18n/config';
 import {Link} from '@/i18n/navigation';
@@ -28,16 +28,11 @@ export default async function GuardiansPage({
         description={t('standaloneNoticeDescription')}
         title={t('title')}
       />
-      <Card>
-        <h2>{t('standaloneNoticeTitle')}</h2>
-        <p>{t('standaloneNoticeDescription')}</p>
-        <Link
-          className="button button-primary action-link"
-          href="/students"
-        >
-          {studentsT('title')}
-        </Link>
-      </Card>
+      <EmptyState
+        title={t('standaloneNoticeTitle')}
+        description={t('standaloneNoticeDescription')}
+        action={<Link className="button button-primary action-link" href="/students">{studentsT('title')}</Link>}
+      />
     </section>
   );
 }

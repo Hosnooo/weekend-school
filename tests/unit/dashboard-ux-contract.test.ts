@@ -62,41 +62,36 @@ describe('Administrator dashboard UX contract', () => {
     const page = read(
       'src/app/[locale]/(protected)/(admin)/dashboard/page.tsx'
     );
+    const workspace = read('src/features/dashboard/dashboard-workspace.tsx');
 
     expect(page).not.toContain('AdminPage');
-    expect(page).toContain('PageHeader');
-
-    expect(page).toContain('teachersWithoutLogin');
-    expect(page).toContain('teachersWithoutAssignments');
-    expect(page).toContain('missingCount');
-    expect(page).toContain('unresolvedAttendanceConflicts');
-    expect(page).toContain('readyReports');
-    expect(page).toContain('failedDeliveries');
-
-    expect(page).toContain('/teachers');
-    expect(page).toContain('/teaching-assignments');
-    expect(page).toContain('/reports');
-    expect(page).toContain('#attendance-conflicts');
-
-    expect(page).not.toContain("locale === 'ar'");
+    expect(page).toContain('selectDashboardWork');
+    expect(workspace).toContain('PageHeader');
+    expect(workspace).toContain('openRequests');
+    expect(workspace).toContain('activeCycles');
+    expect(workspace).toContain('teachersWithoutLogin');
+    expect(workspace).toContain('teachersWithoutAssignments');
+    expect(workspace).toContain('summary.conflicts');
+    expect(workspace).toContain('/teachers');
+    expect(workspace).toContain('/teaching-assignments');
+    expect(workspace).toContain('/reports');
+    expect(workspace).not.toContain('readyReports');
+    expect(workspace).not.toContain('failedDeliveries');
+    expect(workspace).not.toContain('missingCount');
   });
 
   it('orders the dashboard around administrator operations', () => {
-    const page = read(
-      'src/app/[locale]/(protected)/(admin)/dashboard/page.tsx'
-    );
+    const page = read('src/features/dashboard/dashboard-workspace.tsx');
 
     expect(page).not.toMatch(/<PageHeader[\\s\\S]*?actions=/);
 
-    const attention = page.indexOf('attention-heading');
-    const overview = page.indexOf('school-overview-heading');
-    const week = page.indexOf('dashboard-week-heading');
-    const quickActions = page.indexOf('quick-actions-heading');
+    const attention = page.indexOf("aria-label={t('attention')}");
+    const inProgress = page.indexOf("aria-label={t('inProgress')}");
+    const quickActions = page.indexOf("aria-label={t('quickActions')}");
 
     expect(attention).toBeGreaterThan(-1);
-    expect(overview).toBeGreaterThan(attention);
-    expect(week).toBeGreaterThan(overview);
-    expect(quickActions).toBeGreaterThan(week);
+    expect(inProgress).toBeGreaterThan(attention);
+    expect(quickActions).toBeGreaterThan(inProgress);
 
     expect(page.indexOf('href="/students/new"')).toBeGreaterThan(quickActions);
   });

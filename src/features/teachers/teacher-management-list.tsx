@@ -13,7 +13,7 @@ import {StatusBadge} from '@/components/ui/status-badge';
 import {setTeacherActiveAction} from '@/features/teachers/teacher.actions';
 import type {TeacherListItem} from '@/features/teachers/teacher.types';
 import type {Locale} from '@/i18n/config';
-import {useRouter} from '@/i18n/navigation';
+import {Link, useRouter} from '@/i18n/navigation';
 
 type AccessState = 'signedIn' | 'linkSent' | 'unknown';
 
@@ -62,9 +62,9 @@ export function TeacherManagementList({
       header: t('name'),
       render: (teacher) => (
         <div>
-          <strong>{teacher.displayName}</strong>
-          <div>{teacher.email ?? common('none')}</div>
-          <div>{language(teacher.preferredLanguage === 'ar' ? 'arabic' : 'english')}</div>
+          <Link href={`/teachers/${teacher.id}`}><strong className="record-name">{teacher.displayName}</strong></Link>
+          <div className="record-meta">{teacher.email ?? common('none')}</div>
+          <div className="record-meta">{language(teacher.preferredLanguage === 'ar' ? 'arabic' : 'english')}</div>
         </div>
       )
     },

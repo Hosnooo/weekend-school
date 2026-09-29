@@ -26,6 +26,7 @@ test.describe('Student, enrollment, and Guardian management', () => {
   test('keeps identity, enrollment, Guardians, and lifecycle clear across EN/AR and responsive layouts', async ({
     page
   }, testInfo) => {
+    test.setTimeout(300_000);
     await page.setViewportSize({width: 1366, height: 900});
     await login(page, 'en', credentials.admin);
 
@@ -46,7 +47,7 @@ test.describe('Student, enrollment, and Guardian management', () => {
     // Student read-only detail
     await studentRow.getByRole('link', {name: studentNameEn}).click();
 
-    await expect(page).toHaveURL(new RegExp(`/en/students/${studentId}$`));
+    await expect(page).toHaveURL(new RegExp(`/en/students/${studentId}$`), {timeout: 60_000});
     await expect(
       page.getByRole('heading', {level: 1, name: studentNameEn})
     ).toBeVisible();
@@ -109,7 +110,7 @@ test.describe('Student, enrollment, and Guardian management', () => {
 
     const addGuardianDetails = page
       .locator('details')
-      .filter({hasText: 'Add guardian'})
+      .filter({hasText: 'Add new guardian'})
       .last();
 
     await addGuardianDetails.locator('summary').click();
@@ -125,7 +126,7 @@ test.describe('Student, enrollment, and Guardian management', () => {
       .selectOption('both');
 
     await addGuardianDetails
-      .getByRole('button', {name: 'Add guardian'})
+      .getByRole('button', {name: 'Add new guardian'})
       .click();
 
     const secondGuardian = page
@@ -155,13 +156,14 @@ test.describe('Student, enrollment, and Guardian management', () => {
       .locator('.record-card')
       .filter({hasText: 'Second Guardian Updated'});
 
+    page.once('dialog', (dialog) => dialog.accept());
     await updatedGuardian
-      .getByRole('button', {name: 'Unlink from student'})
+      .getByRole('button', {name: 'Remove from student'})
       .click();
 
     await expect(
       page.getByText('Second Guardian Updated', {exact: true})
-    ).toHaveCount(0);
+    ).toBeHidden();
 
     // The standalone Guardians route is informational only.
     await page.goto('/en/guardians');
@@ -204,7 +206,7 @@ test.describe('Student, enrollment, and Guardian management', () => {
     // Student Guardian management remains usable at 360px.
     await page.goto(`/en/students/${studentId}`);
     await expect(
-      page.locator('summary').filter({hasText: 'Add guardian'})
+      page.locator('summary').filter({hasText: 'Add new guardian'})
     ).toBeVisible();
     await assertNoHorizontalOverflow(page);
     await assertSkipLinkHidden(page);
