@@ -33,12 +33,13 @@ describe('visual system polish contract', () => {
 
   it('defines a clear record and page hierarchy', () => {
     const css = source('src/app/design-system.css');
+    const globalCss = source('src/app/globals.css');
     const studentForm = source('src/features/students/student-form.tsx');
 
-    expect(css).toContain('--control-height: 2.5rem;');
+    expect(globalCss).toContain('--control-height: 2.5rem;');
     expect(css).toContain('.record-name');
     expect(css).toContain('.record-meta');
-    expect(css).toContain('font-size: 1.75rem;');
+    expect(css).toContain('font-size: clamp(1.5rem, 2.4vw, 1.75rem);');
 
     expect(studentForm).toContain('className="record-name"');
     expect(studentForm).toContain('className="record-meta"');
@@ -46,8 +47,9 @@ describe('visual system polish contract', () => {
 
   it('uses quieter shared management surfaces', () => {
     const css = source('src/app/design-system.css');
+    const globalCss = source('src/app/globals.css');
 
-    expect(css).toContain('--border-subtle:');
+    expect(globalCss).toContain('--border-subtle:');
     expect(css).toContain('min-height: 1.5rem;');
     expect(css).toContain('.data-table td:first-child strong');
     expect(css).toContain('.data-table tbody tr:hover');

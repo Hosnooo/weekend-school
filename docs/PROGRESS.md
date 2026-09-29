@@ -323,3 +323,13 @@ Production release:
 
 Task 16 release verification is complete.
 
+## 2026-09-29 — Full-site UI refactor: Task 2 shared foundation
+
+- Consolidated shared color, surface, spacing, control, radius, and focus tokens in `globals.css`; kept component styles in `design-system.css`.
+- Tightened the protected shell, sidebar hierarchy, page headings, table rows, and empty states. Updated the UI reference to show a compact management page without nested action/status cards.
+- Field errors now mark the associated control with `aria-invalid`. A focused test failed before the change and passed after it.
+- Focused foundation/navigation tests passed. `pnpm test` passed 91 files and 399 tests; `pnpm typecheck`, `pnpm lint`, and `pnpm build` passed.
+- The standard focused Playwright command passed all 8 shell/UI-reference cases across English and Arabic desktop and narrow layouts. Screenshots were inspected for navigation, RTL placement, overflow, form controls, actions, and dialog focus.
+- A first cold browser run timed out while the login action was pending; the shared E2E login wait now allows cold compilation. A later post-build dev-server run returned transient 404s for protected routes; after restarting that temporary app server, protected routes responded and the standard 8-case Playwright command passed. Generated `next-env.d.ts` changes were restored.
+- No schema, RLS, or persistence code changed, so the database gate was not applicable to this task.
+

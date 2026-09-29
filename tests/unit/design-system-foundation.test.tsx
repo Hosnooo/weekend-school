@@ -36,6 +36,7 @@ describe('design-system foundation contracts', () => {
 
     expect(screen.getByRole('alert')).toHaveTextContent('Enter a valid email address.');
     expect(screen.getByLabelText('Email')).toHaveAttribute('aria-describedby', 'email-error');
+    expect(screen.getByLabelText('Email')).toHaveAttribute('aria-invalid', 'true');
   });
 
   it('opens and closes the dialog and restores focus to its trigger', async () => {

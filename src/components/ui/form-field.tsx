@@ -18,9 +18,10 @@ export function FormField({
   const hintId = hint ? `${htmlFor}-hint` : undefined;
   const errorId = error ? `${htmlFor}-error` : undefined;
   const describedBy = [hintId, errorId].filter(Boolean).join(' ') || undefined;
-  const control = isValidElement<{['aria-describedby']?: string}>(children)
+  const control = isValidElement<{['aria-describedby']?: string; ['aria-invalid']?: boolean | 'true' | 'false'}>(children)
     ? cloneElement(children, {
-        'aria-describedby': [children.props['aria-describedby'], describedBy].filter(Boolean).join(' ') || undefined
+        'aria-describedby': [children.props['aria-describedby'], describedBy].filter(Boolean).join(' ') || undefined,
+        'aria-invalid': error ? true : children.props['aria-invalid']
       })
     : children;
 

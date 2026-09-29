@@ -23,7 +23,6 @@ import {Sheet, SheetClose} from '@/components/ui/sheet';
 import {Tabs} from '@/components/ui/tabs';
 
 export function UIReference() {
-  const app = useTranslations('app');
   const common = useTranslations('common');
   const navigation = useTranslations('navigation');
   const students = useTranslations('students');
@@ -32,7 +31,7 @@ export function UIReference() {
 
   const rows = [{id: 'sample', name: teachers('displayName'), status: common('active')}];
   const columns: DataTableColumn<(typeof rows)[number]>[] = [
-    {key: 'name', header: teachers('name'), render: (row) => row.name},
+    {key: 'name', header: teachers('name'), render: (row) => <strong className="record-name">{row.name}</strong>},
     {key: 'status', header: common('status'), render: (row) => <Badge variant="success">{row.status}</Badge>},
     {
       key: 'actions',
@@ -52,22 +51,19 @@ export function UIReference() {
         actions={<Button>{teachers('addTeacher')}</Button>}
         breadcrumbLabel={navigation('label')}
         breadcrumbs={[{label: navigation('dashboard'), href: '#'}, {label: teachers('title')}]}
-        description={teachers('description')}
-        title={app('name')}
+        title={teachers('title')}
       />
 
       <section className="ui-reference-section">
-        <SectionHeader description={teachers('assignmentHelp')} title={common('actions')} />
-        <Card>
-          <div className="ui-reference-row">
-            <Button>{common('save')}</Button>
-            <Button variant="secondary">{common('cancel')}</Button>
-            <Button variant="ghost">{common('edit')}</Button>
-            <Button variant="danger">{common('deactivate')}</Button>
-            <Button size="compact" variant="secondary">{common('save')}</Button>
-            <IconButton label={common('actions')}>•••</IconButton>
-          </div>
-        </Card>
+        <SectionHeader title={common('actions')} />
+        <div className="ui-reference-row">
+          <Button>{common('save')}</Button>
+          <Button variant="secondary">{common('cancel')}</Button>
+          <Button variant="ghost">{common('edit')}</Button>
+          <Button variant="danger">{common('deactivate')}</Button>
+          <Button size="compact" variant="secondary">{common('save')}</Button>
+          <IconButton label={common('actions')}>•••</IconButton>
+        </div>
       </section>
 
       <section className="ui-reference-section">
@@ -76,13 +72,11 @@ export function UIReference() {
           <Alert variant="success">{teachers('accessSent')}</Alert>
           <Alert variant="warning">{teachers('accessFailed')}</Alert>
           <Alert variant="danger">{common('saveError')}</Alert>
-          <Card>
-            <div className="ui-reference-row">
-              <Badge variant="success">{common('active')}</Badge>
-              <Badge variant="warning">{common('inactive')}</Badge>
-              <Badge variant="info">{weekly('submissionStatus.DRAFT')}</Badge>
-            </div>
-          </Card>
+          <div className="ui-reference-row">
+            <Badge variant="success">{common('active')}</Badge>
+            <Badge variant="warning">{common('inactive')}</Badge>
+            <Badge variant="info">{weekly('submissionStatus.DRAFT')}</Badge>
+          </div>
         </div>
       </section>
 

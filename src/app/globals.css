@@ -2,11 +2,14 @@
 
 :root {
   color-scheme: light;
-  --background: #f7f8fa;
+  --background: #f6f7f8;
   --surface: #ffffff;
+  --surface-subtle: #f3f5f6;
+  --surface-raised: #ffffff;
   --text: #172033;
   --muted: #5f6b7a;
   --border: #dce1e8;
+  --border-subtle: #e7eaee;
   --primary: #155e75;
   --primary-hover: #0e4f63;
   --success: #166534;
@@ -16,7 +19,21 @@
   --danger: #b42318;
   --danger-hover: #912018;
   --danger-surface: #fee4e2;
+  --info: #075985;
+  --info-surface: #e0f2fe;
   --focus: #0ea5e9;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --control-height: 2.5rem;
+  --control-height-compact: 2.25rem;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --shadow-layer: 0 1rem 3rem rgba(23, 32, 51, 0.18);
 }
 
 * {
@@ -603,7 +620,8 @@ tbody tr:last-child td {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 1rem clamp(1rem, 4vw, 2rem);
+  min-block-size: 4.25rem;
+  padding: 0.625rem clamp(1rem, 3vw, 1.75rem);
   background: var(--surface);
   border-block-end: 1px solid var(--border);
 }
@@ -614,7 +632,7 @@ tbody tr:last-child td {
 }
 
 .app-name {
-  font-size: 1.125rem;
+  font-size: 1rem;
   font-weight: 700;
 }
 

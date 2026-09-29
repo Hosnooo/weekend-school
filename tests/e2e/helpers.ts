@@ -11,7 +11,7 @@ export async function login(page: Page, locale: 'en' | 'ar', account: {email: st
   await page.getByLabel(locale === 'ar' ? 'البريد الإلكتروني' : 'Email').fill(account.email);
   await page.getByLabel(locale === 'ar' ? 'كلمة المرور' : 'Password').fill(account.password);
   await page.getByRole('button', {name: locale === 'ar' ? 'تسجيل الدخول' : 'Sign in'}).click();
-  await expect(page).not.toHaveURL(/\/login(?:\?|$)/);
+  await expect(page).not.toHaveURL(/\/login(?:\?|$)/, {timeout: 60_000});
 }
 
 export async function clearSession(page: Page) {
