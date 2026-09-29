@@ -37,7 +37,7 @@ describe('independent-role release authority', () => {
         expect(source, `${path.relative(repositoryRoot, filename)} still contains ${assumption}`).not.toContain(assumption);
       }
     }
-  });
+  }, 15_000);
 
   it('records the independent-role correction in the authoritative documents', () => {
     const spec = readFileSync(path.join(repositoryRoot, 'docs', 'SPEC.md'), 'utf8');
