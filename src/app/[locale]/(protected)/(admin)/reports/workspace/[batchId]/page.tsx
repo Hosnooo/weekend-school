@@ -14,10 +14,13 @@ import type {AdminReportContextStatus} from '@/features/reports/admin-report-con
 import {sendAdminReportBatchAction} from '@/features/reports/admin-report-delivery.actions';
 import {
   finalizeAdminReportWorkspaceAction,
+  finalizeClassReportCycleAction,
   reopenAdminReportWorkspaceAction,
   saveAdminReportWorkspaceAction
 } from '@/features/reports/admin-report-workflow.actions';
 import {getAdminReportWorkspace} from '@/features/reports/admin-report-workspace.repository';
+import {getClassReportCycleWorkspace} from '@/features/reports/report-batch.repository';
+import {ReportCycleSources} from '@/features/reports/report-cycle-sources';
 import type {ReportPerformance} from '@/features/reports/report.types';
 import {isLocale} from '@/i18n/config';
 import {Link} from '@/i18n/navigation';
@@ -56,6 +59,7 @@ export default async function AdminReportWorkspacePage({
     sent?: string;
     failed?: string;
     skipped?: string;
+    requested?: string;
   }>;
 }) {
   const {locale, batchId: rawBatchId} = await params;
@@ -68,7 +72,15 @@ export default async function AdminReportWorkspacePage({
   const profile = await requireProfile(locale, 'ADMIN');
   const query = await searchParams;
 
-  const [workspace, t, weekly] = await Promise.all([
+  const [
+    classCycle,
+    workspace,
+    t,
+    weekly
+  ] = await Promise.all([
+    getClassReportCycleWorkspace(
+      parsedBatchId.data
+    ),
     getAdminReportWorkspace(
       profile.schoolId,
       parsedBatchId.data
@@ -82,6 +94,212 @@ export default async function AdminReportWorkspacePage({
       namespace: 'weekly'
     })
   ]);
+
+  if (classCycle) {
+    const className =
+      locale === 'ar' && classCycle.classInfo.nameAr
+        ? classCycle.classInfo.nameAr
+        : classCycle.classInfo.nameEn;
+
+    return (
+      <section className="admin-page">
+        <PageHeader
+          actions={
+            <div className="row-actions">
+              <Link
+                className="button button-secondary action-link"
+                href="/reports"
+              >
+                {t('title')}
+              </Link>
+
+              <Link
+                className="button button-secondary action-link"
+                href="/reports/delivery-status"
+              >
+                {t('viewDeliveryStatus')}
+              </Link>
+            </div>
+          }
+          description={`${classCycle.batch.periodStart} – ${classCycle.batch.periodEnd}`}
+          title={`${t('reportCycle')} · ${className}`}
+        />
+
+        <div className="dashboard-week-heading">
+          <Badge
+            variant={
+              classCycle.batch.status === 'FINALIZED'
+                ? 'success'
+                : classCycle.batch.status === 'REVIEW'
+                  ? 'info'
+                  : 'warning'
+            }
+          >
+            {t(
+              `cycleStatus.${classCycle.batch.status}`
+            )}
+          </Badge>
+        </div>
+
+        {query.error ? (
+          <Alert variant="danger">
+            {t('saveError')}
+          </Alert>
+        ) : null}
+
+        {query.requested ? (
+          <Alert variant="success">
+            {t('missingUpdateRequested')}
+          </Alert>
+        ) : null}
+
+        {query.finalized ? (
+          <Alert variant="success">
+            {t('finalizedMessage')}
+          </Alert>
+        ) : null}
+
+        {query.sent !== undefined ? (
+          <Alert variant="success">
+            {t('sendResult', {
+              sent: Number(query.sent) || 0,
+              failed: Number(query.failed) || 0,
+              skipped: Number(query.skipped) || 0
+            })}
+          </Alert>
+        ) : null}
+
+        <ReportCycleSources
+          batchId={classCycle.batch.id}
+          locale={locale}
+          missingContexts={
+            classCycle.missingContexts
+          }
+          periodEnd={classCycle.batch.periodEnd}
+          periodStart={classCycle.batch.periodStart}
+          sources={classCycle.sources}
+          status={classCycle.batch.status}
+        />
+
+        <Card className="content-section">
+          <div className="section-heading">
+            <div>
+              <h2>{t('studentReportsStage')}</h2>
+              <p>{t('studentReportsHelp')}</p>
+            </div>
+          </div>
+
+          {classCycle.batch.status !== 'FINALIZED' ? (
+            <form
+              action={finalizeClassReportCycleAction}
+            >
+              <input
+                name="locale"
+                type="hidden"
+                value={locale}
+              />
+              <input
+                name="batchId"
+                type="hidden"
+                value={classCycle.batch.id}
+              />
+              <input
+                name="periodStart"
+                type="hidden"
+                value={classCycle.batch.periodStart}
+              />
+              <input
+                name="periodEnd"
+                type="hidden"
+                value={classCycle.batch.periodEnd}
+              />
+
+              <button
+                className="button button-primary"
+                disabled={
+                  classCycle.sources.filter(
+                    ({included}) => included
+                  ).length === 0
+                }
+                type="submit"
+              >
+                {t('generateStudentReports')}
+              </button>
+            </form>
+          ) : (
+            <>
+              {classCycle.reports.length === 0 ? (
+                <EmptyState
+                  title={t('noGeneratedReports')}
+                />
+              ) : (
+                <div className="stack-list">
+                  {classCycle.reports.map((report) => (
+                    <article
+                      className="record-card"
+                      key={report.id}
+                    >
+                      <div className="record-card-main">
+                        <strong>
+                          {locale === 'ar' &&
+                          report.studentNameAr
+                            ? report.studentNameAr
+                            : report.studentNameEn}
+                        </strong>
+
+                        <p className="report-batch-meta">
+                          {report.language}
+                        </p>
+                      </div>
+
+                      <Link
+                        className="button button-secondary action-link"
+                        href={`/reports/${report.id}`}
+                      >
+                        {t('previewReport')}
+                      </Link>
+                    </article>
+                  ))}
+                </div>
+              )}
+
+              {classCycle.reports.length > 0 ? (
+                <form action={sendAdminReportBatchAction}>
+                  <input
+                    name="locale"
+                    type="hidden"
+                    value={locale}
+                  />
+                  <input
+                    name="batchId"
+                    type="hidden"
+                    value={classCycle.batch.id}
+                  />
+                  <input
+                    name="periodStart"
+                    type="hidden"
+                    value={classCycle.batch.periodStart}
+                  />
+                  <input
+                    name="periodEnd"
+                    type="hidden"
+                    value={classCycle.batch.periodEnd}
+                  />
+
+                  <button
+                    className="button button-primary"
+                    type="submit"
+                  >
+                    {t('sendContextReports')}
+                  </button>
+                </form>
+              ) : null}
+            </>
+          )}
+        </Card>
+      </section>
+    );
+  }
 
   if (!workspace) notFound();
 

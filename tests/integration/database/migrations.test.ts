@@ -107,10 +107,11 @@ describe('migration contract', () => {
       '20260927132000_roster_csv_import.sql',
       '20260927220000_subject_only_teacher_groups.sql',
       '20260927221000_flexible_teaching_updates.sql',
-    '20260927222000_teaching_update_mutations.sql',
-    '20260927223000_admin_teaching_update_reopen.sql',
-    '20260927224000_shared_teaching_update_access.sql',
-    '20260927225000_shared_teaching_update_history_access.sql',
+      '20260927222000_teaching_update_mutations.sql',
+      '20260927223000_admin_teaching_update_reopen.sql',
+      '20260927224000_shared_teaching_update_access.sql',
+      '20260927225000_shared_teaching_update_history_access.sql',
+      '20260928230000_class_report_cycles.sql'
     ]);
   });
 

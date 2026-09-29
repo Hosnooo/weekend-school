@@ -9,10 +9,15 @@ import {Card} from '@/components/ui/card';
 import {ConfirmSubmitButton} from '@/components/ui/confirm-submit-button';
 import {EmptyState} from '@/components/ui/empty-state';
 import {PageHeader} from '@/components/ui/page-header';
+import {listClasses} from '@/features/classes/class.repository';
 import {listAdminReportContexts} from '@/features/reports/admin-report-contexts.repository';
 import type {AdminReportContextStatus} from '@/features/reports/admin-report-contexts';
 import {sendAdminReportBatchAction} from '@/features/reports/admin-report-delivery.actions';
-import {openAdminReportContextAction} from '@/features/reports/admin-report-workflow.actions';
+import {
+  createClassReportCycleAction,
+  openAdminReportContextAction
+} from '@/features/reports/admin-report-workflow.actions';
+import {listClassReportCycles} from '@/features/reports/report-batch.repository';
 import {getReportingTimezone} from '@/features/reports/report.repository';
 import {monthPeriod} from '@/features/reports/report.service';
 import {todayInTimeZone} from '@/features/weekly-updates/weekly-update.model';
@@ -28,6 +33,14 @@ function statusVariant(
   if (status === 'READY_TO_SEND') return 'info';
   if (status === 'READY_FOR_REVIEW') return 'warning';
   return 'neutral';
+}
+
+function cycleStatusVariant(
+  status: 'DRAFT' | 'REVIEW' | 'FINALIZED'
+): BadgeVariant {
+  if (status === 'FINALIZED') return 'success';
+  if (status === 'REVIEW') return 'info';
+  return 'warning';
 }
 
 export default async function ReportsPage({
@@ -65,7 +78,14 @@ export default async function ReportsPage({
     periodEnd = defaults.periodEnd;
   }
 
-  const [contexts, t] = await Promise.all([
+  const [
+    classes,
+    cycles,
+    contexts,
+    t
+  ] = await Promise.all([
+    listClasses(profile.schoolId),
+    listClassReportCycles(profile.schoolId),
     listAdminReportContexts(
       profile.schoolId,
       periodStart,
@@ -76,6 +96,10 @@ export default async function ReportsPage({
       namespace: 'reports'
     })
   ]);
+
+  const activeClasses = classes.filter(
+    ({isActive}) => isActive
+  );
 
   const localize = (
     en: string | null | undefined,
@@ -118,6 +142,136 @@ export default async function ReportsPage({
         description={t('description')}
         title={t('title')}
       />
+
+      <Card className="content-section">
+        <div className="section-heading">
+          <div>
+            <h2>{t('createReportCycle')}</h2>
+            <p>{t('createReportCycleHelp')}</p>
+          </div>
+        </div>
+
+        <form
+          action={createClassReportCycleAction}
+          className="record-form"
+        >
+          <input
+            name="locale"
+            type="hidden"
+            value={locale}
+          />
+
+          <div className="form-grid">
+            <label>
+              {t('classLabel')}
+              <select
+                name="classId"
+                required
+              >
+                <option value="">
+                  {t('chooseClass')}
+                </option>
+
+                {activeClasses.map((schoolClass) => (
+                  <option
+                    key={schoolClass.id}
+                    value={schoolClass.id}
+                  >
+                    {localize(
+                      schoolClass.nameEn,
+                      schoolClass.nameAr
+                    )}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              {t('periodStart')}
+              <input
+                defaultValue={periodStart}
+                name="periodStart"
+                required
+                type="date"
+              />
+            </label>
+
+            <label>
+              {t('periodEnd')}
+              <input
+                defaultValue={periodEnd}
+                name="periodEnd"
+                required
+                type="date"
+              />
+            </label>
+          </div>
+
+          <button
+            className="button button-primary"
+            disabled={activeClasses.length === 0}
+            type="submit"
+          >
+            {t('createCycle')}
+          </button>
+        </form>
+      </Card>
+
+      <Card className="content-section">
+        <div className="section-heading">
+          <div>
+            <h2>{t('reportCyclesTitle')}</h2>
+            <p>{t('reportCyclesHelp')}</p>
+          </div>
+        </div>
+
+        {cycles.length === 0 ? (
+          <EmptyState title={t('noReportCycles')} />
+        ) : (
+          <div className="stack-list">
+            {cycles.map((cycle) => (
+              <article
+                className="record-card"
+                key={cycle.id}
+              >
+                <div className="record-card-main">
+                  <div className="row-actions">
+                    <strong>
+                      {localize(
+                        cycle.classNameEn,
+                        cycle.classNameAr
+                      )}
+                    </strong>
+
+                    <Badge
+                      variant={cycleStatusVariant(
+                        cycle.status
+                      )}
+                    >
+                      {t(
+                        `cycleStatus.${cycle.status}`
+                      )}
+                    </Badge>
+                  </div>
+
+                  <p className="report-batch-meta">
+                    {cycle.periodStart}
+                    {' – '}
+                    {cycle.periodEnd}
+                  </p>
+                </div>
+
+                <Link
+                  className="button button-secondary action-link"
+                  href={`/reports/workspace/${cycle.id}`}
+                >
+                  {t('openCycle')}
+                </Link>
+              </article>
+            ))}
+          </div>
+        )}
+      </Card>
 
       <Card className="content-section">
         <h2>{t('periodFilter')}</h2>
@@ -165,8 +319,8 @@ export default async function ReportsPage({
       <Card className="content-section">
         <div className="section-heading">
           <div>
-            <h2>{t('contextsTitle')}</h2>
-            <p>{t('contextsHelp')}</p>
+            <h2>{t('historicalReportsTitle')}</h2>
+            <p>{t('historicalReportsHelp')}</p>
           </div>
         </div>
 

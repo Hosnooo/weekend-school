@@ -1,5 +1,7 @@
 import 'server-only';
 
+import type {SupabaseClient} from '@supabase/supabase-js';
+
 import {createServerSupabaseClient} from '@/lib/supabase/server';
 
 import {buildReportSnapshotV2} from './report.service';
@@ -27,6 +29,9 @@ type SubmissionRow = {
   subject_group_id: string | null;
   teacher_id: string;
   week_start: string;
+  coverage_kind: 'RANGE' | 'DATES';
+  period_start: string;
+  period_end: string;
   progress_en: string | null;
   progress_ar: string | null;
   default_performance: ReportPerformance | null;
@@ -57,6 +62,12 @@ export type ReportBatchSource = {
   classSubjectId: string;
   subjectGroupId: string | null;
   weekStart: string;
+  coverageKind: 'RANGE' | 'DATES';
+  periodStart: string;
+  periodEnd: string;
+  coveredDates: string[];
+  included: boolean;
+  partialOverlap: boolean;
   teacherId: string;
   teacherName: string;
   subjectNameEn: string;
@@ -204,20 +215,67 @@ export async function getReportBatchWorkspace(
   requireNoError(subjectsResult.error);
   requireNoError(groupsResult.error);
 
+  const coveredDatesBySubmission = new Map<string, string[]>();
   let submissions: SubmissionRow[] = [];
+
   if (classSubjectIds.length > 0) {
-    const submissionResult = await db.from('weekly_submissions')
-      .select('id,class_subject_id,subject_group_id,teacher_id,week_start,progress_en,progress_ar,default_performance')
+    const submissionResult = await db
+      .from('weekly_submissions')
+      .select(
+        'id,class_subject_id,subject_group_id,teacher_id,week_start,coverage_kind,period_start,period_end,progress_en,progress_ar,default_performance'
+      )
       .eq('school_id', schoolId)
       .eq('status', 'SUBMITTED')
-      .gte('week_start', batch.period_start)
-      .lte('week_start', batch.period_end)
+      .lte('period_start', batch.period_end)
+      .gte('period_end', batch.period_start)
       .in('class_subject_id', classSubjectIds)
-      .order('week_start');
+      .order('period_start');
+
     if (submissionResult.error) throw submissionResult.error;
-    submissions = (submissionResult.data ?? []) as SubmissionRow[];
+
+    const candidates =
+      (submissionResult.data ?? []) as SubmissionRow[];
+
+    const exactDateIds = candidates
+      .filter(({coverage_kind}) => coverage_kind === 'DATES')
+      .map(({id}) => id);
+
+    if (exactDateIds.length > 0) {
+      const exactDateResult = await db
+        .from('weekly_submission_dates')
+        .select('submission_id,covered_on')
+        .eq('school_id', schoolId)
+        .in('submission_id', exactDateIds)
+        .order('covered_on');
+
+      if (exactDateResult.error) throw exactDateResult.error;
+
+      for (const row of exactDateResult.data ?? []) {
+        const dates =
+          coveredDatesBySubmission.get(row.submission_id) ?? [];
+
+        dates.push(row.covered_on);
+        coveredDatesBySubmission.set(row.submission_id, dates);
+      }
+    }
+
+    submissions = candidates.filter((submission) => {
+      if (submission.coverage_kind === 'RANGE') return true;
+
+      return (
+        coveredDatesBySubmission.get(submission.id) ?? []
+      ).some(
+        (coveredOn) =>
+          coveredOn >= batch.period_start &&
+          coveredOn <= batch.period_end
+      );
+    });
+
     if (batch.scope_type === 'GROUP') {
-      submissions = submissions.filter(({subject_group_id}) => subject_group_id === batch.subject_group_id);
+      submissions = submissions.filter(
+        ({subject_group_id}) =>
+          subject_group_id === batch.subject_group_id
+      );
     }
   }
 
@@ -234,7 +292,11 @@ export async function getReportBatchWorkspace(
   const approvalRows = (approvalResult.data ?? []) as ApprovalRow[];
   const approvalIds = approvalRows.map(({id}) => id);
   const linksResult = approvalIds.length > 0
-    ? await db.from('report_section_sources').select('approval_id,weekly_submission_id').eq('school_id', schoolId).in('approval_id', approvalIds)
+    ? await db
+        .from('report_section_sources')
+        .select('approval_id,weekly_submission_id,included')
+        .eq('school_id', schoolId)
+        .in('approval_id', approvalIds)
     : {data: [], error: null};
   requireNoError(linksResult.error);
 
@@ -327,19 +389,55 @@ export async function getReportBatchWorkspace(
   const submissionById = new Map(
     submissions.map((row) => [row.id, row])
   );
-  const sourceLinks = (linksResult.data ?? []) as Array<{approval_id: string; weekly_submission_id: string}>;
+  const sourceLinks = (linksResult.data ?? []) as Array<{
+    approval_id: string;
+    weekly_submission_id: string;
+    included: boolean;
+  }>;
 
   const sources: ReportBatchSource[] = submissions.map((row) => {
-    const subject = subjectById.get(subjectIdByClassSubject.get(row.class_subject_id) ?? '');
-    const group = row.subject_group_id ? groupById.get(row.subject_group_id) : null;
+    const subject = subjectById.get(
+      subjectIdByClassSubject.get(row.class_subject_id) ?? ''
+    );
+
+    const group = row.subject_group_id
+      ? groupById.get(row.subject_group_id)
+      : null;
+
+    const coveredDates =
+      coveredDatesBySubmission.get(row.id) ?? [];
+
+    const sourceLink = sourceLinks.find(
+      ({weekly_submission_id}) =>
+        weekly_submission_id === row.id
+    );
+
+    const partialOverlap =
+      row.coverage_kind === 'DATES'
+        ? coveredDates.some(
+            (coveredOn) =>
+              coveredOn < batch.period_start ||
+              coveredOn > batch.period_end
+          )
+        : row.period_start < batch.period_start ||
+          row.period_end > batch.period_end;
+
     return {
       id: row.id,
       classSubjectId: row.class_subject_id,
       subjectGroupId: row.subject_group_id,
       weekStart: row.week_start,
+      coverageKind: row.coverage_kind,
+      periodStart: row.period_start,
+      periodEnd: row.period_end,
+      coveredDates,
+      included: sourceLink?.included ?? true,
+      partialOverlap,
       teacherId: row.teacher_id,
-      teacherName: teacherById.get(row.teacher_id) ?? 'Teacher',
-      subjectNameEn: subject?.name_en ?? row.class_subject_id,
+      teacherName:
+        teacherById.get(row.teacher_id) ?? 'Teacher',
+      subjectNameEn:
+        subject?.name_en ?? row.class_subject_id,
       subjectNameAr: subject?.name_ar ?? null,
       groupNameEn: group?.name_en ?? null,
       groupNameAr: group?.name_ar ?? null,
@@ -361,20 +459,35 @@ export async function getReportBatchWorkspace(
     commentEn: row.comment_en,
     commentAr: row.comment_ar,
     selectedSourceIds: sourceLinks
-      .filter(({approval_id}) => approval_id === row.id)
-      .map(({weekly_submission_id}) => weekly_submission_id)
+      .filter(
+        ({approval_id, included}) =>
+          approval_id === row.id && included
+      )
+      .map(
+        ({weekly_submission_id}) => weekly_submission_id
+      )
   }));
 
   const expectedContexts = new Set(
-    sources.map((source) =>
-      contextKey(source.classSubjectId, source.subjectGroupId)
-    )
+    sources
+      .filter(({included}) => included)
+      .map((source) =>
+        contextKey(
+          source.classSubjectId,
+          source.subjectGroupId
+        )
+      )
   ).size;
 
   const approvedContexts = new Set(
-    approvals.map((approval) =>
-      contextKey(approval.classSubjectId, approval.subjectGroupId)
-    )
+    approvals
+      .filter(({selectedSourceIds}) => selectedSourceIds.length > 0)
+      .map((approval) =>
+        contextKey(
+          approval.classSubjectId,
+          approval.subjectGroupId
+        )
+      )
   ).size;
 
   const summaryStudents = scopedStudentIds
@@ -499,11 +612,20 @@ export async function approveAllSubmittedSources(schoolId: string, batchId: stri
   if (workspace.batch.status === 'FINALIZED') {
     throw new Error('Finalized report batches cannot be changed');
   }
-  if (workspace.sources.length === 0) throw new Error('No submitted teaching sources are available for this batch');
+  const includedSources = workspace.sources.filter(
+    ({included}) => included
+  );
+
+  if (includedSources.length === 0) {
+    throw new Error(
+      'No included Teaching Updates are available for this batch'
+    );
+  }
 
   const db = await createServerSupabaseClient();
   const grouped = new Map<string, ReportBatchSource[]>();
-  for (const source of workspace.sources) {
+
+  for (const source of includedSources) {
     const key = contextKey(source.classSubjectId, source.subjectGroupId);
     grouped.set(key, [...(grouped.get(key) ?? []), source]);
   }
@@ -559,8 +681,29 @@ export async function reviewReportBatch(schoolId: string, batchId: string) {
   const workspace = await getReportBatchWorkspace(schoolId, batchId);
   if (!workspace) throw new Error('Report batch not found');
   if (workspace.batch.status !== 'DRAFT') throw new Error('Only draft report batches can move to review');
-  const expected = new Set(workspace.sources.map((source) => contextKey(source.classSubjectId, source.subjectGroupId)));
-  const approved = new Set(workspace.approvals.map((item) => contextKey(item.classSubjectId, item.subjectGroupId)));
+  const expected = new Set(
+    workspace.sources
+      .filter(({included}) => included)
+      .map((source) =>
+        contextKey(
+          source.classSubjectId,
+          source.subjectGroupId
+        )
+      )
+  );
+
+  const approved = new Set(
+    workspace.approvals
+      .filter(
+        ({selectedSourceIds}) => selectedSourceIds.length > 0
+      )
+      .map((item) =>
+        contextKey(
+          item.classSubjectId,
+          item.subjectGroupId
+        )
+      )
+  );
   if (expected.size === 0 || [...expected].some((key) => !approved.has(key))) {
     throw new Error('Approve submitted sources before moving the report batch to review');
   }
@@ -595,26 +738,36 @@ export async function finalizeReportBatch(schoolId: string, batchId: string) {
     throw new Error('Report batch is already finalized');
   }
 
-  if (workspace.approvals.length === 0) {
-    throw new Error('Report batch has no approved sections');
+  if (
+    workspace.approvals.every(
+      ({selectedSourceIds}) => selectedSourceIds.length === 0
+    )
+  ) {
+    throw new Error('Report batch has no included approved sections');
   }
 
   const expectedContexts = new Set(
-    workspace.sources.map((source) =>
-      contextKey(
-        source.classSubjectId,
-        source.subjectGroupId
+    workspace.sources
+      .filter(({included}) => included)
+      .map((source) =>
+        contextKey(
+          source.classSubjectId,
+          source.subjectGroupId
+        )
       )
-    )
   );
 
   const approvedContexts = new Set(
-    workspace.approvals.map((approval) =>
-      contextKey(
-        approval.classSubjectId,
-        approval.subjectGroupId
+    workspace.approvals
+      .filter(
+        ({selectedSourceIds}) => selectedSourceIds.length > 0
       )
-    )
+      .map((approval) =>
+        contextKey(
+          approval.classSubjectId,
+          approval.subjectGroupId
+        )
+      )
   );
 
   if (
@@ -630,7 +783,9 @@ export async function finalizeReportBatch(schoolId: string, batchId: string) {
 
   const db = await createServerSupabaseClient();
   const template = await getActiveReportTemplate(schoolId);
-  const sourceIds = workspace.sources.map(({id}) => id);
+  const sourceIds = workspace.sources
+    .filter(({included}) => included)
+    .map(({id}) => id);
   const approvalIds = workspace.approvals.map(({id}) => id);
   const classSubjectIds = [...new Set(workspace.approvals.map(({classSubjectId}) => classSubjectId))];
 
@@ -808,4 +963,374 @@ export async function finalizeReportBatch(schoolId: string, batchId: string) {
   });
   if (error) throw error;
   return data as number;
+}
+
+
+export type ClassReportCycleListItem = {
+  id: string;
+  classId: string;
+  classNameEn: string;
+  classNameAr: string | null;
+  periodStart: string;
+  periodEnd: string;
+  status: ReportBatchStatus;
+  createdAt: string;
+};
+
+export type ClassReportCycleMissingContext = {
+  classSubjectId: string;
+  subjectGroupId: string | null;
+  subjectNameEn: string;
+  subjectNameAr: string | null;
+  groupNameEn: string | null;
+  groupNameAr: string | null;
+};
+
+export type ClassReportCycleWorkspace =
+  ReportBatchWorkspace & {
+    missingContexts: ClassReportCycleMissingContext[];
+    reports: Array<{
+      id: string;
+      studentId: string;
+      studentNameEn: string;
+      studentNameAr: string | null;
+      language: ReportLanguage;
+      status: 'DRAFT' | 'READY' | 'SENT' | 'FAILED';
+    }>;
+  };
+
+export async function createClassReportCycle(
+  classId: string,
+  periodStart: string,
+  periodEnd: string,
+  templateId: string | null
+) {
+  const db =
+    (await createServerSupabaseClient()) as unknown as SupabaseClient;
+
+  const {data, error} = await db.rpc(
+    'create_class_report_cycle',
+    {
+      p_class_id: classId,
+      p_period_start: periodStart,
+      p_period_end: periodEnd,
+      p_template_id: templateId
+    }
+  );
+
+  if (error) throw error;
+  return data as string;
+}
+
+export async function listClassReportCycles(
+  schoolId: string
+): Promise<ClassReportCycleListItem[]> {
+  const db = await createServerSupabaseClient();
+
+  const {data: batches, error: batchError} = await db
+    .from('report_batches')
+    .select(
+      'id,class_id,period_start,period_end,status,created_at'
+    )
+    .eq('school_id', schoolId)
+    .eq('scope_type', 'CLASS')
+    .order('created_at', {ascending: false});
+
+  if (batchError) throw batchError;
+
+  const classIds = [
+    ...new Set((batches ?? []).map(({class_id}) => class_id))
+  ];
+
+  const classResult =
+    classIds.length > 0
+      ? await db
+          .from('classes')
+          .select('id,name_en,name_ar')
+          .eq('school_id', schoolId)
+          .in('id', classIds)
+      : {data: [], error: null};
+
+  if (classResult.error) throw classResult.error;
+
+  const classes = new Map(
+    (classResult.data ?? []).map((row) => [row.id, row])
+  );
+
+  return (batches ?? []).map((row) => {
+    const classInfo = classes.get(row.class_id);
+
+    return {
+      id: row.id,
+      classId: row.class_id,
+      classNameEn: classInfo?.name_en ?? row.class_id,
+      classNameAr: classInfo?.name_ar ?? null,
+      periodStart: row.period_start,
+      periodEnd: row.period_end,
+      status: row.status as ReportBatchStatus,
+      createdAt: row.created_at
+    };
+  });
+}
+
+export async function getClassReportCycleWorkspace(
+  batchId: string
+): Promise<ClassReportCycleWorkspace | null> {
+  const db = await createServerSupabaseClient();
+
+  const {data: batch, error: batchError} = await db
+    .from('report_batches')
+    .select('school_id,scope_type')
+    .eq('id', batchId)
+    .maybeSingle();
+
+  if (batchError) throw batchError;
+
+  if (!batch || batch.scope_type !== 'CLASS') {
+    return null;
+  }
+
+  const schoolId = batch.school_id;
+  const workspace =
+    await getReportBatchWorkspace(schoolId, batchId);
+
+  if (!workspace) return null;
+
+  const [
+    classSubjectsResult,
+    reportsResult
+  ] = await Promise.all([
+    db
+      .from('class_subjects')
+      .select('id,subject_id')
+      .eq('school_id', schoolId)
+      .eq('class_id', workspace.batch.classId)
+      .eq('is_active', true),
+    db
+      .from('reports')
+      .select(
+        'id,student_id,language,status,students(first_name_en,last_name_en,first_name_ar,last_name_ar)'
+      )
+      .eq('school_id', schoolId)
+      .eq('batch_id', batchId)
+      .order('generated_at')
+  ]);
+
+  if (classSubjectsResult.error) {
+    throw classSubjectsResult.error;
+  }
+
+  if (reportsResult.error) throw reportsResult.error;
+
+  const classSubjects =
+    classSubjectsResult.data ?? [];
+
+  const subjectIds = [
+    ...new Set(classSubjects.map(({subject_id}) => subject_id))
+  ];
+
+  const classSubjectIds =
+    classSubjects.map(({id}) => id);
+
+  const [subjectsResult, groupsResult] = await Promise.all([
+    subjectIds.length > 0
+      ? db
+          .from('subjects')
+          .select('id,name_en,name_ar')
+          .eq('school_id', schoolId)
+          .in('id', subjectIds)
+      : Promise.resolve({data: [], error: null}),
+    classSubjectIds.length > 0
+      ? db
+          .from('subject_groups')
+          .select('id,class_subject_id,name_en,name_ar,is_active')
+          .eq('school_id', schoolId)
+          .eq('is_active', true)
+          .in('class_subject_id', classSubjectIds)
+      : Promise.resolve({data: [], error: null})
+  ]);
+
+  if (subjectsResult.error) throw subjectsResult.error;
+  if (groupsResult.error) throw groupsResult.error;
+
+  const subjectById = new Map(
+    (subjectsResult.data ?? []).map((row) => [row.id, row])
+  );
+
+  const groupsByClassSubject =
+    new Map<string, Array<{
+      id: string;
+      name_en: string;
+      name_ar: string | null;
+    }>>();
+
+  for (const group of groupsResult.data ?? []) {
+    const list =
+      groupsByClassSubject.get(group.class_subject_id) ?? [];
+
+    list.push(group);
+    groupsByClassSubject.set(group.class_subject_id, list);
+  }
+
+  const expectedContexts: ClassReportCycleMissingContext[] = [];
+
+  for (const classSubject of classSubjects) {
+    const subject = subjectById.get(classSubject.subject_id);
+    const groups =
+      groupsByClassSubject.get(classSubject.id) ?? [];
+
+    if (groups.length === 0) {
+      expectedContexts.push({
+        classSubjectId: classSubject.id,
+        subjectGroupId: null,
+        subjectNameEn:
+          subject?.name_en ?? classSubject.id,
+        subjectNameAr: subject?.name_ar ?? null,
+        groupNameEn: null,
+        groupNameAr: null
+      });
+
+      continue;
+    }
+
+    for (const group of groups) {
+      expectedContexts.push({
+        classSubjectId: classSubject.id,
+        subjectGroupId: group.id,
+        subjectNameEn:
+          subject?.name_en ?? classSubject.id,
+        subjectNameAr: subject?.name_ar ?? null,
+        groupNameEn: group.name_en,
+        groupNameAr: group.name_ar
+      });
+    }
+  }
+
+  const eligibleContextKeys = new Set(
+    workspace.sources.map((source) =>
+      contextKey(
+        source.classSubjectId,
+        source.subjectGroupId
+      )
+    )
+  );
+
+  const missingContexts = expectedContexts.filter(
+    (context) =>
+      !eligibleContextKeys.has(
+        contextKey(
+          context.classSubjectId,
+          context.subjectGroupId
+        )
+      )
+  );
+
+  const reports = (
+    reportsResult.data ?? []
+  ) as unknown as Array<{
+    id: string;
+    student_id: string;
+    language: ReportLanguage;
+    status: 'DRAFT' | 'READY' | 'SENT' | 'FAILED';
+    students: {
+      first_name_en: string;
+      last_name_en: string;
+      first_name_ar: string | null;
+      last_name_ar: string | null;
+    } | null;
+  }>;
+
+  return {
+    ...workspace,
+    missingContexts,
+    reports: reports.flatMap((report) => {
+      if (!report.students) return [];
+
+      return [{
+        id: report.id,
+        studentId: report.student_id,
+        studentNameEn:
+          `${report.students.first_name_en} ${report.students.last_name_en}`,
+        studentNameAr:
+          report.students.first_name_ar &&
+          report.students.last_name_ar
+            ? `${report.students.first_name_ar} ${report.students.last_name_ar}`
+            : null,
+        language: report.language,
+        status: report.status
+      }];
+    })
+  };
+}
+
+export async function listEligibleTeachingUpdateSources(
+  batchId: string
+): Promise<ReportBatchSource[]> {
+  const workspace =
+    await getClassReportCycleWorkspace(batchId);
+
+  return workspace?.sources ?? [];
+}
+
+export async function setReportCycleSourceIncluded(
+  batchId: string,
+  submissionId: string,
+  included: boolean
+) {
+  const typedDb = await createServerSupabaseClient();
+
+  const {data: batch, error: batchError} = await typedDb
+    .from('report_batches')
+    .select('school_id')
+    .eq('id', batchId)
+    .maybeSingle();
+
+  if (batchError) throw batchError;
+  if (!batch) throw new Error('Report Cycle not found');
+
+  const {data: approvals, error: approvalError} = await typedDb
+    .from('report_section_approvals')
+    .select('id')
+    .eq('school_id', batch.school_id)
+    .eq('batch_id', batchId);
+
+  if (approvalError) throw approvalError;
+
+  const approvalIds = (approvals ?? []).map(({id}) => id);
+
+  let linked = false;
+
+  if (approvalIds.length > 0) {
+    const {data: existingLink, error: linkError} = await typedDb
+      .from('report_section_sources')
+      .select('id')
+      .eq('school_id', batch.school_id)
+      .eq('weekly_submission_id', submissionId)
+      .in('approval_id', approvalIds)
+      .limit(1)
+      .maybeSingle();
+
+    if (linkError) throw linkError;
+    linked = Boolean(existingLink);
+  }
+
+  if (!linked) {
+    await approveAllSubmittedSources(
+      batch.school_id,
+      batchId
+    );
+  }
+
+  const db = typedDb as unknown as SupabaseClient;
+
+  const {error} = await db.rpc(
+    'set_report_cycle_source_included',
+    {
+      p_batch_id: batchId,
+      p_submission_id: submissionId,
+      p_included: included
+    }
+  );
+
+  if (error) throw error;
 }

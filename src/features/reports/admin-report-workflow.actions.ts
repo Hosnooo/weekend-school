@@ -1,17 +1,22 @@
 'use server';
 
+import type {SupabaseClient} from '@supabase/supabase-js';
 import {revalidatePath} from 'next/cache';
 import {redirect} from 'next/navigation';
 import {z} from 'zod';
 
 import {isLocale, type Locale} from '@/i18n/config';
 import {requireProfile} from '@/lib/auth/require-profile';
+import {createServerSupabaseClient} from '@/lib/supabase/server';
 import {databaseUuid} from '@/lib/validation/fields';
 
 import {
+  approveAllSubmittedSources,
+  createClassReportCycle,
   finalizeReportBatch,
   getReportBatchWorkspace,
-  reviewReportBatch
+  reviewReportBatch,
+  setReportCycleSourceIncluded
 } from './report-batch.repository';
 import {
   ensureAdminReportContextBatch,
@@ -19,6 +24,7 @@ import {
   saveAdminReportWorkspace
 } from './admin-report-workspace.repository';
 import {reportPeriodSchema} from './report.schemas';
+import {getActiveReportTemplate} from './report-template.repository';
 import type {ReportPerformance} from './report.types';
 
 const performanceSchema = z.enum([
@@ -391,6 +397,235 @@ export async function reopenAdminReportWorkspaceAction(
       period.data.periodStart,
       period.data.periodEnd,
       batchId.data
+    )
+  );
+}
+
+
+export async function createClassReportCycleAction(
+  formData: FormData
+) {
+  const locale = localeFrom(formData);
+  const profile = await requireProfile(locale, 'ADMIN');
+
+  const classId = databaseUuid.safeParse(
+    formData.get('classId')
+  );
+
+  const period = periodFrom(formData);
+
+  if (!classId.success || !period.success) {
+    redirect(`/${locale}/reports?error=validation`);
+  }
+
+  let batchId: string;
+
+  try {
+    const template =
+      await getActiveReportTemplate(profile.schoolId);
+
+    batchId = await createClassReportCycle(
+      classId.data,
+      period.data.periodStart,
+      period.data.periodEnd,
+      template.id
+    );
+  } catch (error) {
+    console.error('Unable to create Report Cycle', {error});
+
+    redirect(
+      reportRedirect(
+        locale,
+        period.data.periodStart,
+        period.data.periodEnd,
+        undefined,
+        'error=save'
+      )
+    );
+  }
+
+  revalidatePath(`/${locale}/reports`);
+
+  redirect(
+    reportRedirect(
+      locale,
+      period.data.periodStart,
+      period.data.periodEnd,
+      batchId
+    )
+  );
+}
+
+export async function setReportCycleSourceIncludedAction(
+  formData: FormData
+) {
+  const locale = localeFrom(formData);
+  await requireProfile(locale, 'ADMIN');
+
+  const batchId = batchIdFrom(formData);
+  const submissionId = databaseUuid.safeParse(
+    formData.get('submissionId')
+  );
+
+  const included =
+    String(formData.get('included') ?? '') === 'true';
+
+  if (!batchId.success || !submissionId.success) {
+    redirect(`/${locale}/reports?error=validation`);
+  }
+
+  try {
+    await setReportCycleSourceIncluded(
+      batchId.data,
+      submissionId.data,
+      included
+    );
+  } catch (error) {
+    console.error(
+      'Unable to change Report Cycle source selection',
+      {error}
+    );
+
+    redirect(
+      `/${locale}/reports/workspace/${batchId.data}?error=save`
+    );
+  }
+
+  revalidatePath(
+    `/${locale}/reports/workspace/${batchId.data}`
+  );
+
+  redirect(
+    `/${locale}/reports/workspace/${batchId.data}`
+  );
+}
+
+export async function requestReportCycleMissingUpdateAction(
+  formData: FormData
+) {
+  const locale = localeFrom(formData);
+  await requireProfile(locale, 'ADMIN');
+
+  const batchId = batchIdFrom(formData);
+  const classSubjectId = databaseUuid.safeParse(
+    formData.get('classSubjectId')
+  );
+
+  const period = periodFrom(formData);
+
+  if (
+    !batchId.success ||
+    !classSubjectId.success ||
+    !period.success
+  ) {
+    redirect(`/${locale}/reports?error=validation`);
+  }
+
+  const db =
+    (await createServerSupabaseClient()) as unknown as SupabaseClient;
+
+  const {error} = await db.rpc(
+    'request_teaching_update',
+    {
+      p_class_subject_id: classSubjectId.data,
+      p_coverage_kind: 'RANGE',
+      p_period_start: period.data.periodStart,
+      p_period_end: period.data.periodEnd,
+      p_dates: [],
+      p_admin_note: null
+    }
+  );
+
+  if (error) {
+    console.error(
+      'Unable to request missing Report Cycle update',
+      {error}
+    );
+
+    redirect(
+      `/${locale}/reports/workspace/${batchId.data}?error=save`
+    );
+  }
+
+  revalidatePath(
+    `/${locale}/reports/workspace/${batchId.data}`
+  );
+  revalidatePath(`/${locale}/teaching-updates`);
+  revalidatePath(`/${locale}/my-teaching`);
+
+  redirect(
+    `/${locale}/reports/workspace/${batchId.data}?requested=1`
+  );
+}
+
+export async function finalizeClassReportCycleAction(
+  formData: FormData
+) {
+  const locale = localeFrom(formData);
+  const profile = await requireProfile(locale, 'ADMIN');
+
+  const batchId = batchIdFrom(formData);
+  const period = periodFrom(formData);
+
+  if (!batchId.success || !period.success) {
+    redirect(`/${locale}/reports?error=validation`);
+  }
+
+  try {
+    await approveAllSubmittedSources(
+      profile.schoolId,
+      batchId.data
+    );
+
+    const workspace = await getReportBatchWorkspace(
+      profile.schoolId,
+      batchId.data
+    );
+
+    if (!workspace) {
+      throw new Error('Report Cycle not found');
+    }
+
+    if (workspace.batch.status === 'DRAFT') {
+      await reviewReportBatch(
+        profile.schoolId,
+        batchId.data
+      );
+    }
+
+    await finalizeReportBatch(
+      profile.schoolId,
+      batchId.data
+    );
+  } catch (error) {
+    console.error(
+      'Unable to generate Class Report Cycle reports',
+      {error}
+    );
+
+    redirect(
+      reportRedirect(
+        locale,
+        period.data.periodStart,
+        period.data.periodEnd,
+        batchId.data,
+        'error=save'
+      )
+    );
+  }
+
+  revalidatePath(`/${locale}/reports`);
+  revalidatePath(
+    `/${locale}/reports/workspace/${batchId.data}`
+  );
+
+  redirect(
+    reportRedirect(
+      locale,
+      period.data.periodStart,
+      period.data.periodEnd,
+      batchId.data,
+      'finalized=1'
     )
   );
 }
