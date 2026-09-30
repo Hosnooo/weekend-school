@@ -1,10 +1,11 @@
 import {render, screen} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import {describe, expect, it, vi} from 'vitest';
 
 import {ManagedArchiveTable} from '@/features/archives/managed-archive-table';
 
 describe('archived Class destructive deletion', () => {
-  it('shows impact but allows an archived Class with dependencies to be deleted', () => {
+  it('shows impact and reveals confirmed deletion for an archived Class with dependencies', async () => {
     render(
       <ManagedArchiveTable
         labels={{
@@ -62,6 +63,8 @@ describe('archived Class destructive deletion', () => {
     expect(screen.getByText('Class subjects: 2')).toBeVisible();
     expect(screen.getByText('Enrollments: 6')).toBeVisible();
     expect(screen.getByText('Deletes related data')).toBeVisible();
+
+    await userEvent.click(screen.getByText('Permanently delete', {selector: 'summary'}));
 
     expect(
       screen.getByRole('button', {name: 'Permanently delete'})

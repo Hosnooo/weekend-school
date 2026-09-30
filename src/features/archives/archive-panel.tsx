@@ -39,12 +39,13 @@ export function ArchivePanel({
   permanentDeleteAction?: FormAction;
 }) {
   return (
-    <section className="admin-card-stack" aria-label={labels.title}>
+    <section className="detail-section archive-list" aria-label={labels.title}>
       <h2>{labels.title}</h2>
       {students.length === 0 ? <p className="empty-state">{labels.empty}</p> : students.map((student) => (
-        <article className="admin-card" key={student.id}>
-          <h3>{student.name}</h3>
-          <div className="row-actions">
+        <article className="archive-record" key={student.id}>
+          <div className="archive-record-main">
+            <h3 className="record-name">{student.name}</h3>
+            <div className="row-actions">
             <form action={restoreAction}>
               <input name="locale" type="hidden" value={locale}/>
               <input name="id" type="hidden" value={student.id}/>
@@ -56,12 +57,14 @@ export function ArchivePanel({
               <input name="id" type="hidden" value={student.id}/>
               <button className="button button-secondary" type="submit">{labels.downloadData}</button>
             </ProtectedDownloadForm>
+            </div>
           </div>
 
-          <p>{labels.downloadFirst}</p>
-          <DeleteImpactDialog impact={student.impact} labels={labels}/>
-
-          <form action={permanentDeleteAction} className="period-form">
+          <details className="archive-delete-disclosure">
+            <summary>{labels.permanentDelete}</summary>
+            <p className="record-meta">{labels.downloadFirst}</p>
+            <DeleteImpactDialog impact={student.impact} labels={labels}/>
+            <form action={permanentDeleteAction} className="period-form">
             <input name="locale" type="hidden" value={locale}/>
             <input name="id" type="hidden" value={student.id}/>
             <input
@@ -80,7 +83,8 @@ export function ArchivePanel({
               />
             </label>
             <button className="button button-danger" type="submit">{labels.permanentDelete}</button>
-          </form>
+            </form>
+          </details>
         </article>
       ))}
     </section>

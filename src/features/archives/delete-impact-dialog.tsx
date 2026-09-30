@@ -18,7 +18,7 @@ export function DeleteImpactDialog({
   labels: DeleteImpactLabels;
 }) {
   return (
-    <section className="admin-card" aria-label={labels.deleteImpact}>
+    <section className="archive-impact" aria-label={labels.deleteImpact}>
       <strong>{labels.deleteImpact}</strong>
       <ul>
         <li>{labels.memberships}: {impact.counts.memberships}</li>

@@ -1,12 +1,16 @@
 import {expect, test} from '@playwright/test';
 
-import {redesign} from './redesign-fixtures';
 import {credentials, login} from './helpers';
 
 test.describe.configure({retries: 0});
 
 test('archive restore protected export and permanent delete preserve sibling data', async ({page}) => {
   await login(page, 'en', credentials.admin);
+  await page.goto('/en/archives');
+  const existingArchivedCandidate = page.locator('article').filter({hasText: 'Archive Candidate'});
+  if (await existingArchivedCandidate.count()) {
+    await existingArchivedCandidate.getByRole('button', {name: 'Restore'}).click();
+  }
   await page.goto('/en/students?q=Archive');
   const candidateRow = page.getByRole('row', {name: /Archive Candidate/});
   await expect(candidateRow).toBeVisible();
@@ -42,6 +46,7 @@ test('archive restore protected export and permanent delete preserve sibling dat
     .getByRole('dialog', {name: 'Deactivate'})
     .getByRole('button', {name: 'Deactivate'})
     .click();
+  await expect(page.getByRole('row', {name: /Archive Candidate/})).toHaveCount(0);
 
   await page.goto('/en/archives');
   card = page.locator('article').filter({hasText: 'Archive Candidate'});
@@ -58,7 +63,8 @@ test('archive restore protected export and permanent delete preserve sibling dat
   await page.goto('/en/archives');
   card = page.locator('article').filter({hasText: 'Archive Candidate'});
   await expect(card).toBeVisible();
-  await card.getByLabel('Confirmation').fill(`DELETE ${redesign.archiveStudentId}`);
+  await card.locator('summary').click();
+  await card.getByLabel('Type the record name exactly to confirm').fill('Archive Candidate');
   await card.getByRole('button', {name: 'Permanently delete'}).click();
   await expect(page.locator('article').filter({hasText: 'Archive Candidate'})).toHaveCount(0);
 

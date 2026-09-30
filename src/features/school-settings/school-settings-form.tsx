@@ -32,7 +32,7 @@ export function SchoolSettingsForm({
   );
 
   return (
-    <form action={action} className="record-form">
+    <form action={action} className="settings-form">
       <input name="locale" type="hidden" value={locale} />
 
       {saved ? (

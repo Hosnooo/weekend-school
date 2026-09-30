@@ -71,18 +71,17 @@ export function ExportPanel({
   ] as const;
 
   return (
-    <section className="admin-card" aria-label={labels.title}>
+    <section className="detail-section export-panel" aria-label={labels.title}>
       <h2>{labels.title}</h2>
 
-      <ProtectedDownloadForm action={action} className="form-stack">
+      <ProtectedDownloadForm action={action} className="form-stack export-workflow">
         <input name="locale" type="hidden" value={locale} />
 
         <fieldset>
           <legend>{labels.period}</legend>
 
           <label>
-            {labels.period}
-            <select defaultValue="THIS_MONTH" name="periodPreset">
+            <select aria-label={labels.period} defaultValue="THIS_MONTH" name="periodPreset">
               <option value="THIS_WEEK">{labels.thisWeek}</option>
               <option value="LAST_WEEK">{labels.lastWeek}</option>
               <option value="THIS_MONTH">{labels.thisMonth}</option>
@@ -109,8 +108,7 @@ export function ExportPanel({
           <legend>{labels.scope}</legend>
 
           <label>
-            {labels.scope}
-            <select defaultValue="SCHOOL" name="scopeType">
+            <select aria-label={labels.scope} defaultValue="SCHOOL" name="scopeType">
               <option value="SCHOOL">{labels.school}</option>
               <option value="CLASS">{labels.class}</option>
               <option value="SUBJECT">{labels.subject}</option>

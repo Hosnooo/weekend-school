@@ -17,7 +17,7 @@ export default function ProtectedError({
   }, [error]);
 
   return (
-    <section className="error-state" role="alert">
+    <section className="protected-status protected-error" role="alert">
       <p>{t('unexpectedError')}</p>
       <button className="button button-primary" onClick={reset} type="button">
         {t('retry')}

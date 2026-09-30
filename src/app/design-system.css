@@ -210,6 +210,50 @@
 .report-cycle-delivery { padding-block-start: var(--space-5); border-block-start: 1px solid var(--border-subtle); }
 .report-cycle-delivery .button { margin-block-start: var(--space-3); }
 
+.export-panel h2,
+.archive-list h2,
+.managed-archive-table h2,
+.roster-export-panel h2,
+.report-template-settings h2 { margin-block: 0 var(--space-4); font-size: 1.0625rem; }
+.export-workflow,
+.settings-form { display: grid; gap: var(--space-5); min-inline-size: 0; }
+.export-workflow fieldset { min-inline-size: 0; margin: 0; padding: var(--space-5) 0 0; border: 0; border-block-start: 1px solid var(--border-subtle); }
+.export-workflow legend { padding: 0; font-weight: 650; }
+.export-workflow label { display: grid; gap: var(--space-2); min-inline-size: 0; font-size: 0.875rem; font-weight: 600; }
+.export-workflow .form-grid { margin-block-start: var(--space-4); }
+.export-workflow select,
+.export-workflow input:not([type='hidden']):not([type='checkbox']) { inline-size: 100%; min-block-size: var(--control-height); padding-inline: var(--space-3); border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); color: var(--text); }
+.export-workflow label:has(input[type='checkbox']) { display: flex; align-items: center; gap: var(--space-2); font-weight: 400; }
+.export-workflow > .button { justify-self: start; }
+.roster-export-panel { display: grid; gap: var(--space-5); }
+.roster-export-panel h3 { margin-block: 0 var(--space-3); font-size: 0.9375rem; }
+.roster-export-panel .action-list { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.archive-list { display: grid; }
+.archive-record { min-inline-size: 0; padding-block: var(--space-4); border-block-start: 1px solid var(--border-subtle); }
+.archive-record-main { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); min-inline-size: 0; }
+.archive-record h3 { margin: 0; }
+.archive-delete-disclosure { min-inline-size: 0; }
+.archive-delete-disclosure summary { cursor: pointer; padding-block: var(--space-3); color: var(--danger); font-weight: 600; }
+.archive-delete-disclosure[open] { margin-block-start: var(--space-3); border-block-start: 1px solid var(--border-subtle); }
+.archive-delete-disclosure .period-form,
+.archive-delete-disclosure .inline-delete-form { margin-block-start: var(--space-4); }
+.archive-impact { padding-block: var(--space-3); }
+.archive-impact ul { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2) var(--space-5); margin-block: var(--space-3) 0; padding-inline-start: var(--space-5); }
+.managed-archive-table { min-inline-size: 0; }
+.managed-archive-table .table-wrap { min-inline-size: 0; }
+.managed-archive-table td { vertical-align: top; }
+.managed-archive-table td .form-help { margin-block: var(--space-2) 0; }
+.settings-form .form-grid { gap: var(--space-4); }
+.settings-form .subsection { padding: var(--space-4) 0; border: 0; border-block-start: 1px solid var(--border-subtle); border-radius: 0; background: transparent; }
+.settings-form textarea { inline-size: 100%; min-block-size: 5rem; padding: var(--space-3); border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); color: var(--text); }
+.settings-form .form-actions { padding-block-start: var(--space-4); border-block-start: 1px solid var(--border-subtle); }
+.settings-template-disclosure { min-inline-size: 0; border-block-start: 1px solid var(--border-subtle); }
+.settings-template-disclosure summary { min-block-size: var(--control-height); padding-block: var(--space-4); cursor: pointer; font-weight: 650; }
+.settings-template-disclosure .report-template-settings { padding-block-start: var(--space-3); }
+.protected-status { margin: 0; padding: var(--space-5); border-block-start: 1px solid var(--border-subtle); background: var(--surface-subtle); color: var(--muted); }
+.protected-error { display: grid; justify-items: start; gap: var(--space-4); color: var(--text); }
+.protected-error p { margin: 0; }
+
 @media (max-width: 640px) {
   .compact-record-row,
   .report-source-row,
@@ -217,6 +261,25 @@
   .compact-record-row progress { inline-size: 100%; max-inline-size: 100%; }
   .report-source-row form .button,
   .report-cycle-row .button { inline-size: 100%; }
+  .export-workflow > .button,
+  .roster-export-panel .button { inline-size: 100%; }
+  .archive-record-main { align-items: stretch; flex-direction: column; }
+  .archive-record-main .row-actions,
+  .archive-record-main .row-actions > * { inline-size: 100%; }
+  .archive-record-main .button { inline-size: 100%; }
+  .archive-impact ul { grid-template-columns: 1fr; }
+  .managed-archive-table .table-wrap { overflow: visible; border: 0; background: transparent; }
+  .managed-archive-table thead { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); }
+  .managed-archive-table table,
+  .managed-archive-table tbody,
+  .managed-archive-table tr { display: block; inline-size: 100%; }
+  .managed-archive-table tr { padding-block: var(--space-3); border-block-start: 1px solid var(--border-subtle); }
+  .managed-archive-table td { display: grid; grid-template-columns: 6rem minmax(0, 1fr); gap: var(--space-3); padding: var(--space-2) 0; border: 0; }
+  .managed-archive-table td::before { content: attr(data-label); color: var(--muted); font-size: 0.75rem; font-weight: 600; }
+  .managed-archive-table td .row-actions { min-inline-size: 0; }
+  .managed-archive-table .inline-delete-form { display: grid; gap: var(--space-2); }
+  .managed-archive-table .inline-delete-form input,
+  .managed-archive-table .inline-delete-form .button { inline-size: 100%; }
 }
 
 @media (max-width: 640px) {

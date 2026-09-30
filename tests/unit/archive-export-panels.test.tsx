@@ -1,4 +1,5 @@
 import {render, screen} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import {describe, expect, it} from 'vitest';
 
 import {ArchivePanel} from '@/features/archives/archive-panel';
@@ -54,7 +55,7 @@ const exportLabels = {
 };
 
 describe('archives and exports admin panels', () => {
-  it('shows archived-student recovery, history, download, impact, and permanent-delete controls', () => {
+  it('keeps archived-student deletion impact and confirmation behind a deliberate disclosure', async () => {
     render(<ArchivePanel
       labels={archiveLabels}
       locale="en"
@@ -82,6 +83,10 @@ describe('archives and exports admin panels', () => {
     expect(screen.getByRole('button', {name: 'Restore'})).toBeVisible();
     expect(screen.getByText('View data/history')).toBeVisible();
     expect(screen.getByRole('button', {name: 'Download data'})).toBeVisible();
+    const deleteDisclosure = screen.getByText('Permanently delete', {selector: 'summary'});
+    expect(deleteDisclosure.closest('details')).not.toHaveAttribute('open');
+    await userEvent.click(deleteDisclosure);
+    expect(deleteDisclosure.closest('details')).toHaveAttribute('open');
     expect(screen.getByText('Download data first')).toBeVisible();
     expect(screen.getByText('Memberships: 3')).toBeVisible();
     expect(screen.getByText('Reports: 4')).toBeVisible();

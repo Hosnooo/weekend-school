@@ -1,4 +1,5 @@
 import {render, screen} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 
 
@@ -111,7 +112,7 @@ describe('Archives lifecycle workflow', () => {
     vi.mocked(listManagedArchivedRecords).mockResolvedValue([]);
   });
 
-  it('keeps Restore and permanent delete available for a safe archived record', async () => {
+  it('keeps Restore immediate and reveals permanent delete only after opening the action', async () => {
     vi.mocked(listManagedArchivedRecords).mockResolvedValue([
       {
         entityType: 'TEACHER',
@@ -138,6 +139,10 @@ describe('Archives lifecycle workflow', () => {
     expect(screen.getByText('Archived Teacher')).toBeVisible();
     expect(screen.getByText('Safe to delete')).toBeVisible();
     expect(screen.getByRole('button', {name: 'Restore'})).toBeVisible();
+    const deleteDisclosure = screen.getByText('Permanently delete', {selector: 'summary'});
+    expect(deleteDisclosure.closest('details')).not.toHaveAttribute('open');
+    await userEvent.click(deleteDisclosure);
+    expect(deleteDisclosure.closest('details')).toHaveAttribute('open');
     expect(
       screen.getByRole('button', {name: 'Permanently delete'})
     ).toBeEnabled();
@@ -174,6 +179,8 @@ describe('Archives lifecycle workflow', () => {
     expect(
       screen.getByText('Deletes related data')
     ).toBeVisible();
+
+    await userEvent.click(screen.getByText('Permanently delete', {selector: 'summary'}));
 
     const deleteButton = screen.getByRole('button', {
       name: 'Permanently delete'

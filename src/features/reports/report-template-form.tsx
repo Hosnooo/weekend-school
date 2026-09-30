@@ -4,7 +4,6 @@ import {useActionState} from 'react';
 import {useTranslations} from 'next-intl';
 
 import {Button} from '@/components/ui/button';
-import {Card} from '@/components/ui/card';
 import {FormFeedback} from '@/components/ui/form-feedback';
 import {FormField} from '@/components/ui/form-field';
 import {Input} from '@/components/ui/input';
@@ -33,15 +32,12 @@ export function ReportTemplateForm({
   );
 
   return (
-    <Card className="content-section">
-      <div className="section-heading">
-        <div>
-          <h2>{t('title')}</h2>
-          <p className="field-help">{t('description')}</p>
-        </div>
-      </div>
+    <details className="settings-template-disclosure" open={saved}>
+      <summary>{t('title')}</summary>
+      <section className="detail-section report-template-settings">
+      <p className="field-help">{t('description')}</p>
 
-      <form action={action} className="record-form">
+      <form action={action} className="settings-form">
         <input name="locale" type="hidden" value={locale} />
 
         {saved ? (
@@ -257,6 +253,7 @@ export function ReportTemplateForm({
           </Button>
         </div>
       </form>
-    </Card>
+      </section>
+    </details>
   );
 }

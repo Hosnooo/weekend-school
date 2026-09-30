@@ -24,7 +24,7 @@ export function RosterExportPanel({
   };
 }) {
   return (
-    <section className="record-form">
+    <section className="detail-section roster-export-panel">
       <div>
         <h2>{labels.title}</h2>
         <p>{labels.description}</p>

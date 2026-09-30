@@ -49,7 +49,7 @@ export function ManagedArchiveTable({
 }) {
   return (
     <section
-      className="subsection"
+      className="detail-section managed-archive-table"
       aria-label={labels.sectionTitle}
     >
       <h2>{labels.sectionTitle}</h2>
@@ -81,13 +81,13 @@ export function ManagedArchiveTable({
                   <tr
                     key={`${record.entityType}:${record.id}`}
                   >
-                    <td>{record.entityType}</td>
+                    <td data-label={labels.type}>{record.entityType}</td>
 
-                    <td>
+                    <td data-label={labels.name}>
                       <strong>{record.name}</strong>
                     </td>
 
-                    <td>
+                    <td data-label={labels.dependencies}>
                       {record.impact.dependencyCount}
 
                       {dependencyItems.length > 0 ? (
@@ -108,7 +108,7 @@ export function ManagedArchiveTable({
                       ) : null}
                     </td>
 
-                    <td>
+                    <td data-label={labels.status}>
                       <span
                         className={`status-badge ${
                           blocked || destructive
@@ -124,7 +124,7 @@ export function ManagedArchiveTable({
                       </span>
                     </td>
 
-                    <td>
+                    <td data-label={labels.actions}>
                       <div className="row-actions">
                         <form action={restoreAction}>
                           <input
@@ -151,10 +151,12 @@ export function ManagedArchiveTable({
                           </button>
                         </form>
 
-                        <form
-                          action={permanentDeleteAction}
-                          className="inline-delete-form"
-                        >
+                        <details className="archive-delete-disclosure">
+                          <summary>{labels.permanentDelete}</summary>
+                          <form
+                            action={permanentDeleteAction}
+                            className="inline-delete-form"
+                          >
                           <input
                             name="locale"
                             type="hidden"
@@ -191,7 +193,8 @@ export function ManagedArchiveTable({
                           >
                             {labels.permanentDelete}
                           </button>
-                        </form>
+                          </form>
+                        </details>
                       </div>
                     </td>
                   </tr>

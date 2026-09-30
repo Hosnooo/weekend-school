@@ -367,3 +367,10 @@ Task 16 release verification is complete.
 - Focused report and Teaching Update contracts passed 25/25. The complete Task 6 browser set passed 4/4 against the refreshed production build. `pnpm typecheck`, `pnpm lint`, and `pnpm build` passed. The first concurrent `pnpm test` run had two timeouts; both tests passed alone, and an uncontended full rerun passed 94 files and 408 tests.
 - This task changed UI presentation, copy, CSS, and browser/unit contracts only. It did not change migrations, RLS, repositories, or persistence, so a new database gate was not required for Task 6.
 
+## 2026-09-29 — Full-site UI refactor: Task 7 Data, Archives, and Settings
+
+- Export and roster download now use compact task sections. Archived students and other school records lead with identity, restore, and history/download actions; permanent deletion and its dependent-data impact open on demand. School Settings uses a compact form and a disclosed report template. Protected loading and error states use the same page treatment.
+- Focused deletion-disclosure contracts were observed failing before the UI changes and passed afterward. The archive/export action browser test passed 1/1, and the managed archive impact test passed 1/1 against the local production build. The EN/AR Data and Settings browser checks passed 2/2 at desktop and 360px widths, with no page errors or horizontal overflow. Default collapsed and expanded Settings screenshots were inspected in both directions.
+- `pnpm lint`, `pnpm typecheck`, and `pnpm build` passed. `pnpm test` passed 94 files and 408 tests. `git diff --check` passed.
+- This task changed presentation and browser/unit contracts only; no migration, RLS, or persistence behavior changed, so a separate database gate was not required for Task 7.
+
