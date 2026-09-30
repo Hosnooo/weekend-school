@@ -25,7 +25,25 @@ const templateRoute = join(
   'src/app/api/roster/template/route.ts'
 );
 
+const arabicMessages = JSON.parse(
+  readFileSync(join(root, 'messages/ar.json'), 'utf8')
+);
+
 describe('Administrator roster CSV import UI', () => {
+  it('uses legible Arabic for the new Class preview label', () => {
+    const label: string = arabicMessages.students.import.createClass;
+
+    expect(label).toMatch(/[\u0621-\u064A]/u);
+    expect(label).not.toContain('?');
+  });
+
+  it('separates a new Class name from its creation label clearly', () => {
+    const source = readFileSync(importForm, 'utf8');
+
+    expect(source).not.toContain('${row.class.nameEn} ? ${t(\'createClass\')}');
+    expect(source).toContain('${row.class.nameEn} · ${t(\'createClass\')}');
+  });
+
   it('links the Students page to CSV import', () => {
     const source = readFileSync(studentsPage, 'utf8');
 
@@ -52,6 +70,7 @@ describe('Administrator roster CSV import UI', () => {
     expect(source).toContain('confirmRosterImportAction');
     expect(source).toContain('type="file"');
     expect(source).toContain('accept=".csv,text/csv"');
+    expect(source).not.toContain('encType="multipart/form-data"');
     expect(source).toContain('sourceRows');
     expect(source).not.toContain('resolvedClassId');
     expect(source).not.toContain('resolvedGroupId');
