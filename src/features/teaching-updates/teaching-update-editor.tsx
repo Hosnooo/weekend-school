@@ -67,6 +67,10 @@ export function TeachingUpdateEditor({
     useState<string[]>(update.dates);
   const [dateDraft, setDateDraft] = useState('');
   const [dirty, setDirty] = useState(false);
+  const [progressEn, setProgressEn] =
+    useState(update.progressEn ?? '');
+  const [progressAr, setProgressAr] =
+    useState(update.progressAr ?? '');
 
   const [attendance, setAttendance] = useState(() =>
     update.roster.map(
@@ -439,21 +443,27 @@ export function TeachingUpdateEditor({
           <label>
             {weekly('progressEn')}
             <textarea
-              defaultValue={update.progressEn ?? ''}
               disabled={readOnly}
               name="progressEn"
+              onChange={(event) =>
+                setProgressEn(event.target.value)
+              }
               rows={4}
+              value={progressEn}
             />
           </label>
 
           <label>
             {weekly('progressAr')}
             <textarea
-              defaultValue={update.progressAr ?? ''}
               dir="rtl"
               disabled={readOnly}
               name="progressAr"
+              onChange={(event) =>
+                setProgressAr(event.target.value)
+              }
               rows={4}
+              value={progressAr}
             />
           </label>
         </section>
