@@ -22,9 +22,12 @@ describe('release hardening contracts', () => {
 
   it('documents every required setup and deployment topic without real secrets', async () => {
     const readme = await readFile(join(process.cwd(), 'README.md'), 'utf8');
-    for (const heading of ['Prerequisites', 'Installation', 'Environment variables', 'Supabase setup', 'Database migration', 'Seed data', 'Development', 'Testing', 'Production build', 'Deployment']) {
+    for (const heading of ['Main workflows', 'Architecture', 'Repository map', 'Internationalization', 'Security and data', 'Local development', 'Database', 'Tests', 'Deployment']) {
       expect(readme).toContain(`## ${heading}`);
     }
+    expect(readme).toContain('pnpm install --frozen-lockfile');
+    expect(readme).toContain('pnpm db:reset');
+    expect(readme).toContain('pnpm test:e2e');
     expect(readme).not.toMatch(/re_[A-Za-z0-9]{20,}/);
   });
 

@@ -118,7 +118,6 @@ export function RosterImportForm({
       <form
         action={previewAction}
         className="record-form"
-        encType="multipart/form-data"
       >
         <input name="locale" type="hidden" value={locale} />
 
@@ -263,7 +262,7 @@ function PreviewTable({
                 <td>
                   {row.class
                     ? 'kind' in row.class && row.class.kind === 'CREATE'
-                      ? `${row.class.nameEn} ? ${t('createClass')}`
+                      ? `${row.class.nameEn} · ${t('createClass')}`
                       : row.class.nameEn
                     : t('invalid')}
                 </td>

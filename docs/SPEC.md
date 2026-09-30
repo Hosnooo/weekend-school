@@ -1441,9 +1441,7 @@ tests/
 
 docs/
 ├── SPEC.md
-├── IMPLEMENTATION_PLAN.md
-├── DECISIONS.md
-└── PROGRESS.md
+└── DECISIONS.md
 ```
 
 Prefer focused feature files rather than large universal files.
@@ -1949,30 +1947,7 @@ Run complete test suite and production build.
 
 ---
 
-# 56. Instructions for Codex
-
-Before changing code:
-
-1. Read this entire specification.
-2. Create `AGENTS.md`.
-3. Create `docs/IMPLEMENTATION_PLAN.md`.
-4. Create `docs/DECISIONS.md`.
-5. Create `docs/PROGRESS.md`.
-6. Break implementation into reviewable phases.
-7. Work on one phase at a time.
-8. Run tests before and after meaningful changes.
-9. Commit working checkpoints frequently.
-10. Do not silently change product requirements.
-11. Record architectural decisions in `docs/DECISIONS.md`.
-12. Keep `docs/PROGRESS.md` updated after each completed phase.
-13. Prefer simple solutions.
-14. Avoid speculative features.
-15. Never weaken authorization to make a test pass.
-16. Never expose secrets to the client.
-17. Never delete migrations already applied.
-18. Preserve English and Arabic support in every new UI feature.
-19. Test mobile layouts for teacher workflows.
-20. Stop and report clearly if a requirement conflicts with an existing architectural decision.
+# 56. Product priorities
 
 Primary priorities, in order:
 
@@ -1990,7 +1965,7 @@ Do not sacrifice priorities 1–5 for feature quantity.
 
 # 57. Approved administrator workflow extension (2026-09-22)
 
-The approved design in `docs/superpowers/specs/2026-09-22-admin-workflows-and-reports-design.md` extends this specification. Implement it in three sequential phases; keep all existing school isolation, authorization, RLS, bilingual, and immutable-history rules. Where earlier sections imply that only a `TEACHER` profile can teach, the explicit assignment rule below takes precedence.
+This historical extension is superseded where sections 58 and 59 define different Class, Subject, Group, and role semantics. Keep all existing school isolation, authorization, RLS, bilingual, and immutable-history rules.
 
 ## Extension phase 1 — assignments and access
 
@@ -2009,11 +1984,11 @@ The approved design in `docs/superpowers/specs/2026-09-22-admin-workflows-and-re
 - A school has one reusable report template with optional English and Arabic introduction and closing text. Admins edit and preview it from Reports. Blank values preserve current appearance. The wording at generation time is copied into the immutable report snapshot; later template edits affect future reports only. Browser and email render from the same snapshot.
 - A teacher can read a generated parent-report preview for a student currently in one of their assigned groups. The preview is read-only and excludes guardian contact details, delivery diagnostics, and admin controls. Server authorization and RLS enforce current same-school assignment. Generation and sending remain administrator-only.
 
-Each extension phase passes lint, typecheck, tests, build, real PostgreSQL/RLS tests for database changes, and focused bilingual browser checks before release. New migrations are forward-only and precede dependent production code. The four original end-to-end workflows remain passing. See the approved design for detailed edge cases and exclusions.
+Database changes require real PostgreSQL/RLS tests and forward-only migrations before dependent production code. Changed user workflows require focused bilingual browser checks before release.
 
 # 58. Class-Subject-Group architecture correction (2026-09-22)
 
-This section supersedes conflicting requirements in sections 5, 8-12, 15-18, 21-24, 31-39, 44, 51-55, and 57. The approved detailed design is `docs/superpowers/specs/2026-09-22-class-subject-group-reporting-redesign.md`.
+This section supersedes conflicting requirements in sections 5, 8-12, 15-18, 21-24, 31-39, 44, 51-55, and 57.
 
 ## 58.1 Academic structure
 
@@ -2226,11 +2201,11 @@ pnpm build
 
 Apply hosted forward migrations before deploying code that requires them. Verify Vercel preview, hosted migration history, RLS, invitation/recovery behavior, password-form visibility, Classes/Subjects/Groups, multi-teacher submissions, attendance resolution, subject-aware reports, archive/delete/export safety, English/Arabic shells, and runtime errors.
 
-The Phase 2 roster CSV work described in section 57 is blocked until this architecture correction is released and the production smoke gate passes. When CSV work resumes, its template/import semantics must target the corrected Class/Subject/Group model rather than the legacy one-global-group model.
+Roster CSV uses the corrected Class/Subject/optional Group model. Section 60 records its current import and export contract.
 
 # 59. Independent Administrator and Teacher records (2026-09-24)
 
-This section supersedes conflicting role/account requirements in sections 5, 7, 15, 32, 37, 44, 52-57, and any part of section 58 that treats an Administrator Profile as a Teacher identity or derives capability from a profile role or matching email. The approved detailed design is `docs/superpowers/specs/2026-09-23-independent-role-records-design.md`.
+This section supersedes conflicting role/account requirements in sections 5, 7, 15, 32, 37, 44, 52-57, and any part of section 58 that treats an Administrator Profile as a Teacher identity or derives capability from a profile role or matching email.
 
 ## 59.1 Login identity and business records
 
@@ -2285,3 +2260,23 @@ Teacher capability alone grants no export permission. This restriction is enforc
 Existing applied migrations remain immutable. The independent-role cutover is forward-only and deterministically backfills existing Administrator and Teacher Profiles into their independent business records and explicit account links before removing legacy role coupling.
 
 Hosted production is not changed merely because this branch is green. Local quality/build, PostgreSQL/RLS, and browser verification must pass first, followed by an explicit production release authorization and controlled hosted migration/deployment sequence.
+
+# 60. Current Teaching Update, Report Cycle, and roster workflows
+
+This section records the approved operational rules implemented after sections 58 and 59. It supersedes older fixed-week, Group-scoped teaching-assignment, and legacy roster-import wording where they conflict.
+
+## 60.1 Teaching Updates
+
+New Teaching Assignments grant an active Teacher access to a Class Subject for a dated interval. Groups organize students and updates; they do not limit that Subject teaching authority. Older Group-linked assignment rows remain historical provenance and must not be rewritten merely to change the interface. An assigned Teacher may manage that Subject's Groups and dated memberships, but may not change Class enrollment or another Subject's structure.
+
+A Teaching Update covers either a continuous date range or selected non-consecutive dates, for a whole Class Subject or one of its Groups. Overlap is allowed with a visible, non-blocking warning. Future coverage may remain OPEN, but submission waits until all covered dates have occurred in the school timezone. Teacher-created updates belong to that Teacher. Administrator requests can expand into one linked item per Group present at request time, or one whole-Subject item if there are no Groups. Assigned Teachers may see an open request; the first valid submission completes it atomically.
+
+OPEN updates may be saved as drafts. SUBMITTED updates are read-only report sources; DISMISSED updates retain audit history. Reopening is allowed only while no finalized Report Cycle locks the source. Corrections to locked or sent history require a new Teaching Update and, if needed, a report revision.
+
+## 60.2 Class Report Cycles
+
+An Administrator creates a Report Cycle for a Class and custom period. Eligible submitted Teaching Updates whose coverage overlaps the period are included by default; the workspace flags partial overlaps and permits source exclusion or re-inclusion before finalization. OPEN and DISMISSED updates are never eligible. The Administrator reviews student content and official attendance, previews the Guardian-facing report and email context, then finalizes immutable report snapshots and sends them. Delivery state and retry controls remain inside Reports. Historical Subject and Group report batches remain readable.
+
+## 60.3 Roster CSV
+
+An Administrator may download a school-specific UTF-8 CSV template, preview an import, and confirm a school-scoped, all-or-nothing transaction. Each row creates a new Student, links one primary Guardian, enrolls the Student in one Class, and optionally assigns Groups for active Class Subjects. Guardian email is normalized; an existing same-school Guardian is reused without overwriting their details. Preview shows errors, warnings, Guardian reuse, and when a missing Class will be created. An unknown Class English name may create one new Class in the transaction; an inactive or ambiguous matching Class remains an error. Confirmation revalidates current school data and does not trust browser-provided resolved IDs. Identical completed imports are rejected, and raw uploaded files are not retained. Roster export offers current school-wide or single-Class CSV; protected historical exports remain separate.
