@@ -1,9 +1,10 @@
-name: Redesign CI
+name: CI
 
 on:
   push:
     branches:
       - main
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -28,7 +29,7 @@ jobs:
         run: pnpm lint
       - name: Typecheck
         run: pnpm typecheck
-      - name: Unit and contract tests
+      - name: Unit and component tests
         run: pnpm test
       - name: Production build
         env:
@@ -56,23 +57,27 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Start local Supabase
         run: pnpm db:start
-      - name: Reset through legacy migration 27 and seed legacy profiles
-        run: pnpm exec supabase db reset --version 202609230027
-      - name: Load Task 3 legacy teaching history fixture
-        run: |
-          eval "$(pnpm exec supabase status -o env)"
-          psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/fixtures/teacher_id_history_pre28.sql
-      - name: Apply current forward migrations
-        run: pnpm exec supabase migration up --local
+      - name: Reset local database
+        run: pnpm db:reset
       - name: Run PostgreSQL and RLS tests
         run: pnpm test:db
+      - name: Reset to the pre-role-cutover schema for upgrade compatibility
+        run: pnpm exec supabase db reset --version 202609230027
+      - name: Load pre-role-cutover teaching history fixture
+        run: |
+          eval "$(pnpm exec supabase status -o env)"
+          psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/fixtures/teacher_id_history_pre_role_cutover.sql
+      - name: Apply forward migrations over historical records
+        run: pnpm exec supabase migration up --local
+      - name: Verify historical Teacher attribution
+        run: pnpm exec supabase test db --local supabase/fixtures/teacher_id_history_upgrade.test.sql
       - name: Stop local Supabase
         if: always()
-        run: pnpm exec supabase stop --no-backup
+        run: pnpm db:stop
 
   e2e:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -86,11 +91,9 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Start local Supabase
         run: pnpm db:start
-      - name: Reset through legacy migration 27 and seed legacy profiles
-        run: pnpm exec supabase db reset --version 202609230027
-      - name: Apply current forward migrations
-        run: pnpm exec supabase migration up --local
-      - name: Load redesigned E2E fixtures
+      - name: Reset local database
+        run: pnpm db:reset
+      - name: Load E2E fixtures
         run: |
           eval "$(pnpm exec supabase status -o env)"
           psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/seed.e2e.sql
@@ -112,4 +115,4 @@ jobs:
         run: pnpm test:e2e
       - name: Stop local Supabase
         if: always()
-        run: pnpm exec supabase stop --no-backup
+        run: pnpm db:stop

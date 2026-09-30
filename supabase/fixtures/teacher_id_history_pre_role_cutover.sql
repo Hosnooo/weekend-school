@@ -1,12 +1,11 @@
--- Task 3 upgrade-path fixture.
--- This file is loaded only after migrations 1-27 + seed.sql and before migration 28,
--- so it intentionally uses the legacy Profile-owned teaching columns.
+-- Upgrade compatibility fixture. Load after migration 202609230027 and its seed,
+-- before the independent-role migration changes Profile-owned teaching columns.
 
 insert into public.classes (id, school_id, name_en, name_ar)
 values (
   '3a000000-0000-0000-0000-000000000001',
   'a0000000-0000-0000-0000-000000000001',
-  'Task 3 Legacy Class',
+  'Historical Class',
   'فصل ترحيل المعلم'
 );
 
@@ -14,7 +13,7 @@ insert into public.subjects (id, school_id, name_en, name_ar)
 values (
   '3b000000-0000-0000-0000-000000000001',
   'a0000000-0000-0000-0000-000000000001',
-  'Task 3 Legacy Subject',
+  'Historical Subject',
   'مادة ترحيل المعلم'
 );
 
@@ -48,5 +47,5 @@ insert into public.weekly_submissions (
   'c0000000-0000-0000-0000-000000000002',
   date '2026-09-21',
   'DRAFT',
-  'Legacy Teacher history preserved through Task 3'
+  'Historical Teacher attribution preserved through the role cutover'
 );
