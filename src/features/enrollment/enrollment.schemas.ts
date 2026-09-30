@@ -91,6 +91,11 @@ export const changeStudentClassSchema = z.object({
   startsOn: z.iso.date()
 });
 
+export const updateStudentEnrollmentStartSchema = z.object({
+  studentId: databaseUuid,
+  startsOn: z.iso.date()
+});
+
 export const setSubjectExcludedSchema = z.object({
   studentId: databaseUuid,
   classSubjectId: databaseUuid,
@@ -107,5 +112,6 @@ export const moveStudentSubjectGroupSchema = z.object({
 
 export type CreateStudentEnrollmentInput = z.infer<typeof createStudentEnrollmentSchema>;
 export type ChangeStudentClassInput = z.infer<typeof changeStudentClassSchema>;
+export type UpdateStudentEnrollmentStartInput = z.infer<typeof updateStudentEnrollmentStartSchema>;
 export type SetSubjectExcludedInput = z.infer<typeof setSubjectExcludedSchema>;
 export type MoveStudentSubjectGroupInput = z.infer<typeof moveStudentSubjectGroupSchema>;
