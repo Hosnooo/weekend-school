@@ -1,12 +1,20 @@
 import {expect, test, type Page} from '@playwright/test';
 
 import {clearSession, credentials, login} from './helpers';
+import {redesign} from './redesign-fixtures';
 
 async function assertNoHorizontalOverflow(page: Page) {
   const overflow = await page.evaluate(() =>
     document.documentElement.scrollWidth - document.documentElement.clientWidth
   );
   expect(overflow).toBeLessThanOrEqual(1);
+}
+
+async function openStudentGroupUpdate(page: Page, locale: 'en' | 'ar') {
+  const row = page.locator('.teacher-new-update-row')
+    .filter({has: page.locator(`input[name="classSubjectId"][value="${redesign.groupedSubjectId}"]`)})
+    .filter({has: page.locator(`input[name="subjectGroupId"][value="${redesign.blueGroupId}"]`)});
+  await row.getByRole('button', {name: locale === 'ar' ? 'تحديث تدريس جديد' : 'New Teaching Update'}).click();
 }
 
 test.describe('Teacher Teaching Update workflow', () => {
@@ -39,7 +47,7 @@ test.describe('Teacher Teaching Update workflow', () => {
     await assertNoHorizontalOverflow(page);
     await page.screenshot({path: testInfo.outputPath('en-teacher-queue-mobile.png'), fullPage: true});
 
-    await page.getByRole('button', {name: 'New Teaching Update'}).first().click();
+    await openStudentGroupUpdate(page, 'en');
     await expect(page).toHaveURL(/\/en\/my-teaching\/update\?submissionId=/);
     const englishUpdateHref = page.url();
 
@@ -64,7 +72,7 @@ test.describe('Teacher Teaching Update workflow', () => {
     await page.screenshot({path: testInfo.outputPath('en-teacher-update-desktop.png'), fullPage: true});
 
     await page.goto('/en/my-teaching');
-    await page.getByRole('button', {name: 'New Teaching Update'}).first().click();
+    await openStudentGroupUpdate(page, 'en');
     await expect(page.getByRole('radio', {name: 'Date range'})).toBeChecked();
     await page.getByRole('button', {name: 'Mark all present'}).click();
     await page.getByLabel('What did you cover? (English)').fill('Flexible Teaching Update E2E');
@@ -94,7 +102,7 @@ test.describe('Teacher Teaching Update workflow', () => {
     await assertNoHorizontalOverflow(page);
     await page.screenshot({path: testInfo.outputPath('ar-teacher-queue-mobile.png'), fullPage: true});
 
-    await page.getByRole('button', {name: 'تحديث تدريس جديد'}).first().click();
+    await openStudentGroupUpdate(page, 'ar');
     await expect(page).toHaveURL(/\/ar\/my-teaching\/update\?submissionId=/);
     await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
     await expect(page.getByRole('radio', {name: 'نطاق تاريخ'})).toBeChecked();

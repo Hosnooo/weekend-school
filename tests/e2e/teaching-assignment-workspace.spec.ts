@@ -110,7 +110,7 @@ test.describe('Teaching Assignments reference CRUD flow', () => {
     await page.getByRole('menuitem', {name: 'Edit dates'}).click();
     await page.getByLabel('Starts on').fill('2040-10-02');
     await page.getByRole('button', {name: 'Save dates'}).click();
-    await expect(page.getByRole('button', {name: 'Save dates'})).toBeHidden();
+    await expect(page.getByLabel('Starts on')).toHaveCount(0);
 
     await page.reload();
     await page.getByRole('tab', {name: 'Upcoming'}).click();

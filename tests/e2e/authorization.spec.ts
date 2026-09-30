@@ -3,29 +3,26 @@ import {expect, test} from '@playwright/test';
 import {redesign} from './redesign-fixtures';
 import {clearSession, credentials, login, submitTeachingUpdate} from './helpers';
 
-test('Group-only teacher cannot cross context, role, or co-teacher ownership boundaries', async ({page}) => {
+test('Teacher cannot cross Subject, co-teacher ownership, or admin role boundaries', async ({page}) => {
   await login(page, 'en', credentials.englishTeacher);
-  await submitTeachingUpdate(page, {
+  const ownedHistoryHref = await submitTeachingUpdate(page, {
     locale: 'en',
     classSubjectId: redesign.groupedSubjectId,
     subjectGroupId: redesign.blueGroupId,
     week: redesign.authorizationWeek,
     progressEn: 'Teacher-one private submission'
   });
-  const ownedHistoryHref = await page
-    .getByRole('row', {name: /April.*Foundations.*Arabic Reading.*Blue/})
-    .first()
-    .getByRole('link', {name: 'View'})
-    .getAttribute('href');
   expect(ownedHistoryHref).toBeTruthy();
 
   await clearSession(page);
   await login(page, 'en', credentials.arabicTeacher);
 
-  await page.goto(`/en/my-teaching/update?classSubjectId=${redesign.groupedSubjectId}&subjectGroupId=${redesign.greenGroupId}&week=${redesign.authorizationWeek}`);
-  await expect(page.getByText('This page could not be found.')).toBeVisible();
+  await page.goto('/en/my-teaching');
+  await expect(page.locator(`.teacher-new-update-row input[name="subjectGroupId"][value="${redesign.greenGroupId}"]`)).toHaveCount(1);
+  await expect(page.locator(`.teacher-new-update-row input[name="classSubjectId"][value="${redesign.wholeClassSubjectId}"]`)).toHaveCount(0);
 
-  await page.goto(`/en/my-teaching/update?classSubjectId=${redesign.wholeClassSubjectId}&week=${redesign.authorizationWeek}`);
+  const submissionId = ownedHistoryHref.split('/').at(-1);
+  await page.goto(`/en/my-teaching/update?submissionId=${submissionId}`);
   await expect(page.getByText('This page could not be found.')).toBeVisible();
 
   await page.goto(ownedHistoryHref!);

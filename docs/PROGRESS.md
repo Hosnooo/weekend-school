@@ -374,3 +374,13 @@ Task 16 release verification is complete.
 - `pnpm lint`, `pnpm typecheck`, and `pnpm build` passed. `pnpm test` passed 94 files and 408 tests. `git diff --check` passed.
 - This task changed presentation and browser/unit contracts only; no migration, RLS, or persistence behavior changed, so a separate database gate was not required for Task 7.
 
+## 2026-09-29 — Full-site UI refactor: Task 8 release verification
+
+Status: Complete.
+
+- Inspected the finished 41-test Playwright run: its sole recorded failure was the authorization assertion that expected the Arabic teacher's Green Group action to be absent. The assertion had already been corrected to reflect that teacher's actual Subject access; its focused browser path passed against the current production build.
+- Let the next full run finish to discover independent failures. It passed 39/41 and exposed two E2E test issues: a partial heading match also selected the empty-state heading, and an assignment edit test treated the immediate “Saving…” button label as proof that persistence had finished. The heading assertion now matches exactly; the edit test waits for its form to close after the successful server mutation before reloading. Both affected files passed together (3/3).
+- Reset local Supabase to the latest migrations and normal seed, loaded `supabase/seed.e2e.sql`, and ran one clean complete Playwright suite against the current production build: **41/41 passed** in 7.7 minutes. `test-results/.last-run.json` reports `passed` with no failed tests.
+- Verified the real database/RLS gate using the documented upgrade path: reset to migration `202609230027`, loaded `supabase/fixtures/teacher_id_history_pre28.sql`, applied the remaining migrations, and ran `pnpm test:db`: **30 files, 410 tests passed**. A pgTAP attempt made after loading the separate E2E fixture failed because that fixture overlapped rows the database tests create; the canonical upgrade-path run passed.
+- After the final test edits, `pnpm lint`, `pnpm typecheck`, and `pnpm build` passed; `pnpm test` passed **94 files and 408 tests**. `git diff --check` passed. No application, migration, or RLS behavior changed in Task 8.
+

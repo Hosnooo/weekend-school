@@ -1,5 +1,7 @@
 import {expect, type Page} from '@playwright/test';
 
+import {schoolToday} from './redesign-fixtures';
+
 export const credentials = {
   admin: {email: 'admin@example.test', password: 'WeekendSchool1!'},
   englishTeacher: {email: 'teacher.en@example.test', password: 'WeekendSchool1!'},
@@ -31,38 +33,37 @@ export async function submitTeachingUpdate(page: Page, input: {
   exceptionStudent?: string;
 }) {
   await page.goto(`/${input.locale}/my-teaching`);
-  const groupFragment = input.subjectGroupId
-    ? `subjectGroupId=${input.subjectGroupId}`
-    : 'subjectGroupId=&';
-  const updateLink = page.locator(
-    `a[href*="classSubjectId=${input.classSubjectId}"][href*="${groupFragment}"]`
-  ).first();
-  await expect(updateLink).toBeVisible();
-  const href = await updateLink.getAttribute('href');
-  expect(href).toBeTruthy();
-  const teacherId = new URL(href!, 'http://localhost').searchParams.get('teacherId');
-  expect(teacherId).toBeTruthy();
-
-  const query = new URLSearchParams({
-    teacherId: teacherId!,
-    classSubjectId: input.classSubjectId,
-    week: input.week
-  });
-  if (input.subjectGroupId) query.set('subjectGroupId', input.subjectGroupId);
-  await page.goto(`/${input.locale}/my-teaching/update?${query}`);
+  const row = page.locator('.teacher-new-update-row')
+    .filter({has: page.locator(`input[name="classSubjectId"][value="${input.classSubjectId}"]`)})
+    .filter({has: page.locator(`input[name="subjectGroupId"][value="${input.subjectGroupId ?? ''}"]`)});
+  await expect(row).toBeVisible();
+  await row.getByRole('button', {name: input.locale === 'ar' ? 'تحديث تدريس جديد' : 'New Teaching Update'}).click();
+  await expect(page).toHaveURL(new RegExp(`/${input.locale}/my-teaching/update\\?submissionId=`));
+  const submissionId = new URL(page.url()).searchParams.get('submissionId');
+  expect(submissionId).toBeTruthy();
+  const end = new Date(`${input.week}T12:00:00Z`);
+  end.setUTCDate(end.getUTCDate() + 6);
+  await page.locator('input[name="periodStart"]:visible').fill(input.week);
+  await page.locator('input[name="periodEnd"]:visible').fill(
+    end.toISOString().slice(0, 10) > schoolToday ? schoolToday : end.toISOString().slice(0, 10)
+  );
   const markAll = page.getByRole('button', {name: input.locale === 'ar' ? 'تحديد الجميع حاضرين' : 'Mark all present'});
   await expect(markAll).toBeVisible();
   await markAll.click();
   if (input.absentStudent) {
-    await page.locator('label').filter({hasText: input.absentStudent}).locator('select').selectOption('ABSENT');
+    await page.getByRole('row', {name: new RegExp(input.absentStudent)}).locator('select').first().selectOption('ABSENT');
   }
   if (input.progressEn) await page.getByLabel(input.locale === 'ar' ? 'ماذا غطّيت؟ (بالإنجليزية)' : 'What did you cover? (English)').fill(input.progressEn);
   if (input.progressAr) await page.getByLabel(input.locale === 'ar' ? 'ماذا غطّيت؟ (بالعربية)' : 'What did you cover? (Arabic)').fill(input.progressAr);
   await page.getByLabel(input.locale === 'ar' ? 'الأداء الافتراضي' : 'Default performance').selectOption('GOOD');
   if (input.exceptionStudent) {
-    await page.getByRole('button', {name: input.exceptionStudent}).click();
-    await page.getByLabel(input.locale === 'ar' ? 'استثناء الأداء' : 'Performance override').selectOption('EXCELLENT');
+    await page.getByRole('row', {name: new RegExp(input.exceptionStudent)}).locator('select').nth(1).selectOption('EXCELLENT');
   }
-  await page.getByRole('button', {name: input.locale === 'ar' ? 'إرسال' : 'Submit'}).click();
+  await page.getByRole('button', {name: input.locale === 'ar' ? 'حفظ التحديث' : 'Save update'}).click();
+  await expect(page.locator('.save-status')).toContainText(input.locale === 'ar' ? 'تم الحفظ' : 'Saved');
+  const submit = page.getByRole('button', {name: input.locale === 'ar' ? 'إرسال التحديث' : 'Submit update'});
+  await expect(submit).toBeEnabled();
+  await submit.click();
   await expect(page).toHaveURL(new RegExp(`/${input.locale}/history$`));
+  return `/${input.locale}/history/${submissionId}`;
 }

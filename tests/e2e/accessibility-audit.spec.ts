@@ -66,7 +66,7 @@ for (const locale of ['en', 'ar'] as const) {
       page.locator('select[name="defaultLanguage"]')
     ).toHaveAccessibleName(/.+/);
 
-    const settingsForm = page.locator('form.record-form');
+    const settingsForm = page.locator('form.settings-form').first();
 
     await expect(
       settingsForm.locator('button[type="submit"]')

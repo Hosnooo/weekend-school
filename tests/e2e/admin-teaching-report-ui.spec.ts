@@ -22,7 +22,7 @@ for (const item of cases) {
       await page.setViewportSize({width, height: width === 360 ? 800 : 900});
       await page.goto(`/${item.locale}/teaching-updates`);
       await expect(page.getByRole('heading', {level: 1, name: item.updates})).toBeVisible();
-      await expect(page.getByRole('heading', {level: 2, name: item.open})).toBeVisible();
+      await expect(page.getByRole('heading', {level: 2, name: item.open, exact: true})).toBeVisible();
       const history = page.locator('details.admin-update-history');
       await expect(history.locator('summary')).toHaveText(item.history);
       await expect(history.locator('select').first()).toBeHidden();
@@ -33,7 +33,7 @@ for (const item of cases) {
       await page.screenshot({path: testInfo.outputPath(`${item.locale}-admin-updates-${width}.png`), fullPage: true});
 
       await page.goto(`/${item.locale}/reports`);
-      await expect(page.getByRole('heading', {level: 2, name: item.cycles})).toBeVisible();
+      await expect(page.getByRole('heading', {level: 2, name: item.cycles, exact: true})).toBeVisible();
       const create = page.locator('details.report-cycle-create');
       const historical = page.locator('details.report-cycle-history');
       await expect(create.locator('summary')).toHaveText(item.create);

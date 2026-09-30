@@ -8,7 +8,7 @@ test('Arabic RTL teaching and report workflow uses the redesigned Group context'
   await login(page, 'ar', credentials.arabicTeacher);
   await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
   await expect(
-    page.getByRole('heading', {level: 1, name: 'هذا الأسبوع'})
+    page.getByRole('heading', {level: 1, name: 'تحديثات التدريس'})
   ).toBeVisible();
   await submitTeachingUpdate(page, {
     locale: 'ar',
@@ -22,20 +22,17 @@ test('Arabic RTL teaching and report workflow uses the redesigned Group context'
   await page.setViewportSize({width: 1280, height: 800});
   await login(page, 'ar', credentials.admin);
   await page.goto('/ar/reports');
-  await page.getByLabel('بداية الفترة').fill('2030-02-04');
-  await page.getByLabel('نهاية الفترة').fill('2030-02-10');
-  await page.locator('select[name="classId"]').selectOption(redesign.classId);
-  await page.locator('select[name="scopeType"]').selectOption('GROUP');
-  await page.locator('select[name="classSubjectId"]').selectOption(redesign.groupedSubjectId);
-  await page.locator('select[name="subjectGroupId"]').selectOption(redesign.blueGroupId);
-  await page.getByRole('button', {name: 'إعداد دفعة تقارير'}).click();
-  await expect(page.getByRole('heading', {name: 'مراجعة الدفعة'})).toBeVisible();
-  await expect(page.getByText('تدربنا على القراءة العربية')).toBeVisible();
-  await page.getByRole('button', {name: 'استخدام كل المصادر المرسلة'}).click();
-  await page.getByRole('button', {name: 'الانتقال إلى المراجعة'}).click();
-  await page.getByRole('button', {name: 'اعتماد التقارير نهائيًا'}).click();
-  const row = page.getByRole('row', {name: /عمر حسن.*العربية/});
-  await row.getByRole('link', {name: 'معاينة'}).click();
+  const createCycle = page.locator('details.report-cycle-create');
+  await createCycle.locator('summary').click();
+  await createCycle.locator('select[name="classId"]').selectOption(redesign.classId);
+  await createCycle.locator('input[name="periodStart"]').fill(redesign.arabicWeek);
+  await createCycle.locator('input[name="periodEnd"]').fill('2026-09-21');
+  await createCycle.getByRole('button', {name: 'إنشاء دورة تقارير'}).click();
+  await expect(page.getByRole('heading', {level: 1})).toContainText('دورة التقارير');
+  await expect(page.locator('.report-source-row').filter({hasText: 'الأزرق'})).toHaveCount(1);
+  await page.getByRole('button', {name: 'إنشاء تقارير الطلاب'}).click();
+  const report = page.locator('.report-cycle-report-list article').filter({hasText: 'عمر حسن'});
+  await report.getByRole('link', {name: 'معاينة التقرير'}).click();
   const frame = page.frameLocator('iframe[title="معاينة التقرير"]');
   await expect(frame.locator('html')).toHaveAttribute('dir', 'rtl');
   await expect(frame.getByText('تدربنا على القراءة العربية')).toBeVisible();

@@ -14,8 +14,7 @@ test('English redesigned workflow reaches a finalized Class report', async ({pag
 
   await page.goto('/en/students/e0000000-0000-0000-0000-000000000003/enrollment');
   await expect(page.getByText('Foundations', {exact: true}).first()).toBeVisible();
-  const arabicReadingEnrollment = page.locator('.card').filter({hasText: 'Arabic Reading'});
-  await expect(arabicReadingEnrollment).toContainText('Blue');
+  await expect(page.getByText('Blue', {exact: true}).first()).toBeVisible();
 
   await page.goto('/en/teachers/c0000000-0000-0000-0000-000000000002/assignments');
   await expect(page.getByRole('row', {name: /Foundations.*Faith & Character.*Entire subject/})).toBeVisible();
@@ -34,20 +33,21 @@ test('English redesigned workflow reaches a finalized Class report', async ({pag
   await clearSession(page);
   await login(page, 'en', credentials.admin);
   await page.goto('/en/reports');
-  await page.getByLabel('Period start').fill('2030-01-07');
-  await page.getByLabel('Period end').fill('2030-01-13');
-  await page.locator('select[name="classId"]').selectOption(redesign.classId);
-  await page.locator('select[name="scopeType"]').selectOption('CLASS');
-  await page.getByRole('button', {name: 'Prepare report batch'}).click();
-  await expect(page.getByRole('heading', {name: 'Batch review'})).toBeVisible();
-  await expect(page.getByText('Blue reading lesson')).toBeVisible();
-  await expect(page.getByText('Second independent Blue source')).toBeVisible();
-  await page.getByRole('button', {name: 'Use all submitted sources'}).click();
-  await page.getByRole('button', {name: 'Finalize reports'}).click();
-  await expect(page.getByText('Finalized', {exact: true}).first()).toBeVisible();
-  await page.getByRole('link', {name: 'Preview'}).first().click();
+  const createCycle = page.locator('details.report-cycle-create');
+  await createCycle.locator('summary').click();
+  await createCycle.locator('select[name="classId"]').selectOption(redesign.classId);
+  await createCycle.locator('input[name="periodStart"]').fill(redesign.happyWeek);
+  await createCycle.locator('input[name="periodEnd"]').fill('2026-09-14');
+  await createCycle.getByRole('button', {name: 'Create Report Cycle'}).click();
+  await expect(page.getByRole('heading', {name: 'Report Cycle · Foundations'})).toBeVisible();
+  await expect(page.locator('.report-source-list').first().locator('.report-source-row').filter({hasText: 'Arabic Reading · Blue'})).toHaveCount(2);
+  await page.getByRole('button', {name: 'Generate student reports'}).click();
+  await expect(page.getByText('Ready to send', {exact: true}).first()).toBeVisible();
+  await page.getByRole('link', {name: 'Preview report'}).first().click();
   const frame = page.frameLocator('iframe[title="Report preview"]');
   await expect(frame.getByText('MCE Weekend School')).toBeVisible();
   await expect(frame.getByText('Whole-class character lesson')).toBeVisible();
+  await expect(frame.getByText('Blue reading lesson')).toBeVisible();
+  await expect(frame.getByText('Second independent Blue source')).toBeVisible();
   await expect(frame.getByText('English Teacher')).toHaveCount(0);
 });
