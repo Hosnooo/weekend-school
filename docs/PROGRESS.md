@@ -383,4 +383,5 @@ Status: Complete.
 - Reset local Supabase to the latest migrations and normal seed, loaded `supabase/seed.e2e.sql`, and ran one clean complete Playwright suite against the current production build: **41/41 passed** in 7.7 minutes. `test-results/.last-run.json` reports `passed` with no failed tests.
 - Verified the real database/RLS gate using the documented upgrade path: reset to migration `202609230027`, loaded `supabase/fixtures/teacher_id_history_pre28.sql`, applied the remaining migrations, and ran `pnpm test:db`: **30 files, 410 tests passed**. A pgTAP attempt made after loading the separate E2E fixture failed because that fixture overlapped rows the database tests create; the canonical upgrade-path run passed.
 - After the final test edits, `pnpm lint`, `pnpm typecheck`, and `pnpm build` passed; `pnpm test` passed **94 files and 408 tests**. `git diff --check` passed. No application, migration, or RLS behavior changed in Task 8.
+- After all local release gates were green, automatic Redesign CI was restored for pushes to `main` while retaining manual `workflow_dispatch`; the two targeted UX workflows remain manual-only.
 
