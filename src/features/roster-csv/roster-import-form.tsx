@@ -8,13 +8,21 @@ import type {Locale} from '@/i18n/config';
 
 import {
   confirmRosterImportAction,
-  initialRosterImportState,
   previewRosterImportAction
 } from './roster-csv.actions';
+import type {RosterImportActionState} from './roster-csv.actions';
 import type {
   RosterImportPreview,
   RosterIssue
 } from './roster-csv.types';
+
+const initialRosterImportState: RosterImportActionState = {
+  status: 'idle',
+  error: null,
+  preview: null,
+  sourceRows: null,
+  summary: null
+};
 
 const issueKeys: Record<string, string> = {
   MISSING_COLUMN: 'issues.MISSING_COLUMN',

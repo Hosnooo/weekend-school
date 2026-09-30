@@ -20,7 +20,7 @@ import type {
   RosterImportSummary
 } from './roster-csv.types';
 
-export const MAX_ROSTER_FILE_BYTES = 1024 * 1024;
+const MAX_ROSTER_FILE_BYTES = 1024 * 1024;
 
 export type RosterImportActionState = {
   status: 'idle' | 'preview' | 'success' | 'error';
@@ -37,13 +37,6 @@ export type RosterImportActionState = {
   summary: RosterImportSummary | null;
 };
 
-export const initialRosterImportState: RosterImportActionState = {
-  status: 'idle',
-  error: null,
-  preview: null,
-  sourceRows: null,
-  summary: null
-};
 
 function localeFrom(formData: FormData): Locale {
   const value = String(formData.get('locale') ?? 'en');
