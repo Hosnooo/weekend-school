@@ -201,7 +201,7 @@ export async function confirmRosterImport(input: {
 }): Promise<RosterImportSummary> {
   const db = await createServerSupabaseClient();
 
-  const {data, error} = await db.rpc('import_student_roster', {
+  const {data, error} = await db.rpc('import_student_roster_with_classes', {
     p_import_hash: input.importHash,
     p_rows: input.rows
   });

@@ -75,6 +75,10 @@ export type RosterImportCatalog = {
   students: readonly RosterCatalogStudent[];
 };
 
+export type RosterPreviewClass =
+  | {id: string; nameEn: string}
+  | {kind: 'CREATE'; nameEn: string};
+
 export type RosterPreviewGuardian =
   | {kind: 'CREATE'; email: string}
   | {kind: 'REUSE'; id: string}
@@ -99,7 +103,8 @@ export type CanonicalRosterImportRow = {
   guardianEmail: string;
   guardianPhone: string;
   reportLanguage: RosterLanguage;
-  classId: string;
+  classId: string | null;
+  className: string;
   startsOn: string;
   groups: Array<{
     classSubjectId: string;
@@ -112,7 +117,7 @@ export type RosterImportPreviewRow = {
   studentName: string;
   guardianEmail: string;
   guardian: RosterPreviewGuardian;
-  class: {id: string; nameEn: string} | null;
+  class: RosterPreviewClass | null;
   groups: RosterPreviewGroup[];
   issues: RosterIssue[];
   canonical: CanonicalRosterImportRow | null;
@@ -124,6 +129,7 @@ export type RosterImportPreview = {
   hasErrors: boolean;
   summary: {
     rows: number;
+    classesToCreate: number;
     guardiansToCreate: number;
     guardiansToReuse: number;
   };

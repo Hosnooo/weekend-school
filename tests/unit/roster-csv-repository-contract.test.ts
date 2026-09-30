@@ -27,8 +27,24 @@ describe('roster CSV repository contract', () => {
 
     const source = readFileSync(repositoryPath, 'utf8');
 
-    expect(source).toContain(".rpc('import_student_roster'");
+    expect(source).toContain(".rpc('import_student_roster_with_classes'");
     expect(source).toContain('p_import_hash: input.importHash');
     expect(source).toContain('p_rows: input.rows');
   });
+
+  it('creates missing Classes inside the roster import transaction', () => {
+    const migrationPath = join(
+      process.cwd(),
+      'supabase/migrations/20260930053000_roster_import_create_classes.sql'
+    );
+
+    expect(existsSync(migrationPath)).toBe(true);
+
+    const source = readFileSync(migrationPath, 'utf8');
+
+    expect(source).toContain('insert into public.classes');
+    expect(source).toContain('pg_advisory_xact_lock');
+    expect(source).toContain('return public.import_student_roster(');
+  });
+
 });

@@ -121,6 +121,7 @@ describe('roster import preview', () => {
     ]);
 
     expect(preview.rows[0].canonical?.guardianEmail).toBe('parent@example.com');
+    expect(preview.rows[0].canonical?.className).toBe('Level 1');
   });
 
   it('uses a default Group when the Subject Group cell is blank', () => {
@@ -309,4 +310,33 @@ describe('roster import preview', () => {
       ])
     );
   });
+});
+
+it('plans creation of a missing Class instead of rejecting it', () => {
+  const preview = buildRosterImportPreview(
+    csv(
+      'Sara,Ali,,,New Guardian,new@example.com,7805550102,en,Ages 5–6,2026-09-01,,'
+    ),
+    catalog
+  );
+
+  expect(preview.hasErrors).toBe(false);
+
+  expect(preview.rows[0].class).toEqual({
+    kind: 'CREATE',
+    nameEn: 'Ages 5–6'
+  });
+
+  expect(preview.rows[0].canonical).toEqual(
+    expect.objectContaining({
+      classId: null,
+      className: 'Ages 5–6'
+    })
+  );
+
+  expect(preview.summary).toEqual(
+    expect.objectContaining({
+      classesToCreate: 1
+    })
+  );
 });

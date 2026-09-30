@@ -238,6 +238,7 @@ export function buildRosterImportPreview(
   }
 
   const seenRows = new Set<string>();
+  const newClassNames = new Map<string, string>();
   const newGuardianEmails = new Set<string>();
   const reusedGuardianIds = new Set<string>();
 
@@ -355,6 +356,7 @@ export function buildRosterImportPreview(
     let resolvedClass:
       | (typeof catalog.classes)[number]
       | null = null;
+    let classToCreate: string | null = null;
 
     if (matchingClasses.length > 1) {
       error(
@@ -371,11 +373,8 @@ export function buildRosterImportPreview(
         `Class "${className}" is inactive`
       );
     } else if (className) {
-      error(
-        issues,
-        'CLASS_NOT_FOUND',
-        `Class "${className}" was not found`
-      );
+      classToCreate = className.trim();
+      newClassNames.set(normalized(classToCreate), classToCreate);
     }
 
     const matchingGuardians = catalog.guardians.filter(
@@ -585,12 +584,29 @@ export function buildRosterImportPreview(
       }
     }
 
+    if (!resolvedClass && classToCreate) {
+      for (const subject of activeSubjects) {
+        const requestedGroup = valueFor(
+          row.values,
+          `${subject.nameEn} group`
+        );
+
+        if (requestedGroup) {
+          error(
+            issues,
+            'SUBJECT_NOT_IN_CLASS',
+            `${subject.nameEn} cannot be assigned until ${classToCreate} has Subjects configured`
+          );
+        }
+      }
+    }
+
     let canonical: CanonicalRosterImportRow | null = null;
 
     if (
       !hasRowError(issues) &&
       globalIssues.every((issue) => issue.level !== 'ERROR') &&
-      resolvedClass &&
+      (resolvedClass || classToCreate) &&
       guardian.kind !== 'INVALID'
     ) {
       canonical = {
@@ -604,7 +620,8 @@ export function buildRosterImportPreview(
         guardianEmail,
         guardianPhone,
         reportLanguage,
-        classId: resolvedClass.id,
+        classId: resolvedClass?.id ?? null,
+        className: resolvedClass?.nameEn ?? classToCreate!,
         startsOn,
         groups: groups.map((group) => ({
           classSubjectId: group.classSubjectId,
@@ -623,7 +640,12 @@ export function buildRosterImportPreview(
             id: resolvedClass.id,
             nameEn: resolvedClass.nameEn
           }
-        : null,
+        : classToCreate
+          ? {
+              kind: 'CREATE',
+              nameEn: classToCreate
+            }
+          : null,
       groups,
       issues,
       canonical
@@ -640,6 +662,7 @@ export function buildRosterImportPreview(
     hasErrors,
     summary: {
       rows: rows.length,
+      classesToCreate: newClassNames.size,
       guardiansToCreate: newGuardianEmails.size,
       guardiansToReuse: reusedGuardianIds.size
     }

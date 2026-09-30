@@ -261,7 +261,11 @@ function PreviewTable({
                   <small>{guardianLabel(row)}</small>
                 </td>
                 <td>
-                  {row.class?.nameEn ?? t('invalid')}
+                  {row.class
+                    ? 'kind' in row.class && row.class.kind === 'CREATE'
+                      ? `${row.class.nameEn} ? ${t('createClass')}`
+                      : row.class.nameEn
+                    : t('invalid')}
                 </td>
                 <td>
                   {row.groups.length > 0

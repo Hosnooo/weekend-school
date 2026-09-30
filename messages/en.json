@@ -307,6 +307,7 @@
       "groups": "Subject Groups",
       "status": "Status",
       "createGuardian": "Create Guardian",
+      "createClass": "Create Class",
       "reuseGuardian": "Reuse existing Guardian",
       "ungrouped": "Ungrouped",
       "none": "None",

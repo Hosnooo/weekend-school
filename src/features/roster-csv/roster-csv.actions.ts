@@ -66,8 +66,9 @@ function errorState(
 function canonicalHash(preview: RosterImportPreview) {
   const canonicalRows = preview.rows
     .flatMap((row) => row.canonical ? [row.canonical] : [])
-    .map(({rowNumber, ...canonical}) => {
+    .map(({rowNumber, classId, ...canonical}) => {
       void rowNumber;
+      void classId;
       return canonical;
     })
     .sort((left, right) =>
