@@ -114,6 +114,29 @@ describe('flexible Teaching Update application contract', () => {
     expect(editor).not.toContain('name="weekStart"');
   });
 
+  it('keeps typed coverage text in client state when draft saving fails', () => {
+    const editor = source(
+      `${featureRoot}/teaching-update-editor.tsx`
+    );
+
+    expect(editor).toContain(
+      "useState(update.progressEn ?? '')"
+    );
+    expect(editor).toContain(
+      "useState(update.progressAr ?? '')"
+    );
+    expect(editor).toContain('value={progressEn}');
+    expect(editor).toContain('value={progressAr}');
+    expect(editor).toContain('setProgressEn(event.target.value)');
+    expect(editor).toContain('setProgressAr(event.target.value)');
+    expect(editor).not.toContain(
+      "defaultValue={update.progressEn ?? ''}"
+    );
+    expect(editor).not.toContain(
+      "defaultValue={update.progressAr ?? ''}"
+    );
+  });
+
   it('opens Teacher updates by submission identity instead of a synthetic week key', () => {
     const pagePath =
       'src/app/[locale]/(protected)/(teacher)/my-teaching/update/page.tsx';
