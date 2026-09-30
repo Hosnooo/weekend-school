@@ -9,13 +9,15 @@ import {
   createStudentWithEnrollment,
   enrollStudentInClass,
   moveStudentSubjectGroup,
-  setSubjectExcluded
+  setSubjectExcluded,
+  updateStudentEnrollmentStart
 } from '@/features/enrollment/enrollment.repository';
 import {
   changeStudentClassSchema,
   createStudentEnrollmentSchema,
   moveStudentSubjectGroupSchema,
-  setSubjectExcludedSchema
+  setSubjectExcludedSchema,
+  updateStudentEnrollmentStartSchema
 } from '@/features/enrollment/enrollment.schemas';
 import {setStudentActive, updateStudent} from '@/features/students/student.repository';
 import {studentUpdateSchema} from '@/features/students/student.schemas';
@@ -170,6 +172,28 @@ export async function changeStudentClassAction(
 
   try {
     await changeStudentClass(parsed.data);
+  } catch (error) {
+    return enrollmentMutationFailure(error);
+  }
+  revalidateStudentSurfaces(locale, parsed.data.studentId);
+  revalidatePath(`/${locale}/classes`);
+  return initialActionState;
+}
+
+export async function updateStudentEnrollmentStartAction(
+  _state: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const locale = localeFrom(formData);
+  await requireProfile(locale, 'ADMIN');
+  const parsed = updateStudentEnrollmentStartSchema.safeParse({
+    studentId: formData.get('studentId'),
+    startsOn: formData.get('startsOn')
+  });
+  if (!parsed.success) return validationFailure();
+
+  try {
+    await updateStudentEnrollmentStart(parsed.data);
   } catch (error) {
     return enrollmentMutationFailure(error);
   }
