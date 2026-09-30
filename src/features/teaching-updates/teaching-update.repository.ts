@@ -1,5 +1,7 @@
 import 'server-only';
 
+import type {SupabaseClient} from '@supabase/supabase-js';
+
 import {createServerSupabaseClient} from '@/lib/supabase/server';
 import type {
   TeachingUpdate,
@@ -15,6 +17,44 @@ function applicationStatus(
   status: TeachingUpdateStorageStatus
 ): TeachingUpdateStatus {
   return status === 'DRAFT' ? 'OPEN' : status;
+}
+
+async function teacherCanAccessTeachingUpdate(
+  db: SupabaseClient,
+  teacherIds: string[],
+  submission: {
+    teacher_id: string | null;
+    request_set_id: string | null;
+    class_subject_id: string;
+    subject_group_id: string | null;
+    period_start: string;
+    period_end: string;
+  }
+) {
+  if (submission.teacher_id !== null) {
+    return teacherIds.includes(submission.teacher_id);
+  }
+
+  if (submission.request_set_id === null) return false;
+
+  const checks = await Promise.all(
+    teacherIds.map(async (teacherId) => {
+      const {data, error} = await db.rpc(
+        'teacher_can_teach_period_context',
+        {
+          p_teacher_id: teacherId,
+          p_class_subject_id: submission.class_subject_id,
+          p_subject_group_id: submission.subject_group_id,
+          p_period_start: submission.period_start,
+          p_period_end: submission.period_end
+        }
+      );
+      if (error) throw error;
+      return data === true;
+    })
+  );
+
+  return checks.some(Boolean);
 }
 
 export async function saveTeachingUpdateDraft(
@@ -289,15 +329,11 @@ export async function getTeachingUpdate(
 
   if (!submissionData) return null;
 
-  const teacherId =
-    submissionData.teacher_id as string | null;
-
-  if (
-    teacherId !== null &&
-    !teacherIds.includes(teacherId)
-  ) {
+  if (!(await teacherCanAccessTeachingUpdate(db, teacherIds, submissionData))) {
     return null;
   }
+
+  const teacherId = submissionData.teacher_id as string | null;
 
   const [
     contextResult,
@@ -431,7 +467,6 @@ export async function getTeachingUpdate(
   };
 }
 
-
 export async function listOpenTeachingUpdates(
   schoolId: string,
   teacherIds: string[]
@@ -462,16 +497,26 @@ export async function listOpenTeachingUpdates(
     admin_note: string | null;
   }>;
 
-  return rows.map((row) => ({
-    id: row.id,
-    teacherId: row.teacher_id,
-    classSubjectId: row.class_subject_id,
-    subjectGroupId: row.subject_group_id,
-    coverageKind: row.coverage_kind,
-    periodStart: row.period_start,
-    periodEnd: row.period_end,
-    version: row.version,
-    requestSetId: row.request_set_id,
-    adminNote: row.admin_note
-  }));
+  const teacherScopedRows = await Promise.all(
+    rows.map(async (row) =>
+      (await teacherCanAccessTeachingUpdate(db, teacherIds, row))
+        ? row
+        : null
+    )
+  );
+
+  return teacherScopedRows
+    .filter((row): row is NonNullable<typeof row> => row !== null)
+    .map((row) => ({
+      id: row.id,
+      teacherId: row.teacher_id,
+      classSubjectId: row.class_subject_id,
+      subjectGroupId: row.subject_group_id,
+      coverageKind: row.coverage_kind,
+      periodStart: row.period_start,
+      periodEnd: row.period_end,
+      version: row.version,
+      requestSetId: row.request_set_id,
+      adminNote: row.admin_note
+    }));
 }
