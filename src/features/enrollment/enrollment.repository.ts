@@ -4,7 +4,8 @@ import type {
   ChangeStudentClassInput,
   CreateStudentEnrollmentInput,
   MoveStudentSubjectGroupInput,
-  SetSubjectExcludedInput
+  SetSubjectExcludedInput,
+  UpdateStudentEnrollmentStartInput
 } from '@/features/enrollment/enrollment.schemas';
 import {deriveSubjectParticipation} from '@/features/enrollment/enrollment.service';
 import type {
@@ -198,6 +199,15 @@ export async function changeStudentClass(input: ChangeStudentClassInput) {
   const {error} = await supabase.rpc('change_student_class', {
     p_student_id: input.studentId,
     p_target_class_id: input.targetClassId,
+    p_starts_on: input.startsOn
+  });
+  if (error) throw error;
+}
+
+export async function updateStudentEnrollmentStart(input: UpdateStudentEnrollmentStartInput) {
+  const supabase = await createServerSupabaseClient();
+  const {error} = await supabase.rpc('update_student_enrollment_start', {
+    p_student_id: input.studentId,
     p_starts_on: input.startsOn
   });
   if (error) throw error;
