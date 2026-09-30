@@ -228,6 +228,6 @@ Teacher History lists submitted Teaching Updates by their saved RANGE or DATES c
 
 **Status:** Accepted — 2026-09-30
 
-Public trigger functions are internal database helpers, not application RPCs. Revoke direct execution from `PUBLIC`, `anon`, and `authenticated` on functions returning `trigger`; retain intentional authenticated RPC grants. Production migration application is an explicit, protected operation against a verified main commit. A dry run must precede application and stop on migration-history mismatch. Development seeds never run in production.
+Public trigger functions are internal database helpers, not application RPCs. Revoke direct execution from `PUBLIC`, `anon`, and `authenticated` on functions returning `trigger`; retain intentional authenticated RPC grants. Production migration application is an explicit, protected operation against the exact reviewed release-candidate commit, before that application's automatic `main` deployment. The workflow links the intended project and previews the pending migrations first; a migration-history mismatch stops application. Only backward-compatible schema may precede the currently deployed application. Incompatible changes require an expand/migrate/contract sequence. Development seeds never run in production.
 
 The historical Teacher identity cutover test requires rows inserted before the independent-role migration. Keep that upgrade scenario as a named compatibility fixture; the ordinary local database/RLS gate starts from a clean full reset.

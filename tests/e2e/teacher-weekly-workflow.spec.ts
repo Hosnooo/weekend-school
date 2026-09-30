@@ -40,12 +40,12 @@ test.describe('Teacher Teaching Update workflow', () => {
     await expect(englishGroups.getByRole('button', {name: 'Create group'}).first()).toBeVisible();
     await englishGroups.locator('summary').click();
     await assertNoHorizontalOverflow(page);
-    await page.screenshot({path: testInfo.outputPath('en-teacher-queue-desktop.png'), fullPage: true});
+    await page.screenshot({path: testInfo.outputPath('en-teacher-queue-desktop.png'), fullPage: true, caret: 'initial'});
 
     await page.setViewportSize({width: 360, height: 800});
     await page.goto('/en/my-teaching');
     await assertNoHorizontalOverflow(page);
-    await page.screenshot({path: testInfo.outputPath('en-teacher-queue-mobile.png'), fullPage: true});
+    await page.screenshot({path: testInfo.outputPath('en-teacher-queue-mobile.png'), fullPage: true, caret: 'initial'});
 
     await openStudentGroupUpdate(page, 'en');
     await expect(page).toHaveURL(/\/en\/my-teaching\/update\?submissionId=/);
@@ -58,7 +58,7 @@ test.describe('Teacher Teaching Update workflow', () => {
     await expect(page.getByRole('button', {name: 'Submit update'})).toBeDisabled();
 
     await assertNoHorizontalOverflow(page);
-    await page.screenshot({path: testInfo.outputPath('en-teacher-update-mobile.png'), fullPage: true});
+    await page.screenshot({path: testInfo.outputPath('en-teacher-update-mobile.png'), fullPage: true, caret: 'initial'});
 
     await page.getByRole('button', {name: 'Save update'}).click();
     await expect(page.locator('.save-status')).toContainText('Saved');
@@ -69,7 +69,7 @@ test.describe('Teacher Teaching Update workflow', () => {
     await page.setViewportSize({width: 1366, height: 900});
     await page.goto(englishUpdateHref);
     await assertNoHorizontalOverflow(page);
-    await page.screenshot({path: testInfo.outputPath('en-teacher-update-desktop.png'), fullPage: true});
+    await page.screenshot({path: testInfo.outputPath('en-teacher-update-desktop.png'), fullPage: true, caret: 'initial'});
 
     await page.goto('/en/my-teaching');
     await openStudentGroupUpdate(page, 'en');
@@ -95,12 +95,12 @@ test.describe('Teacher Teaching Update workflow', () => {
     await expect(arabicGroups.getByRole('button', {name: 'إنشاء مجموعة'}).first()).toBeVisible();
     await arabicGroups.locator('summary').click();
     await assertNoHorizontalOverflow(page);
-    await page.screenshot({path: testInfo.outputPath('ar-teacher-queue-desktop.png'), fullPage: true});
+    await page.screenshot({path: testInfo.outputPath('ar-teacher-queue-desktop.png'), fullPage: true, caret: 'initial'});
 
     await page.setViewportSize({width: 360, height: 800});
     await page.goto('/ar/my-teaching');
     await assertNoHorizontalOverflow(page);
-    await page.screenshot({path: testInfo.outputPath('ar-teacher-queue-mobile.png'), fullPage: true});
+    await page.screenshot({path: testInfo.outputPath('ar-teacher-queue-mobile.png'), fullPage: true, caret: 'initial'});
 
     await openStudentGroupUpdate(page, 'ar');
     await expect(page).toHaveURL(/\/ar\/my-teaching\/update\?submissionId=/);
@@ -111,11 +111,11 @@ test.describe('Teacher Teaching Update workflow', () => {
     await page.getByRole('button', {name: 'إضافة تاريخ'}).click();
     await expect(page.getByRole('button', {name: 'إرسال التحديث'})).toBeDisabled();
     await assertNoHorizontalOverflow(page);
-    await page.screenshot({path: testInfo.outputPath('ar-teacher-update-mobile.png'), fullPage: true});
+    await page.screenshot({path: testInfo.outputPath('ar-teacher-update-mobile.png'), fullPage: true, caret: 'initial'});
 
     await page.setViewportSize({width: 1366, height: 900});
     await assertNoHorizontalOverflow(page);
-    await page.screenshot({path: testInfo.outputPath('ar-teacher-update-desktop.png'), fullPage: true});
+    await page.screenshot({path: testInfo.outputPath('ar-teacher-update-desktop.png'), fullPage: true, caret: 'initial'});
     expect(runtimeErrors).toEqual([]);
   });
 });

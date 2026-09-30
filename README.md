@@ -78,7 +78,7 @@ pnpm test:e2e       # serial browser workflows against local Supabase
 
 For the database gate, run `pnpm db:start`, `pnpm db:reset`, then `pnpm test:db`. The separate compatibility fixture in `supabase/fixtures/` verifies the historical Profile-to-Teacher migration upgrade path in CI; it is not part of a normal clean reset.
 
-For the browser gate, reset local Supabase and load the E2E-only seed into its local Postgres container:
+For the browser gate, reset local Supabase and load the E2E-only seed into its local Postgres container. The reset first loads `supabase/seed.sql` as configured in `supabase/config.toml`; `seed.e2e.sql` then adds Class/Subject/Group and archive fixtures on top of that base, using stable IDs and conflict handling so it does not create duplicate base accounts or Students:
 
 ```text
 pnpm db:reset
@@ -92,17 +92,20 @@ Set `.env.local` to that local stack first. The Playwright configuration rejects
 
 ## Deployment
 
-CI in `.github/workflows/ci.yml` checks quality, a clean database/RLS reset, the named historical migration upgrade fixture, and the browser suite. The production database workflow is separate and manual: `.github/workflows/production-supabase-migrations.yml` requires a full current-main commit SHA, previews pending migrations, and applies them only when `apply` is explicitly selected. Protect its `production` environment with required reviewers in GitHub settings. Configure `SUPABASE_PROJECT_REF` as a repository variable and `SUPABASE_ACCESS_TOKEN` and `SUPABASE_DB_PASSWORD` as repository secrets. The workflow never includes development seeds.
+CI in `.github/workflows/ci.yml` checks quality, a clean database/RLS reset, the named historical migration upgrade fixture, and the browser suite. The production database workflow is separate and manual: `.github/workflows/production-supabase-migrations.yml` takes the full SHA of a reviewed release candidate. In GitHub Actions, select that candidate branch as the workflow branch and supply its exact HEAD SHA as `revision`. The workflow checks both, links the intended Supabase project, lists migration history, and runs a dry-run preview. Use `apply=false` for the preview; invoke it again at the same SHA with `apply=true` only after the production environment approval and migration review. Keep the candidate branch at that SHA between preview and apply; if it moves, rerun CI and preview the new SHA. A migration-history mismatch must be reconciled separately before application. Protect the `production` environment with required reviewers in GitHub settings. Configure `SUPABASE_PROJECT_REF` as a repository variable and `SUPABASE_ACCESS_TOKEN` and `SUPABASE_DB_PASSWORD` as repository secrets. The workflow never includes development seeds.
+
+GitHub requires a `workflow_dispatch` file on the default branch before it can be run. This workflow path already exists on `main`; choose the reviewed release-candidate branch in the **Run workflow** branch selector so its updated workflow and exact SHA are used for this release. Keep the manual workflow available for subsequent candidate releases.
 
 Release order:
 
 ```text
-verify branch and CI
+verify the reviewed release candidate and its CI
 → reconcile any production migration-history mismatch under separate approval
-→ preview and apply production migrations at the exact main revision
-→ verify schema and RLS
-→ deploy or promote the matching Vercel application revision
+→ preview candidate migrations at its exact SHA
+→ approve and apply backward-compatible migrations at that same SHA
+→ verify production schema and RLS
+→ merge or promote the reviewed application changes
 → smoke test English, Arabic, Administrator, Teacher, reports, and delivery
 ```
 
-Keep Vercel production promotion controlled so an automatic application deploy from the same push cannot overtake its required migrations. Vercel hosts the Next.js application; Supabase hosts Auth and PostgreSQL. Configure Supabase Auth Site URL, English/Arabic password redirect URLs, invite-only signup, and its custom SMTP separately. Supabase Auth invitations and recovery use SMTP credentials; parent report delivery uses the application Brevo API key and a verified sender. No production email or hosted migration should be tested with development seed data.
+Only apply a candidate's migrations before its application reaches production when those migrations are backward-compatible with the currently deployed application. If a change is destructive or incompatible, use an expand/migrate/contract sequence across separate releases: add compatible schema, migrate data and application use, then remove old schema after no deployed code needs it. With Vercel set to deploy `main` automatically, merge the reviewed application changes only after the required compatible migrations are verified. Vercel hosts the Next.js application; Supabase hosts Auth and PostgreSQL. Configure Supabase Auth Site URL, English/Arabic password redirect URLs, invite-only signup, and its custom SMTP separately. Supabase Auth invitations and recovery use SMTP credentials; parent report delivery uses the application Brevo API key and a verified sender. No production email or hosted migration should be tested with development seed data.

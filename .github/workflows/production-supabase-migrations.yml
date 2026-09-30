@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       revision:
-        description: 'Exact 40-character main commit SHA verified by CI'
+        description: 'Exact 40-character reviewed release-candidate commit SHA'
         required: true
         type: string
       apply:
@@ -22,7 +22,7 @@ concurrency:
 
 jobs:
   migrate:
-    name: Apply production migrations
+    name: Preview or apply production migrations
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment: production
@@ -34,67 +34,61 @@ jobs:
           ref: ${{ inputs.revision }}
           fetch-depth: 0
 
-      - name: Verify exact main revision
+      - name: Verify exact candidate revision
         env:
           RELEASE_REVISION: ${{ inputs.revision }}
         run: |
           set -euo pipefail
           [[ "$RELEASE_REVISION" =~ ^[0-9a-f]{40}$ ]] || { echo 'revision must be a full commit SHA' >&2; exit 1; }
-          test "$(git rev-parse HEAD)" = "$RELEASE_REVISION"
-          test "$(git rev-parse origin/main)" = "$RELEASE_REVISION" || {
-            echo 'Release revision is not the current main commit' >&2
+          test "$GITHUB_SHA" = "$RELEASE_REVISION" || {
+            echo 'Run this workflow from the reviewed release-candidate branch at the requested revision' >&2
             exit 1
           }
+          test "$(git rev-parse HEAD)" = "$RELEASE_REVISION"
 
       - name: Install Supabase CLI
         uses: supabase/setup-cli@v1
         with:
           version: 2.117.0
 
-      - name: Preview pending migrations
+      - name: Link intended production project
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
           SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
         run: |
           set -euo pipefail
+          test -n "$SUPABASE_ACCESS_TOKEN"
+          test -n "$SUPABASE_DB_PASSWORD"
           test -n "$SUPABASE_PROJECT_REF"
-          supabase migration list \
+          supabase link \
             --project-ref "$SUPABASE_PROJECT_REF" \
             --password "$SUPABASE_DB_PASSWORD"
-          supabase db push \
-            --project-ref "$SUPABASE_PROJECT_REF" \
-            --password "$SUPABASE_DB_PASSWORD" \
-            --skip-vault \
-            --dry-run
+
+      - name: Preview pending migrations
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          set -euo pipefail
+          supabase migration list --linked
+          supabase db push --linked --skip-vault --dry-run
 
       - name: Apply pending migrations
         if: ${{ inputs.apply == true }}
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
         run: |
           set -euo pipefail
-          supabase db push \
-            --project-ref "$SUPABASE_PROJECT_REF" \
-            --password "$SUPABASE_DB_PASSWORD" \
-            --skip-vault \
-            --yes
+          supabase db push --linked --skip-vault --yes
 
       - name: Verify migration history after apply
         if: ${{ inputs.apply == true }}
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
         run: |
           set -euo pipefail
-          supabase migration list \
-            --project-ref "$SUPABASE_PROJECT_REF" \
-            --password "$SUPABASE_DB_PASSWORD"
-          supabase db push \
-            --project-ref "$SUPABASE_PROJECT_REF" \
-            --password "$SUPABASE_DB_PASSWORD" \
-            --skip-vault \
-            --dry-run
+          supabase migration list --linked
+          supabase db push --linked --skip-vault --dry-run
