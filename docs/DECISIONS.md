@@ -174,9 +174,9 @@ Local end-to-end tests must refuse hosted Supabase URLs, because they create and
 
 **Status:** Accepted — 2026-09-22
 
-Keep a single `ADMIN` profile for an administrator who teaches; explicit same-school group assignment grants teacher workflow access. Preserve one primary teacher per group and one effective current group per student. Assignment changes must be atomic and visible, with historical sessions and memberships preserved. Password recovery uses Supabase Auth and the configured Auth SMTP service, not application-managed passwords. The extension ships in this order: assignments/account access, student CSV import, then reusable report wording and teacher read-only preview. The full approved contract is in `docs/SPEC.md` section 57 and the linked design document.
+Keep a single `ADMIN` profile for an administrator who teaches; explicit same-school group assignment grants teacher workflow access. Preserve one primary teacher per group and one effective current group per student. Assignment changes must be atomic and visible, with historical sessions and memberships preserved. Password recovery uses Supabase Auth and the configured Auth SMTP service, not application-managed passwords. The extension ships in this order: assignments/account access, student CSV import, then reusable report wording and teacher read-only preview. This historical decision is superseded by D-025 and D-026 where their contracts differ.
 
-Develop on a GitHub feature branch and verify its Vercel preview before merging to the production branch. Apply forward-only production Supabase migrations before deploying code that requires them; Vercel's Git deployment does not apply database migrations.
+Develop on a GitHub feature branch and verify it before release. Apply forward-only production Supabase migrations before deploying code that requires them; Vercel's Git deployment does not apply database migrations.
 
 ## D-025 — Explicit Class/Subject/Group model supersedes group-centric cardinalities
 
@@ -204,7 +204,7 @@ Navigation is the union of explicit capabilities: Administrator-only gets admini
 
 Export is intentionally simple and Administrator-only. Any login with active Administrator capability can see and use all export-related UI/actions/downloads; any login without Administrator capability receives no export UI and no export access. Teacher capability does not grant export permission.
 
-The detailed authoritative correction is `docs/superpowers/specs/2026-09-23-independent-role-records-design.md`. Production remains unchanged until the complete branch is verified and an explicit production release is authorized.
+`docs/SPEC.md` section 59 is the authoritative role contract. Production changes require a verified branch and an explicit release operation.
 
 ## D-027 — Dashboard attention follows current requested work
 
@@ -223,3 +223,11 @@ New Teaching Assignments remain Class Subject-scoped and never request a Group. 
 **Status:** Accepted — 2026-09-29
 
 Teacher History lists submitted Teaching Updates by their saved RANGE or DATES coverage, including older weekly records backfilled as RANGE. Detail reads the same Teaching Update record and keeps submitted content read-only; an allowed reopen returns to the submission-identity editor. The navigation label is “Updates” rather than “This Week”. Incomplete OPEN drafts may be saved without attendance, while submission still requires completed, eligible coverage. The draft RPC receives snake_case attendance and exception fields as its SQL contract requires; this corrects a persistence failure observed in the local Teacher workflow. No migration or RLS policy changes are needed.
+
+## D-030 — Internal trigger rights and explicit migration release
+
+**Status:** Accepted — 2026-09-30
+
+Public trigger functions are internal database helpers, not application RPCs. Revoke direct execution from `PUBLIC`, `anon`, and `authenticated` on functions returning `trigger`; retain intentional authenticated RPC grants. Production migration application is an explicit, protected operation against a verified main commit. A dry run must precede application and stop on migration-history mismatch. Development seeds never run in production.
+
+The historical Teacher identity cutover test requires rows inserted before the independent-role migration. Keep that upgrade scenario as a named compatibility fixture; the ordinary local database/RLS gate starts from a clean full reset.

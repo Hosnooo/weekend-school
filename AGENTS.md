@@ -4,13 +4,13 @@
 
 - `docs/SPEC.md` is the product source of truth. Do not add features that it does not request.
 - Resolve ambiguity in this order: correctness, security/privacy, teacher ease of use, English/Arabic quality, maintainability, visual polish, then feature quantity.
-- Implement one phase from `docs/IMPLEMENTATION_PLAN.md` at a time. Update `docs/PROGRESS.md` only from observed results.
+- Keep changes focused and reviewable.
 - Record requirement interpretations and architectural changes in `docs/DECISIONS.md`; never silently change the product contract.
 
 ## Required workflow
 
 - Use test-driven development for business rules, authorization helpers, validation, and regressions: observe a relevant failing test before adding production behavior.
-- Before declaring a phase complete, run `pnpm lint`, `pnpm typecheck`, `pnpm test`, and `pnpm build` and record the results in `docs/PROGRESS.md`. Database/RLS changes also require real `pnpm test:db`; release gates that change user workflows require the relevant `pnpm test:e2e` coverage.
+- Before declaring work complete, run `pnpm lint`, `pnpm typecheck`, `pnpm test`, and `pnpm build` and report observed results. Database/RLS changes also require real `pnpm test:db`; release gates that change user workflows require the relevant `pnpm test:e2e` coverage.
 - Keep applied Supabase migrations immutable. Correct an applied schema with a new migration.
 - Prefer small, reviewable commits at working checkpoints. Never weaken authorization or RLS to make a test pass.
 - Preserve unrelated user changes. Use archive/restore for normal lifecycle changes. Permanent deletion is an explicit admin-only workflow for archived records, must show dependent-data impact, may offer export first, and must be school-scoped and transactional.

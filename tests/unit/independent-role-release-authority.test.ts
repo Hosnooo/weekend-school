@@ -42,16 +42,11 @@ describe('independent-role release authority', () => {
   it('records the independent-role correction in the authoritative documents', () => {
     const spec = readFileSync(path.join(repositoryRoot, 'docs', 'SPEC.md'), 'utf8');
     const decisions = readFileSync(path.join(repositoryRoot, 'docs', 'DECISIONS.md'), 'utf8');
-    const progress = readFileSync(path.join(repositoryRoot, 'docs', 'PROGRESS.md'), 'utf8');
-    const design = readFileSync(
-      path.join(repositoryRoot, 'docs', 'superpowers', 'specs', '2026-09-23-independent-role-records-design.md'),
-      'utf8'
-    );
 
     expect(spec).toContain('# 59. Independent Administrator and Teacher records (2026-09-24)');
     expect(spec).toContain('Export is Administrator-only');
     expect(decisions).toContain('## D-026 — Administrator and Teacher are independent business records');
-    expect(progress).toContain('## Independent role records correction — implementation complete, release verification active (2026-09-24)');
-    expect(design).toContain('**Status:** Approved and implemented; authoritative correction to `docs/SPEC.md`');
+    expect(spec).toContain('Administrator capability exists only through an active same-school');
+    expect(spec).toContain('Teacher capability exists only through an active same-school');
   });
 });
