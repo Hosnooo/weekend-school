@@ -18,7 +18,8 @@ import {
   changeStudentClassAction,
   enrollStudentInClassAction,
   moveStudentSubjectGroupAction,
-  setSubjectExcludedAction
+  setSubjectExcludedAction,
+  updateStudentEnrollmentStartAction
 } from '@/features/students/student.actions';
 import type {Locale} from '@/i18n/config';
 import {initialActionState} from '@/lib/validation/action-state';
@@ -143,6 +144,10 @@ export function StudentEnrollmentEditor({
       : enrollStudentInClassAction,
     initialActionState
   );
+  const [startState, startAction, startPending] = useActionState(
+    updateStudentEnrollmentStartAction,
+    initialActionState
+  );
   const localize = (value: {nameEn: string; nameAr: string | null}) =>
     locale === 'ar' && value.nameAr ? value.nameAr : value.nameEn;
   const activeClasses = classes.filter(({isActive}) => isActive);
@@ -153,7 +158,25 @@ export function StudentEnrollmentEditor({
       <Card>
         <SectionHeader title={t('currentClass')} />
         <p>{enrollment.currentClass ? localize(enrollment.currentClass) : common('notAssigned')}</p>
-        {enrollment.currentEnrollment ? <p><strong>{t('enrollmentStart')}:</strong> {enrollment.currentEnrollment.startsOn}</p> : null}
+        {enrollment.currentEnrollment ? (
+          <form action={startAction} className="form-grid compact-form">
+            <input name="locale" type="hidden" value={locale} />
+            <input name="studentId" type="hidden" value={studentId} />
+            <label>
+              {t('enrollmentStart')}
+              <input
+                defaultValue={enrollment.currentEnrollment.startsOn}
+                name="startsOn"
+                required
+                type="date"
+              />
+            </label>
+            <Button disabled={startPending} type="submit" variant="secondary">
+              {startPending ? common('saving') : common('save')}
+            </Button>
+            <FormFeedback state={startState} />
+          </form>
+        ) : null}
         {targetClasses.length > 0 ? (
           <form action={classAction} className="form-grid compact-form">
             <input name="locale" type="hidden" value={locale} />
