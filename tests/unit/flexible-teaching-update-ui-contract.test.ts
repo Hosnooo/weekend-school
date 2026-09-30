@@ -188,7 +188,7 @@ describe('flexible Teaching Update application contract', () => {
     );
   });
 
-  it('keeps shared Admin-requested OPEN items visible to assigned Teachers', () => {
+  it('keeps shared Admin-requested OPEN items visible only to assigned Teachers', () => {
     const repository = source(
       'src/features/teaching-updates/teaching-update.repository.ts'
     );
@@ -201,6 +201,20 @@ describe('flexible Teaching Update application contract', () => {
     expect(openList).not.toContain(
       ".in('teacher_id', teacherIds)"
     );
+    expect(repository).toContain('teacherCanAccessTeachingUpdate');
+    expect(repository).toContain("'teacher_can_teach_period_context'");
+    expect(openList).toContain('teacherCanAccessTeachingUpdate');
   });
 
+  it('does not let Administrator capability widen a Teacher update editor', () => {
+    const repository = source(
+      'src/features/teaching-updates/teaching-update.repository.ts'
+    );
+    const getUpdate = repository.slice(
+      repository.indexOf('export async function getTeachingUpdate'),
+      repository.indexOf('export async function listOpenTeachingUpdates')
+    );
+
+    expect(getUpdate).toContain('teacherCanAccessTeachingUpdate');
+  });
 });
