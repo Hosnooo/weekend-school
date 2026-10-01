@@ -11,6 +11,7 @@ import '@fontsource/noto-sans-arabic/600.css';
 
 import '../globals.css';
 import '../design-system.css';
+import '../report-cycle-hierarchy.css';
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({locale}));
