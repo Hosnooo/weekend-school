@@ -30,7 +30,6 @@ function GuardianEditor({
 }) {
   const t = useTranslations('guardians');
   const common = useTranslations('common');
-  const languages = useTranslations('reportLanguages');
   const [state, action, pending] = useActionState(
     updateStudentGuardianAction,
     initialActionState
@@ -43,6 +42,11 @@ function GuardianEditor({
         <input name="locale" type="hidden" value={locale} />
         <input name="studentId" type="hidden" value={studentId} />
         <input name="guardianId" type="hidden" value={guardian.id} />
+        <input
+          name="reportLanguage"
+          type="hidden"
+          value={guardian.reportLanguage}
+        />
 
         <div className="form-grid">
           <label>
@@ -70,18 +74,6 @@ function GuardianEditor({
               required
               type="tel"
             />
-          </label>
-
-          <label>
-            {t('reportLanguage')}
-            <select
-              defaultValue={guardian.reportLanguage}
-              name="reportLanguage"
-            >
-              <option value="en">{languages('en')}</option>
-              <option value="ar">{languages('ar')}</option>
-              <option value="both">{languages('both')}</option>
-            </select>
           </label>
 
           <label>
@@ -267,7 +259,6 @@ export function StudentGuardianManager({
 }) {
   const t = useTranslations('guardians');
   const common = useTranslations('common');
-  const languages = useTranslations('reportLanguages');
 
   const [state, action, pending] = useActionState(
     addStudentGuardianAction,
@@ -294,11 +285,6 @@ export function StudentGuardianManager({
               <div>
                 <strong>{t('phone')}:</strong>{' '}
                 {guardian.phone ?? common('none')}
-              </div>
-
-              <div>
-                <strong>{t('reportLanguage')}:</strong>{' '}
-                {languages(guardian.reportLanguage)}
               </div>
 
               {guardian.receivesReports ? (
@@ -351,6 +337,7 @@ export function StudentGuardianManager({
         <form action={action} className="record-form">
           <input name="locale" type="hidden" value={locale} />
           <input name="studentId" type="hidden" value={studentId} />
+          <input name="reportLanguage" type="hidden" value="both" />
 
           <div className="form-grid">
             <label>
@@ -376,15 +363,6 @@ export function StudentGuardianManager({
                 required
                 type="tel"
               />
-            </label>
-
-            <label>
-              {t('reportLanguage')}
-              <select defaultValue="en" name="reportLanguage">
-                <option value="en">{languages('en')}</option>
-                <option value="ar">{languages('ar')}</option>
-                <option value="both">{languages('both')}</option>
-              </select>
             </label>
 
             <label>

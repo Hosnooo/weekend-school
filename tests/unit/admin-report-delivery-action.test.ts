@@ -18,4 +18,32 @@ describe('admin report delivery action', () => {
     expect(source).toContain("'FAILED'");
     expect(source).toContain('sendReportDeliveries');
   });
+
+  it('delivers a report to every active linked guardian who receives reports', () => {
+    const source = readFileSync(
+      'src/features/email/email.repository.ts',
+      'utf8'
+    );
+
+    expect(source).toContain("eq('receives_reports', true)");
+    expect(source).toContain("eq('guardians.is_active', true)");
+    expect(source).not.toContain("eq('guardians.report_language', report.language)");
+  });
+
+  it('generates one content-driven report per student for Class Report Cycles', () => {
+    const finalizer = readFileSync(
+      'src/features/reports/class-report-finalization.repository.ts',
+      'utf8'
+    );
+    const actions = readFileSync(
+      'src/features/reports/admin-report-workflow.actions.ts',
+      'utf8'
+    );
+
+    expect(finalizer).toContain("language: 'both'");
+    expect(finalizer).toContain('finalizeClassReportCycleReports');
+    expect(finalizer).not.toContain('guardian.report_language');
+    expect(actions).toContain('finalizeClassReportCycleReports');
+    expect(actions).not.toContain('approveAllSubmittedSources');
+  });
 });

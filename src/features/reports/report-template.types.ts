@@ -1,15 +1,15 @@
 export type ReportTemplateConfig = {
   id: string | null;
   name: string;
-  mainReportLabelEn: string;
+  mainReportLabelEn: string | null;
   mainReportLabelAr: string | null;
   mainReportHelpEn: string | null;
   mainReportHelpAr: string | null;
   performanceEnabled: boolean;
-  performanceLabelEn: string;
+  performanceLabelEn: string | null;
   performanceLabelAr: string | null;
   studentCommentsEnabled: boolean;
-  studentCommentLabelEn: string;
+  studentCommentLabelEn: string | null;
   studentCommentLabelAr: string | null;
   studentCommentHelpEn: string | null;
   studentCommentHelpAr: string | null;
@@ -17,7 +17,7 @@ export type ReportTemplateConfig = {
   introAr: string | null;
   closingEn: string | null;
   closingAr: string | null;
-  emailSubjectEn: string;
+  emailSubjectEn: string | null;
   emailSubjectAr: string | null;
   emailGreetingEn: string | null;
   emailGreetingAr: string | null;
@@ -37,7 +37,7 @@ export function defaultReportTemplateConfig(): ReportTemplateConfig {
     mainReportLabelAr: 'التقرير الرئيسي',
     mainReportHelpEn: "Describe what was covered and the group's progress.",
     mainReportHelpAr: 'اذكر ما تمت تغطيته وتقدم الصف أو المجموعة.',
-    performanceEnabled: true,
+    performanceEnabled: false,
     performanceLabelEn: 'Performance',
     performanceLabelAr: 'الأداء',
     studentCommentsEnabled: true,

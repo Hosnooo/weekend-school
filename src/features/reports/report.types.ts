@@ -63,15 +63,15 @@ export type ReportSnapshotV2 = {
   sections: ReportSnapshotV2Section[];
   template: {
     name?: string;
-    mainReportLabelEn?: string;
+    mainReportLabelEn?: string | null;
     mainReportLabelAr?: string | null;
     mainReportHelpEn?: string | null;
     mainReportHelpAr?: string | null;
     performanceEnabled?: boolean;
-    performanceLabelEn?: string;
+    performanceLabelEn?: string | null;
     performanceLabelAr?: string | null;
     studentCommentsEnabled?: boolean;
-    studentCommentLabelEn?: string;
+    studentCommentLabelEn?: string | null;
     studentCommentLabelAr?: string | null;
     studentCommentHelpEn?: string | null;
     studentCommentHelpAr?: string | null;
@@ -79,7 +79,7 @@ export type ReportSnapshotV2 = {
     introAr: string | null;
     closingEn: string | null;
     closingAr: string | null;
-    emailSubjectEn?: string;
+    emailSubjectEn?: string | null;
     emailSubjectAr?: string | null;
     emailGreetingEn?: string | null;
     emailGreetingAr?: string | null;

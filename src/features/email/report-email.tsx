@@ -100,7 +100,11 @@ function subjectFor(
 
   let configured = configuredValue(snapshot, key);
 
-  if (!configured.trim() && language === 'ar') {
+  if (
+    !configured.trim() &&
+    language === 'ar' &&
+    (snapshot.version === 1 || snapshot.language !== 'both')
+  ) {
     configured = configuredValue(snapshot, 'emailSubjectEn');
   }
 
@@ -121,9 +125,7 @@ export function renderReportEmailSubject(
   const english = subjectFor(snapshot, 'en');
   const arabic = subjectFor(snapshot, 'ar');
 
-  return arabic && arabic !== english
-    ? `${english} / ${arabic}`
-    : english;
+  return [...new Set([english, arabic].filter(Boolean))].join(' / ');
 }
 
 function EmailCopy({
@@ -190,6 +192,8 @@ function ReportEmail({
     document;
 
   const preview = renderReportEmailSubject(snapshot);
+  const contentDriven =
+    snapshot.version === 2 && snapshot.language === 'both';
 
   return (
     <Html
@@ -215,12 +219,14 @@ function ReportEmail({
             padding: '24px'
           }}
         >
-          {snapshot.language === 'en' ||
+          {contentDriven ||
+          snapshot.language === 'en' ||
           snapshot.language === 'both' ? (
             <EmailCopy snapshot={snapshot} language="en" />
           ) : null}
 
-          {snapshot.language === 'ar' ||
+          {contentDriven ||
+          snapshot.language === 'ar' ||
           snapshot.language === 'both' ? (
             <EmailCopy snapshot={snapshot} language="ar" />
           ) : null}

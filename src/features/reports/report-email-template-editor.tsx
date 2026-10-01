@@ -173,9 +173,8 @@ export function ReportEmailTemplateEditor({
   const fields: Array<{
     name: EmailFieldName;
     rows?: number;
-    required?: boolean;
   }> = [
-    {name: 'emailSubjectEn', required: true},
+    {name: 'emailSubjectEn'},
     {name: 'emailSubjectAr'},
     {name: 'emailGreetingEn', rows: 2},
     {name: 'emailGreetingAr', rows: 2},
@@ -195,7 +194,7 @@ export function ReportEmailTemplateEditor({
         <p className="field-help">{t('emailFriendlyTokenHelp')}</p>
 
         <div className="form-grid">
-          {fields.map(({name, rows, required}) => {
+          {fields.map(({name, rows}) => {
             const language = languageForField(name);
             const tokens = emailTemplateDisplayTokens(language);
             const dir = language === 'ar' ? 'rtl' : undefined;
@@ -206,7 +205,6 @@ export function ReportEmailTemplateEditor({
                 htmlFor={id}
                 key={name}
                 label={t(name)}
-                required={required}
               >
                 <input
                   name={name}
@@ -214,7 +212,7 @@ export function ReportEmailTemplateEditor({
                   value={toStoredEmailTemplateValue(
                     values[name],
                     language
-                  )}
+                  ) ?? ''}
                 />
 
                 {rows ? (
@@ -224,7 +222,6 @@ export function ReportEmailTemplateEditor({
                     onChange={(event) =>
                       update(name, event.target.value)
                     }
-                    required={required}
                     rows={rows}
                     value={values[name]}
                   />
@@ -235,7 +232,6 @@ export function ReportEmailTemplateEditor({
                     onChange={(event) =>
                       update(name, event.target.value)
                     }
-                    required={required}
                     value={values[name]}
                   />
                 )}
@@ -304,7 +300,7 @@ export function ReportEmailTemplateEditor({
 
               <p>
                 <strong>{t('emailPreviewSubject')}</strong>{' '}
-                {preview.subjectEn}
+                {preview.subjectEn || '—'}
               </p>
 
               {preview.greetingEn ? (
@@ -333,7 +329,7 @@ export function ReportEmailTemplateEditor({
 
               <p>
                 <strong>{t('emailPreviewSubject')}</strong>{' '}
-                {preview.subjectAr}
+                {preview.subjectAr || '—'}
               </p>
 
               {preview.greetingAr ? (

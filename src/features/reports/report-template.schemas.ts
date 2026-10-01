@@ -2,25 +2,27 @@ import {z} from 'zod';
 
 import {optionalText, requiredText} from '@/lib/validation/fields';
 
+const pairedLabel = optionalText;
+
 export const reportTemplateSchema = z.object({
   name: requiredText,
-  mainReportLabelEn: requiredText,
-  mainReportLabelAr: optionalText,
+  mainReportLabelEn: pairedLabel,
+  mainReportLabelAr: pairedLabel,
   mainReportHelpEn: optionalText,
   mainReportHelpAr: optionalText,
   performanceEnabled: z.boolean(),
-  performanceLabelEn: requiredText,
-  performanceLabelAr: optionalText,
+  performanceLabelEn: pairedLabel,
+  performanceLabelAr: pairedLabel,
   studentCommentsEnabled: z.boolean(),
-  studentCommentLabelEn: requiredText,
-  studentCommentLabelAr: optionalText,
+  studentCommentLabelEn: pairedLabel,
+  studentCommentLabelAr: pairedLabel,
   studentCommentHelpEn: optionalText,
   studentCommentHelpAr: optionalText,
   introEn: optionalText,
   introAr: optionalText,
   closingEn: optionalText,
   closingAr: optionalText,
-  emailSubjectEn: requiredText.default(
+  emailSubjectEn: optionalText.default(
     'Student report — {{student_name}}'
   ),
   emailSubjectAr: optionalText.default(
@@ -42,6 +44,46 @@ export const reportTemplateSchema = z.object({
   emailClosingAr: optionalText.default('مع التحية،'),
   emailSignoffEn: optionalText.default('{{school_name}}'),
   emailSignoffAr: optionalText.default('{{school_name}}')
+}).superRefine((value, context) => {
+  const requirePair = (
+    en: string | null,
+    ar: string | null,
+    path: string
+  ) => {
+    if (en || ar) return;
+    context.addIssue({
+      code: 'custom',
+      message: 'At least one language is required',
+      path: [path]
+    });
+  };
+
+  requirePair(
+    value.mainReportLabelEn,
+    value.mainReportLabelAr,
+    'mainReportLabelEn'
+  );
+  requirePair(
+    value.emailSubjectEn,
+    value.emailSubjectAr,
+    'emailSubjectEn'
+  );
+
+  if (value.performanceEnabled) {
+    requirePair(
+      value.performanceLabelEn,
+      value.performanceLabelAr,
+      'performanceLabelEn'
+    );
+  }
+
+  if (value.studentCommentsEnabled) {
+    requirePair(
+      value.studentCommentLabelEn,
+      value.studentCommentLabelAr,
+      'studentCommentLabelEn'
+    );
+  }
 });
 
 export type ReportTemplateInput = z.infer<typeof reportTemplateSchema>;

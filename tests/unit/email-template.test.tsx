@@ -1,5 +1,8 @@
 import {describe, expect, it} from 'vitest';
-import {renderReportEmail} from '@/features/email/report-email';
+import {
+  renderReportEmail,
+  renderReportEmailSubject
+} from '@/features/email/report-email';
 import type {ReportSnapshot, ReportSnapshotV2} from '@/features/reports/report.types';
 
 const snapshot: ReportSnapshot = {
@@ -42,7 +45,12 @@ const snapshotV2: ReportSnapshotV2 = {
     commentEn: 'Steady recitation',
     commentAr: null
   }],
-  template: {introEn: null, introAr: null, closingEn: null, closingAr: null},
+  template: {
+    introEn: null,
+    introAr: null,
+    closingEn: null,
+    closingAr: null
+  },
   author: 'MCE Weekend School',
   generatedAt: '2026-09-30T18:00:00Z'
 };
@@ -61,5 +69,52 @@ describe('report email', () => {
     expect(html).toContain('Quran');
     expect(html).toContain('Surah Al-Fatiha');
     expect(html).toContain('سورة الفاتحة');
+  });
+
+  it('does not invent English email copy when a v2 template is Arabic-only', () => {
+    const arabicOnly: ReportSnapshotV2 = {
+      ...snapshotV2,
+      sections: [{
+        ...snapshotV2.sections[0],
+        approvedProgressEn: null,
+        approvedProgressAr: 'سورة الفاتحة'
+      }],
+      template: {
+        ...snapshotV2.template,
+        emailSubjectEn: null,
+        emailSubjectAr: 'تقرير الطالب — {{student_name}}',
+        emailGreetingEn: null,
+        emailGreetingAr: 'ولي الأمر الكريم،',
+        emailMessageEn: null,
+        emailMessageAr: 'هذا هو التقرير.',
+        emailClosingEn: null,
+        emailClosingAr: 'مع التحية،',
+        emailSignoffEn: null,
+        emailSignoffAr: '{{school_name}}'
+      }
+    };
+
+    const subject = renderReportEmailSubject(arabicOnly);
+    const html = renderReportEmail(arabicOnly);
+
+    expect(subject).toBe('تقرير الطالب — سارة علي');
+    expect(subject).not.toContain('Student report');
+    expect(html).toContain('ولي الأمر الكريم،');
+    expect(html).not.toContain('Dear Parent/Guardian,');
+  });
+
+  it('preserves multiline email template text', () => {
+    const multiline: ReportSnapshotV2 = {
+      ...snapshotV2,
+      template: {
+        ...snapshotV2.template,
+        emailMessageEn: 'First line\nSecond line',
+        emailMessageAr: null
+      }
+    };
+
+    const html = renderReportEmail(multiline);
+    expect(html).toContain('First line');
+    expect(html).toContain('Second line');
   });
 });

@@ -25,7 +25,6 @@ export function GuardianForm({
 }) {
   const t = useTranslations('guardians');
   const common = useTranslations('common');
-  const languages = useTranslations('reportLanguages');
   const [state, action, pending] = useActionState(
     guardian ? updateGuardianAction : createGuardianAction,
     initialActionState
@@ -35,6 +34,11 @@ export function GuardianForm({
     <form action={action} className="record-form">
       <input name="locale" type="hidden" value={locale} />
       {guardian ? <input name="id" type="hidden" value={guardian.id} /> : null}
+      <input
+        name="reportLanguage"
+        type="hidden"
+        value={guardian?.reportLanguage ?? 'both'}
+      />
 
       <div className="form-grid">
         <label>
@@ -60,17 +64,6 @@ export function GuardianForm({
             required
             type="tel"
           />
-        </label>
-        <label>
-          {t('reportLanguage')}
-          <select
-            defaultValue={guardian?.reportLanguage ?? 'en'}
-            name="reportLanguage"
-          >
-            <option value="en">{languages('en')}</option>
-            <option value="ar">{languages('ar')}</option>
-            <option value="both">{languages('both')}</option>
-          </select>
         </label>
       </div>
 

@@ -4,9 +4,11 @@ import {Badge} from '@/components/ui/badge';
 import {formatTeachingUpdateDate, formatTeachingUpdateRange} from '@/features/teaching-updates/teaching-update-date';
 
 import {
-  requestReportCycleMissingUpdateAction,
-  setReportCycleSourceIncludedAction
+  requestReportCycleMissingUpdateAction
 } from './admin-report-workflow.actions';
+import {
+  setClassReportCycleSourceIncludedAction
+} from './class-report-source.actions';
 import type {
   ClassReportCycleMissingContext,
   ReportBatchSource
@@ -39,6 +41,7 @@ export async function ReportCycleSources({
     ar: string | null
   ) => locale === 'ar' && ar ? ar : en ?? ar ?? '—';
   const activeLocale = locale === 'ar' ? 'ar' : 'en';
+  const sourceDetails = locale === 'ar' ? 'عرض التحديث' : 'View update';
 
   return (
     <section className="detail-section report-cycle-sources">
@@ -111,12 +114,28 @@ export async function ReportCycleSources({
                     {' · '}
                     {source.teacherName}
                   </p>
+
+                  {(source.progressEn || source.progressAr) ? (
+                    <details>
+                      <summary>{sourceDetails}</summary>
+                      {source.progressEn ? (
+                        <p dir="ltr" style={{whiteSpace: 'pre-wrap'}}>
+                          {source.progressEn}
+                        </p>
+                      ) : null}
+                      {source.progressAr ? (
+                        <p dir="rtl" style={{whiteSpace: 'pre-wrap'}}>
+                          {source.progressAr}
+                        </p>
+                      ) : null}
+                    </details>
+                  ) : null}
                 </div>
 
                 {status !== 'FINALIZED' ? (
                   <form
                     action={
-                      setReportCycleSourceIncludedAction
+                      setClassReportCycleSourceIncludedAction
                     }
                   >
                     <input

@@ -41,7 +41,6 @@ export function StudentForm({
   const common = useTranslations('common');
   const classMessages = useTranslations('classes');
   const guardiansT = useTranslations('guardians');
-  const reportLanguages = useTranslations('reportLanguages');
   const [state, action, pending] = useActionState(
     student ? updateStudentAction : createStudentAction,
     initialActionState
@@ -163,6 +162,7 @@ export function StudentForm({
               type="hidden"
               value={guardianMode === 'existing' ? guardianId : ''}
             />
+            <input name="reportLanguage" type="hidden" value="both" />
 
             <div className="guardian-mode-options">
               <label className="guardian-mode-option">
@@ -295,17 +295,6 @@ export function StudentForm({
                       required
                       type="tel"
                     />
-                  </label>
-
-                  <label>
-                    {t('reportLanguage')}
-                    <select defaultValue="en" name="reportLanguage">
-                      <option value="en">{reportLanguages('en')}</option>
-                      <option value="ar">{reportLanguages('ar')}</option>
-                      <option value="both">
-                        {reportLanguages('both')}
-                      </option>
-                    </select>
                   </label>
                 </div>
 

@@ -11,18 +11,25 @@ import {createServerSupabaseClient} from '@/lib/supabase/server';
 import {databaseUuid} from '@/lib/validation/fields';
 
 import {
-  approveAllSubmittedSources,
   createClassReportCycle,
   finalizeReportBatch,
   getReportBatchWorkspace,
-  reviewReportBatch,
-  setReportCycleSourceIncluded
+  reviewReportBatch
 } from './report-batch.repository';
 import {
   ensureAdminReportContextBatch,
   reopenAdminReportWorkspace,
   saveAdminReportWorkspace
 } from './admin-report-workspace.repository';
+import {
+  ensureClassReportCycleReview,
+  rebuildClassReportReviewContext,
+  saveClassReportReviewContext,
+  setClassReportCycleSourceIncluded
+} from './class-report-review.repository';
+import {
+  finalizeClassReportCycleReports
+} from './class-report-finalization.repository';
 import {reportPeriodSchema} from './report.schemas';
 import {getActiveReportTemplate} from './report-template.repository';
 import type {ReportPerformance} from './report.types';
@@ -172,6 +179,95 @@ function workspacePayloadFrom(formData: FormData) {
     includePerformance,
     includeStudentComments,
     studentComments
+  };
+}
+
+function classReviewPayloadFrom(formData: FormData) {
+  const batchId = batchIdFrom(formData);
+  const period = periodFrom(formData);
+  const classSubjectId = databaseUuid.safeParse(
+    formData.get('classSubjectId')
+  );
+  const subjectGroupId = optionalGroupIdFrom(formData);
+
+  if (
+    !batchId.success ||
+    !period.success ||
+    !classSubjectId.success ||
+    !subjectGroupId.success
+  ) {
+    return null;
+  }
+
+  const includePerformance =
+    formData.get('includePerformance') === '1';
+  const includeStudentComments =
+    formData.get('includeStudentComments') === '1';
+  const studentIds = [
+    ...new Set(
+      formData
+        .getAll('studentId')
+        .map(String)
+        .filter(Boolean)
+    )
+  ];
+
+  const students: Array<{
+    studentId: string;
+    progressEn: string | null;
+    progressAr: string | null;
+    performance: ReportPerformance | null;
+    performanceOverridden: boolean;
+    commentEn: string | null;
+    commentAr: string | null;
+  }> = [];
+
+  for (const studentId of studentIds) {
+    const parsedStudentId = databaseUuid.safeParse(studentId);
+    if (!parsedStudentId.success) return null;
+
+    const rawPerformance = String(
+      formData.get(`performance:${studentId}`) ?? ''
+    ).trim();
+    let performance: ReportPerformance | null = null;
+
+    if (includePerformance && rawPerformance) {
+      const parsedPerformance = performanceSchema.safeParse(rawPerformance);
+      if (!parsedPerformance.success) return null;
+      performance = parsedPerformance.data;
+    }
+
+    students.push({
+      studentId: parsedStudentId.data,
+      progressEn: cleanText(
+        formData.get(`progressEn:${studentId}`)
+      ),
+      progressAr: cleanText(
+        formData.get(`progressAr:${studentId}`)
+      ),
+      performance,
+      performanceOverridden:
+        includePerformance && Boolean(rawPerformance),
+      commentEn: cleanText(
+        formData.get(`commentEn:${studentId}`)
+      ),
+      commentAr: cleanText(
+        formData.get(`commentAr:${studentId}`)
+      )
+    });
+  }
+
+  return {
+    batchId: batchId.data,
+    periodStart: period.data.periodStart,
+    periodEnd: period.data.periodEnd,
+    classSubjectId: classSubjectId.data,
+    subjectGroupId: subjectGroupId.data,
+    mainReportEn: cleanText(formData.get('mainReportEn')),
+    mainReportAr: cleanText(formData.get('mainReportAr')),
+    includePerformance,
+    includeStudentComments,
+    students
   };
 }
 
@@ -401,7 +497,6 @@ export async function reopenAdminReportWorkspaceAction(
   );
 }
 
-
 export async function createClassReportCycleAction(
   formData: FormData
 ) {
@@ -456,6 +551,109 @@ export async function createClassReportCycleAction(
   );
 }
 
+export async function saveClassReportReviewContextAction(
+  formData: FormData
+) {
+  const locale = localeFrom(formData);
+  const profile = await requireProfile(locale, 'ADMIN');
+  const payload = classReviewPayloadFrom(formData);
+
+  if (!payload) {
+    redirect(`/${locale}/reports?error=validation`);
+  }
+
+  try {
+    await saveClassReportReviewContext({
+      schoolId: profile.schoolId,
+      batchId: payload.batchId,
+      classSubjectId: payload.classSubjectId,
+      subjectGroupId: payload.subjectGroupId,
+      mainReportEn: payload.mainReportEn,
+      mainReportAr: payload.mainReportAr,
+      includePerformance: payload.includePerformance,
+      includeStudentComments: payload.includeStudentComments,
+      students: payload.students
+    });
+  } catch (error) {
+    console.error('Unable to save Class Report Cycle review', {error});
+    redirect(
+      reportRedirect(
+        locale,
+        payload.periodStart,
+        payload.periodEnd,
+        payload.batchId,
+        'error=save'
+      )
+    );
+  }
+
+  revalidatePath(`/${locale}/reports`);
+  revalidatePath(`/${locale}/reports/workspace/${payload.batchId}`);
+
+  redirect(
+    reportRedirect(
+      locale,
+      payload.periodStart,
+      payload.periodEnd,
+      payload.batchId,
+      'saved=1'
+    )
+  );
+}
+
+export async function rebuildClassReportReviewContextAction(
+  formData: FormData
+) {
+  const locale = localeFrom(formData);
+  const profile = await requireProfile(locale, 'ADMIN');
+  const batchId = batchIdFrom(formData);
+  const period = periodFrom(formData);
+  const classSubjectId = databaseUuid.safeParse(
+    formData.get('classSubjectId')
+  );
+  const subjectGroupId = optionalGroupIdFrom(formData);
+
+  if (
+    !batchId.success ||
+    !period.success ||
+    !classSubjectId.success ||
+    !subjectGroupId.success
+  ) {
+    redirect(`/${locale}/reports?error=validation`);
+  }
+
+  try {
+    await rebuildClassReportReviewContext({
+      schoolId: profile.schoolId,
+      batchId: batchId.data,
+      classSubjectId: classSubjectId.data,
+      subjectGroupId: subjectGroupId.data
+    });
+  } catch (error) {
+    console.error('Unable to rebuild Class Report Cycle review', {error});
+    redirect(
+      reportRedirect(
+        locale,
+        period.data.periodStart,
+        period.data.periodEnd,
+        batchId.data,
+        'error=save'
+      )
+    );
+  }
+
+  revalidatePath(`/${locale}/reports/workspace/${batchId.data}`);
+  redirect(
+    reportRedirect(
+      locale,
+      period.data.periodStart,
+      period.data.periodEnd,
+      batchId.data,
+      'saved=1'
+    )
+  );
+}
+
 export async function setReportCycleSourceIncludedAction(
   formData: FormData
 ) {
@@ -475,11 +673,11 @@ export async function setReportCycleSourceIncludedAction(
   }
 
   try {
-    await setReportCycleSourceIncluded(
-      batchId.data,
-      submissionId.data,
+    await setClassReportCycleSourceIncluded({
+      batchId: batchId.data,
+      submissionId: submissionId.data,
       included
-    );
+    });
   } catch (error) {
     console.error(
       'Unable to change Report Cycle source selection',
@@ -572,7 +770,7 @@ export async function finalizeClassReportCycleAction(
   }
 
   try {
-    await approveAllSubmittedSources(
+    await ensureClassReportCycleReview(
       profile.schoolId,
       batchId.data
     );
@@ -593,7 +791,7 @@ export async function finalizeClassReportCycleAction(
       );
     }
 
-    await finalizeReportBatch(
+    await finalizeClassReportCycleReports(
       profile.schoolId,
       batchId.data
     );

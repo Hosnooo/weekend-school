@@ -11,15 +11,15 @@ import {
 type ReportTemplateRow = {
   id: string;
   name: string;
-  main_report_label_en: string;
+  main_report_label_en: string | null;
   main_report_label_ar: string | null;
   main_report_help_en: string | null;
   main_report_help_ar: string | null;
   performance_enabled: boolean;
-  performance_label_en: string;
+  performance_label_en: string | null;
   performance_label_ar: string | null;
   student_comments_enabled: boolean;
-  student_comment_label_en: string;
+  student_comment_label_en: string | null;
   student_comment_label_ar: string | null;
   student_comment_help_en: string | null;
   student_comment_help_ar: string | null;
@@ -27,7 +27,7 @@ type ReportTemplateRow = {
   intro_ar: string | null;
   closing_en: string | null;
   closing_ar: string | null;
-  email_subject_en: string;
+  email_subject_en: string | null;
   email_subject_ar: string | null;
   email_greeting_en: string | null;
   email_greeting_ar: string | null;
