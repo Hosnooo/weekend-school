@@ -119,7 +119,7 @@ export async function ReportCycleSources({
                   {status !== 'FINALIZED' ? (
                     <a
                       className="button button-secondary action-link"
-                      href={`?edit=${encodeURIComponent(editorId)}#${editorId}`}
+                      href={`#${editorId}`}
                     >
                       {editUpdate}
                     </a>
