@@ -8,7 +8,6 @@ import {Link} from '@/i18n/navigation';
 
 import {
   finalizeClassReportCycleAction,
-  rebuildClassReportReviewContextAction,
   reopenAdminReportWorkspaceAction
 } from './admin-report-workflow.actions';
 import {saveClassReportReviewWithAttendanceAction} from './class-report-review.actions';
@@ -40,7 +39,6 @@ const copy = {
     customizeReportText: 'Customize report text',
     customizeReportTextHelp:
       'Leave blank to use the shared report text for this student.',
-    rebuildFromSources: 'Rebuild from selected updates',
     emailReview: 'Email review',
     selectStudent: 'Student',
     showEmail: 'Show email',
@@ -54,13 +52,14 @@ const copy = {
     sessions: 'sessions',
     attendanceNeedsReview:
       'Source attendance disagrees. Confirm the attended and total session counts before finalizing.',
+    saveAndClose: 'Save & close',
+    cancel: 'Cancel',
     reopenEdit: 'Reopen & edit'
   },
   ar: {
     customizeReportText: 'تخصيص نص التقرير',
     customizeReportTextHelp:
       'اتركه فارغاً لاستخدام نص التقرير المشترك لهذا الطالب.',
-    rebuildFromSources: 'إعادة البناء من التحديثات المحددة',
     emailReview: 'مراجعة البريد الإلكتروني',
     selectStudent: 'الطالب',
     showEmail: 'عرض البريد',
@@ -74,6 +73,8 @@ const copy = {
     sessions: 'حصص',
     attendanceNeedsReview:
       'توجد اختلافات في بيانات الحضور. يرجى تأكيد عدد الحصص المحضورة وإجمالي الحصص قبل الإنهاء.',
+    saveAndClose: 'حفظ وإغلاق',
+    cancel: 'إلغاء',
     reopenEdit: 'إعادة الفتح والتعديل'
   }
 } as const;
@@ -205,6 +206,13 @@ export async function ClassReportCycleReview({
 
   return (
     <section className="detail-section report-cycle-student-reports">
+      {classCycle.batch.status !== 'FINALIZED' ? (
+        <style>{`
+          .report-edit-panel { display: none; }
+          .report-edit-panel:target { display: block; }
+        `}</style>
+      ) : null}
+
       <div className="section-heading">
         <div>
           <h2>{t('studentReportsStage')}</h2>
@@ -223,230 +231,226 @@ export async function ClassReportCycleReview({
                 ? localize(context.groupNameEn, context.groupNameAr)
                 : null
             ].filter(Boolean).join(' · ');
+            const editorId = `report-edit-${context.classSubjectId}-${context.subjectGroupId ?? 'whole'}`;
 
             return (
               <article
-                className="record-card"
+                className={
+                  classCycle.batch.status === 'FINALIZED'
+                    ? 'record-card'
+                    : 'record-card report-edit-panel'
+                }
+                id={
+                  classCycle.batch.status === 'FINALIZED'
+                    ? undefined
+                    : editorId
+                }
                 key={`${context.classSubjectId}:${context.subjectGroupId ?? 'whole'}`}
               >
                 <div className="record-card-main stack">
                   <h3>{title}</h3>
 
                   {classCycle.batch.status !== 'FINALIZED' ? (
-                    <>
-                      <form
-                        action={saveClassReportReviewWithAttendanceAction}
-                        className="record-form"
-                      >
-                        {sharedHidden}
+                    <form
+                      action={saveClassReportReviewWithAttendanceAction}
+                      className="record-form"
+                    >
+                      {sharedHidden}
+                      <input
+                        name="classSubjectId"
+                        type="hidden"
+                        value={context.classSubjectId}
+                      />
+                      <input
+                        name="subjectGroupId"
+                        type="hidden"
+                        value={context.subjectGroupId ?? ''}
+                      />
+
+                      <section>
+                        <div className="form-grid">
+                          <label>
+                            {t('englishField')}
+                            <textarea
+                              defaultValue={context.mainReportEn ?? ''}
+                              dir="ltr"
+                              name="mainReportEn"
+                              rows={6}
+                            />
+                          </label>
+                          <label>
+                            {t('arabicField')}
+                            <textarea
+                              defaultValue={context.mainReportAr ?? ''}
+                              dir="rtl"
+                              name="mainReportAr"
+                              rows={6}
+                            />
+                          </label>
+                        </div>
+                      </section>
+
+                      {review.template.performanceEnabled ? (
                         <input
-                          name="classSubjectId"
+                          name="includePerformance"
                           type="hidden"
-                          value={context.classSubjectId}
+                          value="1"
                         />
+                      ) : null}
+                      {review.template.studentCommentsEnabled ? (
                         <input
-                          name="subjectGroupId"
+                          name="includeStudentComments"
                           type="hidden"
-                          value={context.subjectGroupId ?? ''}
+                          value="1"
                         />
+                      ) : null}
 
-                        <section>
-                          <div className="form-grid">
-                            <label>
-                              {t('englishField')}
-                              <textarea
-                                defaultValue={context.mainReportEn ?? ''}
-                                dir="ltr"
-                                name="mainReportEn"
-                                rows={6}
-                              />
-                            </label>
-                            <label>
-                              {t('arabicField')}
-                              <textarea
-                                defaultValue={context.mainReportAr ?? ''}
-                                dir="rtl"
-                                name="mainReportAr"
-                                rows={6}
-                              />
-                            </label>
-                          </div>
-                        </section>
+                      <section>
+                        <h4>{weekly('students')}</h4>
+                        <div className="stack-list">
+                          {context.students.map((student) => (
+                            <article
+                              className="record-card"
+                              key={student.studentId}
+                            >
+                              <div className="record-card-main stack">
+                                <strong className="record-name">
+                                  {localize(
+                                    student.studentNameEn,
+                                    student.studentNameAr
+                                  )}
+                                </strong>
+                                <input
+                                  name="studentId"
+                                  type="hidden"
+                                  value={student.studentId}
+                                />
 
-                        {review.template.performanceEnabled ? (
-                          <input
-                            name="includePerformance"
-                            type="hidden"
-                            value="1"
-                          />
-                        ) : null}
-                        {review.template.studentCommentsEnabled ? (
-                          <input
-                            name="includeStudentComments"
-                            type="hidden"
-                            value="1"
-                          />
-                        ) : null}
-
-                        <section>
-                          <h4>{weekly('students')}</h4>
-                          <div className="stack-list">
-                            {context.students.map((student) => (
-                              <article
-                                className="record-card"
-                                key={student.studentId}
-                              >
-                                <div className="record-card-main stack">
-                                  <strong className="record-name">
-                                    {localize(
-                                      student.studentNameEn,
-                                      student.studentNameAr
-                                    )}
-                                  </strong>
-                                  <input
-                                    name="studentId"
-                                    type="hidden"
-                                    value={student.studentId}
-                                  />
-
-                                  <div>
-                                    <strong>{ui.attendance}</strong>
-                                    <div className="row-actions">
-                                      <label>
-                                        {ui.attended}
-                                        <input
-                                          defaultValue={student.attendanceAttended ?? ''}
-                                          min="0"
-                                          name={`attendanceAttended:${student.studentId}`}
-                                          step="1"
-                                          type="number"
-                                        />
-                                      </label>
-                                      <span>{ui.outOf}</span>
-                                      <label>
-                                        {ui.sessions}
-                                        <input
-                                          defaultValue={student.attendanceTotal ?? ''}
-                                          min="0"
-                                          name={`attendanceTotal:${student.studentId}`}
-                                          step="1"
-                                          type="number"
-                                        />
-                                      </label>
-                                    </div>
-                                    {student.attendanceUnresolvedConflicts > 0 ? (
-                                      <Alert variant="warning">
-                                        {ui.attendanceNeedsReview}
-                                      </Alert>
-                                    ) : null}
-                                  </div>
-
-                                  {review.template.performanceEnabled ? (
+                                <div>
+                                  <strong>{ui.attendance}</strong>
+                                  <div className="row-actions">
                                     <label>
-                                      {t('performance')}
-                                      <select
-                                        defaultValue={
-                                          student.performanceOverridden
-                                            ? student.performance ?? ''
-                                            : ''
-                                        }
-                                        name={`performance:${student.studentId}`}
-                                      >
-                                        <option value="">
-                                          {weekly('useDefault')}
-                                        </option>
-                                        {performanceValues.map((value) => (
-                                          <option key={value} value={value}>
-                                            {weekly(`performance.${value}`)}
-                                          </option>
-                                        ))}
-                                      </select>
+                                      {ui.attended}
+                                      <input
+                                        defaultValue={student.attendanceAttended ?? ''}
+                                        min="0"
+                                        name={`attendanceAttended:${student.studentId}`}
+                                        step="1"
+                                        type="number"
+                                      />
                                     </label>
+                                    <span>{ui.outOf}</span>
+                                    <label>
+                                      {ui.sessions}
+                                      <input
+                                        defaultValue={student.attendanceTotal ?? ''}
+                                        min="0"
+                                        name={`attendanceTotal:${student.studentId}`}
+                                        step="1"
+                                        type="number"
+                                      />
+                                    </label>
+                                  </div>
+                                  {student.attendanceUnresolvedConflicts > 0 ? (
+                                    <Alert variant="warning">
+                                      {ui.attendanceNeedsReview}
+                                    </Alert>
                                   ) : null}
-
-                                  {review.template.studentCommentsEnabled ? (
-                                    <div className="form-grid">
-                                      <label>
-                                        {t('englishField')}
-                                        <textarea
-                                          defaultValue={student.commentEn ?? ''}
-                                          dir="ltr"
-                                          name={`commentEn:${student.studentId}`}
-                                          rows={2}
-                                        />
-                                      </label>
-                                      <label>
-                                        {t('arabicField')}
-                                        <textarea
-                                          defaultValue={student.commentAr ?? ''}
-                                          dir="rtl"
-                                          name={`commentAr:${student.studentId}`}
-                                          rows={2}
-                                        />
-                                      </label>
-                                    </div>
-                                  ) : null}
-
-                                  <details>
-                                    <summary>{ui.customizeReportText}</summary>
-                                    <p className="field-help">
-                                      {ui.customizeReportTextHelp}
-                                    </p>
-                                    <div className="form-grid">
-                                      <label>
-                                        {t('englishField')}
-                                        <textarea
-                                          defaultValue={student.progressEn ?? ''}
-                                          dir="ltr"
-                                          name={`progressEn:${student.studentId}`}
-                                          rows={4}
-                                        />
-                                      </label>
-                                      <label>
-                                        {t('arabicField')}
-                                        <textarea
-                                          defaultValue={student.progressAr ?? ''}
-                                          dir="rtl"
-                                          name={`progressAr:${student.studentId}`}
-                                          rows={4}
-                                        />
-                                      </label>
-                                    </div>
-                                  </details>
                                 </div>
-                              </article>
-                            ))}
-                          </div>
-                        </section>
 
+                                {review.template.performanceEnabled ? (
+                                  <label>
+                                    {t('performance')}
+                                    <select
+                                      defaultValue={
+                                        student.performanceOverridden
+                                          ? student.performance ?? ''
+                                          : ''
+                                      }
+                                      name={`performance:${student.studentId}`}
+                                    >
+                                      <option value="">
+                                        {weekly('useDefault')}
+                                      </option>
+                                      {performanceValues.map((value) => (
+                                        <option key={value} value={value}>
+                                          {weekly(`performance.${value}`)}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </label>
+                                ) : null}
+
+                                {review.template.studentCommentsEnabled ? (
+                                  <div className="form-grid">
+                                    <label>
+                                      {t('englishField')}
+                                      <textarea
+                                        defaultValue={student.commentEn ?? ''}
+                                        dir="ltr"
+                                        name={`commentEn:${student.studentId}`}
+                                        rows={2}
+                                      />
+                                    </label>
+                                    <label>
+                                      {t('arabicField')}
+                                      <textarea
+                                        defaultValue={student.commentAr ?? ''}
+                                        dir="rtl"
+                                        name={`commentAr:${student.studentId}`}
+                                        rows={2}
+                                      />
+                                    </label>
+                                  </div>
+                                ) : null}
+
+                                <details>
+                                  <summary>{ui.customizeReportText}</summary>
+                                  <p className="field-help">
+                                    {ui.customizeReportTextHelp}
+                                  </p>
+                                  <div className="form-grid">
+                                    <label>
+                                      {t('englishField')}
+                                      <textarea
+                                        defaultValue={student.progressEn ?? ''}
+                                        dir="ltr"
+                                        name={`progressEn:${student.studentId}`}
+                                        rows={4}
+                                      />
+                                    </label>
+                                    <label>
+                                      {t('arabicField')}
+                                      <textarea
+                                        defaultValue={student.progressAr ?? ''}
+                                        dir="rtl"
+                                        name={`progressAr:${student.studentId}`}
+                                        rows={4}
+                                      />
+                                    </label>
+                                  </div>
+                                </details>
+                              </div>
+                            </article>
+                          ))}
+                        </div>
+                      </section>
+
+                      <div className="row-actions">
                         <button
-                          className="button button-secondary"
+                          className="button button-primary"
                           type="submit"
                         >
-                          {t('saveChanges')}
+                          {ui.saveAndClose}
                         </button>
-                      </form>
-
-                      <form action={rebuildClassReportReviewContextAction}>
-                        {sharedHidden}
-                        <input
-                          name="classSubjectId"
-                          type="hidden"
-                          value={context.classSubjectId}
-                        />
-                        <input
-                          name="subjectGroupId"
-                          type="hidden"
-                          value={context.subjectGroupId ?? ''}
-                        />
-                        <button
-                          className="button button-secondary"
-                          type="submit"
+                        <a
+                          className="button button-secondary action-link"
+                          href="?cancel=1#report-edit-closed"
                         >
-                          {ui.rebuildFromSources}
-                        </button>
-                      </form>
-                    </>
+                          {ui.cancel}
+                        </a>
+                      </div>
+                    </form>
                   ) : (
                     <div className="stack">
                       {context.mainReportEn ? (
@@ -467,6 +471,8 @@ export async function ClassReportCycleReview({
           })}
         </div>
       )}
+
+      <span id="report-edit-closed" />
 
       <section className="stack">
         <div>

@@ -69,6 +69,7 @@ export async function ReportCycleSources({
               source.coverageKind === 'DATES'
                 ? source.coveredDates.map((date) => formatTeachingUpdateDate(date, activeLocale)).join(', ')
                 : formatTeachingUpdateRange(source.periodStart, source.periodEnd, activeLocale);
+            const editorId = `report-edit-${source.classSubjectId}-${source.subjectGroupId ?? 'whole'}`;
 
             return (
               <article
@@ -118,7 +119,7 @@ export async function ReportCycleSources({
                   {status !== 'FINALIZED' ? (
                     <a
                       className="button button-secondary action-link"
-                      href="#report-edit"
+                      href={`?edit=${encodeURIComponent(editorId)}#${editorId}`}
                     >
                       {editUpdate}
                     </a>
@@ -245,8 +246,6 @@ export async function ReportCycleSources({
           </div>
         </section>
       ) : null}
-
-      <span id="report-edit" />
     </section>
   );
 }
