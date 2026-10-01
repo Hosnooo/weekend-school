@@ -66,12 +66,40 @@ function escapeHtml(value: string) {
     .replaceAll("'", '&#39;');
 }
 
+function escapeMultiline(value: string) {
+  return escapeHtml(value).replace(/\r\n|\r|\n/g, '<br>');
+}
+
+function cleanText(value: string | null | undefined) {
+  const cleaned = value?.trim();
+  return cleaned ? cleaned : null;
+}
+
 function localizedName(en: string, ar: string | null, language: ReportLanguage) {
   return selectLocalizedText(en, ar, language).map(escapeHtml).join(' / ');
 }
 
 function localizedText(en: string | null, ar: string | null, language: ReportLanguage) {
-  return selectLocalizedText(en, ar, language).map(escapeHtml).join(' / ');
+  return selectLocalizedText(en, ar, language).map(escapeMultiline).join(' / ');
+}
+
+function pairedBlocks(
+  en: string | null | undefined,
+  ar: string | null | undefined,
+  multiline = true
+) {
+  const english = cleanText(en);
+  const arabic = cleanText(ar);
+  const render = multiline ? escapeMultiline : escapeHtml;
+
+  return [
+    english
+      ? `<div class="localized-block" lang="en" dir="ltr">${render(english)}</div>`
+      : '',
+    arabic
+      ? `<div class="localized-block" lang="ar" dir="rtl">${render(arabic)}</div>`
+      : ''
+  ].join('');
 }
 
 export function renderStudentReport(
@@ -101,41 +129,73 @@ export function renderStudentReportV2(
   language: ReportLanguage = snapshot.language
 ) {
   const ui = uiLabels(language);
+  const contentDriven = language === 'both';
   const dir = language === 'ar' ? 'rtl' : 'ltr';
   const school = localizedName(snapshot.school.nameEn, snapshot.school.nameAr, language);
   const student = localizedName(snapshot.student.nameEn, snapshot.student.nameAr, language);
   const className = localizedName(snapshot.class.nameEn, snapshot.class.nameAr, language);
-  const intro = localizedText(snapshot.template.introEn, snapshot.template.introAr, language);
-  const closing = localizedText(snapshot.template.closingEn, snapshot.template.closingAr, language);
-  const mainReportLabel = localizedText(
-    snapshot.template.mainReportLabelEn ?? labels.en.progress,
-    snapshot.template.mainReportLabelAr ?? labels.ar.progress,
-    language
-  );
-  const performanceLabel = localizedText(
-    snapshot.template.performanceLabelEn ?? labels.en.performance,
-    snapshot.template.performanceLabelAr ?? labels.ar.performance,
-    language
-  );
-  const studentCommentLabel = localizedText(
-    snapshot.template.studentCommentLabelEn ?? labels.en.comments,
-    snapshot.template.studentCommentLabelAr ?? labels.ar.comments,
-    language
-  );
+
+  const intro = contentDriven
+    ? pairedBlocks(snapshot.template.introEn, snapshot.template.introAr)
+    : localizedText(snapshot.template.introEn, snapshot.template.introAr, language);
+  const closing = contentDriven
+    ? pairedBlocks(snapshot.template.closingEn, snapshot.template.closingAr)
+    : localizedText(snapshot.template.closingEn, snapshot.template.closingAr, language);
+
+  const mainReportLabelEn = snapshot.template.mainReportLabelEn === undefined
+    ? labels.en.progress
+    : snapshot.template.mainReportLabelEn;
+  const mainReportLabelAr = snapshot.template.mainReportLabelAr === undefined
+    ? labels.ar.progress
+    : snapshot.template.mainReportLabelAr;
+  const performanceLabelEn = snapshot.template.performanceLabelEn === undefined
+    ? labels.en.performance
+    : snapshot.template.performanceLabelEn;
+  const performanceLabelAr = snapshot.template.performanceLabelAr === undefined
+    ? labels.ar.performance
+    : snapshot.template.performanceLabelAr;
+  const studentCommentLabelEn = snapshot.template.studentCommentLabelEn === undefined
+    ? labels.en.comments
+    : snapshot.template.studentCommentLabelEn;
+  const studentCommentLabelAr = snapshot.template.studentCommentLabelAr === undefined
+    ? labels.ar.comments
+    : snapshot.template.studentCommentLabelAr;
+
+  const mainReportLabel = contentDriven
+    ? pairedBlocks(mainReportLabelEn, mainReportLabelAr, false)
+    : localizedText(mainReportLabelEn, mainReportLabelAr, language);
+  const performanceLabel = contentDriven
+    ? pairedBlocks(performanceLabelEn, performanceLabelAr, false)
+    : localizedText(performanceLabelEn, performanceLabelAr, language);
+  const studentCommentLabel = contentDriven
+    ? pairedBlocks(studentCommentLabelEn, studentCommentLabelAr, false)
+    : localizedText(studentCommentLabelEn, studentCommentLabelAr, language);
+
   const showPerformance = snapshot.template.performanceEnabled !== false;
-  const showStudentComments =
-    snapshot.template.studentCommentsEnabled !== false;
+  const showStudentComments = snapshot.template.studentCommentsEnabled !== false;
 
   const sections = snapshot.sections.map((section) => {
     const subject = localizedName(section.subjectNameEn, section.subjectNameAr, language);
     const group = section.groupNameEn
       ? localizedName(section.groupNameEn, section.groupNameAr, language)
       : '';
-    const progress = localizedText(section.approvedProgressEn, section.approvedProgressAr, language);
-    const comment = localizedText(section.commentEn, section.commentAr, language);
+    const progress = contentDriven
+      ? pairedBlocks(section.approvedProgressEn, section.approvedProgressAr)
+      : localizedText(section.approvedProgressEn, section.approvedProgressAr, language);
+    const comment = contentDriven
+      ? pairedBlocks(section.commentEn, section.commentAr)
+      : localizedText(section.commentEn, section.commentAr, language);
     const performance = section.performance ? ui[section.performance] : ui.notRated;
-    return `<section><h2>${subject}${group ? ` — ${group}` : ''}</h2><div class="summary"><span>${escapeHtml(ui.present)}: ${section.attendance.present}</span><span>${escapeHtml(ui.absent)}: ${section.attendance.absent}</span><span>${escapeHtml(ui.sessions)}: ${section.attendance.sessions}</span></div><h3>${mainReportLabel || escapeHtml(ui.progress)}</h3><p>${progress || '—'}</p>${showPerformance ? `<h3>${performanceLabel || escapeHtml(ui.performance)}</h3><p>${escapeHtml(performance)}</p>` : ''}${showStudentComments && comment ? `<h3>${studentCommentLabel || escapeHtml(ui.comments)}</h3><p>${comment}</p>` : ''}</section>`;
+    const performanceValue = contentDriven
+      ? pairedBlocks(
+          section.performance ? labels.en[section.performance] : labels.en.notRated,
+          section.performance ? labels.ar[section.performance] : labels.ar.notRated,
+          false
+        )
+      : escapeHtml(performance);
+
+    return `<section><h2>${subject}${group ? ` — ${group}` : ''}</h2><div class="summary"><span>${escapeHtml(ui.present)}: ${section.attendance.present}</span><span>${escapeHtml(ui.absent)}: ${section.attendance.absent}</span><span>${escapeHtml(ui.sessions)}: ${section.attendance.sessions}</span></div><h3>${mainReportLabel || escapeHtml(ui.progress)}</h3><div class="report-copy">${progress || '—'}</div>${showPerformance ? `<h3>${performanceLabel || escapeHtml(ui.performance)}</h3><div class="report-copy">${performanceValue}</div>` : ''}${showStudentComments && comment ? `<h3>${studentCommentLabel || escapeHtml(ui.comments)}</h3><div class="report-copy">${comment}</div>` : ''}</section>`;
   }).join('');
 
-  return `<!doctype html><html lang="${language === 'both' ? 'en' : language}" dir="${dir}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(ui.report)}</title><style>body{font-family:Arial,sans-serif;max-width:48rem;margin:auto;padding:1.5rem;color:#172033}section{margin-block:1.5rem}h1,h2,h3{color:#155e75}.summary{display:flex;flex-wrap:wrap;gap:1rem}.summary span{padding:.5rem;background:#f3f4f6;border-radius:.35rem}</style></head><body><header><p>${school}</p><h1>${escapeHtml(ui.report)} — ${student}</h1><p><strong>${escapeHtml(ui.class)}:</strong> ${className}</p><p><strong>${escapeHtml(ui.period)}:</strong> <span dir="ltr" style="display:inline-block;white-space:nowrap">${escapeHtml(snapshot.period.start)} – ${escapeHtml(snapshot.period.end)}</span></p>${intro ? `<p>${intro}</p>` : ''}</header>${sections}${closing ? `<footer><p>${closing}</p><p><strong>${escapeHtml(ui.author)}:</strong> ${escapeHtml(snapshot.author)}</p></footer>` : `<footer><p><strong>${escapeHtml(ui.author)}:</strong> ${escapeHtml(snapshot.author)}</p></footer>`}</body></html>`;
+  return `<!doctype html><html lang="${language === 'both' ? 'en' : language}" dir="${dir}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(ui.report)}</title><style>body{font-family:Arial,sans-serif;max-width:48rem;margin:auto;padding:1.5rem;color:#172033}section{margin-block:1.5rem}h1,h2,h3{color:#155e75}.summary{display:flex;flex-wrap:wrap;gap:1rem}.summary span{padding:.5rem;background:#f3f4f6;border-radius:.35rem}.localized-block{margin-block:.35rem}.report-copy .localized-block{margin-block:.6rem}</style></head><body><header><p>${school}</p><h1>${escapeHtml(ui.report)} — ${student}</h1><p><strong>${escapeHtml(ui.class)}:</strong> ${className}</p><p><strong>${escapeHtml(ui.period)}:</strong> <span dir="ltr" style="display:inline-block;white-space:nowrap">${escapeHtml(snapshot.period.start)} – ${escapeHtml(snapshot.period.end)}</span></p>${intro ? `<div class="report-copy">${intro}</div>` : ''}</header>${sections}${closing ? `<footer><div class="report-copy">${closing}</div><p><strong>${escapeHtml(ui.author)}:</strong> ${escapeHtml(snapshot.author)}</p></footer>` : `<footer><p><strong>${escapeHtml(ui.author)}:</strong> ${escapeHtml(snapshot.author)}</p></footer>`}</body></html>`;
 }
