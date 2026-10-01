@@ -8,7 +8,11 @@ import {isLocale, type Locale} from '@/i18n/config';
 import {requireProfile} from '@/lib/auth/require-profile';
 import {databaseUuid} from '@/lib/validation/fields';
 
-import {saveClassReportAttendanceOverrides} from './class-report-attendance.repository';
+import {
+  getClassReportReviewWorkspaceWithAttendance,
+  saveClassReportAttendanceOverrides
+} from './class-report-attendance.repository';
+import {reportAttendanceOverride} from './report-attendance';
 import {saveClassReportReviewContext} from './class-report-review.repository';
 import {reportPeriodSchema} from './report.schemas';
 import type {ReportPerformance} from './report.types';
@@ -166,6 +170,40 @@ export async function saveClassReportReviewWithAttendanceAction(
   }
 
   try {
+    const review = await getClassReportReviewWorkspaceWithAttendance(
+      profile.schoolId,
+      payload.batchId
+    );
+    const context = review?.contexts.find(
+      (item) =>
+        item.classSubjectId === payload.classSubjectId &&
+        item.subjectGroupId === payload.subjectGroupId
+    );
+
+    if (!context) {
+      throw new Error('Report review context not found');
+    }
+
+    const attendanceOverrides = payload.students.map((student) => {
+      const current = context.students.find(
+        (item) => item.studentId === student.studentId
+      );
+      if (!current) {
+        throw new Error('Report review student not found');
+      }
+
+      return {
+        studentId: student.studentId,
+        ...reportAttendanceOverride({
+          submittedAttended: student.attendanceAttended,
+          submittedTotal: student.attendanceTotal,
+          sourceAttended: current.attendanceSourceAttended,
+          sourceTotal: current.attendanceSourceTotal,
+          wasOverridden: current.attendanceOverridden
+        })
+      };
+    });
+
     await saveClassReportReviewContext({
       schoolId: profile.schoolId,
       batchId: payload.batchId,
@@ -191,11 +229,7 @@ export async function saveClassReportReviewWithAttendanceAction(
       batchId: payload.batchId,
       classSubjectId: payload.classSubjectId,
       subjectGroupId: payload.subjectGroupId,
-      students: payload.students.map((student) => ({
-        studentId: student.studentId,
-        attendanceAttended: student.attendanceAttended,
-        attendanceTotal: student.attendanceTotal
-      }))
+      students: attendanceOverrides
     });
   } catch (error) {
     console.error('Unable to save Class Report Cycle review', {error});
