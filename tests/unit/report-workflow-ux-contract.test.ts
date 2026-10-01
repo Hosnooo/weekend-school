@@ -23,7 +23,6 @@ describe('Reports workflow UX contract', () => {
       'src/app/[locale]/(protected)/(admin)/reports/workspace/[batchId]/page.tsx'
     );
 
-    // Reports is the compact work queue.
     expect(page).toContain('PageHeader');
     expect(page).toContain('report-cycle-active');
     expect(page).toContain('report-cycle-history');
@@ -31,7 +30,6 @@ describe('Reports workflow UX contract', () => {
     expect(page).toContain('openAdminReportContextAction');
     expect(page).toContain('sendAdminReportBatchAction');
 
-    // Editing/review lives on the dedicated report workspace.
     expect(workspacePage).toContain('Alert');
     expect(workspacePage).toContain('getAdminReportWorkspace');
     expect(workspacePage).toContain('AttendanceConflictList');
@@ -40,7 +38,6 @@ describe('Reports workflow UX contract', () => {
     expect(workspacePage).toContain('reopenAdminReportWorkspaceAction');
     expect(workspacePage).toContain('ClassReportCycleReview');
 
-    // The old staged workflow is no longer administrator-facing.
     expect(page).not.toContain('Tabs');
     expect(page).not.toContain('reviewReportBatchAction');
     expect(page).not.toContain("t('moveToReview')");
@@ -48,20 +45,26 @@ describe('Reports workflow UX contract', () => {
     expect(page).not.toContain('prepareReportBatchAction');
   });
 
-  it('keeps Class Report Cycle review on the same page with exact email preview', () => {
+  it('keeps Class Report Cycle editing visible and makes Email Review the only preview', () => {
     const component = read(
       'src/features/reports/class-report-cycle-review.tsx'
     );
 
-    expect(component).toContain('saveClassReportReviewContextAction');
+    expect(component).toContain('saveClassReportReviewWithAttendanceAction');
     expect(component).toContain('Customize report text');
-    expect(component).toContain('progressEn:');
-    expect(component).toContain('progressAr:');
+    expect(component).toContain('attendanceAttended:');
+    expect(component).toContain('attendanceTotal:');
+    expect(component).toContain('name="student"');
     expect(component).toContain('renderReportEmail');
     expect(component).toContain('renderReportEmailSubject');
     expect(component).toContain('ReportPreviewFrame');
+    expect(component).toContain('Reopen & edit');
     expect(component).toContain('finalizeClassReportCycleAction');
     expect(component).toContain('sendAdminReportBatchAction');
+
+    expect(component).not.toContain('renderStudentReportV2');
+    expect(component).not.toContain('previewReport');
+    expect(component).not.toContain('openReport:');
     expect(component).not.toContain('Tabs');
   });
 
@@ -116,7 +119,7 @@ describe('Reports workflow UX contract', () => {
     expect(ar.navigation.deliveryStatus).toBe('حالة التسليم');
   });
 
-  it('keeps report preview read-only and delivery-aware', () => {
+  it('keeps historical report detail read-only and delivery-aware', () => {
     const page = read(
       'src/app/[locale]/(protected)/(admin)/reports/[id]/page.tsx'
     );

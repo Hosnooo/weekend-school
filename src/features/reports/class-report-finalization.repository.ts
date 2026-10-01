@@ -2,6 +2,11 @@ import 'server-only';
 
 import {createServerSupabaseClient} from '@/lib/supabase/server';
 
+import {
+  deriveReportAttendance,
+  effectiveReportAttendance,
+  type ReportAttendanceResolution
+} from './report-attendance';
 import {getReportBatchWorkspace} from './report-batch.repository';
 import {buildReportSnapshotV2} from './report.service';
 import {getActiveReportTemplate} from './report-template.repository';
@@ -58,6 +63,19 @@ type ResolutionRow = {
   resolved_status: 'PRESENT' | 'ABSENT';
 };
 
+type OverrideRow = {
+  approval_id: string;
+  student_id: string;
+  progress_en: string | null;
+  progress_ar: string | null;
+  performance: ReportPerformance | null;
+  performance_overridden: boolean;
+  comment_en: string | null;
+  comment_ar: string | null;
+  attendance_attended: number | null;
+  attendance_total: number | null;
+};
+
 type SnapshotResult = {
   studentId: string;
   studentNameEn: string;
@@ -67,7 +85,8 @@ type SnapshotResult = {
 
 async function buildClassReportCycleSnapshots(
   schoolId: string,
-  batchId: string
+  batchId: string,
+  onlyStudentId?: string
 ): Promise<SnapshotResult[]> {
   await ensureClassReportCycleReview(schoolId, batchId);
 
@@ -162,7 +181,7 @@ async function buildClassReportCycleSnapshots(
     db
       .from('report_student_overrides')
       .select(
-        'approval_id,student_id,progress_en,progress_ar,performance,performance_overridden,comment_en,comment_ar'
+        'approval_id,student_id,progress_en,progress_ar,performance,performance_overridden,comment_en,comment_ar,attendance_attended,attendance_total'
       )
       .eq('school_id', schoolId)
       .in('approval_id', approvalIds)
@@ -188,7 +207,15 @@ async function buildClassReportCycleSnapshots(
     (observationResult.data ?? []) as SubmissionStudentRow[];
   const resolutions =
     (resolutionResult.data ?? []) as ResolutionRow[];
-  const overrides = overrideResult.data ?? [];
+  const overrides = (overrideResult.data ?? []) as OverrideRow[];
+  const normalizedResolutions: ReportAttendanceResolution[] =
+    resolutions.map((row) => ({
+      classSubjectId: row.class_subject_id,
+      subjectGroupId: row.subject_group_id,
+      weekStart: row.week_start,
+      studentId: row.student_id,
+      resolvedStatus: row.resolved_status
+    }));
   const enrolledIds = new Set(
     enrollments
       .filter((row) =>
@@ -205,6 +232,7 @@ async function buildClassReportCycleSnapshots(
   const snapshots: SnapshotResult[] = [];
 
   for (const student of students) {
+    if (onlyStudentId && student.id !== onlyStudentId) continue;
     if (!enrolledIds.has(student.id)) continue;
     const sections = [];
 
@@ -249,53 +277,35 @@ async function buildClassReportCycleSnapshots(
           row.student_id === student.id &&
           selectedIds.has(row.submission_id)
       );
-      const observationsByWeek = new Map<
-        string,
-        Set<'PRESENT' | 'ABSENT'>
-      >();
-
-      for (const source of selectedSources) {
-        const row = studentObservations.find(
-          (item) => item.submission_id === source.id
-        );
-        if (!row) continue;
-
-        const statuses =
-          observationsByWeek.get(source.weekStart) ??
-          new Set<'PRESENT' | 'ABSENT'>();
-        statuses.add(row.attendance_status);
-        observationsByWeek.set(source.weekStart, statuses);
-      }
-
-      let present = 0;
-      let absent = 0;
-      let unresolvedAttendanceConflicts = 0;
-
-      for (const [weekStart, statuses] of observationsByWeek) {
-        let official: 'PRESENT' | 'ABSENT' | null =
-          statuses.size === 1 ? [...statuses][0]! : null;
-
-        if (statuses.size > 1) {
-          official = resolutions.find(
-            (row) =>
-              row.class_subject_id === approval.classSubjectId &&
-              row.subject_group_id === approval.subjectGroupId &&
-              row.week_start === weekStart &&
-              row.student_id === student.id
-          )?.resolved_status ?? null;
-
-          if (!official) unresolvedAttendanceConflicts += 1;
-        }
-
-        if (official === 'PRESENT') present += 1;
-        if (official === 'ABSENT') absent += 1;
-      }
-
       const explicitOverride = overrides.find(
         (row) =>
           row.approval_id === approval.id &&
           row.student_id === student.id
       );
+      const sourceAttendance = deriveReportAttendance({
+        sources: selectedSources.map(({id, weekStart}) => ({id, weekStart})),
+        observations: studentObservations.map((row) => ({
+          submissionId: row.submission_id,
+          studentId: row.student_id,
+          attendanceStatus: row.attendance_status
+        })),
+        resolutions: normalizedResolutions,
+        classSubjectId: approval.classSubjectId,
+        subjectGroupId: approval.subjectGroupId,
+        studentId: student.id
+      });
+      const attendance = effectiveReportAttendance(
+        sourceAttendance,
+        explicitOverride?.attendance_attended,
+        explicitOverride?.attendance_total
+      );
+
+      if (!attendance.overridden && attendance.total === 0) {
+        throw new Error(
+          `Attendance must be reviewed before finalizing ${student.id}:${approval.classSubjectId}`
+        );
+      }
+
       const sourcePerformance = studentObservations
         .map(({performance_override}) => performance_override)
         .filter((value): value is ReportPerformance => value !== null)
@@ -321,12 +331,12 @@ async function buildClassReportCycleSnapshots(
           clean(explicitOverride?.progress_ar) ??
           approval.approvedProgressAr,
         performance: explicitOverride?.performance_overridden
-          ? (explicitOverride.performance as ReportPerformance | null)
+          ? explicitOverride.performance
           : sourcePerformance ?? approval.performance,
         attendance: {
-          present,
-          absent,
-          sessions: present + absent
+          present: attendance.attended,
+          absent: attendance.total - attendance.attended,
+          sessions: attendance.total
         },
         commentEn: appendText(
           approval.commentEn,
@@ -337,7 +347,7 @@ async function buildClassReportCycleSnapshots(
           clean(explicitOverride?.comment_ar) ?? sourceCommentAr
         ),
         sourceTeacherNames: selectedSources.map(({teacherName}) => teacherName),
-        unresolvedAttendanceConflicts
+        unresolvedAttendanceConflicts: attendance.unresolvedConflicts
       });
     }
 
@@ -420,8 +430,12 @@ export async function getClassReportCycleLivePreview(
   batchId: string,
   studentId: string
 ) {
-  const snapshots = await buildClassReportCycleSnapshots(schoolId, batchId);
-  return snapshots.find((item) => item.studentId === studentId) ?? null;
+  const snapshots = await buildClassReportCycleSnapshots(
+    schoolId,
+    batchId,
+    studentId
+  );
+  return snapshots[0] ?? null;
 }
 
 export async function finalizeClassReportCycleReports(
