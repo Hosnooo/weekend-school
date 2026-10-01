@@ -148,11 +148,11 @@ Guardian language preference will no longer decide which report is generated or 
 
 ### New generation rule
 
-Generate one V2 report snapshot per student for a Class Report Cycle.
+Generate exactly one V2 report snapshot per student for a Class Report Cycle.
 
-For new content-driven V2 snapshots, the legacy `reports.language` field is retained for compatibility/historical querying, but it no longer controls which paired English/Arabic content is rendered or which guardian receives the report. New content-driven Class Report Cycle snapshots may use `both` as the compatibility marker.
+For newly generated content-driven Class Report Cycle reports, store `reports.language = 'both'` as a backward-compatible marker. For these V2 snapshots the `language` column no longer decides which paired English/Arabic content is rendered or which guardian receives the report. Content availability controls rendering instead.
 
-Do not destructively rewrite historical reports.
+Historical reports keep their existing language values and behavior. Do not destructively rewrite them.
 
 ### Rendering rule
 
@@ -167,11 +167,10 @@ Never duplicate one language into the other language's block.
 
 English content uses `dir="ltr"`; Arabic content uses `dir="rtl"`.
 
-For bilingual content, do not join English and Arabic with ` / `.
+For bilingual narrative content, do not join English and Arabic with ` / `.
 
 This applies to:
 
-- school/student/class/subject/group names when both localized names exist;
 - main report labels and content;
 - performance labels when Performance is enabled;
 - student-comment labels and comments;
@@ -182,7 +181,7 @@ This applies to:
 - email closing;
 - email sign-off.
 
-Names may still use a compact localized representation when appropriate, but narrative/report/email content must be separate directional blocks.
+Localized entity names such as school, student, class, subject, and group may use a compact bilingual representation where appropriate, but narrative/report/email content must use separate directional blocks.
 
 ### Email subject
 
@@ -190,7 +189,7 @@ Names may still use a compact localized representation when appropriate, but nar
 - English only: English subject only;
 - Arabic only: Arabic subject only.
 
-Placeholder values use the matching localized student/school name for each language block when available.
+Placeholder values use the matching localized student/school name for each language part when available.
 
 ## Guardian recipients
 
@@ -262,13 +261,13 @@ Saving a context persists:
 - per-student performance override flag/value when enabled;
 - per-student EN/AR comments when enabled.
 
-Opening review may lazily establish/update the approval composition from included submitted sources so Admin edits have a stable persistence target before finalization.
+Opening review establishes an approval composition from the currently included submitted sources when that context does not yet have one, giving Admin edits a stable persistence target before finalization.
 
-Changes to source inclusion must not silently discard Admin-edited official content. If recomposition is needed after sources change, the implementation should distinguish untouched auto-composed content from content already edited by Admin, or require an explicit refresh/recompose action rather than overwriting Admin edits.
+Once an approval exists, changing source inclusion must never automatically overwrite its shared report text. Source inclusion changes update the selected source associations used for attendance/source attribution, while the current official report text remains unchanged. The UI provides an explicit `Rebuild from selected sources` action for that context; using it requires confirmation because it replaces the shared EN/AR report text with a fresh composition from the currently included sources. Student-specific overrides remain intact unless the Admin clears them separately.
 
 ## Exact Parent Email preview
 
-The Parent Email preview is read-only and always generated through the same email rendering path used for delivery.
+The Parent Email preview is read-only and always generated through the same email rendering functions used for delivery.
 
 It shows:
 
@@ -280,7 +279,7 @@ It shows:
 
 The preview must not maintain separate duplicate markup.
 
-Before finalization, create an in-memory/live snapshot from saved review data and pass it through the same report/email renderers.
+Before finalization, create an in-memory/live snapshot from saved review data and pass it through the same report/email renderers used by delivery.
 
 After finalization, load the frozen `reports.snapshot_json` and pass it through the same delivery renderer used by `prepareDeliverableReport`.
 
@@ -289,7 +288,7 @@ After finalization, load the frozen `reports.snapshot_json` and pass it through 
 Create one safe rendering helper for narrative text that:
 
 1. escapes HTML;
-2. preserves newline boundaries in a way that works in browser preview and common email clients (for example escaped text with newline-to-`<br>` conversion);
+2. preserves newline boundaries in a way that works in browser preview and common email clients, using escaped text with newline-to-`<br>` conversion;
 3. is reused for report intro/closing, main report text, student comments, and other multiline template/email narrative fields.
 
 Do not use raw unescaped user text in HTML.
@@ -338,7 +337,9 @@ Add/extend tests for:
 - clearing student progress override restores inheritance;
 - one report per student regardless of guardian language preferences;
 - delivery recipients ignore guardian `report_language` and include all active `receives_reports` guardians;
-- class-cycle review persistence targets the correct approval rather than the first approval.
+- class-cycle review persistence targets the correct approval rather than the first approval;
+- source inclusion changes do not overwrite Admin-edited report text;
+- explicit rebuild refreshes shared report text while preserving student overrides.
 
 ### UI/contract tests
 
@@ -349,6 +350,7 @@ Verify:
 - student-specific report-text override is collapsed by default;
 - Performance UI is absent by default;
 - selected-student Report and Parent Email previews are available without a mandatory stage transition;
+- Parent Email preview remains visible in the finalization/sending area;
 - finalized unsent cycle exposes reopen when allowed;
 - sent/protected cycle is read-only.
 
@@ -361,11 +363,11 @@ Cover migration constraints and defaults:
 - English label/subject columns may be null after symmetry migration;
 - pair-level checks reject configurations where required paired fields are both empty;
 - existing guardian `report_language` data remains intact;
-- finalized Class Report Cycle stores one report row per student under the new model.
+- finalized Class Report Cycle stores exactly one `language = 'both'` report row per student under the new model.
 
 ### Delivery tests
 
-Verify the HTML shown in Parent Email preview is produced by the same rendering function/path used by actual send preparation.
+Verify the HTML shown in Parent Email preview is produced by the same rendering functions used by actual send preparation.
 
 ## Out of scope
 
@@ -378,4 +380,4 @@ Verify the HTML shown in Parent Email preview is produced by the same rendering 
 
 ## Success criteria
 
-The redesign is complete when an Admin can open a Class Report Cycle, inspect included submitted Teaching Updates, edit each subject report in a Teacher-familiar layout, optionally customize any student's full EN/AR report text and comments, select any student and see a live exact parent-email preview, finalize one immutable report per student, and send that report to every active receiving guardian. English/Arabic sections appear only when their corresponding content exists, all multiline content preserves line breaks, and Performance is off by default unless explicitly enabled in the active template.
+The redesign is complete when an Admin can open a Class Report Cycle, inspect included submitted Teaching Updates, edit each subject report in a Teacher-familiar layout, optionally customize any student's full EN/AR report text and comments, select any student and see a live exact parent-email preview, finalize exactly one immutable report per student, and send that report to every active receiving guardian. English/Arabic narrative sections appear only when their corresponding content exists, all multiline content preserves line breaks, source-selection changes never silently destroy Admin edits, and Performance is off by default unless explicitly enabled in the active template.
