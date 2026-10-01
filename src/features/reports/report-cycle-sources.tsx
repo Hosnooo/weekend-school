@@ -4,9 +4,11 @@ import {Badge} from '@/components/ui/badge';
 import {formatTeachingUpdateDate, formatTeachingUpdateRange} from '@/features/teaching-updates/teaching-update-date';
 
 import {
-  requestReportCycleMissingUpdateAction,
-  setReportCycleSourceIncludedAction
+  requestReportCycleMissingUpdateAction
 } from './admin-report-workflow.actions';
+import {
+  setClassReportCycleSourceIncludedAction
+} from './class-report-source.actions';
 import type {
   ClassReportCycleMissingContext,
   ReportBatchSource
@@ -133,7 +135,7 @@ export async function ReportCycleSources({
                 {status !== 'FINALIZED' ? (
                   <form
                     action={
-                      setReportCycleSourceIncludedAction
+                      setClassReportCycleSourceIncludedAction
                     }
                   >
                     <input
