@@ -10,7 +10,10 @@ import {databaseUuid} from '@/lib/validation/fields';
 
 import {getClassReportCycleLivePreview} from './class-report-finalization.repository';
 import {getClassReportPreviewRecipients} from './class-report-preview.repository';
-import {getClassReportCycleWorkspace} from './report-batch.repository';
+import {
+  getClassReportCycleWorkspace,
+  getReportBatchWorkspace
+} from './report-batch.repository';
 import {getReport} from './report.repository';
 import type {ReportSnapshotV2} from './report.types';
 
@@ -29,6 +32,14 @@ export async function getClassReportCycleEmailPreviewAction(input: {
   }
 
   try {
+    const scopedWorkspace = await getReportBatchWorkspace(
+      profile.schoolId,
+      batchId.data
+    );
+    if (!scopedWorkspace || scopedWorkspace.batch.scopeType !== 'CLASS') {
+      return {ok: false as const};
+    }
+
     const classCycle = await getClassReportCycleWorkspace(batchId.data);
     if (!classCycle) return {ok: false as const};
 
