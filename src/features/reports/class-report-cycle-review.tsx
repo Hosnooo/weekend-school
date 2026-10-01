@@ -12,10 +12,12 @@ import {
 } from './admin-report-workflow.actions';
 import {getClassReportReviewWorkspaceWithAttendance} from './class-report-attendance.repository';
 import {getClassReportCycleLivePreview} from './class-report-finalization.repository';
+import {getClassReportCycleEmailPreviewAction} from './class-report-preview.actions';
 import {
   canReopenClassReportCycle,
   getClassReportPreviewRecipients
 } from './class-report-preview.repository';
+import {saveClassReportReviewWithAttendanceInlineAction} from './class-report-review.actions';
 import {ensureClassReportCycleReview} from './class-report-review.repository';
 import type {ClassReportCycleWorkspace} from './report-batch.repository';
 import {ReportEditForm} from './report-edit-form';
@@ -260,6 +262,7 @@ export async function ClassReportCycleReview({
                   {classCycle.batch.status !== 'FINALIZED' ? (
                     <ReportEditForm
                       cancelLabel={ui.cancel}
+                      saveAction={saveClassReportReviewWithAttendanceInlineAction}
                       saveErrorLabel={t('saveError')}
                       saveLabel={ui.saveAndClose}
                     >
@@ -487,6 +490,7 @@ export async function ClassReportCycleReview({
             parentEmailTo: ui.parentEmailTo,
             parentEmailSubject: ui.parentEmailSubject
           }}
+          loadPreviewAction={getClassReportCycleEmailPreviewAction}
           locale={locale}
           students={studentOptions.map((student) => ({
             studentId: student.studentId,
