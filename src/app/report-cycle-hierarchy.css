@@ -1,0 +1,44 @@
+.report-cycle-sources,
+.report-cycle-student-reports {
+  gap: var(--space-6);
+}
+
+.report-cycle-sources > .section-heading,
+.report-cycle-student-reports > .section-heading {
+  margin-block-end: var(--space-2);
+}
+
+.report-cycle-sources > .section-heading h2,
+.report-cycle-student-reports > .section-heading h2,
+.report-cycle-student-reports > section.stack > div > h3,
+.report-cycle-student-reports > section.stack > h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 750;
+  line-height: 1.3;
+}
+
+.report-cycle-student-reports > .stack-list > .record-card h3 {
+  margin: 0 0 var(--space-3);
+  font-size: 1.0625rem;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.report-cycle-student-reports h4 {
+  margin: 0 0 var(--space-3);
+  font-size: 0.9375rem;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.report-cycle-student-reports > section.stack {
+  gap: var(--space-4);
+  padding-block-start: var(--space-5);
+  border-block-start: 1px solid var(--border-subtle);
+}
+
+.report-cycle-student-reports .record-name {
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
