@@ -16,6 +16,7 @@ describe('Class Report Cycle finalized attendance', () => {
     expect(source).toContain('effectiveReportAttendance');
     expect(source).toContain('attendance_attended');
     expect(source).toContain('attendance_total');
+    expect(source).toContain('onlyStudentId');
   });
 
   it('renders one attended-out-of-total metric for each V2 subject', () => {
