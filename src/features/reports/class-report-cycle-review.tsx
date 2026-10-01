@@ -12,9 +12,7 @@ import {
   reopenAdminReportWorkspaceAction,
   saveClassReportReviewContextAction
 } from './admin-report-workflow.actions';
-import {
-  getClassReportCycleLivePreview
-} from './class-report-finalization.repository';
+import {getClassReportCycleLivePreview} from './class-report-finalization.repository';
 import {
   canReopenClassReportCycle,
   getClassReportPreviewRecipients
@@ -40,6 +38,37 @@ const performanceValues: ReportPerformance[] = [
   'NEEDS_SUPPORT'
 ];
 
+const copy = {
+  en: {
+    openReport: 'Open report',
+    customizeReportText: 'Customize report text',
+    customizeReportTextHelp:
+      'Leave blank to use the shared report text for this student.',
+    rebuildFromSources: 'Rebuild from selected updates',
+    previewStudentHelp:
+      'Choose a student to review the report and the exact parent email.',
+    previewUnavailable:
+      'Preview is unavailable until report conflicts are resolved.',
+    parentEmailPreview: 'Parent email preview',
+    parentEmailTo: 'To',
+    parentEmailSubject: 'Subject'
+  },
+  ar: {
+    openReport: 'فتح التقرير',
+    customizeReportText: 'تخصيص نص التقرير',
+    customizeReportTextHelp:
+      'اتركه فارغاً لاستخدام نص التقرير المشترك لهذا الطالب.',
+    rebuildFromSources: 'إعادة البناء من التحديثات المحددة',
+    previewStudentHelp:
+      'اختر طالباً لمراجعة التقرير والبريد الإلكتروني الفعلي لولي الأمر.',
+    previewUnavailable:
+      'لا تتوفر المعاينة حتى يتم حل تعارضات التقرير.',
+    parentEmailPreview: 'معاينة بريد ولي الأمر',
+    parentEmailTo: 'إلى',
+    parentEmailSubject: 'الموضوع'
+  }
+} as const;
+
 export async function ClassReportCycleReview({
   schoolId,
   locale,
@@ -55,6 +84,7 @@ export async function ClassReportCycleReview({
     getTranslations({locale, namespace: 'reports'}),
     getTranslations({locale, namespace: 'weekly'})
   ]);
+  const ui = copy[locale];
 
   if (
     classCycle.batch.status !== 'FINALIZED' &&
@@ -183,7 +213,7 @@ export async function ClassReportCycleReview({
                 <summary>
                   <strong>{title}</strong>
                   {' · '}
-                  {t('openReport')}
+                  {ui.openReport}
                 </summary>
 
                 {classCycle.batch.status !== 'FINALIZED' ? (
@@ -311,9 +341,9 @@ export async function ClassReportCycleReview({
                                 ) : null}
 
                                 <details>
-                                  <summary>{t('customizeReportText')}</summary>
+                                  <summary>{ui.customizeReportText}</summary>
                                   <p className="field-help">
-                                    {t('customizeReportTextHelp')}
+                                    {ui.customizeReportTextHelp}
                                   </p>
                                   <div className="form-grid">
                                     <label>
@@ -366,7 +396,7 @@ export async function ClassReportCycleReview({
                         className="button button-secondary"
                         type="submit"
                       >
-                        {t('rebuildFromSources')}
+                        {ui.rebuildFromSources}
                       </button>
                     </form>
                   </div>
@@ -393,7 +423,7 @@ export async function ClassReportCycleReview({
       <section className="stack">
         <div>
           <h3>{t('preview')}</h3>
-          <p className="field-help">{t('previewStudentHelp')}</p>
+          <p className="field-help">{ui.previewStudentHelp}</p>
         </div>
 
         {studentOptions.length === 0 ? (
@@ -417,7 +447,7 @@ export async function ClassReportCycleReview({
         )}
 
         {previewError ? (
-          <Alert variant="warning">{t('previewUnavailable')}</Alert>
+          <Alert variant="warning">{ui.previewUnavailable}</Alert>
         ) : null}
 
         {snapshot && selectedStudent ? (
@@ -431,20 +461,20 @@ export async function ClassReportCycleReview({
             </details>
 
             <section>
-              <h3>{t('parentEmailPreview')}</h3>
+              <h3>{ui.parentEmailPreview}</h3>
               <p className="record-meta">
-                <strong>{t('parentEmailTo')}:</strong>{' '}
+                <strong>{ui.parentEmailTo}:</strong>{' '}
                 {recipients.length > 0
                   ? recipients.map(({email}) => email).join(', ')
                   : '—'}
               </p>
               <p className="record-meta">
-                <strong>{t('parentEmailSubject')}:</strong>{' '}
+                <strong>{ui.parentEmailSubject}:</strong>{' '}
                 {renderReportEmailSubject(snapshot)}
               </p>
               <ReportPreviewFrame
                 html={renderReportEmail(snapshot)}
-                title={t('parentEmailPreview')}
+                title={ui.parentEmailPreview}
               />
             </section>
           </div>
