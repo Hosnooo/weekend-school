@@ -1,5 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "pnpm test && pnpm typecheck && pnpm lint && pnpm build",
   "git": {
     "deploymentEnabled": {
       "codex/**": false
