@@ -103,3 +103,37 @@ export function effectiveReportAttendance(
 
   return {...source, overridden: false};
 }
+
+export function reportAttendanceOverride(input: {
+  submittedAttended: number | null;
+  submittedTotal: number | null;
+  sourceAttended: number | null;
+  sourceTotal: number | null;
+  wasOverridden: boolean;
+}) {
+  if (
+    input.submittedAttended === null ||
+    input.submittedTotal === null
+  ) {
+    return {
+      attendanceAttended: null,
+      attendanceTotal: null
+    };
+  }
+
+  if (
+    !input.wasOverridden &&
+    input.sourceAttended === input.submittedAttended &&
+    input.sourceTotal === input.submittedTotal
+  ) {
+    return {
+      attendanceAttended: null,
+      attendanceTotal: null
+    };
+  }
+
+  return {
+    attendanceAttended: input.submittedAttended,
+    attendanceTotal: input.submittedTotal
+  };
+}
