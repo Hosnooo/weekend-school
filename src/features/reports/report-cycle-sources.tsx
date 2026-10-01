@@ -39,6 +39,7 @@ export async function ReportCycleSources({
     ar: string | null
   ) => locale === 'ar' && ar ? ar : en ?? ar ?? '—';
   const activeLocale = locale === 'ar' ? 'ar' : 'en';
+  const sourceDetails = locale === 'ar' ? 'عرض التحديث' : 'View update';
 
   return (
     <section className="detail-section report-cycle-sources">
@@ -114,7 +115,7 @@ export async function ReportCycleSources({
 
                   {(source.progressEn || source.progressAr) ? (
                     <details>
-                      <summary>{t('sourceDetails')}</summary>
+                      <summary>{sourceDetails}</summary>
                       {source.progressEn ? (
                         <p dir="ltr" style={{whiteSpace: 'pre-wrap'}}>
                           {source.progressEn}
