@@ -201,4 +201,15 @@ describe('Class Report Cycle contract', () => {
       'finalizeReportBatch'
     );
   });
+
+  it('does not surface stale DRAFT rows for a finalized Class Report Cycle', () => {
+    const repository = source(repositoryPath);
+
+    expect(repository).toContain(
+      "workspace.batch.status === 'FINALIZED'"
+    );
+    expect(repository).toContain(
+      "report.status !== 'DRAFT'"
+    );
+  });
 });
