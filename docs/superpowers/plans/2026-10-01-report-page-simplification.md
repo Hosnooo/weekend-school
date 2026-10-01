@@ -4,7 +4,7 @@
 
 **Goal:** Simplify the active Class Report Cycle so Admin edits reports directly, enters per-subject attendance as `attended out of total`, reviews one exact parent email selected from a student dropdown, then finalizes and sends.
 
-**Architecture:** Extend the existing Class Report Cycle review path only. Store optional attendance overrides on `report_student_overrides`, keep the existing V2 snapshot shape for backward compatibility (`present = attended`, `sessions = total`, `absent = total - attended`), and keep the same report/email renderer for preview and delivery.
+**Architecture:** Extend the existing Class Report Cycle review path only. Store optional attendance overrides on `report_student_overrides`, use one shared attendance resolver for both the editor and finalizer, keep the existing V2 snapshot shape for backward compatibility (`present = attended`, `sessions = total`, `absent = total - attended`), and keep the same report/email renderer for preview and delivery.
 
 **Tech Stack:** Next.js 16, React 19, TypeScript, Supabase/Postgres, next-intl, React Email, Vitest.
 
@@ -25,34 +25,38 @@
 
 ## Review Focus
 
-- Current live DRAFT cycles must show sensible attendance values immediately after deployment.
-- `attended > total`, negative values, or non-integers must be rejected.
+- Current live DRAFT cycles must show the same source-derived attendance that finalization would use.
+- `attended > total`, partial pairs, negative values, or non-integers must be rejected.
 - An explicit Admin attendance pair must override unresolved source attendance for report finalization without changing source records.
 - Reopening a finalized-unsent cycle must return directly to the visible editor.
 - Email Review must remain exactly the same render path used by delivery.
 
 ---
 
-### Task 1: Add safe per-subject attendance overrides
+### Task 1: Add safe per-subject attendance overrides and one shared resolver
 
 **Files:**
 - Create: `supabase/migrations/20261001_report_attendance_overrides.sql`
+- Create: `src/features/reports/report-attendance.ts`
 - Modify: `src/features/reports/class-report-review.repository.ts`
 - Modify: `src/features/reports/admin-report-workflow.actions.ts`
+- Test: `tests/unit/report-attendance.test.ts`
 - Test: `tests/unit/admin-report-workflow-actions.test.ts`
-- Test: `tests/unit/report-workflow-ux-contract.test.ts`
 
 **Interfaces:**
 - Produces nullable `attendance_attended` and `attendance_total` on `report_student_overrides`.
+- Produces `resolveReportAttendance(...) -> {attended: number; total: number; unresolvedConflicts: number}` for included source observations/resolutions.
 - Produces review students with effective `attendanceAttended` / `attendanceTotal`, source-derived when no override exists.
 - `saveClassReportReviewContext()` accepts validated integer attendance values for each student.
 
-- [ ] Add failing tests/contracts for attendance inputs, validation, and persistence names.
+- [ ] Add failing resolver tests for unique weeks, duplicate/conflicting observations, resolved conflicts, and valid explicit overrides.
+- [ ] Add failing action/contracts for attendance pair parsing and persistence names.
 - [ ] Run targeted tests and confirm RED.
-- [ ] Add the two nullable integer columns with checks: values >= 0 and attended <= total when both are present. Do not backfill or rewrite report rows.
-- [ ] Extend review loading to derive attendance from included Teaching Update observations and use stored override values when present.
+- [ ] Add the two nullable integer columns with DB checks: both null or both non-null, each >= 0, and attended <= total. Do not backfill or rewrite report rows.
+- [ ] Implement the pure shared resolver so source-derived attendance is calculated once and reused by review/finalization.
+- [ ] Extend review loading to use the shared resolver and stored override values when present.
 - [ ] Parse attendance with Zod in `classReviewPayloadFrom`; reject partial/negative/non-integer/attended-greater-than-total pairs.
-- [ ] Persist only the report override values; never update `weekly_submission_students` or attendance resolutions.
+- [ ] Persist only report override values; never update `weekly_submission_students` or attendance resolutions.
 - [ ] Re-run targeted tests and typecheck; expect PASS.
 - [ ] Commit as `feat: add report attendance overrides`.
 
@@ -77,7 +81,7 @@
 - [ ] Re-run targeted tests and typecheck; expect PASS.
 - [ ] Commit as `refactor: simplify report review workspace`.
 
-### Task 3: Freeze approved attendance into the exact email and roll out safely
+### Task 3: Freeze approved attendance into the exact email and roll out live drafts safely
 
 **Files:**
 - Modify: `src/features/reports/class-report-finalization.repository.ts`
@@ -87,17 +91,19 @@
 - Test: `tests/unit/admin-report-delivery-action.test.ts`
 
 **Interfaces:**
-- Consumes attendance override columns from Task 1.
+- Consumes Task 1 attendance resolver and override columns.
 - Produces V2 sections where effective attendance remains backward-compatible internally as `{present: attended, absent: total - attended, sessions: total}`.
 - Parent-facing V2 rendering shows only `Attendance: X of Y sessions` (with bilingual label behavior preserved).
 
-- [ ] Add failing tests for source fallback, explicit override precedence, conflict bypass when an explicit valid aggregate is supplied, and `X of Y sessions` email/report rendering without Present/Absent/Sessions chips.
+- [ ] Add failing tests for source fallback, explicit override precedence, conflict bypass when an explicit valid aggregate is supplied, and `X of Y sessions` rendering without Present/Absent/Sessions chips.
 - [ ] Run targeted tests and confirm RED.
-- [ ] In Class Report Cycle snapshot building, use the explicit attendance pair when present; otherwise use the existing source-derived official attendance calculation.
+- [ ] Replace the finalizer's duplicated week/conflict counting with the shared Task 1 resolver.
+- [ ] Use explicit attendance when present; otherwise use the exact same source-derived result shown in the editor.
 - [ ] If a valid explicit pair exists, do not block that student/subject solely because underlying source statuses conflict; keep source records unchanged.
 - [ ] Render V2 attendance as one approved metric (`X of Y sessions`) while leaving historical V1 rendering unchanged.
-- [ ] Before production migration, re-query batch/report/delivery statuses. Current observed state is draft-only with no deliveries; if protected delivery appears, preserve it and do not rewrite snapshots.
-- [ ] Apply the additive migration, verify current DRAFT/REVIEW cycles show derived attendance without manual re-entry, then verify exact Email Review and finalization on the deployed preview.
+- [ ] Before production migration, re-query batch/report/delivery statuses. Current observed production state is one CLASS DRAFT batch, two DRAFT V2 report rows, and no deliveries; if protected delivery appears, preserve it and do not rewrite snapshots.
+- [ ] Apply the additive migration only. Do not modify existing report rows. Verify the current DRAFT cycle immediately shows source-derived attendance in the editor; its live email preview should also use the new effective attendance before finalization.
+- [ ] Finalize only through the normal application path so the current draft's immutable snapshot freezes the reviewed attendance. Do not perform a direct snapshot backfill.
 - [ ] Run available unit/type/lint/build verification plus Vercel preview; do not run GitHub Actions.
 - [ ] Review diff for unrelated UI/CSS churn and remove any.
 - [ ] Commit as `feat: finalize approved report attendance`.
