@@ -18,6 +18,22 @@ The redesign also fixes multiline rendering, makes English/Arabic delivery conte
 4. Finalization freezes the current reviewed content. Before finalization the preview is live; after finalization it represents the frozen sendable snapshot.
 5. Sent report revisions are immutable. An unsent finalized batch may be reopened; a batch with protected delivery history may not be silently altered.
 
+## UI restraint and implementation guardrails
+
+This change must improve capability without making the reporting experience feel heavier or visually unfamiliar.
+
+- Reuse existing Teacher/Admin components, form patterns, table styles, buttons, badges, spacing, and page structure wherever practical.
+- Keep the Class Report Cycle on the existing workspace page; do not introduce a multi-page wizard or mandatory step navigation.
+- Prefer progressive disclosure: source details and per-student full-report overrides stay collapsed until requested.
+- Do not add duplicate controls for the same action in multiple places.
+- Keep the default view focused on the common path: shared report text, student comments, preview, finalize, send.
+- Advanced or uncommon actions such as `Rebuild from selected sources` and per-student full-report overrides must remain secondary and unobtrusive.
+- The Parent Email preview belongs in the existing review/finalize/send workspace rather than a separate preview page requirement.
+- Avoid broad CSS or layout rewrites. Add only targeted styles required for RTL/LTR blocks, multiline rendering, expandable review areas, and preview clarity.
+- Do not redesign unrelated Admin, Teacher, attendance, guardian, or navigation surfaces as part of this work.
+- Preserve responsive/mobile behavior and existing interaction conventions.
+- If an implementation choice can be achieved either by a new UI concept or by extending an existing pattern, prefer the existing pattern.
+
 ## Current problems being addressed
 
 ### Multiline content is visually collapsed
@@ -352,7 +368,10 @@ Verify:
 - selected-student Report and Parent Email previews are available without a mandatory stage transition;
 - Parent Email preview remains visible in the finalization/sending area;
 - finalized unsent cycle exposes reopen when allowed;
-- sent/protected cycle is read-only.
+- sent/protected cycle is read-only;
+- the common report-review path remains on one workspace page without mandatory step navigation;
+- advanced controls remain collapsed/secondary by default;
+- no unrelated Admin/Teacher layout or navigation is changed.
 
 ### Integration/database tests
 
@@ -377,7 +396,8 @@ Verify the HTML shown in Parent Email preview is produced by the same rendering 
 - Changing Teacher permission boundaries.
 - Replacing the email provider.
 - Broad unrelated visual redesign of the Admin application.
+- Introducing a new design system, navigation model, or multi-step report wizard.
 
 ## Success criteria
 
-The redesign is complete when an Admin can open a Class Report Cycle, inspect included submitted Teaching Updates, edit each subject report in a Teacher-familiar layout, optionally customize any student's full EN/AR report text and comments, select any student and see a live exact parent-email preview, finalize exactly one immutable report per student, and send that report to every active receiving guardian. English/Arabic narrative sections appear only when their corresponding content exists, all multiline content preserves line breaks, source-selection changes never silently destroy Admin edits, and Performance is off by default unless explicitly enabled in the active template.
+The redesign is complete when an Admin can open a Class Report Cycle, inspect included submitted Teaching Updates, edit each subject report in a Teacher-familiar layout, optionally customize any student's full EN/AR report text and comments, select any student and see a live exact parent-email preview, finalize exactly one immutable report per student, and send that report to every active receiving guardian. English/Arabic narrative sections appear only when their corresponding content exists, all multiline content preserves line breaks, source-selection changes never silently destroy Admin edits, Performance is off by default unless explicitly enabled in the active template, and the workflow remains visually consistent with the existing application without adding unnecessary steps or UI complexity.
