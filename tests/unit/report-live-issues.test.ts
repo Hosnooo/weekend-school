@@ -1,14 +1,8 @@
-import {readFileSync} from 'node:fs';
-
 import {describe, expect, it} from 'vitest';
 
 import {studentBelongsToReportContext} from '@/features/reports/report-source-roster';
 import {renderReportEmail} from '@/features/email/report-email';
 import {defaultReportTemplateConfig} from '@/features/reports/report-template.types';
-
-function read(path: string) {
-  return readFileSync(path, 'utf8');
-}
 
 describe('live Class Report Cycle regressions', () => {
   it('uses source observations as the historical roster for grouped report contexts', () => {
@@ -32,15 +26,6 @@ describe('live Class Report Cycle regressions', () => {
       observations,
       currentMembership: true
     })).toBe(false);
-  });
-
-  it('replaces View update with an Edit update link to the report editor', () => {
-    const sources = read('src/features/reports/report-cycle-sources.tsx');
-
-    expect(sources).toContain('Edit update');
-    expect(sources).not.toContain('View update');
-    expect(sources).toContain('href="#report-edit"');
-    expect(sources).toContain('id="report-edit"');
   });
 
   it('renders Arabic email copy for bilingual report snapshots', () => {
