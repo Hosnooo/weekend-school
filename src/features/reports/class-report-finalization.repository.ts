@@ -8,6 +8,7 @@ import {
   type ReportAttendanceResolution
 } from './report-attendance';
 import {getReportBatchWorkspace} from './report-batch.repository';
+import {studentBelongsToReportContext} from './report-source-roster';
 import {buildReportSnapshotV2} from './report.service';
 import {getActiveReportTemplate} from './report-template.repository';
 import type {
@@ -205,6 +206,10 @@ async function buildClassReportCycleSnapshots(
   const memberships = membershipsResult.data ?? [];
   const observations =
     (observationResult.data ?? []) as SubmissionStudentRow[];
+  const sourceRosterObservations = observations.map((row) => ({
+    submissionId: row.submission_id,
+    studentId: row.student_id
+  }));
   const resolutions =
     (resolutionResult.data ?? []) as ResolutionRow[];
   const overrides = (overrideResult.data ?? []) as OverrideRow[];
@@ -250,8 +255,15 @@ async function buildClassReportCycleSnapshots(
       );
       if (excluded) continue;
 
+      const selectedSources = workspace.sources.filter((source) =>
+        approval.selectedSourceIds.includes(source.id)
+      );
+      if (selectedSources.length === 0) continue;
+
+      const selectedIds = new Set(selectedSources.map(({id}) => id));
+
       if (approval.subjectGroupId !== null) {
-        const inGroup = memberships.some(
+        const currentMembership = memberships.some(
           (row) =>
             row.student_id === student.id &&
             row.class_subject_id === approval.classSubjectId &&
@@ -263,15 +275,16 @@ async function buildClassReportCycleSnapshots(
               workspace.batch.periodEnd
             )
         );
-        if (!inGroup) continue;
+        const belongsToGroup = studentBelongsToReportContext({
+          studentId: student.id,
+          subjectGroupId: approval.subjectGroupId,
+          selectedSourceIds: selectedIds,
+          observations: sourceRosterObservations,
+          currentMembership
+        });
+        if (!belongsToGroup) continue;
       }
 
-      const selectedSources = workspace.sources.filter((source) =>
-        approval.selectedSourceIds.includes(source.id)
-      );
-      if (selectedSources.length === 0) continue;
-
-      const selectedIds = new Set(selectedSources.map(({id}) => id));
       const studentObservations = observations.filter(
         (row) =>
           row.student_id === student.id &&

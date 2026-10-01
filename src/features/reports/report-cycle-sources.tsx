@@ -41,7 +41,7 @@ export async function ReportCycleSources({
     ar: string | null
   ) => locale === 'ar' && ar ? ar : en ?? ar ?? '—';
   const activeLocale = locale === 'ar' ? 'ar' : 'en';
-  const sourceDetails = locale === 'ar' ? 'عرض التحديث' : 'View update';
+  const editUpdate = locale === 'ar' ? 'تعديل التحديث' : 'Edit update';
 
   return (
     <section className="detail-section report-cycle-sources">
@@ -115,20 +115,13 @@ export async function ReportCycleSources({
                     {source.teacherName}
                   </p>
 
-                  {(source.progressEn || source.progressAr) ? (
-                    <details>
-                      <summary>{sourceDetails}</summary>
-                      {source.progressEn ? (
-                        <p dir="ltr" style={{whiteSpace: 'pre-wrap'}}>
-                          {source.progressEn}
-                        </p>
-                      ) : null}
-                      {source.progressAr ? (
-                        <p dir="rtl" style={{whiteSpace: 'pre-wrap'}}>
-                          {source.progressAr}
-                        </p>
-                      ) : null}
-                    </details>
+                  {status !== 'FINALIZED' ? (
+                    <a
+                      className="button button-secondary action-link"
+                      href="#report-edit"
+                    >
+                      {editUpdate}
+                    </a>
                   ) : null}
                 </div>
 
@@ -252,6 +245,8 @@ export async function ReportCycleSources({
           </div>
         </section>
       ) : null}
+
+      <span id="report-edit" />
     </section>
   );
 }

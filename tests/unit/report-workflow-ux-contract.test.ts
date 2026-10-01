@@ -1,3 +1,5 @@
+// @vitest-environment node
+
 import {
   existsSync,
   readFileSync
@@ -66,6 +68,17 @@ describe('Reports workflow UX contract', () => {
     expect(component).not.toContain('previewReport');
     expect(component).not.toContain('openReport:');
     expect(component).not.toContain('Tabs');
+  });
+
+  it('replaces View update with an Edit update link into the report editor', () => {
+    const component = read(
+      'src/features/reports/report-cycle-sources.tsx'
+    );
+
+    expect(component).toContain('Edit update');
+    expect(component).toContain('href="#report-edit"');
+    expect(component).toContain('id="report-edit"');
+    expect(component).not.toContain('View update');
   });
 
   it('exposes the approved administrator-facing workflow statuses', () => {
