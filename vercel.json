@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "pnpm build",
+  "buildCommand": "pnpm exec vitest run --configLoader runner tests/unit/report-live-issues.test.ts && pnpm build",
   "git": {
     "deploymentEnabled": {
       "codex/**": false
