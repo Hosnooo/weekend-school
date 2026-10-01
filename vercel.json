@@ -1,6 +1,5 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "pnpm exec vitest run tests/unit/report-panel-interactions.test.tsx -t 'saves in the background' && pnpm build",
   "git": {
     "deploymentEnabled": {
       "codex/**": false
