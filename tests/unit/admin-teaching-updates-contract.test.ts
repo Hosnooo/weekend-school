@@ -182,6 +182,32 @@ describe('Admin Teaching Updates contract', () => {
     expect(workspace).toContain('value="ADMIN_REQUEST"');
   });
 
+  it('removes dismissed updates from normal Admin surfaces while treating them as resolved', () => {
+    const workspacePath =
+      'src/features/teaching-updates/admin-teaching-updates-workspace.tsx';
+
+    expect(exists(workspacePath), workspacePath).toBe(true);
+    if (!exists(workspacePath)) return;
+
+    const workspace = source(workspacePath);
+    const historyStart = workspace.indexOf('const historyTeachingUpdates');
+    const requestsStart = workspace.indexOf('const activeRequests');
+    const labelsStart = workspace.indexOf('const statusLabel');
+
+    expect(historyStart).toBeGreaterThan(-1);
+    expect(requestsStart).toBeGreaterThan(historyStart);
+    expect(labelsStart).toBeGreaterThan(requestsStart);
+
+    const historyLogic = workspace.slice(historyStart, requestsStart);
+    const requestLogic = workspace.slice(requestsStart, labelsStart);
+
+    expect(historyLogic).toContain("item.status === 'SUBMITTED'");
+    expect(historyLogic).not.toContain("item.status !== 'OPEN'");
+    expect(requestLogic).toContain('item.openCount > 0');
+    expect(requestLogic).not.toContain('item.submittedCount < item.totalCount');
+    expect(workspace).not.toContain('<option value="DISMISSED">');
+  });
+
   it('shows request creation for RANGE and exact DATES coverage', () => {
     const dialogPath =
       'src/features/teaching-updates/request-teaching-update-dialog.tsx';
