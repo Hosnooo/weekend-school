@@ -111,6 +111,22 @@ export async function ReportCycleSources({
                     {' · '}
                     {source.teacherName}
                   </p>
+
+                  {(source.progressEn || source.progressAr) ? (
+                    <details>
+                      <summary>{t('sourceDetails')}</summary>
+                      {source.progressEn ? (
+                        <p dir="ltr" style={{whiteSpace: 'pre-wrap'}}>
+                          {source.progressEn}
+                        </p>
+                      ) : null}
+                      {source.progressAr ? (
+                        <p dir="rtl" style={{whiteSpace: 'pre-wrap'}}>
+                          {source.progressAr}
+                        </p>
+                      ) : null}
+                    </details>
+                  ) : null}
                 </div>
 
                 {status !== 'FINALIZED' ? (
