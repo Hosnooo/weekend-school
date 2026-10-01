@@ -26,13 +26,12 @@ export async function prepareDeliverableReport(
   const {data, error} = await db
     .from('student_guardians')
     .select(
-      'guardian_id,guardians!inner(is_active,report_language)'
+      'guardian_id,guardians!inner(is_active)'
     )
     .eq('school_id', schoolId)
     .eq('student_id', report.studentId)
     .eq('receives_reports', true)
-    .eq('guardians.is_active', true)
-    .eq('guardians.report_language', report.language);
+    .eq('guardians.is_active', true);
 
   if (error) throw error;
 
