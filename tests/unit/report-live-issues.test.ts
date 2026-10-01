@@ -34,14 +34,13 @@ describe('live Class Report Cycle regressions', () => {
     })).toBe(false);
   });
 
-  it('replaces View update with an Edit update link to the matching report editor', () => {
+  it('replaces View update with an Edit update link to the report editor', () => {
     const sources = read('src/features/reports/report-cycle-sources.tsx');
-    const review = read('src/features/reports/class-report-cycle-review.tsx');
 
     expect(sources).toContain('Edit update');
     expect(sources).not.toContain('View update');
-    expect(sources).toContain('#report-edit-');
-    expect(review).toContain('id={`report-edit-');
+    expect(sources).toContain('href="#report-edit"');
+    expect(sources).toContain('id="report-edit"');
   });
 
   it('renders Arabic email copy for bilingual report snapshots', () => {
