@@ -15,6 +15,22 @@ vi.mock('@/features/reports/report-preview-frame', () => ({
   )
 }));
 
+function renderEditForm() {
+  return render(
+    <ReportEditForm
+      cancelLabel="Cancel"
+      saveAction={state.save}
+      saveErrorLabel="Unable to save"
+      saveLabel="Save & close"
+    >
+      <label>
+        English
+        <input defaultValue="Original" name="mainReportEn" />
+      </label>
+    </ReportEditForm>
+  );
+}
+
 describe('Report Cycle local panel interactions', () => {
   beforeEach(() => {
     state.save.mockReset();
@@ -22,22 +38,9 @@ describe('Report Cycle local panel interactions', () => {
     window.location.hash = '';
   });
 
-  it('saves in the background, closes locally, and Cancel restores the latest saved values', async () => {
+  it('saves in the background and closes locally', async () => {
     state.save.mockResolvedValue({ok: true, studentIds: ['student-1']});
-
-    render(
-      <ReportEditForm
-        cancelLabel="Cancel"
-        saveAction={state.save}
-        saveErrorLabel="Unable to save"
-        saveLabel="Save & close"
-      >
-        <label>
-          English
-          <input defaultValue="Original" name="mainReportEn" />
-        </label>
-      </ReportEditForm>
-    );
+    renderEditForm();
 
     const input = screen.getByLabelText('English') as HTMLInputElement;
     fireEvent.change(input, {target: {value: 'Saved value'}});
@@ -45,10 +48,22 @@ describe('Report Cycle local panel interactions', () => {
 
     await waitFor(() => expect(state.save).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(window.location.hash).toBe('#report-edit-closed'));
+  });
 
+  it('Cancel restores the latest saved values without submitting', async () => {
+    state.save.mockResolvedValue({ok: true, studentIds: ['student-1']});
+    renderEditForm();
+
+    const input = screen.getByLabelText('English') as HTMLInputElement;
+    fireEvent.change(input, {target: {value: 'Saved value'}});
+    fireEvent.click(screen.getByRole('button', {name: 'Save & close'}));
+    await waitFor(() => expect(window.location.hash).toBe('#report-edit-closed'));
+
+    state.save.mockClear();
     fireEvent.change(input, {target: {value: 'Unsaved value'}});
     fireEvent.click(screen.getByRole('button', {name: 'Cancel'}));
 
+    expect(state.save).not.toHaveBeenCalled();
     expect(input.value).toBe('Saved value');
     expect(window.location.hash).toBe('#report-edit-closed');
   });
