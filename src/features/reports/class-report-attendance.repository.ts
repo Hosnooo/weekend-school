@@ -26,6 +26,8 @@ export type ClassReportReviewStudentWithAttendance =
   ClassReportReviewStudent & {
     attendanceAttended: number | null;
     attendanceTotal: number | null;
+    attendanceSourceAttended: number | null;
+    attendanceSourceTotal: number | null;
     attendanceOverridden: boolean;
     attendanceUnresolvedConflicts: number;
   };
@@ -138,8 +140,10 @@ export async function getClassReportReviewWorkspaceWithAttendance(
           override?.attendance_attended,
           override?.attendance_total
         );
+        const sourceAttended = source.total > 0 ? source.attended : null;
+        const sourceTotal = source.total > 0 ? source.total : null;
         const hasUsableAttendance =
-          effective.overridden || source.total > 0;
+          effective.overridden || sourceTotal !== null;
 
         return {
           ...student,
@@ -149,6 +153,8 @@ export async function getClassReportReviewWorkspaceWithAttendance(
           attendanceTotal: hasUsableAttendance
             ? effective.total
             : null,
+          attendanceSourceAttended: sourceAttended,
+          attendanceSourceTotal: sourceTotal,
           attendanceOverridden: effective.overridden,
           attendanceUnresolvedConflicts: effective.unresolvedConflicts
         };
