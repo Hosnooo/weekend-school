@@ -78,6 +78,66 @@ describe('report-template finalized snapshot', () => {
     expect(html).not.toContain('Excellent participation.');
   });
 
+  it('renders bilingual narrative as separate directional blocks and preserves new lines', () => {
+    const bilingual: ReportSnapshotV2 = {
+      ...snapshot,
+      language: 'both',
+      template: {
+        ...snapshot.template,
+        introEn: 'Welcome\nFamily',
+        introAr: 'مرحباً\nبالعائلة',
+        studentCommentsEnabled: true
+      },
+      sections: [
+        {
+          ...snapshot.sections[0],
+          approvedProgressEn: 'Line one\nLine two',
+          approvedProgressAr: 'السطر الأول\nالسطر الثاني',
+          commentEn: 'English note\nSecond line',
+          commentAr: 'ملاحظة عربية\nسطر ثان'
+        }
+      ]
+    };
+
+    const html = renderStudentReportV2(bilingual);
+
+    expect(html).toContain('lang="en" dir="ltr"');
+    expect(html).toContain('lang="ar" dir="rtl"');
+    expect(html).toContain('Line one<br>Line two');
+    expect(html).toContain('السطر الأول<br>السطر الثاني');
+    expect(html).not.toContain('Line one<br>Line two / السطر الأول');
+    expect(html).not.toContain('English note / ملاحظة عربية');
+  });
+
+  it('renders only the language that actually has narrative content', () => {
+    const arabicOnly: ReportSnapshotV2 = {
+      ...snapshot,
+      language: 'both',
+      template: {
+        ...snapshot.template,
+        mainReportLabelEn: null,
+        mainReportLabelAr: 'التقرير الرئيسي',
+        introEn: null,
+        introAr: 'مقدمة عربية',
+        closingEn: null,
+        closingAr: null
+      },
+      sections: [
+        {
+          ...snapshot.sections[0],
+          approvedProgressEn: null,
+          approvedProgressAr: 'محتوى عربي فقط'
+        }
+      ]
+    };
+
+    const html = renderStudentReportV2(arabicOnly);
+
+    expect(html).toContain('محتوى عربي فقط');
+    expect(html).not.toContain('Completed Surah review.');
+    expect(html).not.toContain('Weekly learning');
+  });
+
   it('finalization loads the active template instead of hard-coded null wording', () => {
     const source = readFileSync(
       'src/features/reports/report-batch.repository.ts',
