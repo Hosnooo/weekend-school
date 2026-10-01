@@ -17,7 +17,6 @@ import {Link, useRouter} from '@/i18n/navigation';
 export function GuardianManagementList({locale, guardians}: {locale: Locale; guardians: GuardianListItem[]}) {
   const t = useTranslations('guardians');
   const common = useTranslations('common');
-  const languages = useTranslations('reportLanguages');
   const router = useRouter();
   const [lifecycleTarget, setLifecycleTarget] = useState<GuardianListItem | null>(null);
 
@@ -48,11 +47,6 @@ export function GuardianManagementList({locale, guardians}: {locale: Locale; gua
           <div className="record-meta"><a href={`mailto:${guardian.email}`}>{guardian.email}</a></div>
         </div>
       )
-    },
-    {
-      key: 'language',
-      header: t('reportLanguage'),
-      render: (guardian) => languages(guardian.reportLanguage)
     },
     {
       key: 'status',
