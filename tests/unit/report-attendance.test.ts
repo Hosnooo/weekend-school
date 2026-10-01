@@ -2,7 +2,8 @@ import {describe, expect, it} from 'vitest';
 
 import {
   deriveReportAttendance,
-  effectiveReportAttendance
+  effectiveReportAttendance,
+  reportAttendanceOverride
 } from '@/features/reports/report-attendance';
 
 describe('report attendance', () => {
@@ -94,5 +95,39 @@ describe('report attendance', () => {
       ...source,
       overridden: false
     });
+  });
+
+  it('does not create an override when unchanged derived attendance is saved', () => {
+    expect(
+      reportAttendanceOverride({
+        submittedAttended: 3,
+        submittedTotal: 4,
+        sourceAttended: 3,
+        sourceTotal: 4,
+        wasOverridden: false
+      })
+    ).toEqual({attendanceAttended: null, attendanceTotal: null});
+  });
+
+  it('stores only intentional Admin changes and clears an existing override when blank', () => {
+    expect(
+      reportAttendanceOverride({
+        submittedAttended: 7,
+        submittedTotal: 8,
+        sourceAttended: 3,
+        sourceTotal: 4,
+        wasOverridden: false
+      })
+    ).toEqual({attendanceAttended: 7, attendanceTotal: 8});
+
+    expect(
+      reportAttendanceOverride({
+        submittedAttended: null,
+        submittedTotal: null,
+        sourceAttended: 3,
+        sourceTotal: 4,
+        wasOverridden: true
+      })
+    ).toEqual({attendanceAttended: null, attendanceTotal: null});
   });
 });
