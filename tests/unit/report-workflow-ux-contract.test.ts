@@ -38,6 +38,7 @@ describe('Reports workflow UX contract', () => {
     expect(workspacePage).toContain('saveAdminReportWorkspaceAction');
     expect(workspacePage).toContain('finalizeAdminReportWorkspaceAction');
     expect(workspacePage).toContain('reopenAdminReportWorkspaceAction');
+    expect(workspacePage).toContain('ClassReportCycleReview');
 
     // The old staged workflow is no longer administrator-facing.
     expect(page).not.toContain('Tabs');
@@ -45,6 +46,23 @@ describe('Reports workflow UX contract', () => {
     expect(page).not.toContain("t('moveToReview')");
     expect(page).not.toContain('ReportStudentReviewTable');
     expect(page).not.toContain('prepareReportBatchAction');
+  });
+
+  it('keeps Class Report Cycle review on the same page with exact email preview', () => {
+    const component = read(
+      'src/features/reports/class-report-cycle-review.tsx'
+    );
+
+    expect(component).toContain('saveClassReportReviewContextAction');
+    expect(component).toContain('Customize report text');
+    expect(component).toContain('progressEn:');
+    expect(component).toContain('progressAr:');
+    expect(component).toContain('renderReportEmail');
+    expect(component).toContain('renderReportEmailSubject');
+    expect(component).toContain('ReportPreviewFrame');
+    expect(component).toContain('finalizeClassReportCycleAction');
+    expect(component).toContain('sendAdminReportBatchAction');
+    expect(component).not.toContain('Tabs');
   });
 
   it('exposes the approved administrator-facing workflow statuses', () => {
