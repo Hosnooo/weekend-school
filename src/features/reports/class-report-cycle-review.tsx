@@ -52,6 +52,8 @@ const copy = {
     attended: 'Attended',
     outOf: 'out of',
     sessions: 'sessions',
+    attendanceNeedsReview:
+      'Source attendance disagrees. Confirm the attended and total session counts before finalizing.',
     reopenEdit: 'Reopen & edit'
   },
   ar: {
@@ -70,6 +72,8 @@ const copy = {
     attended: 'حضر',
     outOf: 'من أصل',
     sessions: 'حصص',
+    attendanceNeedsReview:
+      'توجد اختلافات في بيانات الحضور. يرجى تأكيد عدد الحصص المحضورة وإجمالي الحصص قبل الإنهاء.',
     reopenEdit: 'إعادة الفتح والتعديل'
   }
 } as const;
@@ -311,7 +315,7 @@ export async function ClassReportCycleReview({
                                       <label>
                                         {ui.attended}
                                         <input
-                                          defaultValue={student.attendanceAttended}
+                                          defaultValue={student.attendanceAttended ?? ''}
                                           min="0"
                                           name={`attendanceAttended:${student.studentId}`}
                                           step="1"
@@ -322,7 +326,7 @@ export async function ClassReportCycleReview({
                                       <label>
                                         {ui.sessions}
                                         <input
-                                          defaultValue={student.attendanceTotal}
+                                          defaultValue={student.attendanceTotal ?? ''}
                                           min="0"
                                           name={`attendanceTotal:${student.studentId}`}
                                           step="1"
@@ -330,6 +334,11 @@ export async function ClassReportCycleReview({
                                         />
                                       </label>
                                     </div>
+                                    {student.attendanceUnresolvedConflicts > 0 ? (
+                                      <Alert variant="warning">
+                                        {ui.attendanceNeedsReview}
+                                      </Alert>
+                                    ) : null}
                                   </div>
 
                                   {review.template.performanceEnabled ? (
