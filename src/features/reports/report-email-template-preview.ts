@@ -94,10 +94,7 @@ export function buildReportEmailTemplatePreview(
 ) {
   return {
     subjectEn: interpolate(template.emailSubjectEn, 'en'),
-    subjectAr: interpolate(
-      template.emailSubjectAr || template.emailSubjectEn,
-      'ar'
-    ),
+    subjectAr: interpolate(template.emailSubjectAr, 'ar'),
     greetingEn: interpolate(template.emailGreetingEn, 'en'),
     greetingAr: interpolate(template.emailGreetingAr, 'ar'),
     messageEn: interpolate(template.emailMessageEn, 'en'),
