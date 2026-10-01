@@ -11,23 +11,18 @@ function read(relative: string) {
 
 describe('Class Report Cycle editor disclosure', () => {
   it('opens one report editor from Edit update and closes after save or cancel', () => {
-    const page = read(
-      'src/app/[locale]/(protected)/(admin)/reports/workspace/[batchId]/page.tsx'
-    );
     const sources = read('src/features/reports/report-cycle-sources.tsx');
     const review = read('src/features/reports/class-report-cycle-review.tsx');
 
-    expect(page).toContain('edit?: string;');
-    expect(page).toContain('selectedEditContextKey={query.edit}');
-
-    expect(sources).toContain('const contextKey =');
-    expect(sources).toContain('?edit=${encodeURIComponent(contextKey)}#report-edit');
+    expect(sources).toContain('const editorId =');
+    expect(sources).toContain('href={`#${editorId}`}');
     expect(sources).not.toContain('href="#report-edit"');
 
-    expect(review).toContain('selectedEditContextKey');
-    expect(review).toContain('const isEditing = selectedEditContextKey === contextKey');
+    expect(review).toContain('report-edit-panel');
+    expect(review).toContain('.report-edit-panel:target');
     expect(review).toContain('Save & close');
     expect(review).toContain('Cancel');
+    expect(review).toContain('href="#report-edit-closed"');
     expect(review).not.toContain('rebuildClassReportReviewContextAction');
   });
 });
