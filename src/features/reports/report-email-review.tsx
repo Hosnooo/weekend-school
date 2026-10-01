@@ -18,6 +18,7 @@ export function ReportEmailReview({
   students,
   initialStudentId,
   initialPreview,
+  initialFailed = false,
   labels
 }: {
   batchId: string;
@@ -25,6 +26,7 @@ export function ReportEmailReview({
   students: Array<{studentId: string; studentName: string}>;
   initialStudentId: string;
   initialPreview: ReportEmailPreview | null;
+  initialFailed?: boolean;
   labels: {
     emailReview: string;
     selectStudent: string;
@@ -35,7 +37,7 @@ export function ReportEmailReview({
 }) {
   const [selectedStudentId, setSelectedStudentId] = useState(initialStudentId);
   const [preview, setPreview] = useState(initialPreview);
-  const [failed, setFailed] = useState(false);
+  const [failed, setFailed] = useState(initialFailed);
   const [pending, startTransition] = useTransition();
 
   const loadPreview = useCallback((studentId: string) => {
