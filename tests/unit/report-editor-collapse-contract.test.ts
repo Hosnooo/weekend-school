@@ -15,14 +15,14 @@ describe('Class Report Cycle editor disclosure', () => {
     const review = read('src/features/reports/class-report-cycle-review.tsx');
 
     expect(sources).toContain('const editorId =');
-    expect(sources).toContain('href={`#${editorId}`}');
+    expect(sources).toContain('?edit=${encodeURIComponent(editorId)}#${editorId}');
     expect(sources).not.toContain('href="#report-edit"');
 
     expect(review).toContain('report-edit-panel');
     expect(review).toContain('.report-edit-panel:target');
     expect(review).toContain('Save & close');
     expect(review).toContain('Cancel');
-    expect(review).toContain('href="#report-edit-closed"');
+    expect(review).toContain('href="?cancel=1#report-edit-closed"');
     expect(review).not.toContain('rebuildClassReportReviewContextAction');
   });
 });
