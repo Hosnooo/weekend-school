@@ -10,16 +10,18 @@ import {
   finalizeClassReportCycleAction,
   reopenAdminReportWorkspaceAction
 } from './admin-report-workflow.actions';
-import {saveClassReportReviewWithAttendanceAction} from './class-report-review.actions';
 import {getClassReportReviewWorkspaceWithAttendance} from './class-report-attendance.repository';
 import {getClassReportCycleLivePreview} from './class-report-finalization.repository';
+import {getClassReportCycleEmailPreviewAction} from './class-report-preview.actions';
 import {
   canReopenClassReportCycle,
   getClassReportPreviewRecipients
 } from './class-report-preview.repository';
+import {saveClassReportReviewWithAttendanceInlineAction} from './class-report-review.actions';
 import {ensureClassReportCycleReview} from './class-report-review.repository';
 import type {ClassReportCycleWorkspace} from './report-batch.repository';
-import {ReportPreviewFrame} from './report-preview-frame';
+import {ReportEditForm} from './report-edit-form';
+import {ReportEmailReview} from './report-email-review';
 import {getReport} from './report.repository';
 import type {ReportPerformance, ReportSnapshotV2} from './report.types';
 import {
@@ -41,7 +43,6 @@ const copy = {
       'Leave blank to use the shared report text for this student.',
     emailReview: 'Email review',
     selectStudent: 'Student',
-    showEmail: 'Show email',
     previewUnavailable:
       'Email preview is unavailable until report issues are resolved.',
     parentEmailTo: 'To',
@@ -62,7 +63,6 @@ const copy = {
       'اتركه فارغاً لاستخدام نص التقرير المشترك لهذا الطالب.',
     emailReview: 'مراجعة البريد الإلكتروني',
     selectStudent: 'الطالب',
-    showEmail: 'عرض البريد',
     previewUnavailable:
       'لا تتوفر معاينة البريد حتى يتم حل مشكلات التقرير.',
     parentEmailTo: 'إلى',
@@ -204,6 +204,15 @@ export async function ClassReportCycleReview({
     </>
   );
 
+  const initialPreview = snapshot && selectedStudent
+    ? {
+        studentId: selectedStudent.studentId,
+        recipients: recipients.map(({email}) => email),
+        subject: renderReportEmailSubject(snapshot),
+        html: renderReportEmail(snapshot)
+      }
+    : null;
+
   return (
     <section className="detail-section report-cycle-student-reports">
       {classCycle.batch.status !== 'FINALIZED' ? (
@@ -251,9 +260,11 @@ export async function ClassReportCycleReview({
                   <h3>{title}</h3>
 
                   {classCycle.batch.status !== 'FINALIZED' ? (
-                    <form
-                      action={saveClassReportReviewWithAttendanceAction}
-                      className="record-form"
+                    <ReportEditForm
+                      cancelLabel={ui.cancel}
+                      saveAction={saveClassReportReviewWithAttendanceInlineAction}
+                      saveErrorLabel={t('saveError')}
+                      saveLabel={ui.saveAndClose}
                     >
                       {sharedHidden}
                       <input
@@ -435,22 +446,7 @@ export async function ClassReportCycleReview({
                           ))}
                         </div>
                       </section>
-
-                      <div className="row-actions">
-                        <button
-                          className="button button-primary"
-                          type="submit"
-                        >
-                          {ui.saveAndClose}
-                        </button>
-                        <a
-                          className="button button-secondary action-link"
-                          href="?cancel=1#report-edit-closed"
-                        >
-                          {ui.cancel}
-                        </a>
-                      </div>
-                    </form>
+                    </ReportEditForm>
                   ) : (
                     <div className="stack">
                       {context.mainReportEn ? (
@@ -474,63 +470,37 @@ export async function ClassReportCycleReview({
 
       <span id="report-edit-closed" />
 
-      <section className="stack">
-        <div>
-          <h3>{ui.emailReview}</h3>
-        </div>
-
-        {studentOptions.length === 0 ? (
+      {studentOptions.length === 0 || !selectedStudent ? (
+        <section className="stack report-email-review-panel">
+          <div>
+            <h3>{ui.emailReview}</h3>
+          </div>
           <EmptyState title={t('noGeneratedReports')} />
-        ) : (
-          <form className="row-actions" method="get">
-            <label>
-              {ui.selectStudent}
-              <select
-                defaultValue={selectedStudent?.studentId ?? ''}
-                name="student"
-              >
-                {studentOptions.map((student) => (
-                  <option
-                    key={student.studentId}
-                    value={student.studentId}
-                  >
-                    {localize(
-                      student.studentNameEn,
-                      student.studentNameAr
-                    )}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <button className="button button-secondary" type="submit">
-              {ui.showEmail}
-            </button>
-          </form>
-        )}
-
-        {previewError ? (
-          <Alert variant="warning">{ui.previewUnavailable}</Alert>
-        ) : null}
-
-        {snapshot && selectedStudent ? (
-          <section className="stack">
-            <p className="record-meta">
-              <strong>{ui.parentEmailTo}:</strong>{' '}
-              {recipients.length > 0
-                ? recipients.map(({email}) => email).join(', ')
-                : '—'}
-            </p>
-            <p className="record-meta">
-              <strong>{ui.parentEmailSubject}:</strong>{' '}
-              {renderReportEmailSubject(snapshot)}
-            </p>
-            <ReportPreviewFrame
-              html={renderReportEmail(snapshot)}
-              title={ui.emailReview}
-            />
-          </section>
-        ) : null}
-      </section>
+        </section>
+      ) : (
+        <ReportEmailReview
+          batchId={classCycle.batch.id}
+          initialFailed={previewError}
+          initialPreview={initialPreview}
+          initialStudentId={selectedStudent.studentId}
+          labels={{
+            emailReview: ui.emailReview,
+            selectStudent: ui.selectStudent,
+            previewUnavailable: ui.previewUnavailable,
+            parentEmailTo: ui.parentEmailTo,
+            parentEmailSubject: ui.parentEmailSubject
+          }}
+          loadPreviewAction={getClassReportCycleEmailPreviewAction}
+          locale={locale}
+          students={studentOptions.map((student) => ({
+            studentId: student.studentId,
+            studentName: localize(
+              student.studentNameEn,
+              student.studentNameAr
+            )
+          }))}
+        />
+      )}
 
       <section className="stack">
         <h3>{t('sendStage')}</h3>

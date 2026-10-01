@@ -158,6 +158,98 @@ function classReviewPayloadFrom(formData: FormData) {
   };
 }
 
+type ClassReviewPayload = NonNullable<
+  ReturnType<typeof classReviewPayloadFrom>
+>;
+
+async function persistClassReportReview(
+  schoolId: string,
+  payload: ClassReviewPayload
+) {
+  const review = await getClassReportReviewWorkspaceWithAttendance(
+    schoolId,
+    payload.batchId
+  );
+  const context = review?.contexts.find(
+    (item) =>
+      item.classSubjectId === payload.classSubjectId &&
+      item.subjectGroupId === payload.subjectGroupId
+  );
+
+  if (!context) {
+    throw new Error('Report review context not found');
+  }
+
+  const attendanceOverrides = payload.students.map((student) => {
+    const current = context.students.find(
+      (item) => item.studentId === student.studentId
+    );
+    if (!current) {
+      throw new Error('Report review student not found');
+    }
+
+    return {
+      studentId: student.studentId,
+      ...reportAttendanceOverride({
+        submittedAttended: student.attendanceAttended,
+        submittedTotal: student.attendanceTotal,
+        sourceAttended: current.attendanceSourceAttended,
+        sourceTotal: current.attendanceSourceTotal,
+        wasOverridden: current.attendanceOverridden
+      })
+    };
+  });
+
+  await saveClassReportReviewContext({
+    schoolId,
+    batchId: payload.batchId,
+    classSubjectId: payload.classSubjectId,
+    subjectGroupId: payload.subjectGroupId,
+    mainReportEn: payload.mainReportEn,
+    mainReportAr: payload.mainReportAr,
+    includePerformance: payload.includePerformance,
+    includeStudentComments: payload.includeStudentComments,
+    students: payload.students.map((student) => ({
+      studentId: student.studentId,
+      progressEn: student.progressEn,
+      progressAr: student.progressAr,
+      performance: student.performance,
+      performanceOverridden: student.performanceOverridden,
+      commentEn: student.commentEn,
+      commentAr: student.commentAr
+    }))
+  });
+
+  await saveClassReportAttendanceOverrides({
+    schoolId,
+    batchId: payload.batchId,
+    classSubjectId: payload.classSubjectId,
+    subjectGroupId: payload.subjectGroupId,
+    students: attendanceOverrides
+  });
+}
+
+export async function saveClassReportReviewWithAttendanceInlineAction(
+  formData: FormData
+) {
+  const locale = localeFrom(formData);
+  const profile = await requireProfile(locale, 'ADMIN');
+  const payload = classReviewPayloadFrom(formData);
+
+  if (!payload) return {ok: false as const};
+
+  try {
+    await persistClassReportReview(profile.schoolId, payload);
+    return {
+      ok: true as const,
+      studentIds: payload.students.map(({studentId}) => studentId)
+    };
+  } catch (error) {
+    console.error('Unable to save Class Report Cycle review inline', {error});
+    return {ok: false as const};
+  }
+}
+
 export async function saveClassReportReviewWithAttendanceAction(
   formData: FormData
 ) {
@@ -170,67 +262,7 @@ export async function saveClassReportReviewWithAttendanceAction(
   }
 
   try {
-    const review = await getClassReportReviewWorkspaceWithAttendance(
-      profile.schoolId,
-      payload.batchId
-    );
-    const context = review?.contexts.find(
-      (item) =>
-        item.classSubjectId === payload.classSubjectId &&
-        item.subjectGroupId === payload.subjectGroupId
-    );
-
-    if (!context) {
-      throw new Error('Report review context not found');
-    }
-
-    const attendanceOverrides = payload.students.map((student) => {
-      const current = context.students.find(
-        (item) => item.studentId === student.studentId
-      );
-      if (!current) {
-        throw new Error('Report review student not found');
-      }
-
-      return {
-        studentId: student.studentId,
-        ...reportAttendanceOverride({
-          submittedAttended: student.attendanceAttended,
-          submittedTotal: student.attendanceTotal,
-          sourceAttended: current.attendanceSourceAttended,
-          sourceTotal: current.attendanceSourceTotal,
-          wasOverridden: current.attendanceOverridden
-        })
-      };
-    });
-
-    await saveClassReportReviewContext({
-      schoolId: profile.schoolId,
-      batchId: payload.batchId,
-      classSubjectId: payload.classSubjectId,
-      subjectGroupId: payload.subjectGroupId,
-      mainReportEn: payload.mainReportEn,
-      mainReportAr: payload.mainReportAr,
-      includePerformance: payload.includePerformance,
-      includeStudentComments: payload.includeStudentComments,
-      students: payload.students.map((student) => ({
-        studentId: student.studentId,
-        progressEn: student.progressEn,
-        progressAr: student.progressAr,
-        performance: student.performance,
-        performanceOverridden: student.performanceOverridden,
-        commentEn: student.commentEn,
-        commentAr: student.commentAr
-      }))
-    });
-
-    await saveClassReportAttendanceOverrides({
-      schoolId: profile.schoolId,
-      batchId: payload.batchId,
-      classSubjectId: payload.classSubjectId,
-      subjectGroupId: payload.subjectGroupId,
-      students: attendanceOverrides
-    });
+    await persistClassReportReview(profile.schoolId, payload);
   } catch (error) {
     console.error('Unable to save Class Report Cycle review', {error});
     redirect(
