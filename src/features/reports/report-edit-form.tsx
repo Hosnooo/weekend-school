@@ -1,7 +1,7 @@
 'use client';
 
 import type {FormEvent, ReactNode} from 'react';
-import {useRef, useState, useTransition} from 'react';
+import {useRef, useState} from 'react';
 
 function rememberSavedValues(form: HTMLFormElement) {
   for (const element of Array.from(form.elements)) {
@@ -51,15 +51,16 @@ export function ReportEditForm({
 }) {
   const formRef = useRef<HTMLFormElement>(null);
   const [error, setError] = useState(false);
-  const [pending, startTransition] = useTransition();
+  const [saving, setSaving] = useState(false);
 
-  function submit(event: FormEvent<HTMLFormElement>) {
+  async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = event.currentTarget;
     const formData = new FormData(form);
     setError(false);
+    setSaving(true);
 
-    startTransition(async () => {
+    try {
       const result = await saveAction(formData);
 
       if (!result.ok) {
@@ -74,7 +75,9 @@ export function ReportEditForm({
           detail: {studentIds: result.studentIds}
         })
       );
-    });
+    } finally {
+      setSaving(false);
+    }
   }
 
   function cancel() {
@@ -96,14 +99,14 @@ export function ReportEditForm({
       <div className="row-actions">
         <button
           className="button button-primary"
-          disabled={pending}
+          disabled={saving}
           type="submit"
         >
           {saveLabel}
         </button>
         <button
           className="button button-secondary"
-          disabled={pending}
+          disabled={saving}
           onClick={cancel}
           type="button"
         >
