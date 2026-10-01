@@ -9,22 +9,19 @@ import {Link} from '@/i18n/navigation';
 import {
   finalizeClassReportCycleAction,
   rebuildClassReportReviewContextAction,
-  reopenAdminReportWorkspaceAction,
-  saveClassReportReviewContextAction
+  reopenAdminReportWorkspaceAction
 } from './admin-report-workflow.actions';
+import {saveClassReportReviewWithAttendanceAction} from './class-report-review.actions';
+import {getClassReportReviewWorkspaceWithAttendance} from './class-report-attendance.repository';
 import {getClassReportCycleLivePreview} from './class-report-finalization.repository';
 import {
   canReopenClassReportCycle,
   getClassReportPreviewRecipients
 } from './class-report-preview.repository';
-import {
-  ensureClassReportCycleReview,
-  getClassReportReviewWorkspace
-} from './class-report-review.repository';
+import {ensureClassReportCycleReview} from './class-report-review.repository';
 import type {ClassReportCycleWorkspace} from './report-batch.repository';
 import {ReportPreviewFrame} from './report-preview-frame';
 import {getReport} from './report.repository';
-import {renderStudentReportV2} from './report.renderer';
 import type {ReportPerformance, ReportSnapshotV2} from './report.types';
 import {
   renderReportEmail,
@@ -40,32 +37,40 @@ const performanceValues: ReportPerformance[] = [
 
 const copy = {
   en: {
-    openReport: 'Open report',
     customizeReportText: 'Customize report text',
     customizeReportTextHelp:
       'Leave blank to use the shared report text for this student.',
     rebuildFromSources: 'Rebuild from selected updates',
-    previewStudentHelp:
-      'Choose a student to review the report and the exact parent email.',
+    emailReview: 'Email review',
+    selectStudent: 'Student',
+    showEmail: 'Show email',
     previewUnavailable:
-      'Preview is unavailable until report conflicts are resolved.',
-    parentEmailPreview: 'Parent email preview',
+      'Email preview is unavailable until report issues are resolved.',
     parentEmailTo: 'To',
-    parentEmailSubject: 'Subject'
+    parentEmailSubject: 'Subject',
+    attendance: 'Attendance',
+    attended: 'Attended',
+    outOf: 'out of',
+    sessions: 'sessions',
+    reopenEdit: 'Reopen & edit'
   },
   ar: {
-    openReport: 'فتح التقرير',
     customizeReportText: 'تخصيص نص التقرير',
     customizeReportTextHelp:
       'اتركه فارغاً لاستخدام نص التقرير المشترك لهذا الطالب.',
     rebuildFromSources: 'إعادة البناء من التحديثات المحددة',
-    previewStudentHelp:
-      'اختر طالباً لمراجعة التقرير والبريد الإلكتروني الفعلي لولي الأمر.',
+    emailReview: 'مراجعة البريد الإلكتروني',
+    selectStudent: 'الطالب',
+    showEmail: 'عرض البريد',
     previewUnavailable:
-      'لا تتوفر المعاينة حتى يتم حل تعارضات التقرير.',
-    parentEmailPreview: 'معاينة بريد ولي الأمر',
+      'لا تتوفر معاينة البريد حتى يتم حل مشكلات التقرير.',
     parentEmailTo: 'إلى',
-    parentEmailSubject: 'الموضوع'
+    parentEmailSubject: 'الموضوع',
+    attendance: 'الحضور',
+    attended: 'حضر',
+    outOf: 'من أصل',
+    sessions: 'حصص',
+    reopenEdit: 'إعادة الفتح والتعديل'
   }
 } as const;
 
@@ -96,7 +101,7 @@ export async function ClassReportCycleReview({
     );
   }
 
-  const review = await getClassReportReviewWorkspace(
+  const review = await getClassReportReviewWorkspaceWithAttendance(
     schoolId,
     classCycle.batch.id
   );
@@ -146,7 +151,9 @@ export async function ClassReportCycleReview({
         snapshot = live?.snapshot ?? null;
       }
     } catch (error) {
-      console.error('Unable to build Class Report Cycle preview', {error});
+      console.error('Unable to build Class Report Cycle email preview', {
+        error
+      });
       previewError = true;
     }
   }
@@ -179,8 +186,16 @@ export async function ClassReportCycleReview({
     <>
       <input name="locale" type="hidden" value={locale} />
       <input name="batchId" type="hidden" value={classCycle.batch.id} />
-      <input name="periodStart" type="hidden" value={classCycle.batch.periodStart} />
-      <input name="periodEnd" type="hidden" value={classCycle.batch.periodEnd} />
+      <input
+        name="periodStart"
+        type="hidden"
+        value={classCycle.batch.periodStart}
+      />
+      <input
+        name="periodEnd"
+        type="hidden"
+        value={classCycle.batch.periodEnd}
+      />
     </>
   );
 
@@ -206,215 +221,239 @@ export async function ClassReportCycleReview({
             ].filter(Boolean).join(' · ');
 
             return (
-              <details
+              <article
                 className="record-card"
                 key={`${context.classSubjectId}:${context.subjectGroupId ?? 'whole'}`}
               >
-                <summary>
-                  <strong>{title}</strong>
-                  {' · '}
-                  {ui.openReport}
-                </summary>
+                <div className="record-card-main stack">
+                  <h3>{title}</h3>
 
-                {classCycle.batch.status !== 'FINALIZED' ? (
-                  <div className="record-card-main stack">
-                    <form
-                      action={saveClassReportReviewContextAction}
-                      className="record-form"
-                    >
-                      {sharedHidden}
-                      <input
-                        name="classSubjectId"
-                        type="hidden"
-                        value={context.classSubjectId}
-                      />
-                      <input
-                        name="subjectGroupId"
-                        type="hidden"
-                        value={context.subjectGroupId ?? ''}
-                      />
-
-                      <section>
-                        <h3>{t('reportWorkspace')}</h3>
-                        <div className="form-grid">
-                          <label>
-                            {t('englishField')}
-                            <textarea
-                              defaultValue={context.mainReportEn ?? ''}
-                              dir="ltr"
-                              name="mainReportEn"
-                              rows={6}
-                            />
-                          </label>
-                          <label>
-                            {t('arabicField')}
-                            <textarea
-                              defaultValue={context.mainReportAr ?? ''}
-                              dir="rtl"
-                              name="mainReportAr"
-                              rows={6}
-                            />
-                          </label>
-                        </div>
-                      </section>
-
-                      {review.template.performanceEnabled ? (
+                  {classCycle.batch.status !== 'FINALIZED' ? (
+                    <>
+                      <form
+                        action={saveClassReportReviewWithAttendanceAction}
+                        className="record-form"
+                      >
+                        {sharedHidden}
                         <input
-                          name="includePerformance"
+                          name="classSubjectId"
                           type="hidden"
-                          value="1"
+                          value={context.classSubjectId}
                         />
-                      ) : null}
-                      {review.template.studentCommentsEnabled ? (
                         <input
-                          name="includeStudentComments"
+                          name="subjectGroupId"
                           type="hidden"
-                          value="1"
+                          value={context.subjectGroupId ?? ''}
                         />
-                      ) : null}
 
-                      <section>
-                        <h3>{weekly('students')}</h3>
-                        <div className="stack-list">
-                          {context.students.map((student) => (
-                            <article
-                              className="record-card"
-                              key={student.studentId}
-                            >
-                              <div className="record-card-main">
-                                <strong className="record-name">
-                                  {localize(
-                                    student.studentNameEn,
-                                    student.studentNameAr
-                                  )}
-                                </strong>
-                                <input
-                                  name="studentId"
-                                  type="hidden"
-                                  value={student.studentId}
-                                />
+                        <section>
+                          <div className="form-grid">
+                            <label>
+                              {t('englishField')}
+                              <textarea
+                                defaultValue={context.mainReportEn ?? ''}
+                                dir="ltr"
+                                name="mainReportEn"
+                                rows={6}
+                              />
+                            </label>
+                            <label>
+                              {t('arabicField')}
+                              <textarea
+                                defaultValue={context.mainReportAr ?? ''}
+                                dir="rtl"
+                                name="mainReportAr"
+                                rows={6}
+                              />
+                            </label>
+                          </div>
+                        </section>
 
-                                {review.template.performanceEnabled ? (
-                                  <label>
-                                    {t('performance')}
-                                    <select
-                                      defaultValue={
-                                        student.performanceOverridden
-                                          ? student.performance ?? ''
-                                          : ''
-                                      }
-                                      name={`performance:${student.studentId}`}
-                                    >
-                                      <option value="">
-                                        {weekly('useDefault')}
-                                      </option>
-                                      {performanceValues.map((value) => (
-                                        <option key={value} value={value}>
-                                          {weekly(`performance.${value}`)}
+                        {review.template.performanceEnabled ? (
+                          <input
+                            name="includePerformance"
+                            type="hidden"
+                            value="1"
+                          />
+                        ) : null}
+                        {review.template.studentCommentsEnabled ? (
+                          <input
+                            name="includeStudentComments"
+                            type="hidden"
+                            value="1"
+                          />
+                        ) : null}
+
+                        <section>
+                          <h4>{weekly('students')}</h4>
+                          <div className="stack-list">
+                            {context.students.map((student) => (
+                              <article
+                                className="record-card"
+                                key={student.studentId}
+                              >
+                                <div className="record-card-main stack">
+                                  <strong className="record-name">
+                                    {localize(
+                                      student.studentNameEn,
+                                      student.studentNameAr
+                                    )}
+                                  </strong>
+                                  <input
+                                    name="studentId"
+                                    type="hidden"
+                                    value={student.studentId}
+                                  />
+
+                                  <div>
+                                    <strong>{ui.attendance}</strong>
+                                    <div className="row-actions">
+                                      <label>
+                                        {ui.attended}
+                                        <input
+                                          defaultValue={student.attendanceAttended}
+                                          min="0"
+                                          name={`attendanceAttended:${student.studentId}`}
+                                          step="1"
+                                          type="number"
+                                        />
+                                      </label>
+                                      <span>{ui.outOf}</span>
+                                      <label>
+                                        {ui.sessions}
+                                        <input
+                                          defaultValue={student.attendanceTotal}
+                                          min="0"
+                                          name={`attendanceTotal:${student.studentId}`}
+                                          step="1"
+                                          type="number"
+                                        />
+                                      </label>
+                                    </div>
+                                  </div>
+
+                                  {review.template.performanceEnabled ? (
+                                    <label>
+                                      {t('performance')}
+                                      <select
+                                        defaultValue={
+                                          student.performanceOverridden
+                                            ? student.performance ?? ''
+                                            : ''
+                                        }
+                                        name={`performance:${student.studentId}`}
+                                      >
+                                        <option value="">
+                                          {weekly('useDefault')}
                                         </option>
-                                      ))}
-                                    </select>
-                                  </label>
-                                ) : null}
-
-                                {review.template.studentCommentsEnabled ? (
-                                  <div className="form-grid">
-                                    <label>
-                                      {t('englishField')}
-                                      <textarea
-                                        defaultValue={student.commentEn ?? ''}
-                                        dir="ltr"
-                                        name={`commentEn:${student.studentId}`}
-                                        rows={2}
-                                      />
+                                        {performanceValues.map((value) => (
+                                          <option key={value} value={value}>
+                                            {weekly(`performance.${value}`)}
+                                          </option>
+                                        ))}
+                                      </select>
                                     </label>
-                                    <label>
-                                      {t('arabicField')}
-                                      <textarea
-                                        defaultValue={student.commentAr ?? ''}
-                                        dir="rtl"
-                                        name={`commentAr:${student.studentId}`}
-                                        rows={2}
-                                      />
-                                    </label>
-                                  </div>
-                                ) : null}
+                                  ) : null}
 
-                                <details>
-                                  <summary>{ui.customizeReportText}</summary>
-                                  <p className="field-help">
-                                    {ui.customizeReportTextHelp}
-                                  </p>
-                                  <div className="form-grid">
-                                    <label>
-                                      {t('englishField')}
-                                      <textarea
-                                        defaultValue={student.progressEn ?? ''}
-                                        dir="ltr"
-                                        name={`progressEn:${student.studentId}`}
-                                        rows={4}
-                                      />
-                                    </label>
-                                    <label>
-                                      {t('arabicField')}
-                                      <textarea
-                                        defaultValue={student.progressAr ?? ''}
-                                        dir="rtl"
-                                        name={`progressAr:${student.studentId}`}
-                                        rows={4}
-                                      />
-                                    </label>
-                                  </div>
-                                </details>
-                              </div>
-                            </article>
-                          ))}
-                        </div>
-                      </section>
+                                  {review.template.studentCommentsEnabled ? (
+                                    <div className="form-grid">
+                                      <label>
+                                        {t('englishField')}
+                                        <textarea
+                                          defaultValue={student.commentEn ?? ''}
+                                          dir="ltr"
+                                          name={`commentEn:${student.studentId}`}
+                                          rows={2}
+                                        />
+                                      </label>
+                                      <label>
+                                        {t('arabicField')}
+                                        <textarea
+                                          defaultValue={student.commentAr ?? ''}
+                                          dir="rtl"
+                                          name={`commentAr:${student.studentId}`}
+                                          rows={2}
+                                        />
+                                      </label>
+                                    </div>
+                                  ) : null}
 
-                      <button
-                        className="button button-secondary"
-                        type="submit"
-                      >
-                        {t('saveChanges')}
-                      </button>
-                    </form>
+                                  <details>
+                                    <summary>{ui.customizeReportText}</summary>
+                                    <p className="field-help">
+                                      {ui.customizeReportTextHelp}
+                                    </p>
+                                    <div className="form-grid">
+                                      <label>
+                                        {t('englishField')}
+                                        <textarea
+                                          defaultValue={student.progressEn ?? ''}
+                                          dir="ltr"
+                                          name={`progressEn:${student.studentId}`}
+                                          rows={4}
+                                        />
+                                      </label>
+                                      <label>
+                                        {t('arabicField')}
+                                        <textarea
+                                          defaultValue={student.progressAr ?? ''}
+                                          dir="rtl"
+                                          name={`progressAr:${student.studentId}`}
+                                          rows={4}
+                                        />
+                                      </label>
+                                    </div>
+                                  </details>
+                                </div>
+                              </article>
+                            ))}
+                          </div>
+                        </section>
 
-                    <form action={rebuildClassReportReviewContextAction}>
-                      {sharedHidden}
-                      <input
-                        name="classSubjectId"
-                        type="hidden"
-                        value={context.classSubjectId}
-                      />
-                      <input
-                        name="subjectGroupId"
-                        type="hidden"
-                        value={context.subjectGroupId ?? ''}
-                      />
-                      <button
-                        className="button button-secondary"
-                        type="submit"
-                      >
-                        {ui.rebuildFromSources}
-                      </button>
-                    </form>
-                  </div>
-                ) : (
-                  <div className="record-card-main">
-                    {context.mainReportEn ? (
-                      <p dir="ltr" style={{whiteSpace: 'pre-wrap'}}>
-                        {context.mainReportEn}
-                      </p>
-                    ) : null}
-                    {context.mainReportAr ? (
-                      <p dir="rtl" style={{whiteSpace: 'pre-wrap'}}>
-                        {context.mainReportAr}
-                      </p>
-                    ) : null}
-                  </div>
-                )}
-              </details>
+                        <button
+                          className="button button-secondary"
+                          type="submit"
+                        >
+                          {t('saveChanges')}
+                        </button>
+                      </form>
+
+                      <form action={rebuildClassReportReviewContextAction}>
+                        {sharedHidden}
+                        <input
+                          name="classSubjectId"
+                          type="hidden"
+                          value={context.classSubjectId}
+                        />
+                        <input
+                          name="subjectGroupId"
+                          type="hidden"
+                          value={context.subjectGroupId ?? ''}
+                        />
+                        <button
+                          className="button button-secondary"
+                          type="submit"
+                        >
+                          {ui.rebuildFromSources}
+                        </button>
+                      </form>
+                    </>
+                  ) : (
+                    <div className="stack">
+                      {context.mainReportEn ? (
+                        <p dir="ltr" style={{whiteSpace: 'pre-wrap'}}>
+                          {context.mainReportEn}
+                        </p>
+                      ) : null}
+                      {context.mainReportAr ? (
+                        <p dir="rtl" style={{whiteSpace: 'pre-wrap'}}>
+                          {context.mainReportAr}
+                        </p>
+                      ) : null}
+                    </div>
+                  )}
+                </div>
+              </article>
             );
           })}
         </div>
@@ -422,28 +461,36 @@ export async function ClassReportCycleReview({
 
       <section className="stack">
         <div>
-          <h3>{t('preview')}</h3>
-          <p className="field-help">{ui.previewStudentHelp}</p>
+          <h3>{ui.emailReview}</h3>
         </div>
 
         {studentOptions.length === 0 ? (
           <EmptyState title={t('noGeneratedReports')} />
         ) : (
-          <div className="row-actions">
-            {studentOptions.map((student) => (
-              <Link
-                className={
-                  student.studentId === selectedStudent?.studentId
-                    ? 'button button-primary action-link'
-                    : 'button button-secondary action-link'
-                }
-                href={`/reports/workspace/${classCycle.batch.id}?student=${student.studentId}`}
-                key={student.studentId}
+          <form className="row-actions" method="get">
+            <label>
+              {ui.selectStudent}
+              <select
+                defaultValue={selectedStudent?.studentId ?? ''}
+                name="student"
               >
-                {localize(student.studentNameEn, student.studentNameAr)}
-              </Link>
-            ))}
-          </div>
+                {studentOptions.map((student) => (
+                  <option
+                    key={student.studentId}
+                    value={student.studentId}
+                  >
+                    {localize(
+                      student.studentNameEn,
+                      student.studentNameAr
+                    )}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button className="button button-secondary" type="submit">
+              {ui.showEmail}
+            </button>
+          </form>
         )}
 
         {previewError ? (
@@ -451,33 +498,22 @@ export async function ClassReportCycleReview({
         ) : null}
 
         {snapshot && selectedStudent ? (
-          <div className="stack">
-            <details>
-              <summary>{t('previewReport')}</summary>
-              <ReportPreviewFrame
-                html={renderStudentReportV2(snapshot, snapshot.language)}
-                title={t('previewReport')}
-              />
-            </details>
-
-            <section>
-              <h3>{ui.parentEmailPreview}</h3>
-              <p className="record-meta">
-                <strong>{ui.parentEmailTo}:</strong>{' '}
-                {recipients.length > 0
-                  ? recipients.map(({email}) => email).join(', ')
-                  : '—'}
-              </p>
-              <p className="record-meta">
-                <strong>{ui.parentEmailSubject}:</strong>{' '}
-                {renderReportEmailSubject(snapshot)}
-              </p>
-              <ReportPreviewFrame
-                html={renderReportEmail(snapshot)}
-                title={ui.parentEmailPreview}
-              />
-            </section>
-          </div>
+          <section className="stack">
+            <p className="record-meta">
+              <strong>{ui.parentEmailTo}:</strong>{' '}
+              {recipients.length > 0
+                ? recipients.map(({email}) => email).join(', ')
+                : '—'}
+            </p>
+            <p className="record-meta">
+              <strong>{ui.parentEmailSubject}:</strong>{' '}
+              {renderReportEmailSubject(snapshot)}
+            </p>
+            <ReportPreviewFrame
+              html={renderReportEmail(snapshot)}
+              title={ui.emailReview}
+            />
+          </section>
         ) : null}
       </section>
 
@@ -504,7 +540,7 @@ export async function ClassReportCycleReview({
                   className="button button-secondary"
                   type="submit"
                 >
-                  {t('editReport')}
+                  {ui.reopenEdit}
                 </button>
               </form>
             ) : null}
@@ -525,7 +561,7 @@ export async function ClassReportCycleReview({
               className="button button-secondary action-link"
               href="/reports/delivery-status"
             >
-              {t('viewDeliveryStatus')}
+              {t('deliveryStatus')}
             </Link>
           </div>
         )}
