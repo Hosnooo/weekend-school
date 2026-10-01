@@ -3,8 +3,6 @@
 import type {FormEvent, ReactNode} from 'react';
 import {useRef, useState, useTransition} from 'react';
 
-import {saveClassReportReviewWithAttendanceInlineAction} from './class-report-review.actions';
-
 function rememberSavedValues(form: HTMLFormElement) {
   for (const element of Array.from(form.elements)) {
     if (element instanceof HTMLInputElement) {
@@ -35,11 +33,18 @@ function closeEditor() {
 
 export function ReportEditForm({
   children,
+  saveAction,
   saveLabel,
   cancelLabel,
   saveErrorLabel
 }: {
   children: ReactNode;
+  saveAction: (
+    formData: FormData
+  ) => Promise<
+    | {ok: true; studentIds: string[]}
+    | {ok: false}
+  >;
   saveLabel: string;
   cancelLabel: string;
   saveErrorLabel: string;
@@ -55,9 +60,7 @@ export function ReportEditForm({
     setError(false);
 
     startTransition(async () => {
-      const result = await saveClassReportReviewWithAttendanceInlineAction(
-        formData
-      );
+      const result = await saveAction(formData);
 
       if (!result.ok) {
         setError(true);
