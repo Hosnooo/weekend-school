@@ -4,18 +4,10 @@ import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {ReportEditForm} from '@/features/reports/report-edit-form';
 import {ReportEmailReview} from '@/features/reports/report-email-review';
 
-const state = vi.hoisted(() => ({
+const state = {
   save: vi.fn(),
   preview: vi.fn()
-}));
-
-vi.mock('@/features/reports/class-report-review.actions', () => ({
-  saveClassReportReviewWithAttendanceInlineAction: state.save
-}));
-
-vi.mock('@/features/reports/class-report-preview.actions', () => ({
-  getClassReportCycleEmailPreviewAction: state.preview
-}));
+};
 
 vi.mock('@/features/reports/report-preview-frame', () => ({
   ReportPreviewFrame: ({html, title}: {html: string; title: string}) => (
@@ -36,6 +28,7 @@ describe('Report Cycle local panel interactions', () => {
     render(
       <ReportEditForm
         cancelLabel="Cancel"
+        saveAction={state.save}
         saveErrorLabel="Unable to save"
         saveLabel="Save & close"
       >
@@ -88,6 +81,7 @@ describe('Report Cycle local panel interactions', () => {
           previewUnavailable: 'Unavailable',
           selectStudent: 'Student'
         }}
+        loadPreviewAction={state.preview}
         locale="en"
         students={[
           {studentId: 'student-1', studentName: 'Student One'},
@@ -140,6 +134,7 @@ describe('Report Cycle local panel interactions', () => {
           previewUnavailable: 'Unavailable',
           selectStudent: 'Student'
         }}
+        loadPreviewAction={state.preview}
         locale="en"
         students={[{studentId: 'student-1', studentName: 'Student One'}]}
       />
