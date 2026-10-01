@@ -56,7 +56,7 @@ export function ReportEditForm({
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = event.currentTarget;
-    const formData = new FormData(form);
+    const formData = new window.FormData(form);
     setError(false);
     setSaving(true);
 
