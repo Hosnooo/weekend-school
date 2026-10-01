@@ -163,7 +163,7 @@ describe('Admin Teaching Updates contract', () => {
     expect(actions).toContain('/teaching-updates');
   });
 
-  it('supports useful Admin filters without changing source history', () => {
+  it('supports useful Admin source filtering without resurfacing dismissed work', () => {
     const workspacePath =
       'src/features/teaching-updates/admin-teaching-updates-workspace.tsx';
 
@@ -172,14 +172,12 @@ describe('Admin Teaching Updates contract', () => {
 
     const workspace = source(workspacePath);
 
-    expect(workspace).toContain('StatusFilter');
+    expect(workspace).not.toContain('type StatusFilter');
     expect(workspace).toContain('SourceFilter');
     expect(workspace).toContain("'ALL'");
-    expect(workspace).toContain("'OPEN'");
-    expect(workspace).toContain("'SUBMITTED'");
-    expect(workspace).toContain("'DISMISSED'");
     expect(workspace).toContain('value="TEACHER"');
     expect(workspace).toContain('value="ADMIN_REQUEST"');
+    expect(workspace).not.toContain('<option value="DISMISSED">');
   });
 
   it('removes dismissed updates from normal Admin surfaces while treating them as resolved', () => {
