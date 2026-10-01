@@ -1,6 +1,5 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "mkdir -p public; pnpm exec vitest run --configLoader runner tests/unit/class-report-attendance-finalization.test.ts > public/report-test-log.txt 2>&1; echo $? > public/report-test-status.txt; node -e \"const fs=require('fs');fs.writeFileSync('public/report-test-log.b64',fs.readFileSync('public/report-test-log.txt').toString('base64'))\"; pnpm build",
   "git": {
     "deploymentEnabled": {
       "codex/**": false
