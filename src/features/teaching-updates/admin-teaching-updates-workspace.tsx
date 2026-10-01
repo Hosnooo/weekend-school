@@ -23,7 +23,6 @@ import type {
 import {RequestTeachingUpdateDialog} from './request-teaching-update-dialog';
 import {formatTeachingUpdateDate, formatTeachingUpdateRange} from './teaching-update-date';
 
-type StatusFilter = 'ALL' | 'SUBMITTED' | 'DISMISSED';
 type SourceFilter = 'ALL' | AdminTeachingUpdateSource;
 
 function statusVariant(status: AdminTeachingUpdateStatus): BadgeVariant {
@@ -46,7 +45,6 @@ export function AdminTeachingUpdatesWorkspace({
   updates: AdminTeachingUpdate[];
 }) {
   const t = useTranslations('adminTeachingUpdates');
-  const [status, setStatus] = useState<StatusFilter>('ALL');
   const [source, setSource] = useState<SourceFilter>('ALL');
   const [selected, setSelected] = useState<AdminTeachingUpdate | null>(null);
 
@@ -58,11 +56,10 @@ export function AdminTeachingUpdatesWorkspace({
     .filter((item) => item.status === 'OPEN')
     .sort((a, b) => Number(b.source === 'ADMIN_REQUEST') - Number(a.source === 'ADMIN_REQUEST'));
   const historyTeachingUpdates = updates.filter((item) =>
-    item.status !== 'OPEN' &&
-    (status === 'ALL' || item.status === status) &&
+    item.status === 'SUBMITTED' &&
     (source === 'ALL' || item.source === source)
   );
-  const activeRequests = requestSets.filter((item) => item.submittedCount < item.totalCount);
+  const activeRequests = requestSets.filter((item) => item.openCount > 0);
 
   const statusLabel = (value: AdminTeachingUpdateStatus) =>
     value === 'SUBMITTED'
@@ -202,14 +199,6 @@ export function AdminTeachingUpdatesWorkspace({
         <summary>{t('history')}</summary>
         <div className="stack">
           <div className="form-grid">
-            <label>
-              <span>{t('status')}</span>
-              <select value={status} onChange={(event) => setStatus(event.target.value as StatusFilter)}>
-                <option value="ALL">{t('all')}</option>
-                <option value="SUBMITTED">{t('submitted')}</option>
-                <option value="DISMISSED">{t('dismissed')}</option>
-              </select>
-            </label>
             <label>
               <span>{t('source')}</span>
               <select value={source} onChange={(event) => setSource(event.target.value as SourceFilter)}>
