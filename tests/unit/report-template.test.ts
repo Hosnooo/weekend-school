@@ -5,12 +5,12 @@ import {reportTemplateSchema} from '@/features/reports/report-template.schemas';
 import {defaultReportTemplateConfig} from '@/features/reports/report-template.types';
 
 describe('report template configuration', () => {
-  it('provides stable school-wide defaults', () => {
+  it('provides stable school-wide defaults with performance disabled', () => {
     expect(defaultReportTemplateConfig()).toMatchObject({
       id: null,
       name: 'Weekly report',
       mainReportLabelEn: 'Main report',
-      performanceEnabled: true,
+      performanceEnabled: false,
       performanceLabelEn: 'Performance',
       studentCommentsEnabled: true,
       studentCommentLabelEn: 'Additional student comment',
@@ -35,7 +35,7 @@ describe('report template configuration', () => {
     });
   });
 
-  it('normalizes optional bilingual wording while requiring core labels', () => {
+  it('normalizes optional bilingual wording while requiring core label pairs', () => {
     const parsed = reportTemplateSchema.parse({
       name: '  Weekly report  ',
       mainReportLabelEn: '  Weekly learning  ',
@@ -89,6 +89,43 @@ describe('report template configuration', () => {
       emailSignoffEn: '{{school_name}}',
       emailSignoffAr: '{{school_name}}'
     });
+  });
+
+  it('accepts Arabic-only required report labels and email subject', () => {
+    const parsed = reportTemplateSchema.parse({
+      name: 'Arabic report',
+      mainReportLabelEn: '',
+      mainReportLabelAr: 'التقرير الرئيسي',
+      mainReportHelpEn: '',
+      mainReportHelpAr: '',
+      performanceEnabled: false,
+      performanceLabelEn: '',
+      performanceLabelAr: '',
+      studentCommentsEnabled: false,
+      studentCommentLabelEn: '',
+      studentCommentLabelAr: '',
+      studentCommentHelpEn: '',
+      studentCommentHelpAr: '',
+      introEn: '',
+      introAr: '',
+      closingEn: '',
+      closingAr: '',
+      emailSubjectEn: '',
+      emailSubjectAr: 'تقرير الطالب — {{student_name}}',
+      emailGreetingEn: '',
+      emailGreetingAr: 'ولي الأمر الكريم،',
+      emailMessageEn: '',
+      emailMessageAr: '',
+      emailClosingEn: '',
+      emailClosingAr: '',
+      emailSignoffEn: '',
+      emailSignoffAr: '{{school_name}}'
+    });
+
+    expect(parsed.mainReportLabelEn).toBeNull();
+    expect(parsed.mainReportLabelAr).toBe('التقرير الرئيسي');
+    expect(parsed.emailSubjectEn).toBeNull();
+    expect(parsed.emailSubjectAr).toBe('تقرير الطالب — {{student_name}}');
   });
 
   it('reads and saves only the active same-school template', () => {
