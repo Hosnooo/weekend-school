@@ -2,7 +2,6 @@
 
 import {useCallback, useEffect, useState, useTransition} from 'react';
 
-import {getClassReportCycleEmailPreviewAction} from './class-report-preview.actions';
 import {ReportPreviewFrame} from './report-preview-frame';
 
 export type ReportEmailPreview = {
@@ -19,7 +18,8 @@ export function ReportEmailReview({
   initialStudentId,
   initialPreview,
   initialFailed = false,
-  labels
+  labels,
+  loadPreviewAction
 }: {
   batchId: string;
   locale: string;
@@ -34,6 +34,14 @@ export function ReportEmailReview({
     parentEmailTo: string;
     parentEmailSubject: string;
   };
+  loadPreviewAction: (input: {
+    batchId: string;
+    locale: string;
+    studentId: string;
+  }) => Promise<
+    | {ok: true; preview: ReportEmailPreview}
+    | {ok: false}
+  >;
 }) {
   const [selectedStudentId, setSelectedStudentId] = useState(initialStudentId);
   const [preview, setPreview] = useState(initialPreview);
@@ -43,7 +51,7 @@ export function ReportEmailReview({
   const loadPreview = useCallback((studentId: string) => {
     setFailed(false);
     startTransition(async () => {
-      const result = await getClassReportCycleEmailPreviewAction({
+      const result = await loadPreviewAction({
         batchId,
         locale,
         studentId
@@ -56,7 +64,7 @@ export function ReportEmailReview({
 
       setPreview(result.preview);
     });
-  }, [batchId, locale]);
+  }, [batchId, loadPreviewAction, locale]);
 
   useEffect(() => {
     const refresh = () => loadPreview(selectedStudentId);
