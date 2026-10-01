@@ -38,6 +38,13 @@ describe('Report Cycle local panel interactions', () => {
     window.location.hash = '';
   });
 
+  it('renders the local report edit controls', () => {
+    renderEditForm();
+    expect(screen.getByLabelText('English')).toHaveValue('Original');
+    expect(screen.getByRole('button', {name: 'Save & close'})).toBeVisible();
+    expect(screen.getByRole('button', {name: 'Cancel'})).toBeVisible();
+  });
+
   it('saves in the background and closes locally', async () => {
     state.save.mockResolvedValue({ok: true, studentIds: ['student-1']});
     renderEditForm();
