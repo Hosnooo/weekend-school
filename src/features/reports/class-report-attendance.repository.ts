@@ -24,8 +24,8 @@ type AttendanceOverrideRow = {
 
 export type ClassReportReviewStudentWithAttendance =
   ClassReportReviewStudent & {
-    attendanceAttended: number;
-    attendanceTotal: number;
+    attendanceAttended: number | null;
+    attendanceTotal: number | null;
     attendanceOverridden: boolean;
     attendanceUnresolvedConflicts: number;
   };
@@ -138,11 +138,17 @@ export async function getClassReportReviewWorkspaceWithAttendance(
           override?.attendance_attended,
           override?.attendance_total
         );
+        const hasUsableAttendance =
+          effective.overridden || source.total > 0;
 
         return {
           ...student,
-          attendanceAttended: effective.attended,
-          attendanceTotal: effective.total,
+          attendanceAttended: hasUsableAttendance
+            ? effective.attended
+            : null,
+          attendanceTotal: hasUsableAttendance
+            ? effective.total
+            : null,
           attendanceOverridden: effective.overridden,
           attendanceUnresolvedConflicts: effective.unresolvedConflicts
         };
