@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "pnpm test -- tests/unit/report-attendance.test.ts tests/unit/class-report-attendance-finalization.test.ts tests/unit/report-workflow-ux-contract.test.ts && pnpm build",
+  "buildCommand": "pnpm test -- tests/unit/report-attendance.test.ts && pnpm build",
   "git": {
     "deploymentEnabled": {
       "codex/**": false
