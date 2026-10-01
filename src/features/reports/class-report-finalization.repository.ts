@@ -85,7 +85,8 @@ type SnapshotResult = {
 
 async function buildClassReportCycleSnapshots(
   schoolId: string,
-  batchId: string
+  batchId: string,
+  onlyStudentId?: string
 ): Promise<SnapshotResult[]> {
   await ensureClassReportCycleReview(schoolId, batchId);
 
@@ -231,6 +232,7 @@ async function buildClassReportCycleSnapshots(
   const snapshots: SnapshotResult[] = [];
 
   for (const student of students) {
+    if (onlyStudentId && student.id !== onlyStudentId) continue;
     if (!enrolledIds.has(student.id)) continue;
     const sections = [];
 
@@ -428,8 +430,12 @@ export async function getClassReportCycleLivePreview(
   batchId: string,
   studentId: string
 ) {
-  const snapshots = await buildClassReportCycleSnapshots(schoolId, batchId);
-  return snapshots.find((item) => item.studentId === studentId) ?? null;
+  const snapshots = await buildClassReportCycleSnapshots(
+    schoolId,
+    batchId,
+    studentId
+  );
+  return snapshots[0] ?? null;
 }
 
 export async function finalizeClassReportCycleReports(
