@@ -63,13 +63,11 @@ export function ReportTemplateForm({
           <FormField
             htmlFor="main-report-label-en"
             label={t('mainReportLabelEn')}
-            required
           >
             <Input
-              defaultValue={template.mainReportLabelEn}
+              defaultValue={template.mainReportLabelEn ?? ''}
               id="main-report-label-en"
               name="mainReportLabelEn"
-              required
             />
           </FormField>
 
@@ -125,13 +123,11 @@ export function ReportTemplateForm({
             <FormField
               htmlFor="performance-label-en"
               label={t('performanceLabelEn')}
-              required
             >
               <Input
-                defaultValue={template.performanceLabelEn}
+                defaultValue={template.performanceLabelEn ?? ''}
                 id="performance-label-en"
                 name="performanceLabelEn"
-                required
               />
             </FormField>
 
@@ -163,13 +159,11 @@ export function ReportTemplateForm({
             <FormField
               htmlFor="student-comment-label-en"
               label={t('studentCommentLabelEn')}
-              required
             >
               <Input
-                defaultValue={template.studentCommentLabelEn}
+                defaultValue={template.studentCommentLabelEn ?? ''}
                 id="student-comment-label-en"
                 name="studentCommentLabelEn"
-                required
               />
             </FormField>
 
