@@ -1,7 +1,7 @@
 'use client';
 
 import type {FormEvent, ReactNode} from 'react';
-import {useState, useTransition} from 'react';
+import {useRef, useState, useTransition} from 'react';
 
 import {saveClassReportReviewWithAttendanceInlineAction} from './class-report-review.actions';
 
@@ -44,6 +44,7 @@ export function ReportEditForm({
   cancelLabel: string;
   saveErrorLabel: string;
 }) {
+  const formRef = useRef<HTMLFormElement>(null);
   const [error, setError] = useState(false);
   const [pending, startTransition] = useTransition();
 
@@ -74,14 +75,13 @@ export function ReportEditForm({
   }
 
   function cancel() {
-    const form = document.activeElement?.closest('form');
-    if (form instanceof HTMLFormElement) form.reset();
+    formRef.current?.reset();
     setError(false);
     closeEditor();
   }
 
   return (
-    <form className="record-form" onSubmit={submit}>
+    <form className="record-form" onSubmit={submit} ref={formRef}>
       {children}
 
       {error ? (
