@@ -14,11 +14,11 @@ import type {AdminReportContextStatus} from '@/features/reports/admin-report-con
 import {sendAdminReportBatchAction} from '@/features/reports/admin-report-delivery.actions';
 import {
   finalizeAdminReportWorkspaceAction,
-  finalizeClassReportCycleAction,
   reopenAdminReportWorkspaceAction,
   saveAdminReportWorkspaceAction
 } from '@/features/reports/admin-report-workflow.actions';
 import {getAdminReportWorkspace} from '@/features/reports/admin-report-workspace.repository';
+import {ClassReportCycleReview} from '@/features/reports/class-report-cycle-review';
 import {getClassReportCycleWorkspace} from '@/features/reports/report-batch.repository';
 import {ReportCycleSources} from '@/features/reports/report-cycle-sources';
 import {formatTeachingUpdateRange} from '@/features/teaching-updates/teaching-update-date';
@@ -61,6 +61,7 @@ export default async function AdminReportWorkspacePage({
     failed?: string;
     skipped?: string;
     requested?: string;
+    student?: string;
   }>;
 }) {
   const {locale, batchId: rawBatchId} = await params;
@@ -101,9 +102,6 @@ export default async function AdminReportWorkspacePage({
       locale === 'ar' && classCycle.classInfo.nameAr
         ? classCycle.classInfo.nameAr
         : classCycle.classInfo.nameEn;
-    const sentReports = classCycle.reports.filter((report) => report.status === 'SENT').length;
-    const failedReports = classCycle.reports.filter((report) => report.status === 'FAILED').length;
-    const readyReports = classCycle.reports.filter((report) => report.status === 'READY').length;
 
     return (
       <section className="admin-page">
@@ -144,6 +142,12 @@ export default async function AdminReportWorkspacePage({
           </Alert>
         ) : null}
 
+        {query.saved ? (
+          <Alert variant="success">
+            {t('savedMessage')}
+          </Alert>
+        ) : null}
+
         {query.requested ? (
           <Alert variant={Number(query.failed) > 0 ? 'warning' : 'success'}>
             {t('missingUpdateRequested')}
@@ -178,144 +182,12 @@ export default async function AdminReportWorkspacePage({
           status={classCycle.batch.status}
         />
 
-        <section className="detail-section report-cycle-student-reports">
-          <div className="section-heading">
-            <div>
-              <h2>{t('studentReportsStage')}</h2>
-              <p>{t('studentReportsHelp')}</p>
-            </div>
-          </div>
-
-          {classCycle.batch.status !== 'FINALIZED' ? (
-            <form
-              action={finalizeClassReportCycleAction}
-            >
-              <input
-                name="locale"
-                type="hidden"
-                value={locale}
-              />
-              <input
-                name="batchId"
-                type="hidden"
-                value={classCycle.batch.id}
-              />
-              <input
-                name="periodStart"
-                type="hidden"
-                value={classCycle.batch.periodStart}
-              />
-              <input
-                name="periodEnd"
-                type="hidden"
-                value={classCycle.batch.periodEnd}
-              />
-
-              <button
-                className="button button-primary"
-                disabled={
-                  classCycle.sources.filter(
-                    ({included}) => included
-                  ).length === 0
-                }
-                type="submit"
-              >
-                {t('generateStudentReports')}
-              </button>
-            </form>
-          ) : (
-            <>
-              {classCycle.reports.length === 0 ? (
-                <EmptyState
-                  title={t('noGeneratedReports')}
-                />
-              ) : (
-                <div className="stack">
-                  <h3>{t('preview')}</h3>
-                  <div className="report-cycle-report-list">
-                  {classCycle.reports.map((report) => (
-                    <article
-                      className="report-cycle-row"
-                      key={report.id}
-                    >
-                      <div>
-                        <strong className="record-name">
-                          {locale === 'ar' &&
-                          report.studentNameAr
-                            ? report.studentNameAr
-                            : report.studentNameEn}
-                        </strong>
-
-                        <p className="record-meta">
-                          {t(`reportStatus.${report.status}`)}
-                        </p>
-                      </div>
-
-                      <Link
-                        className="button button-secondary action-link"
-                        href={`/reports/${report.id}`}
-                      >
-                        {t('previewReport')}
-                      </Link>
-                    </article>
-                  ))}
-                  </div>
-                </div>
-              )}
-
-              {classCycle.reports.length > 0 ? (
-                <div className="report-cycle-send">
-                <h3>{t('sendStage')}</h3>
-                <form action={sendAdminReportBatchAction}>
-                  <input
-                    name="locale"
-                    type="hidden"
-                    value={locale}
-                  />
-                  <input
-                    name="batchId"
-                    type="hidden"
-                    value={classCycle.batch.id}
-                  />
-                  <input
-                    name="periodStart"
-                    type="hidden"
-                    value={classCycle.batch.periodStart}
-                  />
-                  <input
-                    name="periodEnd"
-                    type="hidden"
-                    value={classCycle.batch.periodEnd}
-                  />
-
-                  <button
-                    className="button button-primary"
-                    type="submit"
-                  >
-                    {t('sendContextReports')}
-                  </button>
-                </form>
-                </div>
-              ) : null}
-
-              {classCycle.reports.length > 0 ? (
-                <section className="report-cycle-delivery">
-                  <h3>{t('deliveryHistory')}</h3>
-                  <p className="record-meta">
-                    {t('cycleDeliverySummary', {
-                      sent: sentReports,
-                      failed: failedReports,
-                      ready: readyReports
-                    })}
-                  </p>
-                  <Link className="button button-secondary action-link" href="/reports/delivery-status">
-                    {t('viewDeliveryStatus')}
-                  </Link>
-                </section>
-              ) : null}
-            </>
-          )}
-        </section>
+        <ClassReportCycleReview
+          classCycle={classCycle}
+          locale={locale}
+          schoolId={profile.schoolId}
+          selectedStudentId={query.student}
+        />
       </section>
     );
   }
