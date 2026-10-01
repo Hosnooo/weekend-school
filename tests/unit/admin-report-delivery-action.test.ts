@@ -30,13 +30,20 @@ describe('admin report delivery action', () => {
     expect(source).not.toContain("eq('guardians.report_language', report.language)");
   });
 
-  it('generates one content-driven report per student instead of one per guardian language', () => {
-    const source = readFileSync(
-      'src/features/reports/report-batch.repository.ts',
+  it('generates one content-driven report per student for Class Report Cycles', () => {
+    const finalizer = readFileSync(
+      'src/features/reports/class-report-finalization.repository.ts',
+      'utf8'
+    );
+    const actions = readFileSync(
+      'src/features/reports/admin-report-workflow.actions.ts',
       'utf8'
     );
 
-    expect(source).toContain("language: 'both'");
-    expect(source).not.toContain('for (const language of languages)');
+    expect(finalizer).toContain("language: 'both'");
+    expect(finalizer).toContain('finalizeClassReportCycleReports');
+    expect(finalizer).not.toContain('guardian.report_language');
+    expect(actions).toContain('finalizeClassReportCycleReports');
+    expect(actions).not.toContain('approveAllSubmittedSources');
   });
 });
