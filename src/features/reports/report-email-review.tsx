@@ -29,6 +29,7 @@ export function ReportEmailReview({
   initialFailed?: boolean;
   labels: {
     emailReview: string;
+    emailBody: string;
     selectStudent: string;
     previewUnavailable: string;
     parentEmailTo: string;
@@ -73,12 +74,14 @@ export function ReportEmailReview({
   }, [loadPreview, selectedStudentId]);
 
   return (
-    <section className="stack report-email-review-panel">
-      <div>
-        <h3>{labels.emailReview}</h3>
+    <section className="detail-section report-email-review-panel">
+      <div className="section-heading">
+        <div>
+          <h2>{labels.emailReview}</h2>
+        </div>
       </div>
 
-      {students.length > 0 ? (
+      <div className="report-email-review-controls">
         <label>
           {labels.selectStudent}
           <select
@@ -97,7 +100,7 @@ export function ReportEmailReview({
             ))}
           </select>
         </label>
-      ) : null}
+      </div>
 
       {failed ? (
         <p className="form-error" role="alert">
@@ -106,22 +109,30 @@ export function ReportEmailReview({
       ) : null}
 
       {preview ? (
-        <section className="stack" aria-busy={pending}>
-          <p className="record-meta">
-            <strong>{labels.parentEmailTo}:</strong>{' '}
-            {preview.recipients.length > 0
-              ? preview.recipients.join(', ')
-              : '—'}
-          </p>
-          <p className="record-meta">
-            <strong>{labels.parentEmailSubject}:</strong>{' '}
-            {preview.subject}
-          </p>
-          <ReportPreviewFrame
-            html={preview.html}
-            title={labels.emailReview}
-          />
-        </section>
+        <div className="report-email-review-content" aria-busy={pending}>
+          <dl className="report-email-review-meta">
+            <div>
+              <dt>{labels.parentEmailTo}</dt>
+              <dd>
+                {preview.recipients.length > 0
+                  ? preview.recipients.join(', ')
+                  : '—'}
+              </dd>
+            </div>
+            <div>
+              <dt>{labels.parentEmailSubject}</dt>
+              <dd>{preview.subject}</dd>
+            </div>
+          </dl>
+
+          <section className="report-email-review-body">
+            <h3>{labels.emailBody}</h3>
+            <ReportPreviewFrame
+              html={preview.html}
+              title={labels.emailReview}
+            />
+          </section>
+        </div>
       ) : null}
     </section>
   );

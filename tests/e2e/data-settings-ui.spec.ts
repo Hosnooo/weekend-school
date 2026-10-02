@@ -42,13 +42,9 @@ for (const item of locales) {
       await page.goto(`/${item.locale}/settings`);
       await expect(page.getByRole('heading', {level: 1, name: item.settingsTitle})).toBeVisible();
       await expect(page.locator('form.settings-form')).toHaveCount(2);
-      const template = page.locator('details.settings-template-disclosure');
-      await expect(template.locator('summary')).toBeVisible({timeout: 5_000});
-      await expect(template.locator('form')).toBeHidden();
-      await expectNoPageOverflow(page);
-      await page.screenshot({path: testInfo.outputPath(`${item.locale}-settings-collapsed-${width}.png`), fullPage: true});
-      await template.locator('summary').click();
-      await expect(template.locator('form')).toBeVisible();
+      await expect(page.locator('.school-settings-section')).toBeVisible({timeout: 5_000});
+      await expect(page.locator('.report-settings-section')).toBeVisible();
+      await expect(page.locator('.email-settings-section')).toBeVisible();
       await expectNoPageOverflow(page);
       await page.screenshot({path: testInfo.outputPath(`${item.locale}-settings-${width}.png`), fullPage: true});
     }

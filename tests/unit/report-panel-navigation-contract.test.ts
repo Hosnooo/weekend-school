@@ -10,11 +10,14 @@ function read(relative: string) {
 }
 
 describe('Report Cycle panel navigation contract', () => {
-  it('opens report editing by hash only instead of changing the route query', () => {
-    const sources = read('src/features/reports/report-cycle-sources.tsx');
+  it('opens report editing by hash only inside the source card', () => {
+    const sourceReview = read(
+      'src/features/reports/report-cycle-source-review.tsx'
+    );
 
-    expect(sources).toContain('href={`#${editorId}`}');
-    expect(sources).not.toContain('?edit=${encodeURIComponent(editorId)}');
+    expect(sourceReview).toContain('href={`#${editorId}`}');
+    expect(sourceReview).toContain('report-source-editor');
+    expect(sourceReview).not.toContain('?edit=${encodeURIComponent(editorId)}');
   });
 
   it('saves and cancels inside the edit panel without redirecting the page', () => {

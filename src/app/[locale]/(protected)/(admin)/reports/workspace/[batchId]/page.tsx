@@ -20,7 +20,6 @@ import {
 import {getAdminReportWorkspace} from '@/features/reports/admin-report-workspace.repository';
 import {ClassReportCycleReview} from '@/features/reports/class-report-cycle-review';
 import {getClassReportCycleWorkspace} from '@/features/reports/report-batch.repository';
-import {ReportCycleSources} from '@/features/reports/report-cycle-sources';
 import {formatTeachingUpdateRange} from '@/features/teaching-updates/teaching-update-date';
 import type {ReportPerformance} from '@/features/reports/report.types';
 import {isLocale} from '@/i18n/config';
@@ -104,7 +103,7 @@ export default async function AdminReportWorkspacePage({
         : classCycle.classInfo.nameEn;
 
     return (
-      <section className="admin-page">
+      <section className="admin-page report-cycle-workspace-page">
         <PageHeader
           actions={
             <div className="row-actions">
@@ -169,18 +168,6 @@ export default async function AdminReportWorkspacePage({
             })}
           </Alert>
         ) : null}
-
-        <ReportCycleSources
-          batchId={classCycle.batch.id}
-          locale={locale}
-          missingContexts={
-            classCycle.missingContexts
-          }
-          periodEnd={classCycle.batch.periodEnd}
-          periodStart={classCycle.batch.periodStart}
-          sources={classCycle.sources}
-          status={classCycle.batch.status}
-        />
 
         <ClassReportCycleReview
           classCycle={classCycle}

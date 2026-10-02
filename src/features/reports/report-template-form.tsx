@@ -32,19 +32,20 @@ export function ReportTemplateForm({
   );
 
   return (
-    <details className="settings-template-disclosure" open={saved}>
-      <summary>{t('title')}</summary>
-      <section className="detail-section report-template-settings">
-      <p className="field-help">{t('description')}</p>
+    <form action={action} className="settings-form report-template-form">
+      <input name="locale" type="hidden" value={locale} />
 
-      <form action={action} className="settings-form">
-        <input name="locale" type="hidden" value={locale} />
+      {saved ? (
+        <p className="form-success" role="status">
+          {t('saved')}
+        </p>
+      ) : null}
 
-        {saved ? (
-          <p className="form-success" role="status">
-            {t('saved')}
-          </p>
-        ) : null}
+      <section className="settings-section-card report-settings-section">
+        <div className="settings-section-heading">
+          <h2>{t('settingsSectionTitle')}</h2>
+          <p>{t('settingsSectionHelp')}</p>
+        </div>
 
         <div className="form-grid">
           <FormField
@@ -109,14 +110,14 @@ export function ReportTemplateForm({
           </FormField>
         </div>
 
-        <div className="subsection">
-          <label>
+        <div className="settings-option-group">
+          <label className="settings-toggle">
             <input
               defaultChecked={template.performanceEnabled}
               name="performanceEnabled"
               type="checkbox"
-            />{' '}
-            {t('performanceEnabled')}
+            />
+            <span>{t('performanceEnabled')}</span>
           </label>
 
           <div className="form-grid">
@@ -145,14 +146,14 @@ export function ReportTemplateForm({
           </div>
         </div>
 
-        <div className="subsection">
-          <label>
+        <div className="settings-option-group">
+          <label className="settings-toggle">
             <input
               defaultChecked={template.studentCommentsEnabled}
               name="studentCommentsEnabled"
               type="checkbox"
-            />{' '}
-            {t('studentCommentsEnabled')}
+            />
+            <span>{t('studentCommentsEnabled')}</span>
           </label>
 
           <div className="form-grid">
@@ -206,48 +207,53 @@ export function ReportTemplateForm({
           </div>
         </div>
 
-        <div className="form-grid">
-          {[
-            ['introEn', 'introEn', template.introEn, false],
-            ['introAr', 'introAr', template.introAr, true],
-            ['closingEn', 'closingEn', template.closingEn, false],
-            ['closingAr', 'closingAr', template.closingAr, true]
-          ].map(([id, key, value, rtl]) => (
-            <FormField
-              htmlFor={`report-template-${id}`}
-              key={String(id)}
-              label={t(String(key))}
-            >
-              <textarea
-                defaultValue={String(value ?? '')}
-                dir={rtl ? 'rtl' : undefined}
-                id={`report-template-${id}`}
-                name={String(id)}
-                rows={3}
-              />
-            </FormField>
-          ))}
+        <div className="settings-option-group">
+          <h3>{t('reportOpeningClosing')}</h3>
+          <div className="form-grid">
+            {[
+              ['introEn', 'introEn', template.introEn, false],
+              ['introAr', 'introAr', template.introAr, true],
+              ['closingEn', 'closingEn', template.closingEn, false],
+              ['closingAr', 'closingAr', template.closingAr, true]
+            ].map(([id, key, value, rtl]) => (
+              <FormField
+                htmlFor={`report-template-${id}`}
+                key={String(id)}
+                label={t(String(key))}
+              >
+                <textarea
+                  defaultValue={String(value ?? '')}
+                  dir={rtl ? 'rtl' : undefined}
+                  id={`report-template-${id}`}
+                  name={String(id)}
+                  rows={3}
+                />
+              </FormField>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="settings-section-card email-settings-section">
+        <div className="settings-section-heading">
+          <h2>{t('emailSectionTitle')}</h2>
+          <p>{t('emailSectionHelp')}</p>
         </div>
 
         <ReportEmailTemplateEditor template={template} />
-
-        <FormFeedback state={state} />
-
-        <div className="form-actions">
-          <Button disabled={pending} type="submit">
-            {pending ? common('saving') : common('save')}
-          </Button>
-
-          <Button
-            disabled={pending}
-            type="reset"
-            variant="secondary"
-          >
-            {common('cancel')}
-          </Button>
-        </div>
-      </form>
       </section>
-    </details>
+
+      <FormFeedback state={state} />
+
+      <div className="form-actions settings-save-bar">
+        <Button disabled={pending} type="submit">
+          {pending ? common('saving') : common('save')}
+        </Button>
+
+        <Button disabled={pending} type="reset" variant="secondary">
+          {common('cancel')}
+        </Button>
+      </div>
+    </form>
   );
 }

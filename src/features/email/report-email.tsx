@@ -159,20 +159,45 @@ function EmailCopy({
 
   if (!greeting && !message && !closing && !signoff) return null;
 
+  const paragraphStyle = {
+    fontSize: '15px',
+    lineHeight: '1.65',
+    margin: '0 0 12px'
+  } as const;
+
   return (
     <Section
       dir={language === 'ar' ? 'rtl' : 'ltr'}
       style={{
+        borderBottom: '1px solid #e5e7eb',
         marginBottom: '24px',
+        paddingBottom: '20px',
         textAlign: language === 'ar' ? 'right' : 'left'
       }}
     >
-      {greeting ? <p>{greeting}</p> : null}
-      {message ? (
-        <p style={{whiteSpace: 'pre-line'}}>{message}</p>
+      {greeting ? (
+        <p style={{...paragraphStyle, fontWeight: 600}}>
+          {greeting}
+        </p>
       ) : null}
-      {closing ? <p>{closing}</p> : null}
-      {signoff ? <p>{signoff}</p> : null}
+
+      {message ? (
+        <p style={{...paragraphStyle, whiteSpace: 'pre-line'}}>
+          {message}
+        </p>
+      ) : null}
+
+      {closing ? (
+        <p style={{...paragraphStyle, marginTop: '20px'}}>
+          {closing}
+        </p>
+      ) : null}
+
+      {signoff ? (
+        <p style={{...paragraphStyle, marginBottom: 0}}>
+          {signoff}
+        </p>
+      ) : null}
     </Section>
   );
 }
@@ -214,9 +239,11 @@ function ReportEmail({
         <Container
           style={{
             backgroundColor: '#ffffff',
+            border: '1px solid #e5e7eb',
+            borderRadius: '10px',
             margin: '0 auto',
-            maxWidth: '768px',
-            padding: '24px'
+            maxWidth: '720px',
+            padding: '32px'
           }}
         >
           {contentDriven ||
