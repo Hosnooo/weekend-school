@@ -35,17 +35,19 @@ export default async function SettingsPage({
         description={t('description')}
       />
 
-      <SchoolSettingsForm
-        locale={locale}
-        settings={settings}
-        saved={query.saved === '1'}
-      />
+      <div className="settings-page-sections">
+        <SchoolSettingsForm
+          locale={locale}
+          settings={settings}
+          saved={query.saved === '1'}
+        />
 
-      <ReportTemplateForm
-        locale={locale}
-        saved={query.templateSaved === '1'}
-        template={reportTemplate}
-      />
+        <ReportTemplateForm
+          locale={locale}
+          saved={query.templateSaved === '1'}
+          template={reportTemplate}
+        />
+      </div>
     </section>
   );
 }
