@@ -48,7 +48,8 @@ export function SchoolSettingsForm({
         </p>
       ) : null}
 
-      <div className="form-grid">
+      <div className="settings-editor-panel">
+        <div className="form-grid">
         <FormField htmlFor="school-name-en" label={t('nameEn')} required>
           <Input
             defaultValue={settings.nameEn}
@@ -98,6 +99,7 @@ export function SchoolSettingsForm({
             <option value="ar">{language('arabic')}</option>
           </SelectField>
         </FormField>
+        </div>
       </div>
 
       <FormFeedback state={state} />

@@ -50,4 +50,20 @@ describe('Report and Settings UI cleanup', () => {
     expect(panel).toContain('report-email-review-meta');
     expect(panel).toContain('report-email-review-body');
   });
+  it('uses the Reports surface hierarchy for Settings editors', () => {
+    const school = read('src/features/school-settings/school-settings-form.tsx');
+    const template = read('src/features/reports/report-template-form.tsx');
+    const editor = read('src/features/reports/report-email-template-editor.tsx');
+    const css = read('src/app/design-system.css');
+
+    expect(school).toContain('settings-editor-panel');
+    expect(template).toContain('settings-editor-panel');
+    expect(editor).toContain('settings-editor-panel email-template-fields');
+    expect(editor).toContain('className="email-token-picker"');
+    expect(editor).not.toContain('className="email-token-actions"');
+    expect(css).toContain('background: var(--surface-subtle)');
+    expect(css).toContain('background: var(--surface)');
+    expect(css).toContain('.settings-option-group:has(.settings-toggle input:not(:checked)) .form-grid');
+  });
+
 });

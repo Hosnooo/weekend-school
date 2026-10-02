@@ -209,7 +209,7 @@ export function ReportEmailTemplateEditor({
     <div className="email-template-editor">
       <p className="field-help">{t('emailFriendlyTokenHelp')}</p>
 
-      <div className="email-template-fields">
+      <div className="settings-editor-panel email-template-fields">
         {fieldPairs.map(({fields}, pairIndex) => (
           <div className="email-template-field-pair" key={pairIndex}>
             <div className="form-grid">
@@ -257,51 +257,51 @@ export function ReportEmailTemplateEditor({
                       />
                     )}
 
-                    <div className="email-token-actions">
-                      <span className="field-help">
-                        {t('emailInsert')}
-                      </span>
+                    <details className="email-token-picker">
+                      <summary>{t('emailInsert')}</summary>
 
-                      <Button
-                        onClick={() =>
-                          insertToken(name, tokens.student)
-                        }
-                        type="button"
-                        variant="secondary"
-                      >
-                        {t('emailTokenStudent')}
-                      </Button>
+                      <div className="email-token-options">
+                        <Button
+                          onClick={() =>
+                            insertToken(name, tokens.student)
+                          }
+                          type="button"
+                          variant="secondary"
+                        >
+                          {t('emailTokenStudent')}
+                        </Button>
 
-                      <Button
-                        onClick={() =>
-                          insertToken(name, tokens.school)
-                        }
-                        type="button"
-                        variant="secondary"
-                      >
-                        {t('emailTokenSchool')}
-                      </Button>
+                        <Button
+                          onClick={() =>
+                            insertToken(name, tokens.school)
+                          }
+                          type="button"
+                          variant="secondary"
+                        >
+                          {t('emailTokenSchool')}
+                        </Button>
 
-                      <Button
-                        onClick={() =>
-                          insertToken(name, tokens.start)
-                        }
-                        type="button"
-                        variant="secondary"
-                      >
-                        {t('emailTokenStart')}
-                      </Button>
+                        <Button
+                          onClick={() =>
+                            insertToken(name, tokens.start)
+                          }
+                          type="button"
+                          variant="secondary"
+                        >
+                          {t('emailTokenStart')}
+                        </Button>
 
-                      <Button
-                        onClick={() =>
-                          insertToken(name, tokens.end)
-                        }
-                        type="button"
-                        variant="secondary"
-                      >
-                        {t('emailTokenEnd')}
-                      </Button>
-                    </div>
+                        <Button
+                          onClick={() =>
+                            insertToken(name, tokens.end)
+                          }
+                          type="button"
+                          variant="secondary"
+                        >
+                          {t('emailTokenEnd')}
+                        </Button>
+                      </div>
+                    </details>
                   </FormField>
                 );
               })}

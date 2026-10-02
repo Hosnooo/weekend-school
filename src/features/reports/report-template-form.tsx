@@ -47,7 +47,8 @@ export function ReportTemplateForm({
           <p>{t('settingsSectionHelp')}</p>
         </div>
 
-        <div className="form-grid">
+        <div className="settings-editor-panel">
+          <div className="form-grid">
           <FormField
             htmlFor="report-template-name"
             label={t('name')}
@@ -108,6 +109,7 @@ export function ReportTemplateForm({
               rows={3}
             />
           </FormField>
+          </div>
         </div>
 
         <div className="settings-option-group">
