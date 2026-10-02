@@ -1,3 +1,7 @@
+.report-cycle-workspace-page .page-header h1 {
+  font-size: clamp(1.25rem, 2vw, 1.5rem);
+}
+
 .report-cycle-sources,
 .report-email-review-panel,
 .report-cycle-send {
