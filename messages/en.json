@@ -124,7 +124,7 @@
   },
   "schoolSettings": {
     "title": "Settings",
-    "description": "Manage your school name, timezone, and default language.",
+    "description": "Manage school defaults, student report settings, and parent email content.",
     "sectionTitle": "School",
     "sectionHelp": "Basic school identity and defaults used across the app.",
     "nameEn": "School name (English)",
