@@ -21,7 +21,7 @@ describe('Class Report Cycle contract', () => {
     'src/features/reports/admin-report-workflow.actions.ts';
 
   const sourcesComponentPath =
-    'src/features/reports/report-cycle-sources.tsx';
+    'src/features/reports/report-cycle-source-review.tsx';
 
   const reportsPagePath =
     'src/app/[locale]/(protected)/(admin)/reports/page.tsx';
@@ -152,22 +152,14 @@ describe('Class Report Cycle contract', () => {
     expect(page.indexOf('report-cycle-active')).toBeLessThan(page.indexOf('report-cycle-create'));
   });
 
-  it('places Sources before the existing student review and delivery workflow', () => {
-    const workspace = source(
-      workspacePagePath
-    );
+  it('keeps Sources and report editing in one Class Report Cycle workspace', () => {
+    const workspace = source(workspacePagePath);
+    const sourceReview = source(sourcesComponentPath);
 
-    expect(workspace).toContain(
-      'ReportCycleSources'
-    );
-
-    expect(workspace).toContain(
-      'finalizeAdminReportWorkspaceAction'
-    );
-
-    expect(workspace).toContain(
-      'sendAdminReportBatchAction'
-    );
+    expect(workspace).toContain('ClassReportCycleReview');
+    expect(workspace).not.toContain('ReportCycleSources');
+    expect(sourceReview).toContain('ReportEditForm');
+    expect(sourceReview).toContain('report-source-editable');
   });
 
   it('exposes source-selection and missing-update actions', () => {
