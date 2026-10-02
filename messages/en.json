@@ -125,6 +125,8 @@
   "schoolSettings": {
     "title": "Settings",
     "description": "Manage your school name, timezone, and default language.",
+    "sectionTitle": "School",
+    "sectionHelp": "Basic school identity and defaults used across the app.",
     "nameEn": "School name (English)",
     "nameAr": "School name (Arabic)",
     "timezone": "Timezone",
@@ -919,6 +921,9 @@
   "reportTemplate": {
     "title": "Weekly report template",
     "description": "Control the wording and optional fields teachers see when completing weekly updates.",
+    "settingsSectionTitle": "Student reports",
+    "settingsSectionHelp": "Choose the report labels, instructions, and optional student fields used when reports are prepared.",
+    "reportOpeningClosing": "Report opening and closing",
     "saved": "Report template saved.",
     "name": "Template name",
     "mainReportLabelEn": "Main report label (English)",
