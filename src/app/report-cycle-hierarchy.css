@@ -1,44 +1,177 @@
 .report-cycle-sources,
-.report-cycle-student-reports {
-  gap: var(--space-6);
+.report-email-review-panel,
+.report-cycle-send {
+  display: grid;
+  gap: var(--space-4);
 }
 
 .report-cycle-sources > .section-heading,
-.report-cycle-student-reports > .section-heading {
-  margin-block-end: var(--space-2);
+.report-email-review-panel > .section-heading {
+  margin-block-end: var(--space-1);
 }
 
 .report-cycle-sources > .section-heading h2,
-.report-cycle-student-reports > .section-heading h2,
-.report-cycle-student-reports > section.stack > div > h3,
-.report-cycle-student-reports > section.stack > h3 {
+.report-email-review-panel > .section-heading h2,
+.report-cycle-send > h2 {
   margin: 0;
-  font-size: 1.25rem;
-  font-weight: 750;
-  line-height: 1.3;
-}
-
-.report-cycle-student-reports > .stack-list > .record-card h3 {
-  margin: 0 0 var(--space-3);
-  font-size: 1.0625rem;
-  font-weight: 650;
+  font-size: 1.125rem;
+  font-weight: 700;
   line-height: 1.35;
 }
 
-.report-cycle-student-reports h4 {
-  margin: 0 0 var(--space-3);
-  font-size: 0.9375rem;
-  font-weight: 650;
-  line-height: 1.35;
-}
-
-.report-cycle-student-reports > section.stack {
+.report-source-context-list {
+  display: grid;
   gap: var(--space-4);
-  padding-block-start: var(--space-5);
+}
+
+.report-source-context {
+  min-inline-size: 0;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.report-source-context-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-4);
+}
+
+.report-source-context-header > div {
+  min-inline-size: 0;
+}
+
+.report-source-context-header .record-meta {
+  margin-block: var(--space-1) 0;
+}
+
+.report-source-submissions {
   border-block-start: 1px solid var(--border-subtle);
 }
 
-.report-cycle-student-reports .record-name {
+.report-source-submissions .report-source-row {
+  padding-inline: var(--space-4);
+}
+
+.report-source-submissions .report-source-row:last-child {
+  border-block-end: 0;
+}
+
+.report-source-editor {
+  padding: var(--space-5) var(--space-4);
+  border-block-start: 1px solid var(--border);
+  background: var(--surface-subtle);
+}
+
+.report-source-editor h4 {
+  margin: 0 0 var(--space-3);
+  font-size: 0.9375rem;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.report-source-editor .record-name {
   font-size: 0.9375rem;
   font-weight: 600;
+}
+
+.report-missing-updates {
+  padding-block-start: var(--space-4);
+  border-block-start: 1px solid var(--border-subtle);
+}
+
+.report-missing-updates h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.report-email-review-controls {
+  inline-size: min(100%, 24rem);
+}
+
+.report-email-review-controls label {
+  display: grid;
+  gap: var(--space-2);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.report-email-review-controls select {
+  inline-size: 100%;
+}
+
+.report-email-review-content {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.report-email-review-meta {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--surface-subtle);
+}
+
+.report-email-review-meta > div {
+  display: grid;
+  grid-template-columns: minmax(5rem, 0.22fr) minmax(0, 1fr);
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+}
+
+.report-email-review-meta > div + div {
+  border-block-start: 1px solid var(--border-subtle);
+}
+
+.report-email-review-meta dt {
+  color: var(--muted);
+  font-size: 0.8125rem;
+  font-weight: 650;
+}
+
+.report-email-review-meta dd {
+  min-inline-size: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 0.875rem;
+}
+
+.report-email-review-body {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.report-email-review-body h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 650;
+}
+
+.report-email-review-body .report-preview {
+  inline-size: 100%;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: white;
+}
+
+@media (max-width: 640px) {
+  .report-source-context-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .report-source-context-header .button {
+    inline-size: 100%;
+  }
+
+  .report-email-review-meta > div {
+    grid-template-columns: 1fr;
+    gap: var(--space-1);
+  }
 }
