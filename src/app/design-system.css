@@ -598,6 +598,7 @@
   display: grid;
   gap: var(--space-5);
   min-inline-size: 0;
+  overflow: hidden;
   padding: var(--space-5);
   background: var(--surface);
   border: 1px solid var(--border-subtle);
@@ -624,11 +625,27 @@
   line-height: 1.5;
 }
 
+.settings-editor-panel,
+.settings-option-group {
+  min-inline-size: 0;
+  padding: var(--space-4);
+  background: var(--surface-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.settings-editor-panel {
+  display: grid;
+  gap: var(--space-4);
+}
+
 .settings-option-group {
   display: grid;
   gap: var(--space-4);
-  padding-block-start: var(--space-4);
-  border-block-start: 1px solid var(--border-subtle);
+}
+
+.settings-option-group:has(.settings-toggle input:not(:checked)) .form-grid {
+  display: none;
 }
 
 .settings-option-group h3 {
@@ -640,6 +657,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  min-block-size: var(--control-height);
   font-weight: 650;
 }
 
@@ -649,15 +667,20 @@
 
 .settings-save-bar {
   margin: 0;
-  padding: var(--space-4) var(--space-5);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  background: var(--surface-subtle);
+  padding: var(--space-4) 0 0;
+  border: 0;
+  border-block-start: 1px solid var(--border-subtle);
+  border-radius: 0;
+  background: transparent;
 }
 
 .email-template-editor {
   display: grid;
   gap: var(--space-5);
+}
+
+.email-template-editor > .field-help {
+  margin: 0;
 }
 
 .email-template-fields {
@@ -675,15 +698,55 @@
   border-block-start: 0;
 }
 
-.email-token-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
+.email-template-field-pair:last-child {
+  padding-block-end: 0;
+}
+
+.email-token-picker {
   margin-block-start: var(--space-2);
 }
 
-.email-token-actions .button {
+.email-token-picker summary {
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0.15rem 0;
+  color: var(--primary);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  list-style: none;
+}
+
+.email-token-picker summary::-webkit-details-marker {
+  display: none;
+}
+
+.email-token-picker summary::after {
+  content: '▾';
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
+.email-token-picker[open] summary::after {
+  transform: rotate(180deg);
+}
+
+.email-token-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-block-start: var(--space-2);
+  padding: var(--space-3);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.email-token-options .button {
   min-block-size: 2.25rem;
   padding-inline: var(--space-3);
 }
@@ -691,8 +754,10 @@
 .email-template-preview-section {
   display: grid;
   gap: var(--space-4);
-  padding-block-start: var(--space-5);
-  border-block-start: 1px solid var(--border);
+  padding: var(--space-4);
+  background: var(--surface-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
 }
 
 .email-template-preview-section h3 {
@@ -708,6 +773,9 @@
 
 .email-template-preview-grid > .record-card {
   padding: var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
 }
 
 .email-template-preview-grid .record-card-main {
@@ -725,15 +793,16 @@
     padding: var(--space-4);
   }
 
+  .settings-editor-panel,
+  .settings-option-group,
+  .email-template-preview-section {
+    padding: var(--space-3);
+  }
+
   .email-template-preview-grid {
     grid-template-columns: 1fr;
   }
-
-  .email-token-actions .button {
-    flex: 1 1 auto;
-  }
 }
-
 
 /* Keep nested Settings grids inside the protected content column. */
 .settings-page-sections,
@@ -742,6 +811,8 @@
 .settings-form > *,
 .settings-section-card,
 .settings-section-card > *,
+.settings-editor-panel,
+.settings-option-group,
 .report-template-form,
 .email-template-editor,
 .email-template-editor > *,
@@ -763,6 +834,7 @@
 .settings-page-sections,
 .settings-form,
 .settings-section-card,
+.settings-editor-panel,
 .report-template-form,
 .email-template-editor,
 .email-template-fields,
