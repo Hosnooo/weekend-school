@@ -2,6 +2,40 @@ import {expect, test, type Page} from '@playwright/test';
 
 import {credentials, login} from './helpers';
 
+
+async function expectEmailPreviewContained(page: Page) {
+  const cards = await page.locator('.email-template-preview-grid > .record-card').evaluateAll((elements) =>
+    elements.map((element) => {
+      const card = element.getBoundingClientRect();
+      const content = element.querySelector('.record-card-main')?.getBoundingClientRect();
+      if (!content) return null;
+      return {
+        inlineStartInset: Math.abs(content.left - card.left),
+        inlineEndInset: Math.abs(card.right - content.right),
+        contentLeft: content.left,
+        contentRight: content.right,
+        cardLeft: card.left,
+        cardRight: card.right
+      };
+    })
+  );
+
+  expect(cards).toHaveLength(2);
+  for (const card of cards) {
+    expect(card).not.toBeNull();
+    expect(card?.contentLeft ?? 0).toBeGreaterThanOrEqual((card?.cardLeft ?? 0) - 1);
+    expect(card?.contentRight ?? 0).toBeLessThanOrEqual((card?.cardRight ?? 0) + 1);
+    expect(card?.inlineStartInset ?? 0).toBeGreaterThanOrEqual(12);
+    expect(card?.inlineEndInset ?? 0).toBeGreaterThanOrEqual(12);
+  }
+}
+
+async function expectSkipLinkHiddenInPrint(page: Page) {
+  await page.emulateMedia({media: 'print'});
+  await expect(page.locator('.skip-link')).toBeHidden();
+  await page.emulateMedia({media: 'screen'});
+}
+
 async function expectNoPageOverflow(page: Page) {
   const overflow = await page.evaluate(() =>
     document.documentElement.scrollWidth - document.documentElement.clientWidth
@@ -45,6 +79,8 @@ for (const item of locales) {
       await expect(page.locator('.school-settings-section')).toBeVisible({timeout: 5_000});
       await expect(page.locator('.report-settings-section')).toBeVisible();
       await expect(page.locator('.email-settings-section')).toBeVisible();
+      await expectEmailPreviewContained(page);
+      await expectSkipLinkHiddenInPrint(page);
       await expectNoPageOverflow(page);
       await page.screenshot({path: testInfo.outputPath(`${item.locale}-settings-${width}.png`), fullPage: true});
     }

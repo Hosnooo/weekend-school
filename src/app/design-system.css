@@ -706,6 +706,10 @@
   gap: var(--space-4);
 }
 
+.email-template-preview-grid > .record-card {
+  padding: var(--space-4);
+}
+
 .email-template-preview-grid .record-card-main {
   display: grid;
   gap: var(--space-3);
