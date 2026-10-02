@@ -103,7 +103,7 @@ export default async function AdminReportWorkspacePage({
         : classCycle.classInfo.nameEn;
 
     return (
-      <section className="admin-page">
+      <section className="admin-page report-cycle-workspace-page">
         <PageHeader
           actions={
             <div className="row-actions">
