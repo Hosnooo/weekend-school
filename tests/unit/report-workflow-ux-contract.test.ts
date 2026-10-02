@@ -47,37 +47,43 @@ describe('Reports workflow UX contract', () => {
     expect(page).not.toContain('prepareReportBatchAction');
   });
 
-  it('keeps Class Report Cycle editing visible and makes Email Review the only preview', () => {
-    const component = read(
+  it('keeps Class Report Cycle editing inside Sources and makes Email Review the only preview', () => {
+    const review = read(
       'src/features/reports/class-report-cycle-review.tsx'
     );
+    const sourceReview = read(
+      'src/features/reports/report-cycle-source-review.tsx'
+    );
+    const emailReview = read(
+      'src/features/reports/report-email-review.tsx'
+    );
 
-    expect(component).toContain('saveClassReportReviewWithAttendanceAction');
-    expect(component).toContain('Customize report text');
-    expect(component).toContain('attendanceAttended:');
-    expect(component).toContain('attendanceTotal:');
-    expect(component).toContain('name="student"');
-    expect(component).toContain('renderReportEmail');
-    expect(component).toContain('renderReportEmailSubject');
-    expect(component).toContain('ReportPreviewFrame');
-    expect(component).toContain('Reopen & edit');
-    expect(component).toContain('finalizeClassReportCycleAction');
-    expect(component).toContain('sendAdminReportBatchAction');
+    expect(sourceReview).toContain('saveClassReportReviewWithAttendanceInlineAction');
+    expect(sourceReview).toContain('Customize report text');
+    expect(sourceReview).toContain('attendanceAttended:');
+    expect(sourceReview).toContain('attendanceTotal:');
+    expect(sourceReview).toContain('report-source-editable');
+    expect(review).toContain('renderReportEmail');
+    expect(review).toContain('renderReportEmailSubject');
+    expect(emailReview).toContain('ReportPreviewFrame');
+    expect(review).toContain('Reopen & edit');
+    expect(review).toContain('finalizeClassReportCycleAction');
+    expect(review).toContain('sendAdminReportBatchAction');
 
-    expect(component).not.toContain('renderStudentReportV2');
-    expect(component).not.toContain('previewReport');
-    expect(component).not.toContain('openReport:');
-    expect(component).not.toContain('Tabs');
+    expect(review).not.toContain('renderStudentReportV2');
+    expect(review).not.toContain('previewReport');
+    expect(review).not.toContain('openReport:');
+    expect(review).not.toContain('Tabs');
   });
 
-  it('replaces View update with an Edit update link into the report editor', () => {
+  it('keeps Edit update on the source card and opens its inline editor', () => {
     const component = read(
-      'src/features/reports/report-cycle-sources.tsx'
+      'src/features/reports/report-cycle-source-review.tsx'
     );
 
     expect(component).toContain('Edit update');
-    expect(component).toContain('href="#report-edit"');
-    expect(component).toContain('id="report-edit"');
+    expect(component).toContain('href={`#${editorId}`}');
+    expect(component).toContain('report-source-editor');
     expect(component).not.toContain('View update');
   });
 
