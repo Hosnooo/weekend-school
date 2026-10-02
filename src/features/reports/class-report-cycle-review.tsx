@@ -1,6 +1,5 @@
 import {getTranslations} from 'next-intl/server';
 
-import {Alert} from '@/components/ui/alert';
 import {EmptyState} from '@/components/ui/empty-state';
 import {sendAdminReportBatchAction} from '@/features/reports/admin-report-delivery.actions';
 import type {Locale} from '@/i18n/config';
@@ -17,64 +16,36 @@ import {
   canReopenClassReportCycle,
   getClassReportPreviewRecipients
 } from './class-report-preview.repository';
-import {saveClassReportReviewWithAttendanceInlineAction} from './class-report-review.actions';
 import {ensureClassReportCycleReview} from './class-report-review.repository';
 import type {ClassReportCycleWorkspace} from './report-batch.repository';
-import {ReportEditForm} from './report-edit-form';
+import {ReportCycleSourceReview} from './report-cycle-source-review';
 import {ReportEmailReview} from './report-email-review';
 import {getReport} from './report.repository';
-import type {ReportPerformance, ReportSnapshotV2} from './report.types';
+import type {ReportSnapshotV2} from './report.types';
 import {
   renderReportEmail,
   renderReportEmailSubject
 } from '@/features/email/report-email';
 
-const performanceValues: ReportPerformance[] = [
-  'EXCELLENT',
-  'GOOD',
-  'DEVELOPING',
-  'NEEDS_SUPPORT'
-];
-
 const copy = {
   en: {
-    customizeReportText: 'Customize report text',
-    customizeReportTextHelp:
-      'Leave blank to use the shared report text for this student.',
     emailReview: 'Email review',
+    emailBody: 'Email body',
     selectStudent: 'Student',
     previewUnavailable:
       'Email preview is unavailable until report issues are resolved.',
     parentEmailTo: 'To',
     parentEmailSubject: 'Subject',
-    attendance: 'Attendance',
-    attended: 'Attended',
-    outOf: 'out of',
-    sessions: 'sessions',
-    attendanceNeedsReview:
-      'Source attendance disagrees. Confirm the attended and total session counts before finalizing.',
-    saveAndClose: 'Save & close',
-    cancel: 'Cancel',
     reopenEdit: 'Reopen & edit'
   },
   ar: {
-    customizeReportText: 'تخصيص نص التقرير',
-    customizeReportTextHelp:
-      'اتركه فارغاً لاستخدام نص التقرير المشترك لهذا الطالب.',
     emailReview: 'مراجعة البريد الإلكتروني',
+    emailBody: 'محتوى البريد',
     selectStudent: 'الطالب',
     previewUnavailable:
       'لا تتوفر معاينة البريد حتى يتم حل مشكلات التقرير.',
     parentEmailTo: 'إلى',
     parentEmailSubject: 'الموضوع',
-    attendance: 'الحضور',
-    attended: 'حضر',
-    outOf: 'من أصل',
-    sessions: 'حصص',
-    attendanceNeedsReview:
-      'توجد اختلافات في بيانات الحضور. يرجى تأكيد عدد الحصص المحضورة وإجمالي الحصص قبل الإنهاء.',
-    saveAndClose: 'حفظ وإغلاق',
-    cancel: 'إلغاء',
     reopenEdit: 'إعادة الفتح والتعديل'
   }
 } as const;
@@ -90,10 +61,7 @@ export async function ClassReportCycleReview({
   classCycle: ClassReportCycleWorkspace;
   selectedStudentId?: string;
 }) {
-  const [t, weekly] = await Promise.all([
-    getTranslations({locale, namespace: 'reports'}),
-    getTranslations({locale, namespace: 'weekly'})
-  ]);
+  const t = await getTranslations({locale, namespace: 'reports'});
   const ui = copy[locale];
 
   if (
@@ -214,266 +182,19 @@ export async function ClassReportCycleReview({
     : null;
 
   return (
-    <section className="detail-section report-cycle-student-reports">
-      {classCycle.batch.status !== 'FINALIZED' ? (
-        <style>{`
-          .report-edit-panel { display: none; }
-          .report-edit-panel:target { display: block; }
-        `}</style>
-      ) : null}
-
-      <div className="section-heading">
-        <div>
-          <h2>{t('studentReportsStage')}</h2>
-          <p>{t('studentReportsHelp')}</p>
-        </div>
-      </div>
-
-      {review.contexts.length === 0 ? (
-        <EmptyState title={t('noCycleSources')} />
-      ) : (
-        <div className="stack-list">
-          {review.contexts.map((context) => {
-            const title = [
-              localize(context.subjectNameEn, context.subjectNameAr),
-              context.groupNameEn || context.groupNameAr
-                ? localize(context.groupNameEn, context.groupNameAr)
-                : null
-            ].filter(Boolean).join(' · ');
-            const editorId = `report-edit-${context.classSubjectId}-${context.subjectGroupId ?? 'whole'}`;
-
-            return (
-              <article
-                className={
-                  classCycle.batch.status === 'FINALIZED'
-                    ? 'record-card'
-                    : 'record-card report-edit-panel'
-                }
-                id={
-                  classCycle.batch.status === 'FINALIZED'
-                    ? undefined
-                    : editorId
-                }
-                key={`${context.classSubjectId}:${context.subjectGroupId ?? 'whole'}`}
-              >
-                <div className="record-card-main stack">
-                  <h3>{title}</h3>
-
-                  {classCycle.batch.status !== 'FINALIZED' ? (
-                    <ReportEditForm
-                      cancelLabel={ui.cancel}
-                      saveAction={saveClassReportReviewWithAttendanceInlineAction}
-                      saveErrorLabel={t('saveError')}
-                      saveLabel={ui.saveAndClose}
-                    >
-                      {sharedHidden}
-                      <input
-                        name="classSubjectId"
-                        type="hidden"
-                        value={context.classSubjectId}
-                      />
-                      <input
-                        name="subjectGroupId"
-                        type="hidden"
-                        value={context.subjectGroupId ?? ''}
-                      />
-
-                      <section>
-                        <div className="form-grid">
-                          <label>
-                            {t('englishField')}
-                            <textarea
-                              defaultValue={context.mainReportEn ?? ''}
-                              dir="ltr"
-                              name="mainReportEn"
-                              rows={6}
-                            />
-                          </label>
-                          <label>
-                            {t('arabicField')}
-                            <textarea
-                              defaultValue={context.mainReportAr ?? ''}
-                              dir="rtl"
-                              name="mainReportAr"
-                              rows={6}
-                            />
-                          </label>
-                        </div>
-                      </section>
-
-                      {review.template.performanceEnabled ? (
-                        <input
-                          name="includePerformance"
-                          type="hidden"
-                          value="1"
-                        />
-                      ) : null}
-                      {review.template.studentCommentsEnabled ? (
-                        <input
-                          name="includeStudentComments"
-                          type="hidden"
-                          value="1"
-                        />
-                      ) : null}
-
-                      <section>
-                        <h4>{weekly('students')}</h4>
-                        <div className="stack-list">
-                          {context.students.map((student) => (
-                            <article
-                              className="record-card"
-                              key={student.studentId}
-                            >
-                              <div className="record-card-main stack">
-                                <strong className="record-name">
-                                  {localize(
-                                    student.studentNameEn,
-                                    student.studentNameAr
-                                  )}
-                                </strong>
-                                <input
-                                  name="studentId"
-                                  type="hidden"
-                                  value={student.studentId}
-                                />
-
-                                <div>
-                                  <strong>{ui.attendance}</strong>
-                                  <div className="row-actions">
-                                    <label>
-                                      {ui.attended}
-                                      <input
-                                        defaultValue={student.attendanceAttended ?? ''}
-                                        min="0"
-                                        name={`attendanceAttended:${student.studentId}`}
-                                        step="1"
-                                        type="number"
-                                      />
-                                    </label>
-                                    <span>{ui.outOf}</span>
-                                    <label>
-                                      {ui.sessions}
-                                      <input
-                                        defaultValue={student.attendanceTotal ?? ''}
-                                        min="0"
-                                        name={`attendanceTotal:${student.studentId}`}
-                                        step="1"
-                                        type="number"
-                                      />
-                                    </label>
-                                  </div>
-                                  {student.attendanceUnresolvedConflicts > 0 ? (
-                                    <Alert variant="warning">
-                                      {ui.attendanceNeedsReview}
-                                    </Alert>
-                                  ) : null}
-                                </div>
-
-                                {review.template.performanceEnabled ? (
-                                  <label>
-                                    {t('performance')}
-                                    <select
-                                      defaultValue={
-                                        student.performanceOverridden
-                                          ? student.performance ?? ''
-                                          : ''
-                                      }
-                                      name={`performance:${student.studentId}`}
-                                    >
-                                      <option value="">
-                                        {weekly('useDefault')}
-                                      </option>
-                                      {performanceValues.map((value) => (
-                                        <option key={value} value={value}>
-                                          {weekly(`performance.${value}`)}
-                                        </option>
-                                      ))}
-                                    </select>
-                                  </label>
-                                ) : null}
-
-                                {review.template.studentCommentsEnabled ? (
-                                  <div className="form-grid">
-                                    <label>
-                                      {t('englishField')}
-                                      <textarea
-                                        defaultValue={student.commentEn ?? ''}
-                                        dir="ltr"
-                                        name={`commentEn:${student.studentId}`}
-                                        rows={2}
-                                      />
-                                    </label>
-                                    <label>
-                                      {t('arabicField')}
-                                      <textarea
-                                        defaultValue={student.commentAr ?? ''}
-                                        dir="rtl"
-                                        name={`commentAr:${student.studentId}`}
-                                        rows={2}
-                                      />
-                                    </label>
-                                  </div>
-                                ) : null}
-
-                                <details>
-                                  <summary>{ui.customizeReportText}</summary>
-                                  <p className="field-help">
-                                    {ui.customizeReportTextHelp}
-                                  </p>
-                                  <div className="form-grid">
-                                    <label>
-                                      {t('englishField')}
-                                      <textarea
-                                        defaultValue={student.progressEn ?? ''}
-                                        dir="ltr"
-                                        name={`progressEn:${student.studentId}`}
-                                        rows={4}
-                                      />
-                                    </label>
-                                    <label>
-                                      {t('arabicField')}
-                                      <textarea
-                                        defaultValue={student.progressAr ?? ''}
-                                        dir="rtl"
-                                        name={`progressAr:${student.studentId}`}
-                                        rows={4}
-                                      />
-                                    </label>
-                                  </div>
-                                </details>
-                              </div>
-                            </article>
-                          ))}
-                        </div>
-                      </section>
-                    </ReportEditForm>
-                  ) : (
-                    <div className="stack">
-                      {context.mainReportEn ? (
-                        <p dir="ltr" style={{whiteSpace: 'pre-wrap'}}>
-                          {context.mainReportEn}
-                        </p>
-                      ) : null}
-                      {context.mainReportAr ? (
-                        <p dir="rtl" style={{whiteSpace: 'pre-wrap'}}>
-                          {context.mainReportAr}
-                        </p>
-                      ) : null}
-                    </div>
-                  )}
-                </div>
-              </article>
-            );
-          })}
-        </div>
-      )}
-
-      <span id="report-edit-closed" />
+    <>
+      <ReportCycleSourceReview
+        classCycle={classCycle}
+        locale={locale}
+        review={review}
+      />
 
       {studentOptions.length === 0 || !selectedStudent ? (
-        <section className="stack report-email-review-panel">
-          <div>
-            <h3>{ui.emailReview}</h3>
+        <section className="detail-section stack report-email-review-panel">
+          <div className="section-heading">
+            <div>
+              <h2>{ui.emailReview}</h2>
+            </div>
           </div>
           <EmptyState title={t('noGeneratedReports')} />
         </section>
@@ -485,6 +206,7 @@ export async function ClassReportCycleReview({
           initialStudentId={selectedStudent.studentId}
           labels={{
             emailReview: ui.emailReview,
+            emailBody: ui.emailBody,
             selectStudent: ui.selectStudent,
             previewUnavailable: ui.previewUnavailable,
             parentEmailTo: ui.parentEmailTo,
@@ -502,8 +224,8 @@ export async function ClassReportCycleReview({
         />
       )}
 
-      <section className="stack">
-        <h3>{t('sendStage')}</h3>
+      <section className="detail-section stack report-cycle-send">
+        <h2>{t('sendStage')}</h2>
 
         {classCycle.batch.status !== 'FINALIZED' ? (
           <form action={finalizeClassReportCycleAction}>
@@ -551,6 +273,6 @@ export async function ClassReportCycleReview({
           </div>
         )}
       </section>
-    </section>
+    </>
   );
 }
