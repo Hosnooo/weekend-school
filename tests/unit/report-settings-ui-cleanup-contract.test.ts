@@ -13,11 +13,15 @@ describe('Report and Settings UI cleanup', () => {
   it('keeps each report editor inside the source surface instead of a separate Student Reports stage', () => {
     const page = read('src/app/[locale]/(protected)/(admin)/reports/workspace/[batchId]/page.tsx');
     const review = read('src/features/reports/class-report-cycle-review.tsx');
+    const sourceReview = read(
+      'src/features/reports/report-cycle-source-review.tsx'
+    );
 
     expect(page).not.toContain('<ReportCycleSources');
-    expect(review).toContain('classCycle.sources.map');
-    expect(review).toContain('report-source-editable');
-    expect(review).toContain('<ReportEditForm');
+    expect(review).toContain('<ReportCycleSourceReview');
+    expect(sourceReview).toContain('classCycle.sources');
+    expect(sourceReview).toContain('report-source-editable');
+    expect(sourceReview).toContain('<ReportEditForm');
     expect(review).not.toContain("t('studentReportsStage')");
   });
 
