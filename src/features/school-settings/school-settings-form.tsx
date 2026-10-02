@@ -32,7 +32,14 @@ export function SchoolSettingsForm({
   );
 
   return (
-    <form action={action} className="settings-form">
+    <form
+      action={action}
+      className="settings-form settings-section-card school-settings-section"
+    >
+      <div className="settings-section-heading">
+        <h2>{t('sectionTitle')}</h2>
+        <p>{t('sectionHelp')}</p>
+      </div>
       <input name="locale" type="hidden" value={locale} />
 
       {saved ? (
