@@ -729,3 +729,54 @@
     flex: 1 1 auto;
   }
 }
+
+
+/* Keep nested Settings grids inside the protected content column. */
+.settings-page-sections,
+.settings-page-sections > *,
+.settings-form,
+.settings-form > *,
+.settings-section-card,
+.settings-section-card > *,
+.report-template-form,
+.email-template-editor,
+.email-template-editor > *,
+.email-template-fields,
+.email-template-field-pair,
+.email-template-field-pair > *,
+.email-template-preview-section,
+.email-template-preview-grid,
+.email-template-preview-grid > *,
+.email-template-preview-grid .record-card,
+.email-template-preview-grid .record-card-main,
+.settings-form .form-grid,
+.settings-form .form-grid > *,
+.settings-form .form-field {
+  min-inline-size: 0;
+  max-inline-size: 100%;
+}
+
+.settings-page-sections,
+.settings-form,
+.settings-section-card,
+.report-template-form,
+.email-template-editor,
+.email-template-fields,
+.email-template-preview-section,
+.email-template-preview-grid {
+  inline-size: 100%;
+}
+
+.settings-form input,
+.settings-form textarea,
+.settings-form select {
+  min-inline-size: 0;
+  max-inline-size: 100%;
+}
+
+.settings-section-heading p,
+.email-template-editor .field-help,
+.email-template-preview-grid p {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
