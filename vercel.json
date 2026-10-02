@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "pnpm vitest run tests/unit/report-settings-ui-cleanup-contract.test.ts && pnpm build",
+  "buildCommand": "pnpm vitest run tests/unit/report-settings-ui-cleanup-contract.test.ts tests/unit/report-editor-collapse-contract.test.ts tests/unit/report-page-typography-contract.test.ts tests/unit/report-panel-navigation-contract.test.ts tests/unit/report-cycle-contract.test.ts tests/unit/report-workflow-ux-contract.test.ts tests/unit/report-email-customization.test.ts tests/unit/email-template.test.tsx tests/unit/settings-canonical-routes.test.tsx tests/unit/report-template-surfaces.test.ts tests/unit/report-live-issues.test.ts --reporter=dot && pnpm build",
   "git": {
     "deploymentEnabled": {
       "codex/**": false
