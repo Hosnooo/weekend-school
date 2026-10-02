@@ -733,3 +733,10 @@ tbody tr:last-child td {
     padding: 0.75rem;
   }
 }
+
+
+@media print {
+  .skip-link {
+    display: none !important;
+  }
+}
