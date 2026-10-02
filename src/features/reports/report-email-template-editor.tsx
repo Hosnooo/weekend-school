@@ -170,130 +170,155 @@ export function ReportEmailTemplateEditor({
     [previewTemplate]
   );
 
-  const fields: Array<{
-    name: EmailFieldName;
-    rows?: number;
+  const fieldPairs: Array<{
+    fields: Array<{name: EmailFieldName; rows?: number}>;
   }> = [
-    {name: 'emailSubjectEn'},
-    {name: 'emailSubjectAr'},
-    {name: 'emailGreetingEn', rows: 2},
-    {name: 'emailGreetingAr', rows: 2},
-    {name: 'emailMessageEn', rows: 4},
-    {name: 'emailMessageAr', rows: 4},
-    {name: 'emailClosingEn', rows: 2},
-    {name: 'emailClosingAr', rows: 2},
-    {name: 'emailSignoffEn', rows: 2},
-    {name: 'emailSignoffAr', rows: 2}
+    {
+      fields: [
+        {name: 'emailSubjectEn'},
+        {name: 'emailSubjectAr'}
+      ]
+    },
+    {
+      fields: [
+        {name: 'emailGreetingEn', rows: 2},
+        {name: 'emailGreetingAr', rows: 2}
+      ]
+    },
+    {
+      fields: [
+        {name: 'emailMessageEn', rows: 4},
+        {name: 'emailMessageAr', rows: 4}
+      ]
+    },
+    {
+      fields: [
+        {name: 'emailClosingEn', rows: 2},
+        {name: 'emailClosingAr', rows: 2}
+      ]
+    },
+    {
+      fields: [
+        {name: 'emailSignoffEn', rows: 2},
+        {name: 'emailSignoffAr', rows: 2}
+      ]
+    }
   ];
 
   return (
-    <>
-      <div className="subsection">
-        <h3>{t('emailSectionTitle')}</h3>
-        <p className="field-help">{t('emailSectionHelp')}</p>
-        <p className="field-help">{t('emailFriendlyTokenHelp')}</p>
+    <div className="email-template-editor">
+      <p className="field-help">{t('emailFriendlyTokenHelp')}</p>
 
-        <div className="form-grid">
-          {fields.map(({name, rows}) => {
-            const language = languageForField(name);
-            const tokens = emailTemplateDisplayTokens(language);
-            const dir = language === 'ar' ? 'rtl' : undefined;
-            const id = `report-template-${name}-display`;
+      <div className="email-template-fields">
+        {fieldPairs.map(({fields}, pairIndex) => (
+          <div className="email-template-field-pair" key={pairIndex}>
+            <div className="form-grid">
+              {fields.map(({name, rows}) => {
+                const language = languageForField(name);
+                const tokens = emailTemplateDisplayTokens(language);
+                const dir = language === 'ar' ? 'rtl' : undefined;
+                const id = `report-template-${name}-display`;
 
-            return (
-              <FormField
-                htmlFor={id}
-                key={name}
-                label={t(name)}
-              >
-                <input
-                  name={name}
-                  type="hidden"
-                  value={toStoredEmailTemplateValue(
-                    values[name],
-                    language
-                  ) ?? ''}
-                />
-
-                {rows ? (
-                  <textarea
-                    dir={dir}
-                    id={id}
-                    onChange={(event) =>
-                      update(name, event.target.value)
-                    }
-                    rows={rows}
-                    value={values[name]}
-                  />
-                ) : (
-                  <Input
-                    dir={dir}
-                    id={id}
-                    onChange={(event) =>
-                      update(name, event.target.value)
-                    }
-                    value={values[name]}
-                  />
-                )}
-
-                <div className="form-actions">
-                  <span className="field-help">
-                    {t('emailInsert')}
-                  </span>
-
-                  <Button
-                    onClick={() =>
-                      insertToken(name, tokens.student)
-                    }
-                    type="button"
-                    variant="secondary"
+                return (
+                  <FormField
+                    htmlFor={id}
+                    key={name}
+                    label={t(name)}
                   >
-                    {t('emailTokenStudent')}
-                  </Button>
+                    <input
+                      name={name}
+                      type="hidden"
+                      value={
+                        toStoredEmailTemplateValue(
+                          values[name],
+                          language
+                        ) ?? ''
+                      }
+                    />
 
-                  <Button
-                    onClick={() =>
-                      insertToken(name, tokens.school)
-                    }
-                    type="button"
-                    variant="secondary"
-                  >
-                    {t('emailTokenSchool')}
-                  </Button>
+                    {rows ? (
+                      <textarea
+                        dir={dir}
+                        id={id}
+                        onChange={(event) =>
+                          update(name, event.target.value)
+                        }
+                        rows={rows}
+                        value={values[name]}
+                      />
+                    ) : (
+                      <Input
+                        dir={dir}
+                        id={id}
+                        onChange={(event) =>
+                          update(name, event.target.value)
+                        }
+                        value={values[name]}
+                      />
+                    )}
 
-                  <Button
-                    onClick={() =>
-                      insertToken(name, tokens.start)
-                    }
-                    type="button"
-                    variant="secondary"
-                  >
-                    {t('emailTokenStart')}
-                  </Button>
+                    <div className="email-token-actions">
+                      <span className="field-help">
+                        {t('emailInsert')}
+                      </span>
 
-                  <Button
-                    onClick={() =>
-                      insertToken(name, tokens.end)
-                    }
-                    type="button"
-                    variant="secondary"
-                  >
-                    {t('emailTokenEnd')}
-                  </Button>
-                </div>
-              </FormField>
-            );
-          })}
-        </div>
+                      <Button
+                        onClick={() =>
+                          insertToken(name, tokens.student)
+                        }
+                        type="button"
+                        variant="secondary"
+                      >
+                        {t('emailTokenStudent')}
+                      </Button>
+
+                      <Button
+                        onClick={() =>
+                          insertToken(name, tokens.school)
+                        }
+                        type="button"
+                        variant="secondary"
+                      >
+                        {t('emailTokenSchool')}
+                      </Button>
+
+                      <Button
+                        onClick={() =>
+                          insertToken(name, tokens.start)
+                        }
+                        type="button"
+                        variant="secondary"
+                      >
+                        {t('emailTokenStart')}
+                      </Button>
+
+                      <Button
+                        onClick={() =>
+                          insertToken(name, tokens.end)
+                        }
+                        type="button"
+                        variant="secondary"
+                      >
+                        {t('emailTokenEnd')}
+                      </Button>
+                    </div>
+                  </FormField>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </div>
 
-      <div className="subsection">
-        <h3>{t('emailPreviewTitle')}</h3>
-        <p className="field-help">
-          {t('emailLivePreviewHelp')}
-        </p>
+      <section className="email-template-preview-section">
+        <div>
+          <h3>{t('emailPreviewTitle')}</h3>
+          <p className="field-help">
+            {t('emailLivePreviewHelp')}
+          </p>
+        </div>
 
-        <div className="form-grid">
+        <div className="email-template-preview-grid">
           <article className="record-card">
             <div className="record-card-main">
               <h4>{t('emailPreviewEnglish')}</h4>
@@ -352,7 +377,7 @@ export function ReportEmailTemplateEditor({
             </div>
           </article>
         </div>
-      </div>
-    </>
+      </section>
+    </div>
   );
 }
