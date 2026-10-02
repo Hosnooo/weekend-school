@@ -10,19 +10,21 @@ function read(relative: string) {
 }
 
 describe('Class Report Cycle editor disclosure', () => {
-  it('opens one report editor from Edit update and closes after save or cancel', () => {
-    const sources = read('src/features/reports/report-cycle-sources.tsx');
-    const review = read('src/features/reports/class-report-cycle-review.tsx');
+  it('opens the matching source-card editor and closes after save or cancel', () => {
+    const sourceReview = read(
+      'src/features/reports/report-cycle-source-review.tsx'
+    );
+    const form = read('src/features/reports/report-edit-form.tsx');
 
-    expect(sources).toContain('const editorId =');
-    expect(sources).toContain('?edit=${encodeURIComponent(editorId)}#${editorId}');
-    expect(sources).not.toContain('href="#report-edit"');
+    expect(sourceReview).toContain('const editorId =');
+    expect(sourceReview).toContain('href={`#${editorId}`}');
+    expect(sourceReview).toContain('report-source-editable');
+    expect(sourceReview).toContain('report-edit-panel report-source-editor');
+    expect(sourceReview).toContain('Save & close');
+    expect(sourceReview).toContain('Cancel');
 
-    expect(review).toContain('report-edit-panel');
-    expect(review).toContain('.report-edit-panel:target');
-    expect(review).toContain('Save & close');
-    expect(review).toContain('Cancel');
-    expect(review).toContain('href="?cancel=1#report-edit-closed"');
-    expect(review).not.toContain('rebuildClassReportReviewContextAction');
+    expect(form).toContain("window.location.hash = 'report-edit-closed'");
+    expect(form).toContain('formRef.current?.reset()');
+    expect(sourceReview).not.toContain('rebuildClassReportReviewContextAction');
   });
 });
