@@ -3,7 +3,8 @@
   "buildCommand": "pnpm vitest run tests/unit/report-settings-ui-cleanup-contract.test.ts && pnpm build",
   "git": {
     "deploymentEnabled": {
-      "codex/**": false
+      "codex/**": false,
+      "fix/report-settings-ui-cleanup": false
     }
   }
 }
