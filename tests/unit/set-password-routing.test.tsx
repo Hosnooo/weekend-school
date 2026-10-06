@@ -7,7 +7,9 @@ const state = vi.hoisted(() => ({
   isAdmin: true,
   teacherIds: [] as string[],
   replace: vi.fn(),
-  refresh: vi.fn()
+  refresh: vi.fn(),
+  onAuthStateChange: vi.fn(),
+  getSession: vi.fn()
 }));
 
 vi.mock('next/navigation', () => ({
@@ -21,8 +23,8 @@ vi.mock('next-intl', () => ({
 vi.mock('@/lib/supabase/browser', () => ({
   createBrowserSupabaseClient: () => ({
     auth: {
-      onAuthStateChange: () => ({data: {subscription: {unsubscribe() {}}}}),
-      getSession: async () => ({data: {session: {user: {id: 'auth-user'}}}}),
+      onAuthStateChange: state.onAuthStateChange,
+      getSession: state.getSession,
       updateUser: async () => ({error: null}),
       getUser: async () => ({data: {user: {id: 'auth-user'}}, error: null})
     },
@@ -55,6 +57,28 @@ describe('password setup routing', () => {
     state.teacherIds = [];
     state.replace.mockClear();
     state.refresh.mockClear();
+    state.onAuthStateChange.mockReset();
+    state.getSession.mockReset();
+    state.onAuthStateChange.mockImplementation((callback: (_event: string, session: unknown) => void) => {
+      callback('INITIAL_SESSION', {user: {id: 'auth-user'}});
+      return {data: {subscription: {unsubscribe() {}}}};
+    });
+    state.getSession.mockResolvedValue({data: {session: {user: {id: 'auth-user'}}}});
+    window.history.replaceState({}, '', '/en/set-password');
+  });
+
+  it('rejects an expired recovery link before an existing session can enable the form', async () => {
+    window.history.replaceState(
+      {},
+      '',
+      '/en/set-password#error=access_denied&error_code=otp_expired'
+    );
+
+    render(<SetPasswordForm locale="en" />);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('invalidInvitation');
+    expect(state.onAuthStateChange).not.toHaveBeenCalled();
+    expect(state.getSession).not.toHaveBeenCalled();
   });
 
   it('sends an administrator to the dashboard after setting a password', async () => {
