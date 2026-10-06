@@ -7,7 +7,8 @@ const state = vi.hoisted(() => ({
   isAdmin: true,
   teacherIds: [] as string[],
   replace: vi.fn(),
-  refresh: vi.fn()
+  refresh: vi.fn(),
+  getSession: vi.fn()
 }));
 
 vi.mock('next/navigation', () => ({
@@ -22,7 +23,7 @@ vi.mock('@/lib/supabase/browser', () => ({
   createBrowserSupabaseClient: () => ({
     auth: {
       onAuthStateChange: () => ({data: {subscription: {unsubscribe() {}}}}),
-      getSession: async () => ({data: {session: {user: {id: 'auth-user'}}}}),
+      getSession: state.getSession,
       updateUser: async () => ({error: null}),
       getUser: async () => ({data: {user: {id: 'auth-user'}}, error: null})
     },
@@ -55,6 +56,22 @@ describe('password setup routing', () => {
     state.teacherIds = [];
     state.replace.mockClear();
     state.refresh.mockClear();
+    state.getSession.mockReset();
+    state.getSession.mockResolvedValue({data: {session: {user: {id: 'auth-user'}}}, error: null});
+    window.history.replaceState({}, '', '/en/set-password');
+  });
+
+  it('rejects an expired recovery link even when the browser already has a session', async () => {
+    window.history.replaceState(
+      {},
+      '',
+      '/en/set-password#error=access_denied&error_code=otp_expired'
+    );
+
+    render(<SetPasswordForm locale="en" />);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('invalidInvitation');
+    expect(state.getSession).not.toHaveBeenCalled();
   });
 
   it('sends an administrator to the dashboard after setting a password', async () => {
