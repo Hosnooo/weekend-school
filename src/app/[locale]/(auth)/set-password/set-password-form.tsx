@@ -20,11 +20,25 @@ export function SetPasswordForm({locale}: {locale: Locale}) {
   const db = useMemo(() => createBrowserSupabaseClient(), []);
   const [ready, setReady] = useState(false);
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState<'invalid' | 'password' | null>(null);
+  const [error, setError] = useState<'invalid' | 'password' | 'samePassword' | null>(null);
 
   useEffect(() => {
     let active = true;
     let invalidTimer: ReturnType<typeof setTimeout> | undefined;
+    const code = new URLSearchParams(window.location.search).get('code');
+    const hash = new URLSearchParams(window.location.hash.slice(1));
+    const linkError = hash.get('error') || hash.get('error_code');
+    const accessToken = hash.get('access_token');
+    const refreshToken = hash.get('refresh_token');
+
+    if (linkError) {
+      setReady(false);
+      setError('invalid');
+      return () => {
+        active = false;
+      };
+    }
+
     const accept = (hasSession: boolean) => {
       if (!active) return;
       if (hasSession) {
@@ -41,10 +55,6 @@ export function SetPasswordForm({locale}: {locale: Locale}) {
     const {
       data: {subscription}
     } = db.auth.onAuthStateChange((_event, session) => accept(Boolean(session)));
-    const code = new URLSearchParams(window.location.search).get('code');
-    const hash = new URLSearchParams(window.location.hash.slice(1));
-    const accessToken = hash.get('access_token');
-    const refreshToken = hash.get('refresh_token');
     const establish = code
       ? db.auth.exchangeCodeForSession(code)
       : accessToken && refreshToken
@@ -75,7 +85,7 @@ export function SetPasswordForm({locale}: {locale: Locale}) {
     setError(null);
     const {error: updateError} = await db.auth.updateUser({password: parsed.data});
     if (updateError) {
-      setError('password');
+      setError(updateError.code === 'same_password' ? 'samePassword' : 'password');
       setPending(false);
       return;
     }
@@ -150,6 +160,11 @@ export function SetPasswordForm({locale}: {locale: Locale}) {
       {error === 'password' ? (
         <p className="form-error" role="alert">
           {t('passwordUpdateError')}
+        </p>
+      ) : null}
+      {error === 'samePassword' ? (
+        <p className="form-error" role="alert">
+          {t('passwordMustBeDifferent')}
         </p>
       ) : null}
       <Button disabled={!ready || pending} type="submit">
