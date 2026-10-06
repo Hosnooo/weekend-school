@@ -202,6 +202,14 @@ describe('Class Report Cycle contract', () => {
     expect(repository).toContain("['DRAFT', 'REVIEW']");
   });
 
+  it('shows only actual historical report batches in the historical section', () => {
+    const page = source(reportsPagePath);
+
+    expect(page).toContain('historicalContexts');
+    expect(page).toContain('Boolean(batchId)');
+    expect(page).toContain('historicalContexts.map');
+  });
+
   it('keeps historical Subject and Group report support in the reporting engine', () => {
     const repository = source(repositoryPath);
 
