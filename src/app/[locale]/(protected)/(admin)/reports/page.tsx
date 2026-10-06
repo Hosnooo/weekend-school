@@ -149,11 +149,17 @@ export default async function ReportsPage({
         title={t('title')}
       />
 
-      {query.cancelled ? (
-        <p className="form-success">{t('cycleCancelled')}</p>
-      ) : null}
-
       <section className="report-cycle-active detail-section">
+        {query.cancelled ? (
+          <p className="form-success">{t('cycleCancelled')}</p>
+        ) : null}
+        {query.error ? (
+          <p className="form-error">
+            {query.error === 'validation'
+              ? t('validation')
+              : t('saveError')}
+          </p>
+        ) : null}
         <div className="section-heading">
           <div>
             <h2>{t('reportCyclesTitle')}</h2>
@@ -289,14 +295,6 @@ export default async function ReportsPage({
           </button>
         </form>
       </details>
-
-      {query.error ? (
-        <p className="form-error">
-          {query.error === 'validation'
-            ? t('validation')
-            : t('saveError')}
-        </p>
-      ) : null}
 
       <details className="report-cycle-history">
         <summary>{t('historicalReportsTitle')}</summary>

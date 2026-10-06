@@ -1043,12 +1043,12 @@ export async function deleteClassReportCycle(
     throw new Error('Finalized Report Cycles cannot be deleted');
   }
 
-  const {error} = await db
-    .from('report_batches')
-    .delete()
-    .eq('school_id', schoolId)
-    .eq('id', batchId)
-    .in('status', ['DRAFT', 'REVIEW']);
+  const {error} = await db.rpc(
+    'cancel_class_report_cycle',
+    {
+      p_batch_id: batchId
+    }
+  );
 
   if (error) throw error;
 }
