@@ -197,9 +197,19 @@ describe('Class Report Cycle contract', () => {
   it('deletes only unfinished Class Report Cycles', () => {
     const repository = source(repositoryPath);
 
-    expect(repository).toContain(".delete()");
+    expect(repository).toContain("'cancel_class_report_cycle'");
     expect(repository).toContain("'FINALIZED'");
-    expect(repository).toContain("['DRAFT', 'REVIEW']");
+  });
+
+  it('places report cycle feedback next to the cycle list', () => {
+    const page = source(reportsPagePath);
+
+    expect(page.indexOf("query.error")).toBeLessThan(
+      page.indexOf('report-cycle-create')
+    );
+    expect(page.indexOf("query.cancelled")).toBeLessThan(
+      page.indexOf('report-cycle-create')
+    );
   });
 
   it('shows only actual historical report batches in the historical section', () => {
