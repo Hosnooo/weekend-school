@@ -31,6 +31,7 @@ export function ReportEmailReview({
     emailReview: string;
     emailBody: string;
     selectStudent: string;
+    selectStudentPlaceholder: string;
     previewUnavailable: string;
     parentEmailTo: string;
     parentEmailSubject: string;
@@ -68,7 +69,9 @@ export function ReportEmailReview({
   }, [batchId, loadPreviewAction, locale]);
 
   useEffect(() => {
-    const refresh = () => loadPreview(selectedStudentId);
+    const refresh = () => {
+      if (selectedStudentId) loadPreview(selectedStudentId);
+    };
     window.addEventListener('report-cycle:saved', refresh);
     return () => window.removeEventListener('report-cycle:saved', refresh);
   }, [loadPreview, selectedStudentId]);
@@ -89,10 +92,13 @@ export function ReportEmailReview({
             onChange={(event) => {
               const studentId = event.target.value;
               setSelectedStudentId(studentId);
-              loadPreview(studentId);
+              setPreview(null);
+              setFailed(false);
+              if (studentId) loadPreview(studentId);
             }}
             value={selectedStudentId}
           >
+            <option value="">{labels.selectStudentPlaceholder}</option>
             {students.map((student) => (
               <option key={student.studentId} value={student.studentId}>
                 {student.studentName}
