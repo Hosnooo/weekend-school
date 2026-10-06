@@ -103,6 +103,10 @@ export default async function ReportsPage({
     ({isActive}) => isActive
   );
 
+  const historicalContexts = contexts.filter(
+    ({batchId}) => Boolean(batchId)
+  );
+
   const localize = (
     en: string | null | undefined,
     ar: string | null | undefined,
@@ -335,7 +339,7 @@ export default async function ReportsPage({
 
       <section className="detail-section">
 
-        {contexts.length === 0 ? (
+        {historicalContexts.length === 0 ? (
           <EmptyState title={t('noContexts')} />
         ) : (
           <div className="table-wrap">
@@ -350,7 +354,7 @@ export default async function ReportsPage({
               </thead>
 
               <tbody>
-                {contexts.map((context) => {
+                {historicalContexts.map((context) => {
                   const groupName = context.groupNameEn
                     ? localize(
                         context.groupNameEn,
