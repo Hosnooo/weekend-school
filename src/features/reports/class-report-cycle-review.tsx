@@ -32,6 +32,7 @@ const copy = {
     emailReview: 'Email review',
     emailBody: 'Email body',
     selectStudent: 'Student',
+    selectStudentPlaceholder: 'Select a student',
     previewUnavailable:
       'Email preview is unavailable until report issues are resolved.',
     parentEmailTo: 'To',
@@ -42,6 +43,7 @@ const copy = {
     emailReview: 'مراجعة البريد الإلكتروني',
     emailBody: 'محتوى البريد',
     selectStudent: 'الطالب',
+    selectStudentPlaceholder: 'اختر طالبًا',
     previewUnavailable:
       'لا تتوفر معاينة البريد حتى يتم حل مشكلات التقرير.',
     parentEmailTo: 'إلى',
@@ -96,7 +98,7 @@ export async function ClassReportCycleReview({
   const selectedStudent =
     studentOptions.find(({studentId}) =>
       studentId === selectedStudentId
-    ) ?? studentOptions[0] ?? null;
+    ) ?? null;
 
   let snapshot: ReportSnapshotV2 | null = null;
   let previewError = false;
@@ -189,7 +191,7 @@ export async function ClassReportCycleReview({
         review={review}
       />
 
-      {studentOptions.length === 0 || !selectedStudent ? (
+      {studentOptions.length === 0 ? (
         <section className="detail-section stack report-email-review-panel">
           <div className="section-heading">
             <div>
@@ -203,11 +205,12 @@ export async function ClassReportCycleReview({
           batchId={classCycle.batch.id}
           initialFailed={previewError}
           initialPreview={initialPreview}
-          initialStudentId={selectedStudent.studentId}
+          initialStudentId={selectedStudent?.studentId ?? ''}
           labels={{
             emailReview: ui.emailReview,
             emailBody: ui.emailBody,
             selectStudent: ui.selectStudent,
+            selectStudentPlaceholder: ui.selectStudentPlaceholder,
             previewUnavailable: ui.previewUnavailable,
             parentEmailTo: ui.parentEmailTo,
             parentEmailSubject: ui.parentEmailSubject
