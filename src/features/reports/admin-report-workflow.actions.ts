@@ -12,6 +12,7 @@ import {databaseUuid} from '@/lib/validation/fields';
 
 import {
   createClassReportCycle,
+  deleteClassReportCycle,
   finalizeReportBatch,
   getReportBatchWorkspace,
   reviewReportBatch
