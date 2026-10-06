@@ -8,11 +8,13 @@ import {
   type BadgeVariant
 } from '@/components/ui/badge';
 import {Card} from '@/components/ui/card';
+import {ConfirmSubmitButton} from '@/components/ui/confirm-submit-button';
 import {EmptyState} from '@/components/ui/empty-state';
 import {PageHeader} from '@/components/ui/page-header';
 import type {AdminReportContextStatus} from '@/features/reports/admin-report-contexts';
 import {sendAdminReportBatchAction} from '@/features/reports/admin-report-delivery.actions';
 import {
+  cancelClassReportCycleAction,
   finalizeAdminReportWorkspaceAction,
   reopenAdminReportWorkspaceAction,
   saveAdminReportWorkspaceAction
@@ -113,6 +115,19 @@ export default async function AdminReportWorkspacePage({
               >
                 {t('title')}
               </Link>
+              {classCycle.batch.status !== 'FINALIZED' ? (
+                <form action={cancelClassReportCycleAction}>
+                  <input name="locale" type="hidden" value={locale} />
+                  <input name="batchId" type="hidden" value={classCycle.batch.id} />
+                  <ConfirmSubmitButton
+                    className="button button-danger"
+                    confirmMessage={t('cancelCycleConfirm')}
+                    type="submit"
+                  >
+                    {t('cancelCycle')}
+                  </ConfirmSubmitButton>
+                </form>
+              ) : null}
             </div>
           }
           description={formatTeachingUpdateRange(classCycle.batch.periodStart, classCycle.batch.periodEnd, locale)}
