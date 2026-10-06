@@ -1022,6 +1022,37 @@ export async function createClassReportCycle(
   return data as string;
 }
 
+export async function deleteClassReportCycle(
+  schoolId: string,
+  batchId: string
+) {
+  const db = await createServerSupabaseClient();
+
+  const {data: batch, error: lookupError} = await db
+    .from('report_batches')
+    .select('id,status,scope_type')
+    .eq('school_id', schoolId)
+    .eq('id', batchId)
+    .maybeSingle();
+
+  if (lookupError) throw lookupError;
+  if (!batch || batch.scope_type !== 'CLASS') {
+    throw new Error('Report Cycle not found');
+  }
+  if (batch.status === 'FINALIZED') {
+    throw new Error('Finalized Report Cycles cannot be deleted');
+  }
+
+  const {error} = await db
+    .from('report_batches')
+    .delete()
+    .eq('school_id', schoolId)
+    .eq('id', batchId)
+    .in('status', ['DRAFT', 'REVIEW']);
+
+  if (error) throw error;
+}
+
 export async function listClassReportCycles(
   schoolId: string
 ): Promise<ClassReportCycleListItem[]> {
