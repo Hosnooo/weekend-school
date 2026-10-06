@@ -12,6 +12,7 @@ import {databaseUuid} from '@/lib/validation/fields';
 
 import {
   createClassReportCycle,
+  deleteClassReportCycle,
   finalizeReportBatch,
   getReportBatchWorkspace,
   reviewReportBatch
@@ -495,6 +496,28 @@ export async function reopenAdminReportWorkspaceAction(
       batchId.data
     )
   );
+}
+
+export async function cancelClassReportCycleAction(
+  formData: FormData
+) {
+  const locale = localeFrom(formData);
+  const profile = await requireProfile(locale, 'ADMIN');
+  const batchId = batchIdFrom(formData);
+
+  if (!batchId.success) {
+    redirect(`/${locale}/reports?error=validation`);
+  }
+
+  try {
+    await deleteClassReportCycle(profile.schoolId, batchId.data);
+  } catch (error) {
+    console.error('Unable to cancel Report Cycle', {error});
+    redirect(`/${locale}/reports?error=save`);
+  }
+
+  revalidatePath(`/${locale}/reports`);
+  redirect(`/${locale}/reports?cancelled=1`);
 }
 
 export async function createClassReportCycleAction(

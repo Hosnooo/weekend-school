@@ -740,6 +740,9 @@
     "reportCyclesHelp": "Review sources, generate student reports, preview them, and send them to guardians.",
     "noReportCycles": "No Report Cycles have been created yet.",
     "openCycle": "Open cycle",
+    "cancelCycle": "Cancel cycle",
+    "cancelCycleConfirm": "Cancel this Report Cycle? Its unfinished review data will be deleted. This cannot be undone.",
+    "cycleCancelled": "Report Cycle cancelled.",
     "historicalReportsTitle": "Historical Subject and Group reports",
     "historicalReportsHelp": "Older Subject- and Group-scoped reporting remains available here for historical records."
   },

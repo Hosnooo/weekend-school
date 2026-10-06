@@ -47,6 +47,10 @@ describe('Class Report Cycle contract', () => {
     expect(repository).toContain(
       'getClassReportCycleWorkspace'
     );
+
+    expect(repository).toContain(
+      'deleteClassReportCycle'
+    );
   });
 
   it('creates new Report Cycles at Class scope', () => {
@@ -176,6 +180,26 @@ describe('Class Report Cycle contract', () => {
     expect(actions).toContain(
       'createClassReportCycleAction'
     );
+
+    expect(actions).toContain(
+      'cancelClassReportCycleAction'
+    );
+
+    expect(source(reportsPagePath)).toContain(
+      'cancelClassReportCycleAction'
+    );
+
+    expect(source(workspacePagePath)).toContain(
+      'cancelClassReportCycleAction'
+    );
+  });
+
+  it('deletes only unfinished Class Report Cycles', () => {
+    const repository = source(repositoryPath);
+
+    expect(repository).toContain(".delete()");
+    expect(repository).toContain("'FINALIZED'");
+    expect(repository).toContain("['DRAFT', 'REVIEW']");
   });
 
   it('keeps historical Subject and Group report support in the reporting engine', () => {

@@ -13,6 +13,7 @@ import {listAdminReportContexts} from '@/features/reports/admin-report-contexts.
 import type {AdminReportContextStatus} from '@/features/reports/admin-report-contexts';
 import {sendAdminReportBatchAction} from '@/features/reports/admin-report-delivery.actions';
 import {
+  cancelClassReportCycleAction,
   createClassReportCycleAction,
   openAdminReportContextAction
 } from '@/features/reports/admin-report-workflow.actions';
@@ -52,6 +53,7 @@ export default async function ReportsPage({
     periodStart?: string;
     periodEnd?: string;
     error?: string;
+    cancelled?: string;
   }>;
 }) {
   const {locale} = await params;
@@ -143,6 +145,10 @@ export default async function ReportsPage({
         title={t('title')}
       />
 
+      {query.cancelled ? (
+        <p className="form-success">{t('cycleCancelled')}</p>
+      ) : null}
+
       <section className="report-cycle-active detail-section">
         <div className="section-heading">
           <div>
@@ -183,12 +189,27 @@ export default async function ReportsPage({
                   <p className="record-meta">{formatTeachingUpdateRange(cycle.periodStart, cycle.periodEnd, locale)}</p>
                 </div>
 
-                <Link
-                  className="button button-secondary action-link"
-                  href={`/reports/workspace/${cycle.id}`}
-                >
-                  {t('openCycle')}
-                </Link>
+                <div className="row-actions">
+                  <Link
+                    className="button button-secondary action-link"
+                    href={`/reports/workspace/${cycle.id}`}
+                  >
+                    {t('openCycle')}
+                  </Link>
+                  {cycle.status !== 'FINALIZED' ? (
+                    <form action={cancelClassReportCycleAction}>
+                      <input name="locale" type="hidden" value={locale} />
+                      <input name="batchId" type="hidden" value={cycle.id} />
+                      <ConfirmSubmitButton
+                        className="button button-danger"
+                        confirmMessage={t('cancelCycleConfirm')}
+                        type="submit"
+                      >
+                        {t('cancelCycle')}
+                      </ConfirmSubmitButton>
+                    </form>
+                  ) : null}
+                </div>
               </article>
             ))}
           </div>

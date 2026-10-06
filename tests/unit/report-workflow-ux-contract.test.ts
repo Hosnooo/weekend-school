@@ -66,6 +66,9 @@ describe('Reports workflow UX contract', () => {
     expect(review).toContain('renderReportEmail');
     expect(review).toContain('renderReportEmailSubject');
     expect(emailReview).toContain('ReportPreviewFrame');
+    expect(emailReview).toContain('selectStudentPlaceholder');
+    expect(emailReview).toContain('<option value="">');
+    expect(review).not.toContain('studentOptions[0]');
     expect(review).toContain('Reopen & edit');
     expect(review).toContain('finalizeClassReportCycleAction');
     expect(review).toContain('sendAdminReportBatchAction');
