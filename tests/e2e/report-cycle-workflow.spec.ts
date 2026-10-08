@@ -212,6 +212,16 @@ test(
       'Student reports are ready to send.', {exact: true}
     )).toBeVisible();
 
+    // Re-finalization keeps immutable old snapshots, but the current
+    // selector must show each Student only once and use the latest revision.
+    const currentStudentIds = await page
+      .locator('.report-email-review-panel select option[value]:not([value=""])')
+      .evaluateAll((options) =>
+        options.map((option) => (option as HTMLOptionElement).value)
+      );
+    expect(currentStudentIds.length).toBeGreaterThan(0);
+    expect(new Set(currentStudentIds).size).toBe(currentStudentIds.length);
+
     // Dismissing only an unsent cycle should remove its prepared reports and
     // review data. The submitted Teacher update must remain in the database.
     page.once('dialog', (dialog) => dialog.accept());
