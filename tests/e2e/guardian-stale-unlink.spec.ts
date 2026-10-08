@@ -62,13 +62,28 @@ test.describe('isolated stale Student–Guardian relationship', () => {
         .eq('guardian_id',guardianId);
       if (concurrentDeleteError) throw concurrentDeleteError;
 
+      // Prove the relationship really was removed in the local database.
+      // Supabase delete() can return no error even when zero rows matched.
+      const {count: remainingLinks, error: linkLookupError} = await supabase
+        .from('student_guardians')
+        .select('guardian_id', {count: 'exact', head: true})
+        .eq('school_id', schoolId)
+        .eq('student_id', studentId)
+        .eq('guardian_id', guardianId);
+      if (linkLookupError) throw linkLookupError;
+      expect(remainingLinks).toBe(0);
+
       page.once('dialog',dialog => dialog.accept());
       await card.getByRole('button',{name:'Remove from student'}).click();
 
       // The app must explain stale state, never treat the missing link as success.
       await expect(card.getByRole('alert')).toContainText('changed while you were editing');
       await page.reload();
-      await expect(page.getByText(guardianName,{exact:true})).toHaveCount(0);
+
+      // After unlinking, the Guardian still exists and can legitimately
+      // appear in the "Link existing Guardian" directory below the cards.
+      // Only the linked Guardian card must disappear for this student.
+      await expect(page.locator('.record-card').filter({hasText: guardianName})).toHaveCount(0);
     } finally {
       await supabase.from('student_guardians').delete()
         .eq('school_id',schoolId)
