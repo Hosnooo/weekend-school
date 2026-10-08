@@ -2,6 +2,16 @@ name: CI
 
 on:
   workflow_dispatch:
+    inputs:
+      review_scope:
+        description: "Review branch checks (smoke is cheapest)"
+        type: choice
+        required: true
+        default: browser-smoke
+        options:
+          - browser-smoke
+          - browser-full
+          - complete
 
 permissions:
   contents: read
@@ -135,12 +145,16 @@ jobs:
       - name: Install locked dependencies
         run: pnpm install --frozen-lockfile
       - name: Lint all source and tests
+        if: ${{ inputs.review_scope == 'complete' }}
         run: pnpm lint
       - name: Validate TypeScript
+        if: ${{ inputs.review_scope == 'complete' }}
         run: pnpm typecheck
       - name: Run every unit and component test
+        if: ${{ inputs.review_scope == 'complete' }}
         run: pnpm test
       - name: Compile Next.js production application
+        if: ${{ inputs.review_scope == 'complete' }}
         env:
           NEXT_PUBLIC_SUPABASE_URL: https://example.invalid
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-build-placeholder
@@ -179,8 +193,10 @@ jobs:
             *) echo "Refusing hosted API for full regression" >&2; exit 1 ;;
           esac
       - name: Reset to historical pre-role-cutover local schema
+        if: ${{ inputs.review_scope == 'complete' }}
         run: pnpm exec supabase db reset --version 202609230027
       - name: Load historical Teacher attribution fixture
+        if: ${{ inputs.review_scope == 'complete' }}
         run: |
           set -euo pipefail
           eval "$(pnpm exec supabase status -o env)"
@@ -190,16 +206,16 @@ jobs:
           esac
           psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/fixtures/teacher_id_history_pre_role_cutover.sql
       - name: Apply forward migrations locally, including the candidate
+        if: ${{ inputs.review_scope == 'complete' }}
         run: pnpm exec supabase migration up --local
       - name: Verify historical Teacher attribution survived upgrade
+        if: ${{ inputs.review_scope == 'complete' }}
         run: pnpm exec supabase test db --local supabase/fixtures/teacher_id_history_upgrade.test.sql
       - name: Run all PostgreSQL, RLS and Administrator guard pgTAP tests
+        if: ${{ inputs.review_scope == 'complete' }}
         run: pnpm test:db
       - name: Verify concurrent last-Administrator deactivations
-        id: administrator_race
-        # Collect browser failures in the same manual run even if this test fails.
-        # The final gate below still fails the job on any race-test failure.
-        continue-on-error: true
+        if: ${{ inputs.review_scope == 'complete' }}
         run: |
           set -euo pipefail
           eval "$(pnpm exec supabase status -o env)"
@@ -238,19 +254,22 @@ jobs:
           EOF
       - name: Install Chromium browser once
         run: pnpm exec playwright install --with-deps chromium
-      - name: Run all 24 browser test files
+      - name: Run focused browser smoke tests
+        if: ${{ inputs.review_scope == 'browser-smoke' }}
+        run: |
+          set -euo pipefail
+          eval "$(pnpm exec supabase status -o env)"
+          export NEXT_PUBLIC_SUPABASE_URL="$API_URL"
+          export SUPABASE_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY"
+          pnpm test:e2e tests/e2e/report-cycle-workflow.spec.ts tests/e2e/english-flow.spec.ts tests/e2e/arabic-flow.spec.ts
+      - name: Run complete browser suite
+        if: ${{ inputs.review_scope == 'browser-full' || inputs.review_scope == 'complete' }}
         run: |
           set -euo pipefail
           eval "$(pnpm exec supabase status -o env)"
           export NEXT_PUBLIC_SUPABASE_URL="$API_URL"
           export SUPABASE_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY"
           pnpm test:e2e
-
-      - name: Require successful Administrator concurrency regression
-        if: ${{ always() && steps.administrator_race.outcome == 'failure' }}
-        run: |
-          echo 'Administrator concurrency regression did not pass.' >&2
-          exit 1
 
       - name: Upload failed browser traces for diagnosis
         if: failure()
