@@ -154,7 +154,11 @@ jobs:
         run: pnpm test:db
       - name: Verify simultaneous Administrator deactivation with two local SQL sessions
         run: |
+          set -euo pipefail
           eval "$(pnpm exec supabase status -o env)"
+          # Supabase's output sets shell variables, which child bash processes
+          # do not inherit until explicitly exported.
+          export DB_URL
           bash scripts/test-last-administrator-race.sh
       - name: Load local-only browser test fixtures
         run: |
@@ -177,7 +181,14 @@ jobs:
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium
       - name: Run only isolated stale-Guardian browser scenario
-        run: pnpm test:e2e tests/e2e/guardian-stale-unlink.spec.ts
+        run: |
+          set -euo pipefail
+          eval "$(pnpm exec supabase status -o env)"
+          # Playwright configuration and the browser fixture run in Node
+          # subprocesses, so reading .env.local alone is insufficient.
+          export NEXT_PUBLIC_SUPABASE_URL="$API_URL"
+          export SUPABASE_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY"
+          pnpm test:e2e tests/e2e/guardian-stale-unlink.spec.ts
       - name: Stop and discard local Supabase
         if: always()
         run: pnpm db:stop
