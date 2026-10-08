@@ -160,6 +160,10 @@ jobs:
           candidate="$(find supabase/migrations -maxdepth 1 -type f -name '*_last_active_administrator_manual_review.sql' | sort | tail -1)"
           test -n "$candidate"
           cp docs/db-review/last-active-administrator-guard.sql "$candidate"
+          # Keep candidate pgTAP tests ephemeral: they are not deployed with the branch.
+          test -f docs/db-review/last-active-administrator-guard.test.sql
+          mkdir -p supabase/tests
+          cp docs/db-review/last-active-administrator-guard.test.sql supabase/tests/last-active-administrator-guard.test.sql
       - name: Start local Supabase
         run: pnpm db:start
       - name: Confirm local database is isolated
@@ -189,6 +193,14 @@ jobs:
         run: pnpm exec supabase migration up --local
       - name: Verify historical Teacher attribution survived upgrade
         run: pnpm exec supabase test db --local supabase/fixtures/teacher_id_history_upgrade.test.sql
+      - name: Run all PostgreSQL, RLS and Administrator guard pgTAP tests
+        run: pnpm test:db
+      - name: Verify concurrent last-Administrator deactivations
+        run: |
+          set -euo pipefail
+          eval "$(pnpm exec supabase status -o env)"
+          : "${DB_URL:?Local Supabase DB_URL is required}"
+          bash scripts/test-last-administrator-race.sh
 
       - name: Reset disposable local database for all browser workflows
         run: pnpm db:reset
