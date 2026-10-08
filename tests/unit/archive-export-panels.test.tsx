@@ -20,7 +20,8 @@ const archiveLabels = {
   comments: 'Comments',
   reports: 'Reports',
   emailDeliveries: 'Email deliveries',
-  confirmation: 'Confirmation'
+  confirmation: 'Confirmation',
+  downloadError: 'Unable to download data'
 };
 
 const exportLabels = {
@@ -51,7 +52,8 @@ const exportLabels = {
   csv: 'CSV files',
   pdfs: 'Finalized report PDFs',
   fileOptions: 'File options',
-  submit: 'Create export'
+  submit: 'Create export',
+  errors: {period: 'Fix dates', datasets: 'Choose data', scope: 'Choose a scope', generic: 'Download failed'}
 };
 
 describe('archives and exports admin panels', () => {

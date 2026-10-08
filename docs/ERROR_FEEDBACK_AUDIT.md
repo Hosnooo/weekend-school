@@ -26,3 +26,18 @@
 - End-to-end tests should simulate invalid submissions and actual delivery failures using isolated fixtures; avoid sending real parent emails or modifying production data.
 
 This inventory is a progress log, not a claim that all app error surfaces have been exercised interactively.
+
+## Second pass — archive, export, administrator entry and recovery errors
+
+- Export form now validates custom date order, required scope selections, and dataset selection **before** creating a download; server failures appear inline without leaking private error contents.
+- Archive student-data download now shows an inline failure instead of silently rejecting a promise.
+- Archive restore and permanent delete now distinguish confirmation mismatch, related-record restrictions, expired state, permissions and technical errors. No change to permanent-deletion safety rules.
+- Administrator create/edit forms use server-validated inline `ActionState` errors to identify fields and keep typed values in place after a failed save. Access invitation operations continue to be separate.
+- Password recovery has a distinct configuration/service-unavailable message without indicating whether an email is registered; per-address provider failures remain intentionally indistinguishable for account privacy.
+- Targeted tests cover export form selection and archive error-code classification. No live data modifications or real emails.
+
+### Remaining surfaces
+
+- Teacher/guardian active-status toggles, archive actions launched outside the archive list, administrator access invitation specifics, CSV import failure recovery and remaining export API download responses still need focused tests.
+- Provider errors should never reveal whether a login account exists. The password-recovery service intentionally reports the same public result for known and unknown email addresses.
+- Full automated unit, browser and end-to-end tests remain a separate verification task; the Next.js preview build covers compilation and TypeScript but not runtime interaction.

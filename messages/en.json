@@ -28,7 +28,8 @@
     "sendRecovery": "Send reset link",
     "sendingRecovery": "Sending…",
     "backToSignIn": "Back to sign in",
-    "requestNewLink": "Request a new link"
+    "requestNewLink": "Request a new link",
+    "recoveryUnavailable": "Password recovery is temporarily unavailable. Try again later or ask your school administrator for help. No reset link has been confirmed."
   },
   "navigation": {
     "label": "Main navigation",
@@ -881,11 +882,17 @@
     "reports": "Reports",
     "emailDeliveries": "Email deliveries",
     "confirmation": "Type the record name exactly to confirm",
-    "confirmationError": "Type the record name exactly as shown.",
-    "dependenciesError": "Unable to permanently delete this record. No data was changed.",
+    "confirmationError": "The confirmation name does not match. Enter the record name exactly as displayed, including spaces and punctuation; nothing was deleted.",
+    "dependenciesError": "This record has related history that currently prevents permanent deletion. Review the dependency counts and preserve the history; no data was deleted.",
     "deleted": "Archived record permanently deleted.",
     "destructive": "Deletes related data",
-    "deleteError": "Unable to permanently delete this record. No data was changed."
+    "deleteError": "Unable to permanently delete this record. No data was changed.",
+    "downloadError": "The student data download could not be started. No data was deleted. Try again, then contact an administrator if the issue continues.",
+    "notArchivedError": "Only archived records can be permanently deleted. Refresh the archive list and check the record status.",
+    "permissionError": "Your account cannot perform this archive operation. Ask a school administrator to review access.",
+    "staleError": "This record is no longer available in its previous state. Refresh the archive list before trying again.",
+    "restoreError": "The record could not be restored. No changes were confirmed. Refresh the page and try again.",
+    "restored": "Archived record restored."
   },
   "exportsUi": {
     "pageTitle": "Export Data",
@@ -923,7 +930,11 @@
     "rosterSchool": "School roster",
     "rosterClasses": "Class rosters",
     "downloadSchoolRoster": "Download school roster",
-    "downloadClassRoster": "Download Class roster"
+    "downloadClassRoster": "Download Class roster",
+    "errorPeriod": "Choose both custom dates. The end date must be on or after the start date.",
+    "errorDatasets": "Select at least one dataset to include in the export.",
+    "errorScope": "Complete the selected export scope: choose its class, subject, group, student, or teacher.",
+    "errorDownload": "The export could not be prepared. Your data was not changed. Try again; if it continues, ask an administrator to check export access."
   },
   "teachingAssignmentsIndex": {
     "title": "Teaching Assignments",

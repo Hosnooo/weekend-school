@@ -44,7 +44,7 @@ export default async function ArchivesPage({
   searchParams
 }: {
   params: Promise<{locale: string}>;
-  searchParams: Promise<{error?: string; deleted?: string}>;
+  searchParams: Promise<{error?: string; deleted?: string; restored?: string}>;
 }) {
   const [{locale}, query] = await Promise.all([params, searchParams]);
 
@@ -105,7 +105,8 @@ export default async function ArchivesPage({
     comments: t('comments'),
     reports: t('reports'),
     emailDeliveries: t('emailDeliveries'),
-    confirmation: t('confirmation')
+    confirmation: t('confirmation'),
+    downloadError: t('downloadError')
   };
 
   return (
@@ -126,6 +127,22 @@ export default async function ArchivesPage({
         <p className="form-error" role="alert">
           {t('deleteError')}
         </p>
+      ) : null}
+
+      {query.error === 'notArchived' ? (
+        <p className="form-error" role="alert">{t('notArchivedError')}</p>
+      ) : null}
+      {query.error === 'permission' ? (
+        <p className="form-error" role="alert">{t('permissionError')}</p>
+      ) : null}
+      {query.error === 'stale' ? (
+        <p className="form-error" role="alert">{t('staleError')}</p>
+      ) : null}
+      {query.error === 'restore' ? (
+        <p className="form-error" role="alert">{t('restoreError')}</p>
+      ) : null}
+      {query.restored === '1' ? (
+        <p className="success-message" role="status">{t('restored')}</p>
       ) : null}
 
       {query.deleted === '1' ? (

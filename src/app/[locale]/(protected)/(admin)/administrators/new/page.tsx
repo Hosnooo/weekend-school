@@ -2,9 +2,9 @@ import {getTranslations} from 'next-intl/server';
 import {notFound} from 'next/navigation';
 
 import {Alert} from '@/components/ui/alert';
-import {Button} from '@/components/ui/button';
 import {PageHeader} from '@/components/ui/page-header';
 import {createAdministratorAction} from '@/features/administrators/administrator.actions';
+import {AdministratorDetailsForm} from '@/features/administrators/administrator-details-form';
 import {isLocale} from '@/i18n/config';
 import {Link} from '@/i18n/navigation';
 import {requireAdministrator} from '@/lib/auth/require-profile';
@@ -32,24 +32,19 @@ export default async function NewAdministratorPage({params, searchParams}: {
       {query.error === 'validation' ? <Alert variant="danger">{common('validation')}</Alert> : null}
       {query.error === 'save' ? <Alert variant="danger">{common('saveError')}</Alert> : null}
 
-      <form action={createAdministratorAction} className="record-form">
-        <input name="locale" type="hidden" value={locale} />
-        <div className="form-grid">
-          <label>
-            <span>{t('displayName')}</span>
-            <input maxLength={120} name="displayName" required />
-          </label>
-          <label>
-            <span>{t('email')}</span>
-            <input autoComplete="email" name="email" required type="email" />
-          </label>
-        </div>
-        <p className="muted-text">{t('addHelp')}</p>
-        <div className="form-actions">
-          <Button type="submit">{t('addAdministrator')}</Button>
-          <Link className="button button-secondary action-link" href="/administrators">{common('cancel')}</Link>
-        </div>
-      </form>
+      <AdministratorDetailsForm
+        action={createAdministratorAction}
+        locale={locale}
+        labels={{
+          displayName: t('displayName'),
+          email: t('email'),
+          addHelp: t('addHelp'),
+          emailAccessHelp: t('emailAccessHelp'),
+          submit: t('addAdministrator'),
+          cancel: common('cancel')
+        }}
+        cancelHref="/administrators"
+      />
     </section>
   );
 }

@@ -8,13 +8,18 @@ import {isLocale} from '@/i18n/config';
 import {requireAdministrator} from '@/lib/auth/require-profile';
 import {createServerSupabaseClient} from '@/lib/supabase/server';
 import {databaseUuid} from '@/lib/validation/fields';
+import type {ActionState} from '@/lib/validation/action-state';
+import {persistenceFailure, saveFailure, validationFailure} from '@/lib/validation/action-state';
 
 const editAdministratorSchema = z.object({
   id: databaseUuid,
   displayName: z.string().trim().min(1).max(120)
 });
 
-export async function updateAdministratorDetailsAction(formData: FormData) {
+export async function updateAdministratorDetailsAction(
+  _state: ActionState,
+  formData: FormData
+): Promise<ActionState> {
   const rawLocale = String(formData.get('locale') ?? 'en');
   const locale = isLocale(rawLocale) ? rawLocale : 'en';
   const profile = await requireAdministrator(locale);
@@ -22,8 +27,7 @@ export async function updateAdministratorDetailsAction(formData: FormData) {
     id: formData.get('id'),
     displayName: formData.get('displayName')
   });
-  const rawId = String(formData.get('id') ?? '');
-  if (!parsed.success) redirect(`/${locale}/administrators/${rawId}/edit?error=validation`);
+  if (!parsed.success) return validationFailure(parsed.error);
 
   try {
     const db = await createServerSupabaseClient();
@@ -37,7 +41,9 @@ export async function updateAdministratorDetailsAction(formData: FormData) {
     if (!data) throw new Error('Administrator not found');
   } catch (error) {
     console.error('Unable to update Administrator details', {error});
-    redirect(`/${locale}/administrators/${parsed.data.id}/edit?error=save`);
+    return error instanceof Error && error.message === 'Administrator not found'
+      ? saveFailure('notFound')
+      : persistenceFailure(error);
   }
 
   revalidatePath(`/${locale}/administrators`);

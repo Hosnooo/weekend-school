@@ -30,6 +30,9 @@ export function ForgotPasswordForm({locale}: {locale: Locale}) {
       {state.status === 'invalid' ? (
         <p className="form-error" role="alert">{t('invalidEmail')}</p>
       ) : null}
+      {state.status === 'unavailable' ? (
+        <p className="form-error" role="alert">{t('recoveryUnavailable')}</p>
+      ) : null}
       {state.status === 'accepted' ? (
         <p aria-live="polite" role="status">{t('recoveryAccepted')}</p>
       ) : null}
