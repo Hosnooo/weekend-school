@@ -11,6 +11,7 @@ import {
 } from './report-batch.repository';
 import {getActiveReportTemplate} from './report-template.repository';
 import type {ReportPerformance} from './report.types';
+import {eligibleReportSourcesForStudent} from './report-source-roster';
 
 function clean(value: string | null | undefined) {
   const trimmed = value?.trim();
@@ -68,6 +69,8 @@ export type ClassReportReviewStudent = {
   studentId: string;
   studentNameEn: string;
   studentNameAr: string | null;
+  /** Included Teaching Updates overlapping this student's effective dates. */
+  applicableSourceIds: string[];
   progressEn: string | null;
   progressAr: string | null;
   performance: ReportPerformance | null;
@@ -125,7 +128,7 @@ export async function getClassReportReviewWorkspace(
   ];
 
   const db = await createServerSupabaseClient();
-  const [overrideResult, observationResult, exclusionResult, membershipResult] =
+  const [overrideResult, observationResult, exclusionResult, membershipResult, enrollmentResult] =
     await Promise.all([
       approvalIds.length > 0
         ? db
@@ -160,14 +163,20 @@ export async function getClassReportReviewWorkspace(
             )
             .eq('school_id', schoolId)
             .in('class_subject_id', classSubjectIds)
-        : Promise.resolve({data: [], error: null})
+        : Promise.resolve({data: [], error: null}),
+      db
+        .from('class_enrollments')
+        .select('student_id,starts_on,ends_on')
+        .eq('school_id', schoolId)
+        .eq('class_id', workspace.batch.classId)
     ]);
 
   for (const result of [
     overrideResult,
     observationResult,
     exclusionResult,
-    membershipResult
+    membershipResult,
+    enrollmentResult
   ]) {
     if (result.error) throw result.error;
   }
@@ -176,6 +185,7 @@ export async function getClassReportReviewWorkspace(
   const observations = (observationResult.data ?? []) as ObservationRow[];
   const exclusions = exclusionResult.data ?? [];
   const memberships = membershipResult.data ?? [];
+  const enrollments = enrollmentResult.data ?? [];
 
   const grouped = new Map<string, ReportBatchSource[]>();
   for (const source of includedSources) {
@@ -192,52 +202,39 @@ export async function getClassReportReviewWorkspace(
       first.classSubjectId,
       first.subjectGroupId
     );
-    const selectedSourceIds = new Set(sources.map(({id}) => id));
-
     const students = workspace.summaryStudents.flatMap((student) => {
-      const excluded = exclusions.some(
-        (row) =>
-          row.student_id === student.studentId &&
-          row.class_subject_id === first.classSubjectId &&
-          periodOverlaps(
-            row.starts_on,
-            row.ends_on,
-            workspace.batch.periodStart,
-            workspace.batch.periodEnd
-          )
+      const applicableSources = eligibleReportSourcesForStudent({
+        studentId: student.studentId,
+        classSubjectId: first.classSubjectId,
+        subjectGroupId: first.subjectGroupId,
+        reportStart: workspace.batch.periodStart,
+        reportEnd: workspace.batch.periodEnd,
+        sources,
+        enrollments,
+        memberships,
+        exclusions
+      });
+      if (applicableSources.length === 0) return [];
+      const applicableSourceIds = new Set(
+        applicableSources.map(({id}) => id)
       );
-      if (excluded) return [];
-
-      if (first.subjectGroupId) {
-        const belongsToGroup = memberships.some(
-          (row) =>
-            row.student_id === student.studentId &&
-            row.class_subject_id === first.classSubjectId &&
-            row.subject_group_id === first.subjectGroupId &&
-            periodOverlaps(
-              row.starts_on,
-              row.ends_on,
-              workspace.batch.periodStart,
-              workspace.batch.periodEnd
-            )
-        );
-        if (!belongsToGroup) return [];
-      }
 
       const studentObservations = observations.filter(
         (row) =>
           row.student_id === student.studentId &&
-          selectedSourceIds.has(row.submission_id)
+          applicableSourceIds.has(row.submission_id)
       );
       const sourcePerformance = studentObservations
         .map(({performance_override}) => performance_override)
         .filter((value): value is ReportPerformance => value !== null)
         .at(-1) ??
-        sources
+        applicableSources
           .map(({performance}) => performance)
           .filter((value): value is ReportPerformance => value !== null)
           .at(-1) ??
-        approval?.performance ??
+        (applicableSources.length === sources.length
+          ? approval?.performance
+          : null) ??
         null;
       const sourceCommentEn = joinUnique(
         studentObservations.map(({comment_en}) => comment_en)
@@ -257,6 +254,7 @@ export async function getClassReportReviewWorkspace(
         studentId: student.studentId,
         studentNameEn: student.studentNameEn,
         studentNameAr: student.studentNameAr,
+        applicableSourceIds: [...applicableSourceIds],
         progressEn: override?.progress_en ?? null,
         progressAr: override?.progress_ar ?? null,
         performance: override?.performance_overridden
