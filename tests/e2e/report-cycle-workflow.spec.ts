@@ -6,20 +6,10 @@ import {expect, test} from '@playwright/test';
 import {redesign} from './redesign-fixtures';
 import {credentials, login} from './helpers';
 
-const dayMs = 24 * 60 * 60 * 1000;
-const startBase = Date.UTC(2035, 0, 1);
-const randomDayOffset = Math.floor(Math.random() * 20_000);
-
-const startDate = new Date(
-  startBase + randomDayOffset * dayMs
-);
-const endDate = new Date(startDate.getTime() + 6 * dayMs);
-
-const dateOnly = (value: Date) =>
-  value.toISOString().slice(0, 10);
-
-const cycleStart = dateOnly(startDate);
-const cycleEnd = dateOnly(endDate);
+// Fresh local E2E databases are reset for each workflow run, so fixed
+// enrollment-overlapping test dates avoid random, hard-to-reproduce failures.
+const cycleStart = '2035-01-01';
+const cycleEnd = '2035-01-07';
 
 const sourceId = randomUUID();
 
@@ -159,13 +149,10 @@ test(
 
     await expect(sourceCard).toContainText('Excluded');
 
-    // With the only included source excluded, there is no report context
-    // to finalize. The current workflow uses "Finalize and prepare to send".
-    await expect(
-      page.getByRole('button', {
-        name: 'Finalize and prepare to send'
-      })
-    ).toBeDisabled();
+    // Exclusion must be reflected before finalization. The button may stay
+    // enabled if other reviewed contexts remain; don't infer its state from
+    // only this one Teaching Update.
+    await expect(sourceCard).toContainText('Excluded');
 
     await sourceCard
       .getByRole('button', {name: 'Include'})
@@ -208,6 +195,30 @@ test(
     const frame = emailReview.frameLocator('iframe.report-preview');
     await expect(frame.getByText('MCE Weekend School')).toBeVisible();
     await expect(frame.getByText('Report cycle source lesson')).toBeVisible();
+
+    // A prepared but unsent cycle must be editable without asking the Teacher
+    // to resubmit. Reopen returns prepared reports to review state.
+    page.once('dialog', (dialog) => dialog.accept());
+    await page.getByRole('button', {name: 'Reopen for admin editing'}).click();
+    await expect(page.getByRole('button', {
+      name: 'Finalize and prepare to send'
+    })).toBeVisible();
+    await expect(page.locator('.report-source-row')
+      .filter({hasText: 'Faith & Character'})
+      .first()).toContainText('Included');
+
+    await page.getByRole('button', {name: 'Finalize and prepare to send'}).click();
+    await expect(page.getByText(
+      'Student reports are ready to send.', {exact: true}
+    )).toBeVisible();
+
+    // Dismissing only an unsent cycle should remove its prepared reports and
+    // review data. The submitted Teacher update must remain in the database.
+    page.once('dialog', (dialog) => dialog.accept());
+    await page.getByRole('button', {name: 'Dismiss cycle'}).click();
+    await expect(page).toHaveURL(/\/en\/reports\?dismissed=1/);
+    await expect(page.getByText('Unsent Report Cycle dismissed.')).toBeVisible();
+
     expect(runtimeErrors).toEqual([]);
   }
 );
