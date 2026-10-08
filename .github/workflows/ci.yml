@@ -200,6 +200,12 @@ jobs:
           set -euo pipefail
           eval "$(pnpm exec supabase status -o env)"
           : "${DB_URL:?Local Supabase DB_URL is required}"
+          case "$DB_URL" in
+            *"@127.0.0.1:"*|*"@localhost:"*) ;;
+            *) echo "Refusing nonlocal race test database" >&2; exit 1 ;;
+          esac
+          # The race checker runs in a child shell; export the local URL.
+          export DB_URL
           bash scripts/test-last-administrator-race.sh
 
       - name: Reset disposable local database for all browser workflows
