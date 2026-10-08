@@ -8,7 +8,7 @@ import {
   type ReportAttendanceResolution
 } from './report-attendance';
 import {getReportBatchWorkspace} from './report-batch.repository';
-import {studentBelongsToReportContext} from './report-source-roster';
+import {eligibleReportSourcesForStudent} from './report-source-roster';
 import {buildReportSnapshotV2} from './report.service';
 import {getActiveReportTemplate} from './report-template.repository';
 import type {
@@ -206,10 +206,6 @@ async function buildClassReportCycleSnapshots(
   const memberships = membershipsResult.data ?? [];
   const observations =
     (observationResult.data ?? []) as SubmissionStudentRow[];
-  const sourceRosterObservations = observations.map((row) => ({
-    submissionId: row.submission_id,
-    studentId: row.student_id
-  }));
   const resolutions =
     (resolutionResult.data ?? []) as ResolutionRow[];
   const overrides = (overrideResult.data ?? []) as OverrideRow[];
@@ -242,48 +238,23 @@ async function buildClassReportCycleSnapshots(
     const sections = [];
 
     for (const approval of includedApprovals) {
-      const excluded = exclusions.some(
-        (row) =>
-          row.student_id === student.id &&
-          row.class_subject_id === approval.classSubjectId &&
-          periodOverlaps(
-            row.starts_on,
-            row.ends_on,
-            workspace.batch.periodStart,
-            workspace.batch.periodEnd
-          )
-      );
-      if (excluded) continue;
-
-      const selectedSources = workspace.sources.filter((source) =>
+      const approvedSources = workspace.sources.filter((source) =>
         approval.selectedSourceIds.includes(source.id)
       );
+      const selectedSources = eligibleReportSourcesForStudent({
+        studentId: student.id,
+        classSubjectId: approval.classSubjectId,
+        subjectGroupId: approval.subjectGroupId,
+        reportStart: workspace.batch.periodStart,
+        reportEnd: workspace.batch.periodEnd,
+        sources: approvedSources,
+        enrollments,
+        memberships,
+        exclusions
+      });
       if (selectedSources.length === 0) continue;
-
       const selectedIds = new Set(selectedSources.map(({id}) => id));
-
-      if (approval.subjectGroupId !== null) {
-        const currentMembership = memberships.some(
-          (row) =>
-            row.student_id === student.id &&
-            row.class_subject_id === approval.classSubjectId &&
-            row.subject_group_id === approval.subjectGroupId &&
-            periodOverlaps(
-              row.starts_on,
-              row.ends_on,
-              workspace.batch.periodStart,
-              workspace.batch.periodEnd
-            )
-        );
-        const belongsToGroup = studentBelongsToReportContext({
-          studentId: student.id,
-          subjectGroupId: approval.subjectGroupId,
-          selectedSourceIds: selectedIds,
-          observations: sourceRosterObservations,
-          currentMembership
-        });
-        if (!belongsToGroup) continue;
-      }
+      const partialCoverage = selectedSources.length !== approvedSources.length;
 
       const studentObservations = observations.filter(
         (row) =>
@@ -333,24 +304,33 @@ async function buildClassReportCycleSnapshots(
         groupNameAr: source.groupNameAr,
         approvedProgressEn:
           clean(explicitOverride?.progress_en) ??
-          approval.approvedProgressEn,
+          (partialCoverage
+            ? joinUnique(selectedSources.map(({progressEn}) => progressEn))
+            : approval.approvedProgressEn),
         approvedProgressAr:
           clean(explicitOverride?.progress_ar) ??
-          approval.approvedProgressAr,
+          (partialCoverage
+            ? joinUnique(selectedSources.map(({progressAr}) => progressAr))
+            : approval.approvedProgressAr),
         performance: explicitOverride?.performance_overridden
           ? explicitOverride.performance
-          : sourcePerformance ?? approval.performance,
+          : sourcePerformance ?? (partialCoverage
+            ? selectedSources
+                .map(({performance}) => performance)
+                .filter((value): value is ReportPerformance => value !== null)
+                .at(-1) ?? null
+            : approval.performance),
         attendance: {
           present: attendance.attended,
           absent: attendance.total - attendance.attended,
           sessions: attendance.total
         },
         commentEn: appendText(
-          approval.commentEn,
+          partialCoverage ? null : approval.commentEn,
           clean(explicitOverride?.comment_en) ?? sourceCommentEn
         ),
         commentAr: appendText(
-          approval.commentAr,
+          partialCoverage ? null : approval.commentAr,
           clean(explicitOverride?.comment_ar) ?? sourceCommentAr
         ),
         sourceTeacherNames: selectedSources.map(({teacherName}) => teacherName),

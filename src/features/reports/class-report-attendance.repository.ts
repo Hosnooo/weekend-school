@@ -14,7 +14,7 @@ import {
   type ClassReportReviewStudent,
   type ClassReportReviewWorkspace
 } from './class-report-review.repository';
-import {studentBelongsToReportContext} from './report-source-roster';
+
 import type {ReportPerformance} from './report.types';
 
 type AttendanceOverrideRow = {
@@ -57,23 +57,6 @@ export type ClassReportReviewWorkspaceWithAttendance =
       }
     >;
   };
-
-function clean(value: string | null | undefined) {
-  const trimmed = value?.trim();
-  return trimmed ? trimmed : null;
-}
-
-function joinUnique(values: Array<string | null | undefined>) {
-  const unique = [
-    ...new Set(
-      values
-        .map(clean)
-        .filter((value): value is string => value !== null)
-    )
-  ];
-
-  return unique.length > 0 ? unique.join('\n\n') : null;
-}
 
 export async function getClassReportReviewWorkspaceWithAttendance(
   schoolId: string,
@@ -142,10 +125,6 @@ export async function getClassReportReviewWorkspaceWithAttendance(
       studentId: row.student_id,
       attendanceStatus: row.attendance_status
     }));
-  const sourceRosterObservations = rawObservations.map((row) => ({
-    submissionId: row.submission_id,
-    studentId: row.student_id
-  }));
   const resolutions: ReportAttendanceResolution[] =
     (resolutionResult.data ?? []).map((row) => ({
       classSubjectId: row.class_subject_id,
@@ -160,79 +139,13 @@ export async function getClassReportReviewWorkspaceWithAttendance(
   return {
     ...review,
     contexts: review.contexts.map((context) => {
-      const selectedSourceIds = context.sources.map(({id}) => id);
-      const existingStudents = new Map(
-        context.students.map((student) => [student.studentId, student])
-      );
-      const contextStudents: ClassReportReviewStudent[] =
-        context.subjectGroupId === null
-          ? context.students
-          : batch.summaryStudents
-              .filter((student) =>
-                studentBelongsToReportContext({
-                  studentId: student.studentId,
-                  subjectGroupId: context.subjectGroupId,
-                  selectedSourceIds,
-                  observations: sourceRosterObservations,
-                  currentMembership: existingStudents.has(student.studentId)
-                })
-              )
-              .map((student) => {
-                const existing = existingStudents.get(student.studentId);
-                if (existing) return existing;
-
-                const sourceRows = rawObservations.filter(
-                  (row) =>
-                    row.student_id === student.studentId &&
-                    selectedSourceIds.includes(row.submission_id)
-                );
-                const override = context.approvalId
-                  ? overrides.find(
-                      (row) =>
-                        row.approval_id === context.approvalId &&
-                        row.student_id === student.studentId
-                    )
-                  : null;
-                const sourcePerformance =
-                  sourceRows
-                    .map(({performance_override}) => performance_override)
-                    .filter(
-                      (value): value is ReportPerformance => value !== null
-                    )
-                    .at(-1) ??
-                  context.sources
-                    .map(({performance}) => performance)
-                    .filter(
-                      (value): value is ReportPerformance => value !== null
-                    )
-                    .at(-1) ??
-                  null;
-
-                return {
-                  studentId: student.studentId,
-                  studentNameEn: student.studentNameEn,
-                  studentNameAr: student.studentNameAr,
-                  progressEn: override?.progress_en ?? null,
-                  progressAr: override?.progress_ar ?? null,
-                  performance: override?.performance_overridden
-                    ? override.performance
-                    : sourcePerformance,
-                  performanceOverridden:
-                    override?.performance_overridden ?? false,
-                  commentEn:
-                    override?.comment_en ??
-                    joinUnique(sourceRows.map(({comment_en}) => comment_en)),
-                  commentAr:
-                    override?.comment_ar ??
-                    joinUnique(sourceRows.map(({comment_ar}) => comment_ar))
-                };
-              });
-
       return {
         ...context,
-        students: contextStudents.map((student) => {
+        students: context.students.map((student) => {
           const source = deriveReportAttendance({
-            sources: context.sources.map(({id, weekStart}) => ({id, weekStart})),
+            sources: context.sources
+              .filter(({id}) => student.applicableSourceIds.includes(id))
+              .map(({id, weekStart}) => ({id, weekStart})),
             observations,
             resolutions,
             classSubjectId: context.classSubjectId,
