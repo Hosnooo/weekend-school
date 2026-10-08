@@ -224,6 +224,17 @@ jobs:
           export SUPABASE_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY"
           pnpm test:e2e
 
+      - name: Upload failed browser traces for diagnosis
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: full-review-browser-traces
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 7
+          if-no-files-found: ignore
+
       - name: Stop and discard disposable local Supabase
         if: always()
         run: pnpm db:stop
