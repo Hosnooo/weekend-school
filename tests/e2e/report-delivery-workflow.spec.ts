@@ -28,9 +28,9 @@ function serviceClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  if (!url || !key) {
+  if (!url || !/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(url) || !key) {
     throw new Error(
-      'Local Supabase service credentials are required for report E2E setup.'
+      'Refusing report delivery fixtures against a nonlocal Supabase project.'
     );
   }
 
