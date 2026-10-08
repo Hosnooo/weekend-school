@@ -48,6 +48,10 @@ export default async function AdministratorAccessPage({params, searchParams}: {
 
       {query.access === 'sent' ? <Alert variant="success">{t('accessSent')}</Alert> : null}
       {query.access === 'failed' ? <Alert variant="danger">{t('accessFailed')}</Alert> : null}
+      {query.access === 'accountUnavailable' ? <Alert variant="danger">{t('accessAccountUnavailable')}</Alert> : null}
+      {query.access === 'emailMissing' ? <Alert variant="danger">{t('accessEmailMissing')}</Alert> : null}
+      {query.access === 'rateLimited' ? <Alert variant="danger">{t('accessRateLimited')}</Alert> : null}
+      {query.access === 'stale' ? <Alert variant="danger">{t('accessStale')}</Alert> : null}
 
       <Card>
         <SectionHeader title={t('loginAccess')} description={t('accessSeparationHelp')} />

@@ -106,6 +106,39 @@ function GuardianEditor({
   );
 }
 
+function GuardianUnlinkForm({
+  locale, studentId, guardian
+}: {
+  locale: Locale;
+  studentId: string;
+  guardian: StudentGuardianLink;
+}) {
+  const t = useTranslations('guardians');
+  const [state, action, pending] = useActionState(
+    unlinkStudentGuardianAction,
+    initialActionState
+  );
+
+  return (
+    <form
+      action={action}
+      onSubmit={(event) => {
+        if (!window.confirm(t('removeGuardianConfirm', {name: guardian.name}))) {
+          event.preventDefault();
+        }
+      }}
+    >
+      <input name="locale" type="hidden" value={locale} />
+      <input name="studentId" type="hidden" value={studentId} />
+      <input name="guardianId" type="hidden" value={guardian.id} />
+      <Button type="submit" disabled={pending} variant="secondary">
+        {t('removeGuardianFromStudent')}
+      </Button>
+      <FormFeedback state={state} />
+    </form>
+  );
+}
+
 function ExistingGuardianLinkForm({
   guardian,
   locale,
@@ -297,28 +330,11 @@ export function StudentGuardianManager({
                 studentId={studentId}
               />
 
-              <form
-                action={unlinkStudentGuardianAction}
-                onSubmit={(event) => {
-                  if (
-                    !window.confirm(
-                      t('removeGuardianConfirm', {
-                        name: guardian.name
-                      })
-                    )
-                  ) {
-                    event.preventDefault();
-                  }
-                }}
-              >
-                <input name="locale" type="hidden" value={locale} />
-                <input name="studentId" type="hidden" value={studentId} />
-                <input name="guardianId" type="hidden" value={guardian.id} />
-
-                <Button type="submit" variant="secondary">
-                  {t('removeGuardianFromStudent')}
-                </Button>
-              </form>
+              <GuardianUnlinkForm
+                guardian={guardian}
+                locale={locale}
+                studentId={studentId}
+              />
             </div>
           ))}
         </div>

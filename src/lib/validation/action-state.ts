@@ -23,7 +23,7 @@ export function persistenceFailure(error: unknown): ActionState {
   if (code === '23505') return saveFailure('duplicate');
   if (code === '23503') return saveFailure('notFound');
   if (code === '23514' || code === '22023') return saveFailure('rule');
-  if (code === '40001') return saveFailure('stale');
+  if (code === '40001' || code === 'P0002') return saveFailure('stale');
   if (code === '42501') return saveFailure('permission');
   return saveFailure();
 }

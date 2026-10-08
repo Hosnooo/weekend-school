@@ -56,3 +56,32 @@ Remaining: authenticated browser interaction tests, permission failure simulatio
 
 - Disconnecting a Teacher's login access now reports success/failure on that Teacher's access page, rather than swallowing a server failure and leaving the record unchanged without explanation.
 - Invalid or stale access-link submissions direct the administrator to refresh the current record.
+
+## Isolated failure-path verification suite — 2026-10-08
+
+### Coverage
+
+- `tests/unit/isolated-access-failures.test.ts`: new/existing Teacher and Administrator account invitation failures, cross-school authorization, rollback of newly created auth/profile records, rate limits and last-Administrator safeguards. The account/email adapters are mocked: **no email is sent and no Supabase project is accessed**.
+- `tests/unit/isolated-guardian-unlink.test.ts`: exercises the actual unlink Server Action with mocked school-scoped repository and authentication; malformed IDs, `P0002` stale link, permission errors and successful revalidation are checked.
+- `tests/e2e/guardian-stale-unlink.spec.ts`: Playwright scenario creates a disposable Guardian relationship **only in local Supabase**. After the student page is opened, a second actor removes the link directly in the local fixture; the first actor must receive an explanatory stale-link alert. Fixture cleanup is in a `finally` block. Both `playwright.config.ts` and the fixture independently refuse a hosted Supabase URL.
+- Login/access pages classify rate limiting, missing email, account belonging to another school and stale records with bilingual corrective messages without displaying private provider details.
+
+### Execution requirements and limitations
+
+```bash
+pnpm install --frozen-lockfile
+pnpm exec vitest run tests/unit/isolated-access-failures.test.ts tests/unit/isolated-guardian-unlink.test.ts --configLoader runner
+# Playwright requires locally seeded Supabase plus .env.local credentials and browser installation
+pnpm test:e2e -- --grep "isolated stale Student–Guardian"
+```
+
+The test container for this ChatGPT run has **no checked-out repository, no pnpm dependencies and no reachable package registry or local Supabase test database**. Do not claim these tests have executed successfully until the environment is available. A successful Vercel build checks compilation/TypeScript, **not** E2E or Vitest execution. Running them against the live school or using its service-role credentials is prohibited.
+
+### Known limitations
+
+- Sequential Administrator last-active checks are not an atomic concurrency guarantee if two administrators deactivate simultaneously; any change to those safeguards requires a separate database-level transaction design and local DB regression coverage.
+- General report-review edits are not yet subject to an explicit optimistic-concurrency version check in every legacy path. Concurrent editing should be validated in isolated data before any changes to production behavior.
+
+### Build gate
+
+The project now executes five isolated/mock-only critical error test files in `pnpm run test:critical-errors` before `next build`. The Vercel preview build runs those tests automatically, so a green deployment means these tests executed, then Next.js/TypeScript compiled. Playwright still requires local seeded Supabase and must **not** be run against production.

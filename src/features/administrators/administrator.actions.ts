@@ -1,6 +1,7 @@
 'use server';
 
 import {headers} from 'next/headers';
+import {accountAccessError} from '@/features/auth/account-access-error';
 import {revalidatePath} from 'next/cache';
 import {redirect} from 'next/navigation';
 import {z} from 'zod';
@@ -197,7 +198,7 @@ export async function createAdministratorAction(
       console.error('Unable to deactivate administrator after access failure', {error: deactivationError});
     }
     revalidatePath(`/${locale}/administrators`);
-    redirect(`/${locale}/administrators?access=failed`);
+    redirect(`/${locale}/administrators?access=${accountAccessError(error)}`);
   }
 
   revalidatePath(`/${locale}/administrators`);
@@ -231,7 +232,7 @@ export async function resendAdministratorAccessAction(formData: FormData) {
     }
   } catch (error) {
     console.error('Unable to send administrator access', {error});
-    redirect(`${accessPath}?access=failed`);
+    redirect(`${accessPath}?access=${accountAccessError(error)}`);
   }
 
   revalidatePath(`/${locale}/administrators`);
