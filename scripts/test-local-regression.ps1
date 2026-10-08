@@ -79,6 +79,51 @@ if ($needsBrowser) {
   if (-not (Test-Path -LiteralPath '.env.local')) {
     throw 'Missing .env.local. Run scripts/start-local.ps1 to configure local environment.'
   }
+  $localEnvFile = Get-Content -LiteralPath '.env.local' -Raw
+  if ($localEnvFile -notmatch '(?m)^NEXT_PUBLIC_SUPABASE_URL=http://(127\.0\.0\.1|localhost):\d+\s*
+  $env:E2E_FAIL_FAST = 'true'
+}
+
+switch ($Mode) {
+  'Unit' {
+    Invoke-Pnpm @('test')
+  }
+  'Quality' {
+    Invoke-Pnpm @('lint')
+    Invoke-Pnpm @('typecheck')
+    Invoke-Pnpm @('test')
+    Invoke-Pnpm @('build')
+  }
+  'Database' {
+    Invoke-Pnpm @('test:db')
+  }
+  'Smoke' {
+    Invoke-Pnpm @(
+      'test:e2e',
+      'tests/e2e/admin-teaching-report-ui.spec.ts',
+      'tests/e2e/arabic-flow.spec.ts',
+      'tests/e2e/english-flow.spec.ts',
+      'tests/e2e/report-cycle-workflow.spec.ts'
+    )
+  }
+  'Browser' {
+    Invoke-Pnpm @('test:e2e')
+  }
+  'All' {
+    Invoke-Pnpm @('lint')
+    Invoke-Pnpm @('typecheck')
+    Invoke-Pnpm @('test')
+    Invoke-Pnpm @('build')
+    Invoke-Pnpm @('test:db')
+    Invoke-Pnpm @('test:e2e')
+  }
+}
+Write-Host "Local $Mode checks passed." -ForegroundColor Green
+) {
+    throw '.env.local must point at local Supabase. Run scripts/start-local.ps1; never run E2E against production.'
+  }
+  # If an existing Next dev server was launched with different variables,
+  # restart it after correcting .env.local before reusing its port.
   # Avoid CI mode: keep local server reuse and readable list output.
   $env:E2E_FAIL_FAST = 'true'
 }
