@@ -32,7 +32,7 @@ export type ExportPanelLabels = {
   pdfs: string;
   fileOptions: string;
   submit: string;
-  errors: Record<'period' | 'datasets' | 'scope' | 'generic', string>;
+  errors: Record<'period' | 'datasets' | 'scope' | 'generic' | 'expired' | 'access', string>;
 };
 
 export type ExportPanelOptions = {

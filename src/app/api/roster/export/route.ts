@@ -115,8 +115,9 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error('Unable to export roster', {error});
 
-    return new Response('Roster export failed', {
-      status: 400
+    return new Response('The roster could not be generated. Refresh the export page and try again.', {
+      status: 500,
+      headers: {'Cache-Control': 'private, no-store'}
     });
   }
 }

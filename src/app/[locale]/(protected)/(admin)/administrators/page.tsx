@@ -40,6 +40,10 @@ export default async function AdministratorsPage({params, searchParams}: {
       {query.access === 'failed' ? <Alert variant="danger">{t('accessFailed')}</Alert> : null}
       {query.error === 'validation' ? <Alert variant="danger">{common('validation')}</Alert> : null}
       {query.error === 'save' ? <Alert variant="danger">{common('saveError')}</Alert> : null}
+      {query.error === 'permission' ? <Alert variant="danger">{common('permission')}</Alert> : null}
+      {query.error === 'notFound' ? <Alert variant="danger">{common('notFound')}</Alert> : null}
+      {query.error === 'rule' ? <Alert variant="danger">{common('rule')}</Alert> : null}
+      {query.error === 'stale' ? <Alert variant="danger">{common('stale')}</Alert> : null}
       {query.error === 'last-admin' ? <Alert variant="danger">{t('lastAdministrator')}</Alert> : null}
 
       <AdministratorManagementList

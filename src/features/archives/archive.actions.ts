@@ -20,7 +20,11 @@ import {
   type ManagedArchiveEntityType
 } from './archive.repository';
 import {validatePermanentDeleteRequest} from './archive.service';
-import {archiveErrorReason} from './archive-error-guidance';
+import {archiveErrorReason, type ArchiveErrorReason} from './archive-error-guidance';
+
+export type ArchiveMutationResult =
+  | {ok: true}
+  | {ok: false; error: ArchiveErrorReason};
 
 const managedEntitySchema = z.enum(['TEACHER', 'GUARDIAN', 'CLASS', 'SUBJECT', 'GROUP']);
 
@@ -50,9 +54,15 @@ function revalidateLifecycle(locale: Locale) {
 export async function archiveStudentAction(formData: FormData) {
   const locale = localeFrom(formData);
   await requireProfile(locale, 'ADMIN');
-  await archiveStudent(idFrom(formData));
+  try {
+    await archiveStudent(idFrom(formData));
+  } catch (error) {
+    console.error('Unable to archive student', {error});
+    return {ok: false as const, error: archiveErrorReason(error, 'archive')};
+  }
   revalidatePath(`/${locale}/students`);
   revalidatePath(`/${locale}/archives`);
+  return {ok: true as const};
 }
 
 export async function restoreArchivedStudentAction(formData: FormData) {
@@ -105,10 +115,16 @@ export async function permanentlyDeleteArchivedStudentAction(
 export async function archiveManagedEntityAction(formData: FormData) {
   const locale = localeFrom(formData);
   await requireProfile(locale, 'ADMIN');
-  const entityType = managedEntityFrom(formData);
-  const entityId = idFrom(formData);
-  await archiveManagedEntity(entityType, entityId);
+  try {
+    const entityType = managedEntityFrom(formData);
+    const entityId = idFrom(formData);
+    await archiveManagedEntity(entityType, entityId);
+  } catch (error) {
+    console.error('Unable to archive managed record', {error});
+    return {ok: false as const, error: archiveErrorReason(error, 'archive')};
+  }
   revalidateLifecycle(locale);
+  return {ok: true as const};
 }
 
 export async function restoreManagedEntityAction(formData: FormData) {

@@ -41,3 +41,18 @@ This inventory is a progress log, not a claim that all app error surfaces have b
 - Teacher/guardian active-status toggles, archive actions launched outside the archive list, administrator access invitation specifics, CSV import failure recovery and remaining export API download responses still need focused tests.
 - Provider errors should never reveal whether a login account exists. The password-recovery service intentionally reports the same public result for known and unknown email addresses.
 - Full automated unit, browser and end-to-end tests remain a separate verification task; the Next.js preview build covers compilation and TypeScript but not runtime interaction.
+
+## Third pass — lifecycle, CSV revalidation, and file-download responses
+
+- Archiving and reactivating student, Teacher and Guardian records returns typed safe failure results for the interactive list, so users see a reason on the same page rather than a silent failure or raw server exception.
+- The legacy Guardian list's native form receives an error redirect and displays a safe status message. Administrator lifecycle actions preserve their last-active-administrator restriction and now translate safe database codes for permissions and changed records.
+- CSV roster preview distinguishes a malformed CSV from unavailable current school catalog data. Confirmation refreshes the catalog, and reports meaningful records-changed errors without accepting stale IDs.
+- Export and roster download buttons now inspect authenticated HTTP responses. Expired requests, unavailable access and server failures cannot silently download HTML/error text as if it were a ZIP or CSV file.
+- Browser downloads remain same-origin and require successful attachment responses. No database or schema changes.
+
+Remaining: authenticated browser interaction tests, permission failure simulations, login/access invitation provider-specific codes, and reviewing the default failure paths in other direct actions.
+
+## Access-link reliability
+
+- Disconnecting a Teacher's login access now reports success/failure on that Teacher's access page, rather than swallowing a server failure and leaving the record unchanged without explanation.
+- Invalid or stale access-link submissions direct the administrator to refresh the current record.

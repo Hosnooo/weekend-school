@@ -57,6 +57,8 @@ export function ArchivePanel({
               action={downloadAction}
               errorLabels={{
                 generic: labels.downloadError,
+                expired: labels.downloadError,
+                access: labels.downloadError,
                 period: labels.downloadError,
                 datasets: labels.downloadError,
                 scope: labels.downloadError

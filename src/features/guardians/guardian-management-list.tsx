@@ -1,6 +1,8 @@
 'use client';
 
 import {useState} from 'react';
+
+import {lifecycleErrorKey} from '@/lib/validation/lifecycle-feedback';
 import {useTranslations} from 'next-intl';
 
 import {ConfirmationDialog} from '@/components/ui/confirmation-dialog';
@@ -9,7 +11,7 @@ import {DropdownMenu, DropdownMenuItem} from '@/components/ui/dropdown-menu';
 import {EmptyState} from '@/components/ui/empty-state';
 import {StatusBadge} from '@/components/ui/status-badge';
 import {archiveManagedEntityAction} from '@/features/archives/archive.actions';
-import {setGuardianActiveAction} from '@/features/guardians/guardian.actions';
+import {changeGuardianActiveMutationAction} from '@/features/guardians/guardian.actions';
 import type {GuardianListItem} from '@/features/guardians/guardian.types';
 import type {Locale} from '@/i18n/config';
 import {Link, useRouter} from '@/i18n/navigation';
@@ -18,6 +20,7 @@ export function GuardianManagementList({locale, guardians}: {locale: Locale; gua
   const t = useTranslations('guardians');
   const common = useTranslations('common');
   const router = useRouter();
+  const [failure, setFailure] = useState<string | null>(null);
   const [lifecycleTarget, setLifecycleTarget] = useState<GuardianListItem | null>(null);
 
   if (guardians.length === 0) return <EmptyState title={t('empty')} />;
@@ -27,14 +30,25 @@ export function GuardianManagementList({locale, guardians}: {locale: Locale; gua
     const formData = new FormData();
     formData.set('locale', locale);
     formData.set('id', lifecycleTarget.id);
-    if (lifecycleTarget.isActive) {
-      formData.set('entityType', 'GUARDIAN');
-      await archiveManagedEntityAction(formData);
-    } else {
-      formData.set('isActive', 'true');
-      await setGuardianActiveAction(formData);
+    try {
+      const result = lifecycleTarget.isActive
+        ? await (async () => {
+            formData.set('entityType', 'GUARDIAN');
+            return archiveManagedEntityAction(formData);
+          })()
+        : await (async () => {
+            formData.set('isActive', 'true');
+            return changeGuardianActiveMutationAction(formData);
+          })();
+      if (!result.ok) {
+        setFailure(common(lifecycleErrorKey(result.error)));
+        return;
+      }
+      setFailure(null);
+      router.refresh();
+    } catch {
+      setFailure(common('lifecycleError'));
     }
-    router.refresh();
   }
 
   const columns: DataTableColumn<GuardianListItem>[] = [
@@ -65,7 +79,7 @@ export function GuardianManagementList({locale, guardians}: {locale: Locale; gua
           <DropdownMenuItem onSelect={() => router.push(`/guardians/${guardian.id}/edit`)}>
             {common('edit')}
           </DropdownMenuItem>
-          <DropdownMenuItem destructive={guardian.isActive} onSelect={() => setLifecycleTarget(guardian)}>
+          <DropdownMenuItem destructive={guardian.isActive} onSelect={() => {setFailure(null); setLifecycleTarget(guardian);}}>
             {guardian.isActive ? common('deactivate') : common('reactivate')}
           </DropdownMenuItem>
         </DropdownMenu>
@@ -75,6 +89,7 @@ export function GuardianManagementList({locale, guardians}: {locale: Locale; gua
 
   return (
     <>
+      {failure ? <p className="form-error" role="alert" aria-live="polite">{failure}</p> : null}
       <DataTable caption={t('title')} columns={columns} getRowKey={(guardian) => guardian.id} rows={guardians} />
       <ConfirmationDialog
         cancelLabel={common('cancel')}

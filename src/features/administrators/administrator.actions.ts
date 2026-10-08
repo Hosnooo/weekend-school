@@ -152,6 +152,12 @@ function isLastAdministratorError(error: unknown) {
   return error instanceof Error && error.message.includes('last active Administrator');
 }
 
+function administratorLifecycleError(error: unknown) {
+  if (isLastAdministratorError(error)) return 'last-admin';
+  const reason = persistenceFailure(error).error;
+  return reason && reason !== 'validation' ? reason : 'save';
+}
+
 export async function createAdministratorAction(
   _state: ActionState,
   formData: FormData
@@ -254,7 +260,7 @@ export async function setAdministratorActiveAction(formData: FormData) {
     }, lifecycleDependencies());
   } catch (error) {
     console.error('Unable to change administrator status', {error});
-    const reason = isLastAdministratorError(error) ? 'last-admin' : 'save';
+    const reason = administratorLifecycleError(error);
     redirect(`/${locale}/administrators?error=${reason}`);
   }
 
@@ -276,7 +282,7 @@ export async function deleteAdministratorAction(formData: FormData) {
     }, lifecycleDependencies());
   } catch (error) {
     console.error('Unable to delete administrator', {error});
-    const reason = isLastAdministratorError(error) ? 'last-admin' : 'save';
+    const reason = administratorLifecycleError(error);
     redirect(`/${locale}/administrators?error=${reason}`);
   }
 

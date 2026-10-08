@@ -215,7 +215,7 @@ export async function unlinkStudentGuardianAction(formData: FormData) {
   refresh(locale, parsed.data.guardianId, parsed.data.studentId);
 }
 
-export async function setGuardianActiveAction(formData: FormData) {
+export async function changeGuardianActiveMutationAction(formData: FormData) {
   const locale = localeFrom(formData);
   const profile = await requireProfile(locale, 'ADMIN');
   const parsed = z.object({
@@ -225,12 +225,28 @@ export async function setGuardianActiveAction(formData: FormData) {
     id: formData.get('id'),
     isActive: formData.get('isActive')
   });
-  if (!parsed.success) return;
+  if (!parsed.success) return {ok: false as const, error: 'validation' as const};
 
-  await setGuardianActive(
-    profile.schoolId,
-    parsed.data.id,
-    parsed.data.isActive === 'true'
-  );
+  try {
+    await setGuardianActive(
+      profile.schoolId,
+      parsed.data.id,
+      parsed.data.isActive === 'true'
+    );
+  } catch (error) {
+    console.error('Unable to change Guardian status', {error});
+    const classified = persistenceFailure(error);
+    return {ok: false as const, error: classified.error ?? 'save'};
+  }
   refresh(locale, parsed.data.id);
+  return {ok: true as const};
+}
+
+/** Kept for the legacy Guardians page's native form actions. */
+export async function setGuardianActiveAction(formData: FormData): Promise<void> {
+  const locale = localeFrom(formData);
+  const result = await changeGuardianActiveMutationAction(formData);
+  if (!result.ok) {
+    redirect(`/${locale}/students/guardians?error=${result.error}`);
+  }
 }

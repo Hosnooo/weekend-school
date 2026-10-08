@@ -1,6 +1,8 @@
 'use client';
 
 import {useState} from 'react';
+
+import {lifecycleErrorKey} from '@/lib/validation/lifecycle-feedback';
 import {useTranslations} from 'next-intl';
 
 import {ConfirmationDialog} from '@/components/ui/confirmation-dialog';
@@ -17,6 +19,7 @@ export function StudentManagementList({locale, students}: {locale: Locale; stude
   const t = useTranslations('students');
   const common = useTranslations('common');
   const router = useRouter();
+  const [failure, setFailure] = useState<string | null>(null);
   const [archiveTarget, setArchiveTarget] = useState<StudentListItem | null>(null);
 
   const localName = (student: StudentListItem) =>
@@ -37,8 +40,17 @@ export function StudentManagementList({locale, students}: {locale: Locale; stude
     const formData = new FormData();
     formData.set('locale', locale);
     formData.set('id', archiveTarget.id);
-    await archiveStudentAction(formData);
-    router.refresh();
+    try {
+      const result = await archiveStudentAction(formData);
+      if (!result.ok) {
+        setFailure(common(lifecycleErrorKey(result.error)));
+        return;
+      }
+      setFailure(null);
+      router.refresh();
+    } catch {
+      setFailure(common('lifecycleError'));
+    }
   }
 
   const columns: DataTableColumn<StudentListItem>[] = [
@@ -74,7 +86,7 @@ export function StudentManagementList({locale, students}: {locale: Locale; stude
           <DropdownMenuItem onSelect={() => router.push(`/students/${student.id}/enrollment`)}>
             {t('manageEnrollment')}
           </DropdownMenuItem>
-          <DropdownMenuItem destructive onSelect={() => setArchiveTarget(student)}>
+          <DropdownMenuItem destructive onSelect={() => {setFailure(null); setArchiveTarget(student);}}>
             {common('deactivate')}
           </DropdownMenuItem>
         </DropdownMenu>
@@ -84,6 +96,7 @@ export function StudentManagementList({locale, students}: {locale: Locale; stude
 
   return (
     <>
+      {failure ? <p className="form-error" role="alert" aria-live="polite">{failure}</p> : null}
       <DataTable caption={t('title')} columns={columns} getRowKey={(student) => student.id} rows={students} />
       <ConfirmationDialog
         cancelLabel={common('cancel')}

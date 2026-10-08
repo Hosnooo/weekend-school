@@ -30,6 +30,8 @@ export type RosterImportActionState = {
     | 'invalidCsv'
     | 'validation'
     | 'duplicateImport'
+    | 'catalogUnavailable'
+    | 'recordsChanged'
     | 'save'
     | null;
   preview: RosterImportPreview | null;
@@ -108,11 +110,17 @@ export async function previewRosterImportAction(
     return errorState('fileTooLarge');
   }
 
+  let parsed: ReturnType<typeof parseRosterCsv>;
   try {
-    const parsed = parseRosterCsv(sourceRows);
+    parsed = parseRosterCsv(sourceRows);
+  } catch (error) {
+    console.error('Unable to parse roster CSV', {error});
+    return errorState('invalidCsv');
+  }
+
+  try {
     const catalog = await listRosterImportCatalog(profile.schoolId);
     const preview = buildRosterImportPreview(parsed, catalog);
-
     return {
       status: 'preview',
       error: null,
@@ -121,8 +129,8 @@ export async function previewRosterImportAction(
       summary: null
     };
   } catch (error) {
-    console.error('Unable to preview roster CSV', {error});
-    return errorState('invalidCsv');
+    console.error('Unable to load roster validation data', {error});
+    return errorState('catalogUnavailable', {sourceRows});
   }
 }
 
@@ -144,16 +152,22 @@ export async function confirmRosterImportAction(
 
   let preview: RosterImportPreview;
 
+  let parsed: ReturnType<typeof parseRosterCsv>;
   try {
-    const parsed = parseRosterCsv(sourceRows);
+    parsed = parseRosterCsv(sourceRows);
+  } catch (error) {
+    console.error('Unable to parse roster CSV before import', {error});
+    return errorState('invalidCsv', {sourceRows});
+  }
 
-    // Confirmation intentionally re-loads the live school catalog and rebuilds
-    // the preview. Browser-resolved Class/Group IDs are never trusted.
+  try {
+    // Recheck the actual live school catalog at confirmation time.
+    // The browser's stored Class/Group IDs are never authoritative.
     const catalog = await listRosterImportCatalog(profile.schoolId);
     preview = buildRosterImportPreview(parsed, catalog);
   } catch (error) {
-    console.error('Unable to revalidate roster CSV', {error});
-    return errorState('invalidCsv', {sourceRows});
+    console.error('Unable to revalidate roster against current school data', {error});
+    return errorState('catalogUnavailable', {sourceRows});
   }
 
   if (
@@ -182,22 +196,15 @@ export async function confirmRosterImportAction(
   } catch (error) {
     console.error('Unable to import roster CSV', {error});
 
-    if (
-      typeof error === 'object' &&
-      error !== null &&
-      'code' in error &&
-      String(error.code) === '23505'
-    ) {
-      return errorState('duplicateImport', {
-        preview,
-        sourceRows
-      });
-    }
-
-    return errorState('save', {
-      preview,
-      sourceRows
-    });
+    const code = typeof error === 'object' && error !== null && 'code' in error
+      ? String(error.code)
+      : '';
+    const reason = code === '23505'
+      ? 'duplicateImport'
+      : ['23503', '23514', '40001', 'P0002'].includes(code)
+        ? 'recordsChanged'
+        : 'save';
+    return errorState(reason, {preview, sourceRows});
   }
 
   revalidatePath(`/${locale}/students`);

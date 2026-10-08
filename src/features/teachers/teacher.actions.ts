@@ -250,9 +250,16 @@ export async function setTeacherActiveAction(formData: FormData) {
     id: formData.get('id'),
     isActive: formData.get('isActive')
   });
-  if (!parsed.success) return;
-  await setTeacherActive(profile.schoolId, parsed.data.id, parsed.data.isActive === 'true');
+  if (!parsed.success) return {ok: false as const, error: 'validation' as const};
+  try {
+    await setTeacherActive(profile.schoolId, parsed.data.id, parsed.data.isActive === 'true');
+  } catch (error) {
+    console.error('Unable to change Teacher status', {error});
+    const classified = persistenceFailure(error);
+    return {ok: false as const, error: classified.error ?? 'save'};
+  }
   revalidateTeacherSurfaces(locale, parsed.data.id);
+  return {ok: true as const};
 }
 
 export async function resendTeacherAccessAction(formData: FormData) {
@@ -294,7 +301,12 @@ export async function unlinkTeacherAccessAction(formData: FormData) {
     teacherId: formData.get('teacherId'),
     profileId: formData.get('profileId')
   });
-  if (!parsed.success) return;
+  if (!parsed.success) {
+    const teacherId = databaseUuid.safeParse(formData.get('teacherId'));
+    redirect(teacherId.success
+      ? `/${locale}/teachers/${teacherId.data}/access?access=invalid`
+      : `/${locale}/teachers`);
+  }
 
   try {
     await unlinkTeacherAccess({
@@ -304,8 +316,9 @@ export async function unlinkTeacherAccessAction(formData: FormData) {
     }, createUnlinkDependencies());
   } catch (error) {
     console.error('Unable to unlink teacher access', {error});
-    return;
+    redirect(`/${locale}/teachers/${parsed.data.teacherId}/access?access=unlinkFailed`);
   }
 
   revalidateTeacherSurfaces(locale, parsed.data.teacherId);
+  redirect(`/${locale}/teachers/${parsed.data.teacherId}/access?access=unlinked`);
 }

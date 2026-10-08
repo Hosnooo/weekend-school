@@ -215,7 +215,8 @@
     "rule": "This change conflicts with an existing school record or date rule. Review the dates and assignments.",
     "stale": "This record changed while you were editing. Refresh the page, review the current values, and try again.",
     "permission": "You do not have permission to make this change. Ask an administrator to review your access.",
-    "protectedHistory": "This change would affect a teacher's submitted history. Choose a date outside the submitted period or review the recorded updates first."
+    "protectedHistory": "This change would affect a teacher's submitted history. Choose a date outside the submitted period or review the recorded updates first.",
+    "lifecycleError": "This status change could not be completed. The record was not confirmed as changed. Refresh the list and try again; if it continues, contact an administrator."
   },
   "classes": {
     "title": "Classes",
@@ -335,7 +336,9 @@
         "invalidCsv": "The CSV could not be read. Check its headers and formatting.",
         "validation": "The CSV changed or contains blocking validation errors. Review the refreshed preview.",
         "duplicateImport": "This same roster import has already been completed.",
-        "save": "The roster could not be imported. No rows were saved."
+        "save": "The import could not be completed. No new rows were confirmed. Try previewing again; if the problem continues, contact the school administrator.",
+        "catalogUnavailable": "The current class, group and guardian records could not be checked. Nothing was imported. Refresh the page and preview the file again.",
+        "recordsChanged": "School records changed while importing. Nothing was imported. Preview the CSV again to resolve any new class, group or guardian conflicts."
       },
       "issues": {
         "MISSING_COLUMN": "A required column is missing.",
@@ -569,7 +572,10 @@
     "unknown": "Status unavailable",
     "resendAccess": "Resend access link",
     "accessSent": "Login access updated. If a new invitation or reset link was needed, it was sent.",
-    "accessFailed": "Login access could not be updated. Try again."
+    "accessFailed": "Login access could not be created or the link could not be sent. Check the teacher's login email and try again. If it continues, contact the administrator.",
+    "accessUnlinkFailed": "Login access could not be disconnected. It may still be active. Refresh this page and try again; if it continues, contact an administrator.",
+    "accessUnlinked": "Teacher login access was disconnected. The Teacher record and teaching history were preserved.",
+    "accessInvalid": "The selected login link changed or is no longer valid. Refresh this page and try again."
   },
   "reportLanguages": {
     "en": "English",
@@ -934,7 +940,9 @@
     "errorPeriod": "Choose both custom dates. The end date must be on or after the start date.",
     "errorDatasets": "Select at least one dataset to include in the export.",
     "errorScope": "Complete the selected export scope: choose its class, subject, group, student, or teacher.",
-    "errorDownload": "The export could not be prepared. Your data was not changed. Try again; if it continues, ask an administrator to check export access."
+    "errorDownload": "The export could not be prepared. Your data was not changed. Try again; if it continues, ask an administrator to check export access.",
+    "errorExpired": "This export link has expired. Create a new export and download it again.",
+    "errorAccess": "This file is no longer accessible. Sign in again, refresh the page, and create a new export."
   },
   "teachingAssignmentsIndex": {
     "title": "Teaching Assignments",

@@ -4,9 +4,10 @@ import type {FormEvent, ReactNode} from 'react';
 import {useState, useTransition} from 'react';
 
 import {validateExportDownloadForm, type ExportFormIssue} from './export-form-validation';
+import {downloadProtectedFile, ProtectedDownloadFailure} from './browser-download';
 
 export type ProtectedDownloadAction = (formData: FormData) => Promise<string>;
-type ErrorKey = ExportFormIssue | 'generic';
+type ErrorKey = ExportFormIssue | 'expired' | 'access' | 'generic';
 
 export function ProtectedDownloadForm({
   action,
@@ -40,17 +41,13 @@ export function ProtectedDownloadForm({
     startTransition(async () => {
       try {
         const href = await action(formData);
-        // The server provides an internal protected export route, never an
-        // arbitrary external download destination.
-        if (!href.startsWith('/api/exports/')) throw new Error('Invalid download path');
-        const anchor = document.createElement('a');
-        anchor.href = href;
-        anchor.hidden = true;
-        document.body.appendChild(anchor);
-        anchor.click();
-        anchor.remove();
-      } catch {
-        setError('generic');
+        await downloadProtectedFile(href, 'exports');
+      } catch (failure) {
+        if (failure instanceof ProtectedDownloadFailure) {
+          setError(failure.reason === 'unavailable' ? 'generic' : failure.reason);
+        } else {
+          setError('generic');
+        }
       }
     });
   }

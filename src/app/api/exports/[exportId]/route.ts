@@ -33,9 +33,12 @@ export async function GET(
         now: new Date().toISOString()
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : '';
-      return new Response(message.includes('expired') ? 'Export expired' : 'Not found', {
-        status: message.includes('expired') ? 410 : 404
+      const expired = error instanceof Error && error.message.includes('expired');
+      return new Response(expired
+        ? 'This export link has expired. Create a new export.'
+        : 'This export is unavailable for your account. Sign in and create a new export.', {
+        status: expired ? 410 : 404,
+        headers: {'Cache-Control': 'private, no-store'}
       });
     }
 
@@ -53,6 +56,9 @@ export async function GET(
     });
   } catch (error) {
     console.error('Unable to generate protected export', {error});
-    return new Response('Export unavailable', {status: 500});
+    return new Response('The export could not be generated. Return to Exports and try again.', {
+      status: 500,
+      headers: {'Cache-Control': 'private, no-store'}
+    });
   }
 }
