@@ -487,6 +487,7 @@ export async function reopenAdminReportWorkspaceAction(
   }
 
   revalidatePath(`/${locale}/reports`);
+  revalidatePath(`/${locale}/reports/workspace/${batchId.data}`);
 
   redirect(
     reportRedirect(

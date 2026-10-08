@@ -688,6 +688,8 @@
     "englishField": "English",
     "arabicField": "Arabic",
     "saveChanges": "Save changes",
+    "reopenCycleForAdmin": "Reopen for admin editing",
+    "reopenCycleConfirm": "Reopen this unsent Report Cycle for administrator changes? Prepared reports will return to draft. Teachers will not need to resubmit their updates. You must finalize again before sending.",
     "finalizeAndPrepare": "Finalize and prepare to send",
     "editReport": "Edit report",
     "sendContextReports": "Send reports",

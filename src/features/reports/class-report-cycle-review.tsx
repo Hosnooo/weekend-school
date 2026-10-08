@@ -1,11 +1,15 @@
 import {getTranslations} from 'next-intl/server';
 
+import {ConfirmSubmitButton} from '@/components/ui/confirm-submit-button';
 import {EmptyState} from '@/components/ui/empty-state';
 import {sendAdminReportBatchAction} from '@/features/reports/admin-report-delivery.actions';
 import type {Locale} from '@/i18n/config';
 import {Link} from '@/i18n/navigation';
 
-import {finalizeClassReportCycleAction} from './admin-report-workflow.actions';
+import {
+  finalizeClassReportCycleAction,
+  reopenAdminReportWorkspaceAction
+} from './admin-report-workflow.actions';
 import {getClassReportReviewWorkspaceWithAttendance} from './class-report-attendance.repository';
 import {getClassReportCycleLivePreview} from './class-report-finalization.repository';
 import {getClassReportCycleEmailPreviewAction} from './class-report-preview.actions';
@@ -248,6 +252,19 @@ export async function ClassReportCycleReview({
                 >
                   {t('sendContextReports')}
                 </button>
+              </form>
+            ) : null}
+
+            {canReopen ? (
+              <form action={reopenAdminReportWorkspaceAction}>
+                {sharedHidden}
+                <ConfirmSubmitButton
+                  className="button button-secondary"
+                  confirmMessage={t('reopenCycleConfirm')}
+                  type="submit"
+                >
+                  {t('reopenCycleForAdmin')}
+                </ConfirmSubmitButton>
               </form>
             ) : null}
 
