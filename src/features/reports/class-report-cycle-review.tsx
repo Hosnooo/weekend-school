@@ -272,7 +272,7 @@ export async function ClassReportCycleReview({
               className="button button-secondary action-link"
               href="/reports/delivery-status"
             >
-              {t('deliveryStatus')}
+              {t('viewDeliveryStatus')}
             </Link>
           </div>
         )}
