@@ -204,7 +204,7 @@ async function persistClassReportReview(
 
   // An admin may have an already open editor when another admin finalizes.
   // Reopen only unsent report snapshots; do not change teacher submissions.
-  if (review.status === 'FINALIZED') {
+  if (review?.status === 'FINALIZED') {
     await reopenAdminReportWorkspace(schoolId, payload.batchId);
   }
 
