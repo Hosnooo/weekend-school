@@ -115,7 +115,13 @@ describe('migration contract', () => {
       '20260930053000_roster_import_create_classes.sql',
       '20260930063417_restrict_internal_trigger_execution.sql',
       '20260930224102_enrollment_start_correction.sql',
-      '20260930225139_correct_transfer_boundary.sql'
+      '20260930225139_correct_transfer_boundary.sql',
+      '20261001090000_report_template_bilingual_defaults.sql',
+      '20261001100000_preserve_report_review_on_source_toggle.sql',
+      '20261001110000_report_attendance_overrides.sql',
+      '20261006042000_grant_report_batch_delete.sql',
+      '20261006043000_cancel_reopened_report_cycle.sql',
+      '20261008050122_cancel_prepared_unsent_report_cycle.sql'
     ]);
   });
 
