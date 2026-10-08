@@ -216,7 +216,7 @@ test(
     // review data. The submitted Teacher update must remain in the database.
     page.once('dialog', (dialog) => dialog.accept());
     await page.getByRole('button', {name: 'Dismiss cycle'}).click();
-    await expect(page).toHaveURL(/\/en\/reports\?dismissed=1/);
+    await expect(page).toHaveURL(/\/en\/reports\?cancelled=1/);
     await expect(page.getByText('Unsent Report Cycle dismissed.')).toBeVisible();
 
     expect(runtimeErrors).toEqual([]);
