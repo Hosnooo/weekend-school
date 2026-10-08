@@ -194,11 +194,30 @@ describe('Class Report Cycle contract', () => {
     );
   });
 
-  it('deletes only unfinished Class Report Cycles', () => {
+  it('allows administrators to dismiss unsent prepared cycles, but not delivered cycles', () => {
     const repository = source(repositoryPath);
+    const listPage = source(reportsPagePath);
+    const workspacePage = source(workspacePagePath);
+    const migration = source(
+      'supabase/migrations/20261008050122_cancel_prepared_unsent_report_cycle.sql'
+    );
 
     expect(repository).toContain("'cancel_class_report_cycle'");
-    expect(repository).toContain("'FINALIZED'");
+    expect(repository).toContain('getDismissibleClassReportBatchIds');
+    expect(repository).toContain("!['DRAFT', 'READY'].includes");
+    expect(repository).toContain('email_deliveries(id)');
+    expect(listPage).toContain('cycle.canDismiss');
+    expect(workspacePage).toContain('classCycle.canDismiss');
+    expect(listPage).toContain("t('dismissCycleConfirm')");
+    expect(workspacePage).toContain("t('dismissCycleConfirm')");
+    expect(migration).toContain("'DRAFT', 'REVIEW', 'FINALIZED'");
+    expect(migration).toContain("report.status not in ('DRAFT', 'READY')");
+    expect(migration).toContain('public.email_deliveries');
+    expect(migration).toContain('newer_report.batch_id is distinct from p_batch_id');
+    expect(migration).toContain('public.is_admin()');
+    expect(migration).toContain('for update');
+    expect(migration).toContain('delete from public.reports');
+    expect(migration).not.toContain('delete from public.weekly_submissions');
   });
 
   it('places report cycle feedback next to the cycle list', () => {

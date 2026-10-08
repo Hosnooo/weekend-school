@@ -237,3 +237,9 @@ The historical Teacher identity cutover test requires rows inserted before the i
 **Status:** Accepted — 2026-10-08
 
 The administrator's **Edit update** changes report review content without reopening or resubmitting teachers' Teaching Updates. The edit action checks current report state; if the report cycle was finalized but not sent, it uses the pre-existing admin-only `reopen_unsent_report_batch` operation to move its prepared report snapshots back to draft and opens the chosen editor. This does not modify teacher data, request updates from teachers, or send email. Administrators finalize again before sending the changed reports, retaining immutable previous snapshots and revisions. Once email delivery is pending or sent, the editor remains locked and corrections require a separate revision flow. Saving from a stale editor honors the same unsent-only restriction.
+
+## D-032 — Administrators may dismiss prepared but unsent Class Report Cycles
+
+**Status:** Accepted — 2026-10-08
+
+The action previously called **Cancel cycle** is **Dismiss cycle**, available from the cycle list and workspace after finalization provided no report has entered delivery, no delivery history exists, and no later report in another batch references an existing snapshot. The school-scoped, admin-only `cancel_class_report_cycle` RPC checks these restrictions under a batch row lock and removes eligible draft or ready report revisions newest-first together with the batch in one database transaction. It never changes teacher Teaching Updates. Once delivery has started or completed, the cycle remains protected and cannot be dismissed. The UI uses an explicit irreversible-action confirmation and reflects whether the cycle is dismissible; the RPC always rechecks conditions at submission time.

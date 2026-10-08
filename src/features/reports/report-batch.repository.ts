@@ -975,6 +975,7 @@ export type ClassReportCycleListItem = {
   periodEnd: string;
   status: ReportBatchStatus;
   createdAt: string;
+  canDismiss: boolean;
 };
 
 export type ClassReportCycleMissingContext = {
@@ -989,6 +990,7 @@ export type ClassReportCycleMissingContext = {
 export type ClassReportCycleWorkspace =
   ReportBatchWorkspace & {
     missingContexts: ClassReportCycleMissingContext[];
+    canDismiss: boolean;
     reports: Array<{
       id: string;
       studentId: string;
@@ -1039,10 +1041,8 @@ export async function deleteClassReportCycle(
   if (!batch || batch.scope_type !== 'CLASS') {
     throw new Error('Report Cycle not found');
   }
-  if (batch.status === 'FINALIZED') {
-    throw new Error('Finalized Report Cycles cannot be deleted');
-  }
-
+  // The database RPC atomically rechecks that the cycle is unsent,
+  // has no delivery history, and has no later report revisions.
   const {error} = await db.rpc(
     'cancel_class_report_cycle',
     {
@@ -1051,6 +1051,55 @@ export async function deleteClassReportCycle(
   );
 
   if (error) throw error;
+}
+
+/**
+ * Keep the UI in sync with the atomic server-side dismissal restrictions.
+ * A newer report revision or any delivery history makes a cycle immutable.
+ */
+async function getDismissibleClassReportBatchIds(
+  schoolId: string,
+  batchIds: string[]
+): Promise<Set<string>> {
+  if (batchIds.length === 0) return new Set();
+
+  const db = await createServerSupabaseClient();
+  const {data: reports, error} = await db
+    .from('reports')
+    .select('id,batch_id,status,email_deliveries(id)')
+    .eq('school_id', schoolId)
+    .in('batch_id', batchIds);
+  if (error) throw error;
+
+  const reportIds = (reports ?? []).map(({id}) => id);
+  const {data: successors, error: successorError} = reportIds.length > 0
+    ? await db.from('reports')
+        .select('batch_id,supersedes_report_id')
+        .eq('school_id', schoolId)
+        .in('supersedes_report_id', reportIds)
+    : {data: [], error: null};
+  if (successorError) throw successorError;
+
+  const ownBatch = new Map((reports ?? []).map(
+    ({id, batch_id}) => [id, batch_id]
+  ));
+  const blocked = new Set<string>();
+  for (const report of reports ?? []) {
+    if (
+      !['DRAFT', 'READY'].includes(report.status) ||
+      (report.email_deliveries ?? []).length > 0
+    ) {
+      blocked.add(report.batch_id);
+    }
+  }
+  for (const newer of successors ?? []) {
+    const originalBatchId = ownBatch.get(newer.supersedes_report_id);
+    if (originalBatchId && newer.batch_id !== originalBatchId) {
+      blocked.add(originalBatchId);
+    }
+  }
+
+  return new Set(batchIds.filter((id) => !blocked.has(id)));
 }
 
 export async function listClassReportCycles(
@@ -1073,14 +1122,18 @@ export async function listClassReportCycles(
     ...new Set((batches ?? []).map(({class_id}) => class_id))
   ];
 
-  const classResult =
+  const [classResult, dismissibleIds] = await Promise.all([
     classIds.length > 0
-      ? await db
-          .from('classes')
+      ? db.from('classes')
           .select('id,name_en,name_ar')
           .eq('school_id', schoolId)
           .in('id', classIds)
-      : {data: [], error: null};
+      : Promise.resolve({data: [], error: null}),
+    getDismissibleClassReportBatchIds(
+      schoolId,
+      (batches ?? []).map(({id}) => id)
+    )
+  ]);
 
   if (classResult.error) throw classResult.error;
 
@@ -1099,7 +1152,8 @@ export async function listClassReportCycles(
       periodStart: row.period_start,
       periodEnd: row.period_end,
       status: row.status as ReportBatchStatus,
-      createdAt: row.created_at
+      createdAt: row.created_at,
+      canDismiss: dismissibleIds.has(row.id)
     };
   });
 }
@@ -1129,7 +1183,8 @@ export async function getClassReportCycleWorkspace(
 
   const [
     classSubjectsResult,
-    reportsResult
+    reportsResult,
+    dismissibleIds
   ] = await Promise.all([
     db
       .from('class_subjects')
@@ -1144,7 +1199,8 @@ export async function getClassReportCycleWorkspace(
       )
       .eq('school_id', schoolId)
       .eq('batch_id', batchId)
-      .order('generated_at')
+      .order('generated_at'),
+    getDismissibleClassReportBatchIds(schoolId, [batchId])
   ]);
 
   if (classSubjectsResult.error) {
@@ -1274,6 +1330,7 @@ export async function getClassReportCycleWorkspace(
   return {
     ...workspace,
     missingContexts,
+    canDismiss: dismissibleIds.has(batchId),
     reports: reports.flatMap((report) => {
       if (!report.students) return [];
 

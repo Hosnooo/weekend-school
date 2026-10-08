@@ -745,7 +745,10 @@
     "cancelCycleConfirm": "Cancel this Report Cycle? Its unfinished review data will be deleted. This cannot be undone.",
     "cycleCancelled": "Report Cycle cancelled.",
     "historicalReportsTitle": "Historical Subject and Group reports",
-    "historicalReportsHelp": "Older Subject- and Group-scoped reporting remains available here for historical records."
+    "historicalReportsHelp": "Older Subject- and Group-scoped reporting remains available here for historical records.",
+    "dismissCycle": "Dismiss cycle",
+    "dismissCycleConfirm": "Dismiss this unsent Report Cycle? Its prepared reports and review data will be permanently deleted. Teachers' submitted updates will remain unchanged. This cannot be undone.",
+    "cycleDismissed": "Unsent Report Cycle dismissed."
   },
   "weekly": {
     "thisWeek": "This week",

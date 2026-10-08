@@ -115,16 +115,16 @@ export default async function AdminReportWorkspacePage({
               >
                 {t('title')}
               </Link>
-              {classCycle.batch.status !== 'FINALIZED' ? (
+              {classCycle.canDismiss ? (
                 <form action={cancelClassReportCycleAction}>
                   <input name="locale" type="hidden" value={locale} />
                   <input name="batchId" type="hidden" value={classCycle.batch.id} />
                   <ConfirmSubmitButton
                     className="button button-danger"
-                    confirmMessage={t('cancelCycleConfirm')}
+                    confirmMessage={t('dismissCycleConfirm')}
                     type="submit"
                   >
-                    {t('cancelCycle')}
+                    {t('dismissCycle')}
                   </ConfirmSubmitButton>
                 </form>
               ) : null}

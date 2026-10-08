@@ -151,7 +151,7 @@ export default async function ReportsPage({
 
       <section className="report-cycle-active detail-section">
         {query.cancelled ? (
-          <p className="form-success">{t('cycleCancelled')}</p>
+          <p className="form-success">{t('cycleDismissed')}</p>
         ) : null}
         {query.error ? (
           <p className="form-error">
@@ -206,16 +206,16 @@ export default async function ReportsPage({
                   >
                     {t('openCycle')}
                   </Link>
-                  {cycle.status !== 'FINALIZED' ? (
+                  {cycle.canDismiss ? (
                     <form action={cancelClassReportCycleAction}>
                       <input name="locale" type="hidden" value={locale} />
                       <input name="batchId" type="hidden" value={cycle.id} />
                       <ConfirmSubmitButton
                         className="button button-danger"
-                        confirmMessage={t('cancelCycleConfirm')}
+                        confirmMessage={t('dismissCycleConfirm')}
                         type="submit"
                       >
-                        {t('cancelCycle')}
+                        {t('dismissCycle')}
                       </ConfirmSubmitButton>
                     </form>
                   ) : null}
