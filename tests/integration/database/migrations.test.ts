@@ -121,7 +121,8 @@ describe('migration contract', () => {
       '20261001110000_report_attendance_overrides.sql',
       '20261006042000_grant_report_batch_delete.sql',
       '20261006043000_cancel_reopened_report_cycle.sql',
-      '20261008050122_cancel_prepared_unsent_report_cycle.sql'
+      '20261008050122_cancel_prepared_unsent_report_cycle.sql',
+      '20261008090000_allow_teachers_read_active_report_template.sql'
     ]);
   });
 
