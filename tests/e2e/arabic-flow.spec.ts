@@ -30,10 +30,10 @@ test('Arabic RTL teaching and report workflow uses the redesigned Group context'
   await createCycle.getByRole('button', {name: 'إنشاء دورة تقارير'}).click();
   await expect(page.getByRole('heading', {level: 1})).toContainText('دورة التقارير');
   await expect(page.locator('.report-source-row').filter({hasText: 'الأزرق'})).toHaveCount(1);
-  await page.getByRole('button', {name: 'إنشاء تقارير الطلاب'}).click();
-  const report = page.locator('.report-cycle-report-list article').filter({hasText: 'عمر حسن'});
-  await report.getByRole('link', {name: 'معاينة التقرير'}).click();
-  const frame = page.frameLocator('iframe[title="معاينة التقرير"]');
+  await page.getByRole('button', {name: 'إنهاء وإعداد للإرسال'}).click();
+  const preview = page.locator('section.report-email-review-panel').last();
+  await preview.locator('select').selectOption('e0000000-0000-0000-0000-000000000003');
+  const frame = preview.frameLocator('iframe.report-preview');
   await expect(frame.locator('html')).toHaveAttribute('dir', 'rtl');
   await expect(frame.getByText('تدربنا على القراءة العربية')).toBeVisible();
 });
