@@ -17,7 +17,12 @@ describe('Class Report Cycle editor disclosure', () => {
     const form = read('src/features/reports/report-edit-form.tsx');
 
     expect(sourceReview).toContain('const editorId =');
-    expect(sourceReview).toContain('href={`#${editorId}`}');
+    // Opening a prepared/finalized editor must pass the server-side reopen guard.
+    expect(sourceReview).toContain('action={openClassReportEditorAction}');
+    expect(sourceReview).toContain('id={editorId}');
+    const actions = read('src/features/reports/class-report-review.actions.ts');
+    expect(actions).toContain('await reopenAdminReportWorkspace(');
+    expect(actions).toContain('`${workspacePath}#report-edit-');
     expect(sourceReview).toContain('report-source-editable');
     expect(sourceReview).toContain('report-edit-panel report-source-editor');
     expect(sourceReview).toContain('Save & close');
