@@ -29,7 +29,9 @@ test('Arabic RTL teaching and report workflow uses the redesigned Group context'
   await createCycle.locator('input[name="periodEnd"]').fill('2026-09-21');
   await createCycle.getByRole('button', {name: 'إنشاء دورة تقارير'}).click();
   await expect(page.getByRole('heading', {level: 1})).toContainText('دورة التقارير');
-  await expect(page.locator('.report-source-row').filter({hasText: 'الأزرق'})).toHaveCount(1);
+  await expect(page.locator('.report-source-context')
+    .filter({hasText: 'القراءة العربية · الأزرق'})
+    .locator('.report-source-row')).toHaveCount(1);
   await page.getByRole('button', {name: 'إنهاء وتجهيز للإرسال'}).click();
   const preview = page.locator('section.report-email-review-panel').last();
   await preview.locator('select').selectOption('e0000000-0000-0000-0000-000000000003');
