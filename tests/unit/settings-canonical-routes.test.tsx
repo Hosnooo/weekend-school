@@ -7,7 +7,8 @@ import {describe, expect, it, vi} from 'vitest';
 import {SchoolSettingsForm} from '@/features/school-settings/school-settings-form';
 
 vi.mock('next-intl', () => ({
-  useTranslations: (namespace: string) => (key: string) => `${namespace}.${key}`
+  useTranslations: (namespace: string) => (key: string) => `${namespace}.${key}`,
+  useLocale: () => 'en'
 }));
 
 vi.mock('@/features/school-settings/school-settings.actions', () => ({
