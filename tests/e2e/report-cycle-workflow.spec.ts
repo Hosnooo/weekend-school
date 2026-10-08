@@ -19,9 +19,9 @@ test.beforeAll(async () => {
   const serviceRoleKey =
     process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  if (!url || !serviceRoleKey) {
+  if (!url || !/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(url) || !serviceRoleKey) {
     throw new Error(
-      'Local Supabase service-role configuration is required'
+      'Refusing Report Cycle setup against a nonlocal Supabase project'
     );
   }
 
