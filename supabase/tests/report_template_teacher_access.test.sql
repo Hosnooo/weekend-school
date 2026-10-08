@@ -35,15 +35,16 @@ select results_eq(
   'Teacher cannot read archived report template configurations'
 );
 
+-- RLS must prevent a Teacher from updating even the template they can read.
+-- A prohibited UPDATE affects zero rows; the previously selected value stays true.
+update public.report_templates
+set performance_enabled = false
+where name = 'RLS Teacher Active Template';
+
 select results_eq(
-  $with changed as (
-      update public.report_templates
-      set performance_enabled = false
-      where name = 'RLS Teacher Active Template'
-      returning id
-    )
-    select count(*)::bigint from changed$,
-  array[0::bigint],
+  $policy$select performance_enabled from public.report_templates
+    where name = 'RLS Teacher Active Template'$policy$,
+  array[true],
   'Teachers cannot edit the active report template'
 );
 
