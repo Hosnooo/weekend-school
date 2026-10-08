@@ -196,6 +196,10 @@ jobs:
       - name: Run all PostgreSQL, RLS and Administrator guard pgTAP tests
         run: pnpm test:db
       - name: Verify concurrent last-Administrator deactivations
+        id: administrator_race
+        # Collect browser failures in the same manual run even if this test fails.
+        # The final gate below still fails the job on any race-test failure.
+        continue-on-error: true
         run: |
           set -euo pipefail
           eval "$(pnpm exec supabase status -o env)"
@@ -241,6 +245,12 @@ jobs:
           export NEXT_PUBLIC_SUPABASE_URL="$API_URL"
           export SUPABASE_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY"
           pnpm test:e2e
+
+      - name: Require successful Administrator concurrency regression
+        if: ${{ always() && steps.administrator_race.outcome == 'failure' }}
+        run: |
+          echo 'Administrator concurrency regression did not pass.' >&2
+          exit 1
 
       - name: Upload failed browser traces for diagnosis
         if: failure()
