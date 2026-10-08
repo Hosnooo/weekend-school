@@ -118,8 +118,9 @@ describe('Class Report Cycle contract', () => {
     );
 
     expect(component).toContain(
-      'setReportCycleSourceIncludedAction'
+      'setClassReportCycleSourceIncludedAction'
     );
+    expect(component).toContain('action={setClassReportCycleSourceIncludedAction}');
 
     expect(component).toContain(
       'requestReportCycleMissingUpdateAction'
