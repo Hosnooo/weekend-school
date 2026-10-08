@@ -27,6 +27,7 @@ export default async function TeachingUpdatePage({
   params: Promise<{locale: string}>;
   searchParams: Promise<{
     submissionId?: string;
+    error?: string;
   }>;
 }) {
   const [{locale}, query] = await Promise.all([
@@ -111,6 +112,7 @@ export default async function TeachingUpdatePage({
         template={template}
         today={today}
         update={update}
+        submissionError={query.error === 'conflict' || query.error === 'submit' ? query.error : null}
       />
     </section>
   );

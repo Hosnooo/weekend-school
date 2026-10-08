@@ -10,6 +10,7 @@ import {useRouter} from 'next/navigation';
 import {useTranslations} from 'next-intl';
 
 import {Button} from '@/components/ui/button';
+import {formatValidationIssue} from '@/lib/validation/error-guidance';
 import {Alert} from '@/components/ui/alert';
 import type {ReportTemplateConfig} from '@/features/reports/report-template.types';
 import {
@@ -37,13 +38,15 @@ export function TeachingUpdateEditor({
   teacherId,
   today,
   update,
-  template
+  template,
+  submissionError
 }: {
   locale: 'en' | 'ar';
   teacherId: string;
   today: string;
   update: TeachingUpdate;
   template: ReportTemplateConfig;
+  submissionError?: 'conflict' | 'submit' | null;
 }) {
   const router = useRouter();
   const t = useTranslations('teachingUpdates');
@@ -748,15 +751,18 @@ export function TeachingUpdateEditor({
         ) : null}
 
         {state.error ? (
-          <p className="form-error" role="alert">
-            {t(
-              state.error === 'validation'
-                ? 'validation'
-                : state.error === 'conflict'
-                  ? 'conflict'
-                  : 'saveError'
-            )}
-          </p>
+          <div className="form-error" role="alert" aria-live="polite">
+            <p>{t(state.error === 'validation' ? 'validation' : state.error === 'conflict' ? 'conflict' : 'saveError')}</p>
+            {state.issues?.length ? (
+              <ul>
+                {state.issues.map((issue, index) => (
+                  <li key={`${issue.field}-${index}`}>
+                    {formatValidationIssue(issue, locale)}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
         ) : null}
 
         {!readOnly ? (
@@ -784,6 +790,15 @@ export function TeachingUpdateEditor({
 
       {update.status === 'OPEN' ? (
         <section className="teacher-update-submit">
+          {submissionError ? (
+            <p className="form-error" role="alert">
+              {submissionError === 'conflict'
+                ? t('conflict')
+                : locale === 'ar'
+                  ? 'تعذر إرسال التحديث. راجع تواريخ التغطية وتأكد من تسجيل حضور كل طالب، ثم احفظ البيانات وحاول الإرسال مجددًا. إذا استمرت المشكلة، تواصل مع الإدارة.'
+                  : 'The update could not be submitted. Check the coverage dates and attendance for every student, save your changes, and try submitting again. If it persists, contact an administrator.'}
+            </p>
+          ) : null}
           <div className="form-actions">
             <form action={submitTeachingUpdateAction}>
               <input

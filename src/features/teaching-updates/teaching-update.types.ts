@@ -1,3 +1,4 @@
+import type {ValidationIssue} from '@/lib/validation/error-guidance';
 import type {
   AttendanceStatus,
   Performance,
@@ -75,6 +76,7 @@ export type TeachingUpdateActionState = {
     | null;
   submissionId: string | null;
   overlaps: TeachingUpdateOverlap[];
+  issues?: ValidationIssue[];
 };
 
 export const initialTeachingUpdateActionState:

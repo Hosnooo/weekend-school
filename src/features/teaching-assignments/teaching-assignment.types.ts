@@ -1,3 +1,5 @@
+import type {ValidationIssue} from '@/lib/validation/error-guidance';
+
 export type TeachingGroup = {
   id: string;
   nameEn: string;
@@ -36,7 +38,7 @@ export type TeachingAssignmentMutationError =
 
 export type TeachingAssignmentMutationResult =
   | {ok: true}
-  | {ok: false; error: TeachingAssignmentMutationError};
+  | {ok: false; error: TeachingAssignmentMutationError; issues?: ValidationIssue[]};
 
 export type EffectiveTeachingContext = {
   teacherId: string;

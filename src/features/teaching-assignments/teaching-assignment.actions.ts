@@ -23,6 +23,7 @@ import {requireAdministrator} from '@/lib/auth/require-profile';
 import type {ActionState} from '@/lib/validation/action-state';
 import {initialActionState, saveFailure, validationFailure} from '@/lib/validation/action-state';
 import {databaseUuid} from '@/lib/validation/fields';
+import {validationIssues} from '@/lib/validation/error-guidance';
 
 function localeFrom(formData: FormData): Locale {
   const value = String(formData.get('locale') ?? 'en');
@@ -45,10 +46,16 @@ function mutationFailure(error: unknown, operation: string): TeachingAssignmentM
 
 function actionStateFromMutation(result: TeachingAssignmentMutationResult): ActionState {
   if (result.ok) return initialActionState;
-  if (result.error === 'validation' || result.error === 'invalid-range') {
-    return validationFailure();
+  if (result.error === 'validation') {
+    return {...validationFailure(), issues: result.issues ?? []};
+  }
+  if (result.error === 'invalid-range') {
+    return {...validationFailure(), issues: [{field: 'endsOn', reason: 'dateOrder'}]};
   }
   if (result.error === 'overlap') return saveFailure('conflict');
+  if (result.error === 'protected-history') return saveFailure('protectedHistory');
+  if (result.error === 'not-found') return saveFailure('notFound');
+  if (result.error === 'forbidden') return saveFailure('permission');
   return saveFailure();
 }
 
@@ -63,7 +70,7 @@ export async function createTeachingAssignmentMutationAction(
     startsOn: formData.get('startsOn'),
     endsOn: formData.get('endsOn')
   });
-  if (!parsed.success) return {ok: false, error: 'validation'};
+  if (!parsed.success) return {ok: false, error: 'validation', issues: parsed.success ? [] : validationIssues(parsed.error)};
 
   try {
     validateTeachingAssignmentDateRange(parsed.data.startsOn, parsed.data.endsOn);
@@ -94,7 +101,7 @@ export async function updateTeachingAssignmentMutationAction(
     startsOn: formData.get('startsOn'),
     endsOn: formData.get('endsOn')
   });
-  if (!teacherId.success || !parsed.success) return {ok: false, error: 'validation'};
+  if (!teacherId.success || !parsed.success) return {ok: false, error: 'validation', issues: parsed.success ? [] : validationIssues(parsed.error)};
 
   try {
     validateTeachingAssignmentDateRange(parsed.data.startsOn, parsed.data.endsOn);
@@ -127,7 +134,7 @@ export async function deleteTeachingAssignmentAction(
   const parsed = deleteTeachingAssignmentSchema.safeParse({
     assignmentId: formData.get('assignmentId')
   });
-  if (!teacherId.success || !parsed.success) return {ok: false, error: 'validation'};
+  if (!teacherId.success || !parsed.success) return {ok: false, error: 'validation', issues: parsed.success ? [] : validationIssues(parsed.error)};
 
   try {
     await deleteTeachingAssignment(profile.schoolId, teacherId.data, parsed.data);

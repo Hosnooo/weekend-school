@@ -62,6 +62,7 @@ describe('Reports workflow UX contract', () => {
     expect(sourceReview).toContain('Customize report text');
     expect(sourceReview).toContain('attendanceAttended:');
     expect(sourceReview).toContain('attendanceTotal:');
+    expect(sourceReview).toContain('attendanceErrorLabels');
     expect(sourceReview).toContain('report-source-editable');
     expect(review).toContain('renderReportEmail');
     expect(review).toContain('renderReportEmailSubject');

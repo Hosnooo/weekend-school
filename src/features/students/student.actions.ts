@@ -24,7 +24,7 @@ import {studentUpdateSchema} from '@/features/students/student.schemas';
 import {isLocale, type Locale} from '@/i18n/config';
 import {requireProfile} from '@/lib/auth/require-profile';
 import type {ActionState} from '@/lib/validation/action-state';
-import {initialActionState, saveFailure, validationFailure} from '@/lib/validation/action-state';
+import {initialActionState, persistenceFailure, saveFailure, validationFailure} from '@/lib/validation/action-state';
 import {databaseUuid} from '@/lib/validation/fields';
 
 function localeFrom(formData: FormData) {
@@ -56,7 +56,7 @@ function enrollmentMutationFailure(error: unknown) {
     ['23P01', '23505', '55000', '22023'].includes(String(error.code))) {
     return saveFailure('transferConflict');
   }
-  return saveFailure();
+  return persistenceFailure(error);
 }
 
 export async function createStudentAction(
@@ -80,13 +80,13 @@ export async function createStudentAction(
     startsOn: formData.get('startsOn'),
     subjects: parseJson(formData.get('subjects'))
   });
-  if (!parsed.success) return validationFailure();
+  if (!parsed.success) return validationFailure(parsed.success ? undefined : parsed.error);
 
   try {
     await createStudentWithEnrollment(parsed.data);
   } catch (error) {
     console.error('Unable to create student', {error});
-    return saveFailure();
+    return persistenceFailure(error);
   }
 
   revalidateStudentSurfaces(locale);
@@ -108,13 +108,13 @@ export async function updateStudentAction(
     firstNameAr: formData.get('firstNameAr'),
     lastNameAr: formData.get('lastNameAr')
   });
-  if (!parsed.success) return validationFailure();
+  if (!parsed.success) return validationFailure(parsed.success ? undefined : parsed.error);
 
   try {
     await updateStudent(profile.schoolId, parsed.data);
   } catch (error) {
     console.error('Unable to update student', {error});
-    return saveFailure();
+    return persistenceFailure(error);
   }
 
   revalidateStudentSurfaces(locale, parsed.data.id);
@@ -144,7 +144,7 @@ export async function enrollStudentInClassAction(
     targetClassId: formData.get('targetClassId'),
     startsOn: formData.get('startsOn')
   });
-  if (!parsed.success) return validationFailure();
+  if (!parsed.success) return validationFailure(parsed.success ? undefined : parsed.error);
 
   try {
     await enrollStudentInClass(parsed.data);
@@ -168,7 +168,7 @@ export async function changeStudentClassAction(
     targetClassId: formData.get('targetClassId'),
     startsOn: formData.get('startsOn')
   });
-  if (!parsed.success) return validationFailure();
+  if (!parsed.success) return validationFailure(parsed.success ? undefined : parsed.error);
 
   try {
     await changeStudentClass(parsed.data);
@@ -190,7 +190,7 @@ export async function updateStudentEnrollmentStartAction(
     studentId: formData.get('studentId'),
     startsOn: formData.get('startsOn')
   });
-  if (!parsed.success) return validationFailure();
+  if (!parsed.success) return validationFailure(parsed.success ? undefined : parsed.error);
 
   try {
     await updateStudentEnrollmentStart(parsed.data);
@@ -214,7 +214,7 @@ export async function setSubjectExcludedAction(
     excluded: formData.get('excluded') === 'true',
     effectiveOn: formData.get('effectiveOn')
   });
-  if (!parsed.success) return validationFailure();
+  if (!parsed.success) return validationFailure(parsed.success ? undefined : parsed.error);
 
   try {
     await setSubjectExcluded(parsed.data);
@@ -237,7 +237,7 @@ export async function moveStudentSubjectGroupAction(
     targetGroupId: formData.get('targetGroupId'),
     startsOn: formData.get('startsOn')
   });
-  if (!parsed.success) return validationFailure();
+  if (!parsed.success) return validationFailure(parsed.success ? undefined : parsed.error);
 
   try {
     await moveStudentSubjectGroup(parsed.data);

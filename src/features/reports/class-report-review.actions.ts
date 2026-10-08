@@ -13,10 +13,12 @@ import {
   saveClassReportAttendanceOverrides
 } from './class-report-attendance.repository';
 import {reportAttendanceOverride} from './report-attendance';
+import {attendanceInputIssue} from './report-attendance-input';
 import {saveClassReportReviewContext} from './class-report-review.repository';
 import {reopenAdminReportWorkspace} from './admin-report-workspace.repository';
 import {getReportBatchWorkspace} from './report-batch.repository';
 import {reportPeriodSchema} from './report.schemas';
+import {reportWorkflowErrorCode} from './report-error-guidance';
 import type {ReportPerformance} from './report.types';
 
 const performanceSchema = z.enum([
@@ -242,9 +244,10 @@ export async function saveClassReportReviewWithAttendanceInlineAction(
 ) {
   const locale = localeFrom(formData);
   const profile = await requireProfile(locale, 'ADMIN');
+  const attendanceProblem = attendanceInputIssue(formData);
+  if (attendanceProblem) return {ok: false as const, ...attendanceProblem};
   const payload = classReviewPayloadFrom(formData);
-
-  if (!payload) return {ok: false as const};
+  if (!payload) return {ok: false as const, reason: 'validation' as const};
 
   try {
     await persistClassReportReview(profile.schoolId, payload);
@@ -262,7 +265,10 @@ export async function saveClassReportReviewWithAttendanceInlineAction(
       ok: false as const,
       reason: message.includes('delivered or pending reports cannot be reopened')
         ? 'sent' as const
-        : 'unknown' as const
+        : message.includes('Report review student not found') ||
+          message.includes('Report review context not found')
+          ? 'rosterChanged' as const
+          : 'unknown' as const
     };
   }
 }
@@ -283,7 +289,7 @@ export async function saveClassReportReviewWithAttendanceAction(
   } catch (error) {
     console.error('Unable to save Class Report Cycle review', {error});
     redirect(
-      `/${locale}/reports/workspace/${payload.batchId}?error=save`
+      `/${locale}/reports/workspace/${payload.batchId}?error=${reportWorkflowErrorCode(error)}`
     );
   }
 
@@ -335,7 +341,7 @@ export async function openClassReportEditorAction(formData: FormData) {
     }
   } catch (error) {
     console.error('Unable to open Class Report Cycle editor', {error});
-    redirect(`${workspacePath}?error=save`);
+    redirect(`${workspacePath}?error=${reportWorkflowErrorCode(error)}`);
   }
 
   revalidatePath(workspacePath);

@@ -7,7 +7,7 @@ import {isLocale} from '@/i18n/config';
 import {requireProfile} from '@/lib/auth/require-profile';
 import type {ActionState} from '@/lib/validation/action-state';
 import {
-  saveFailure,
+  persistenceFailure, saveFailure,
   validationFailure
 } from '@/lib/validation/action-state';
 
@@ -53,7 +53,7 @@ export async function saveReportTemplateAction(
     emailSignoffAr: formData.get('emailSignoffAr')
   });
 
-  if (!parsed.success) return validationFailure();
+  if (!parsed.success) return validationFailure(parsed.success ? undefined : parsed.error);
 
   try {
     await saveActiveReportTemplate(
@@ -62,7 +62,7 @@ export async function saveReportTemplateAction(
     );
   } catch (error) {
     console.error('Unable to save report template', {error});
-    return saveFailure();
+    return persistenceFailure(error);
   }
 
   revalidatePath(`/${locale}/settings`);

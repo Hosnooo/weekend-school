@@ -33,6 +33,11 @@ const performanceValues: ReportPerformance[] = [
 
 const copy = {
   en: {
+    validationError: 'Check the reporting period and student information, then try again.',
+    rosterChangedError: 'The student roster changed while you were editing. Refresh the report, review the list, and re-enter any unsaved edits.',
+    attendanceIncomplete: 'Attendance for {student}: enter both attended and total sessions, or leave both blank to use the teacher record.',
+    attendanceInvalid: 'Attendance for {student}: enter non-negative whole numbers.',
+    attendanceExceeds: 'Attendance for {student}: attended sessions cannot exceed total sessions.',
     editUpdate: 'Edit update',
     customizeReportText: 'Customize report text',
     customizeReportTextHelp:
@@ -49,6 +54,11 @@ const copy = {
     cancel: 'Cancel'
   },
   ar: {
+    validationError: 'راجع فترة التقرير وبيانات الطلاب ثم أعد المحاولة.',
+    rosterChangedError: 'تغيرت قائمة الطلاب أثناء التعديل. حدّث التقرير وراجع القائمة وأعد إدخال التعديلات التي لم تُحفظ.',
+    attendanceIncomplete: 'حضور {student}: أدخل الحضور وإجمالي الحصص معًا، أو اترك الحقلين فارغين لاستخدام سجل المعلم.',
+    attendanceInvalid: 'حضور {student}: أدخل أعدادًا صحيحة غير سالبة.',
+    attendanceExceeds: 'حضور {student}: لا يمكن أن يزيد الحضور عن إجمالي الحصص.',
     editUpdate: 'تعديل التحديث',
     customizeReportText: 'تخصيص نص التقرير',
     customizeReportTextHelp:
@@ -298,6 +308,13 @@ export async function ReportCycleSourceReview({
                       saveAction={saveClassReportReviewWithAttendanceInlineAction}
                       saveErrorLabel={t('saveError')}
                       lockedSaveErrorLabel={ui.lockedSaveError}
+                      validationErrorLabel={ui.validationError}
+                      rosterChangedErrorLabel={ui.rosterChangedError}
+                      attendanceErrorLabels={{
+                        attendanceIncomplete: ui.attendanceIncomplete,
+                        attendanceInvalid: ui.attendanceInvalid,
+                        attendanceExceeds: ui.attendanceExceeds
+                      }}
                       saveLabel={ui.saveAndClose}
                     >
                       {sharedHidden}

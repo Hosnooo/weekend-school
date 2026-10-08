@@ -26,7 +26,7 @@ import {requireProfile} from '@/lib/auth/require-profile';
 import type {ActionState} from '@/lib/validation/action-state';
 import {
   initialActionState,
-  saveFailure,
+  persistenceFailure, saveFailure,
   validationFailure
 } from '@/lib/validation/action-state';
 import {databaseUuid} from '@/lib/validation/fields';
@@ -65,7 +65,7 @@ function guardianMutationFailure(error: unknown): ActionState {
   ) {
     return saveFailure('guardianAlreadyLinked');
   }
-  return saveFailure();
+  return persistenceFailure(error);
 }
 
 export async function createGuardianAction(
@@ -80,13 +80,13 @@ export async function createGuardianAction(
     phone: formData.get('phone'),
     reportLanguage: formData.get('reportLanguage')
   });
-  if (!parsed.success) return validationFailure();
+  if (!parsed.success) return validationFailure(parsed.success ? undefined : parsed.error);
 
   try {
     await createGuardian(profile.schoolId, parsed.data);
   } catch (error) {
     console.error('Unable to create guardian', {error});
-    return saveFailure();
+    return persistenceFailure(error);
   }
 
   refresh(locale);
@@ -106,13 +106,13 @@ export async function updateGuardianAction(
     phone: formData.get('phone'),
     reportLanguage: formData.get('reportLanguage')
   });
-  if (!parsed.success) return validationFailure();
+  if (!parsed.success) return validationFailure(parsed.success ? undefined : parsed.error);
 
   try {
     await updateGuardian(profile.schoolId, parsed.data.id, parsed.data);
   } catch (error) {
     console.error('Unable to update guardian', {error});
-    return saveFailure();
+    return persistenceFailure(error);
   }
 
   refresh(locale, parsed.data.id);
@@ -135,7 +135,7 @@ export async function addStudentGuardianAction(
     isPrimary: checked(formData, 'isPrimary'),
     receivesReports: checked(formData, 'receivesReports')
   });
-  if (!parsed.success) return validationFailure();
+  if (!parsed.success) return validationFailure(parsed.success ? undefined : parsed.error);
 
   try {
     const guardianId = await linkGuardianToStudent(parsed.data);
@@ -160,7 +160,7 @@ export async function linkExistingStudentGuardianAction(
     isPrimary: checked(formData, 'isPrimary'),
     receivesReports: checked(formData, 'receivesReports')
   });
-  if (!parsed.success) return validationFailure();
+  if (!parsed.success) return validationFailure(parsed.success ? undefined : parsed.error);
 
   try {
     const guardianId = await linkExistingGuardianToStudent(parsed.data);
@@ -189,7 +189,7 @@ export async function updateStudentGuardianAction(
     isPrimary: checked(formData, 'isPrimary'),
     receivesReports: checked(formData, 'receivesReports')
   });
-  if (!parsed.success) return validationFailure();
+  if (!parsed.success) return validationFailure(parsed.success ? undefined : parsed.error);
 
   try {
     await updateStudentGuardianLink(parsed.data);
