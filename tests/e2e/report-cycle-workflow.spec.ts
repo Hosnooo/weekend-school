@@ -159,9 +159,11 @@ test(
 
     await expect(sourceCard).toContainText('Excluded');
 
+    // With the only included source excluded, there is no report context
+    // to finalize. The current workflow uses "Finalize and prepare to send".
     await expect(
       page.getByRole('button', {
-        name: 'Generate student reports'
+        name: 'Finalize and prepare to send'
       })
     ).toBeDisabled();
 
@@ -178,46 +180,34 @@ test(
     ).toBeVisible();
 
     await page.getByRole('button', {
-      name: 'Generate student reports'
+      name: 'Finalize and prepare to send'
     }).click();
 
     await expect(
-      page.getByText('Ready to send', {
-        exact: true
-      }).first()
+      page.getByText('Student reports are ready to send.', {exact: true})
     ).toBeVisible();
 
-    const preview = page.getByRole('link', {
-      name: 'Preview report'
-    }).first();
+    // Finalization prepares immutable reports but must not start email delivery.
+    await expect(page.getByRole('button', {name: 'Send reports'})).toBeVisible();
+    await expect(page.getByRole('button', {
+      name: 'Reopen for admin editing'
+    })).toBeVisible();
+    await expect(page.getByRole('link', {
+      name: 'View delivery status'
+    })).toBeVisible();
 
-    await expect(preview).toBeVisible();
-
-    await expect(
-      page.getByRole('button', {
-        name: 'Send reports'
-      })
-    ).toBeVisible();
-
-    await expect(
-      page.getByRole('link', {
-        name: 'View delivery status'
-      })
-    ).toBeVisible();
-
-    await preview.click();
-
-    const frame = page.frameLocator(
-      'iframe[title="Report preview"]'
+    // The modern editor renders an inline parent-email preview for the
+    // selected student. There is no separate "Preview report" link.
+    const emailReview = page.locator('.report-email-review-panel');
+    await expect(emailReview).toBeVisible();
+    await emailReview.locator('select').selectOption(
+      'e0000000-0000-0000-0000-000000000001'
     );
+    await expect(emailReview.locator('iframe.report-preview')).toBeVisible();
 
-    await expect(
-      frame.getByText('MCE Weekend School')
-    ).toBeVisible();
-
-    await expect(
-      frame.getByText('Report cycle source lesson')
-    ).toBeVisible();
+    const frame = emailReview.frameLocator('iframe.report-preview');
+    await expect(frame.getByText('MCE Weekend School')).toBeVisible();
+    await expect(frame.getByText('Report cycle source lesson')).toBeVisible();
     expect(runtimeErrors).toEqual([]);
   }
 );

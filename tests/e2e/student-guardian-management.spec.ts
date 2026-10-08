@@ -161,9 +161,13 @@ test.describe('Student, enrollment, and Guardian management', () => {
       .getByRole('button', {name: 'Remove from student'})
       .click();
 
+    // Unlinking changes this student's relationship, not necessarily the
+    // global Guardian directory. Check the linked-card action specifically.
     await expect(
-      page.getByText('Second Guardian Updated', {exact: true})
-    ).toBeHidden();
+      page.locator('.record-card')
+        .filter({hasText: 'Second Guardian Updated'})
+        .filter({has: page.getByRole('button', {name: 'Remove from student'})})
+    ).toHaveCount(0);
 
     // The standalone Guardians route is informational only.
     await page.goto('/en/guardians');
