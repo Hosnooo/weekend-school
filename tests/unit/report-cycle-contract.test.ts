@@ -199,7 +199,7 @@ describe('Class Report Cycle contract', () => {
     const listPage = source(reportsPagePath);
     const workspacePage = source(workspacePagePath);
     const migration = source(
-      'supabase/migrations/20261008063000_cancel_prepared_unsent_report_cycle.sql'
+      'supabase/migrations/20261008050122_cancel_prepared_unsent_report_cycle.sql'
     );
 
     expect(repository).toContain("'cancel_class_report_cycle'");
