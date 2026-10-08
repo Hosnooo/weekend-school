@@ -8,8 +8,8 @@ import {credentials, login} from './helpers';
 
 // Fresh local E2E databases are reset for each workflow run, so fixed
 // enrollment-overlapping test dates avoid random, hard-to-reproduce failures.
-const cycleStart = '2035-01-01';
-const cycleEnd = '2035-01-07';
+const cycleStart = '2026-09-29';
+const cycleEnd = '2026-10-05';
 
 const sourceId = randomUUID();
 
