@@ -36,6 +36,11 @@ test('Arabic RTL teaching and report workflow uses the redesigned Group context'
   const preview = page.locator('section.report-email-review-panel').last();
   await preview.locator('select').selectOption('e0000000-0000-0000-0000-000000000003');
   const frame = preview.frameLocator('iframe.report-preview');
-  await expect(frame.locator('html')).toHaveAttribute('dir', 'rtl');
-  await expect(frame.getByText('تدربنا على القراءة العربية')).toBeVisible();
+  // Class Report Cycles send a single bilingual email. Its root is LTR,
+  // while Arabic narrative content must retain its own RTL direction.
+  await expect(frame.locator('html')).toHaveAttribute('dir', 'ltr');
+  await expect(
+    frame.locator('.report-copy .localized-block[lang="ar"][dir="rtl"]')
+      .filter({hasText: 'تدربنا على القراءة العربية'})
+  ).toBeVisible();
 });
