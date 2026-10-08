@@ -10,12 +10,16 @@ function read(relative: string) {
 }
 
 describe('Report Cycle panel navigation contract', () => {
-  it('opens report editing by hash only inside the source card', () => {
+  it('opens the source-card editor through the server-side permission and reopen guard', () => {
     const sourceReview = read(
       'src/features/reports/report-cycle-source-review.tsx'
     );
 
-    expect(sourceReview).toContain('href={`#${editorId}`}');
+    expect(sourceReview).toContain('action={openClassReportEditorAction}');
+    expect(sourceReview).toContain('id={editorId}');
+    const actions = read('src/features/reports/class-report-review.actions.ts');
+    expect(actions).toContain('await reopenAdminReportWorkspace(');
+    expect(actions).toContain('`${workspacePath}#report-edit-');
     expect(sourceReview).toContain('report-source-editor');
     expect(sourceReview).not.toContain('?edit=${encodeURIComponent(editorId)}');
   });
@@ -38,7 +42,9 @@ describe('Report Cycle panel navigation contract', () => {
     expect(form).toContain('formRef.current?.reset()');
     expect(form).toContain("new CustomEvent('report-cycle:saved'");
     expect(inlineAction).not.toContain('redirect(');
-    expect(inlineAction).not.toContain('revalidatePath(');
+    // Updating the server cache is allowed; the action must still return inline.
+    expect(inlineAction).toContain('revalidatePath(');
+    expect(inlineAction).toContain('ok: true as const');
   });
 
   it('switches and refreshes Email Review locally without a GET form or Show email submit', () => {
