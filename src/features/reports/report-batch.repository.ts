@@ -6,6 +6,7 @@ import {createServerSupabaseClient} from '@/lib/supabase/server';
 
 import {buildReportSnapshotV2} from './report.service';
 import {getActiveReportTemplate} from './report-template.repository';
+import {selectLatestReportRevisionsByStudent} from './select-latest-report-revisions';
 import type {ReportLanguage, ReportPerformance} from './report.types';
 
 export type ReportBatchScope = 'CLASS' | 'SUBJECT' | 'GROUP';
@@ -1195,7 +1196,7 @@ export async function getClassReportCycleWorkspace(
     db
       .from('reports')
       .select(
-        'id,student_id,language,status,students(first_name_en,last_name_en,first_name_ar,last_name_ar)'
+        'id,student_id,language,status,revision,students(first_name_en,last_name_en,first_name_ar,last_name_ar)'
       )
       .eq('school_id', schoolId)
       .eq('batch_id', batchId)
@@ -1317,6 +1318,7 @@ export async function getClassReportCycleWorkspace(
   ) as unknown as Array<{
     id: string;
     student_id: string;
+    revision: number;
     language: ReportLanguage;
     status: 'DRAFT' | 'READY' | 'SENT' | 'FAILED';
     students: {
@@ -1331,7 +1333,9 @@ export async function getClassReportCycleWorkspace(
     ...workspace,
     missingContexts,
     canDismiss: dismissibleIds.has(batchId),
-    reports: reports.flatMap((report) => {
+    // Preserve past snapshots in the database, but expose only the latest
+    // revision of each student's report to the active preview and selector.
+    reports: selectLatestReportRevisionsByStudent(reports).flatMap((report) => {
       if (!report.students) return [];
 
       return [{
