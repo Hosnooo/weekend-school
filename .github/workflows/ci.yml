@@ -8,6 +8,7 @@ permissions:
 
 jobs:
   quality:
+    if: ${{ github.ref_name != 'review/atomic-last-admin-guard-20261008' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -38,6 +39,7 @@ jobs:
         run: pnpm build
 
   database:
+    if: ${{ github.ref_name != 'review/atomic-last-admin-guard-20261008' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -72,6 +74,7 @@ jobs:
         run: pnpm db:stop
 
   e2e:
+    if: ${{ github.ref_name != 'review/atomic-last-admin-guard-20261008' }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -110,5 +113,71 @@ jobs:
       - name: Run browser workflows
         run: pnpm test:e2e
       - name: Stop local Supabase
+        if: always()
+        run: pnpm db:stop
+
+  administrator-guard-review:
+    # This review-only suite runs on manual dispatch of this exact branch.
+    # No secrets, hosted Supabase URL, or production migration workflow.
+    if: ${{ github.ref_name == 'review/atomic-last-admin-guard-20261008' }}
+    name: Local Administrator race + Guardian browser review
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.19.0 --activate
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Run isolated critical error tests
+        run: pnpm run test:critical-errors
+      - name: Stage unmerged SQL candidate in disposable local migrations
+        run: |
+          set -euo pipefail
+          test -f docs/db-review/last-active-administrator-guard.sql
+          test -f docs/db-review/last-active-administrator-guard.test.sql
+          pnpm exec supabase migration new last_active_administrator_manual_review
+          candidate="$(find supabase/migrations -maxdepth 1 -type f -name '*_last_active_administrator_manual_review.sql' | sort | tail -1)"
+          test -n "$candidate"
+          cp docs/db-review/last-active-administrator-guard.sql "$candidate"
+          cp docs/db-review/last-active-administrator-guard.test.sql supabase/tests/last-active-administrator-guard.test.sql
+      - name: Start disposable local Supabase
+        run: pnpm db:start
+      - name: Reset with candidate migration against local database only
+        run: pnpm db:reset
+      - name: Run PostgreSQL and RLS checks including Administrator guard
+        run: pnpm test:db
+      - name: Verify simultaneous Administrator deactivation with two local SQL sessions
+        run: |
+          eval "$(pnpm exec supabase status -o env)"
+          bash scripts/test-last-administrator-race.sh
+      - name: Load local-only browser test fixtures
+        run: |
+          set -euo pipefail
+          eval "$(pnpm exec supabase status -o env)"
+          case "$DB_URL" in
+            *"@127.0.0.1:"*|*"@localhost:"*) ;;
+            *) echo "Refusing nonlocal database" >&2; exit 1 ;;
+          esac
+          psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/seed.e2e.sql
+          cat > .env.local <<EOF
+          NEXT_PUBLIC_SUPABASE_URL=$API_URL
+          NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY
+          SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY
+          BREVO_API_KEY=ci-local-placeholder
+          EMAIL_FROM=ci@example.test
+          CRON_SECRET=ci-local-placeholder
+          E2E_BASE_URL=http://127.0.0.1:3000
+          EOF
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Run only isolated stale-Guardian browser scenario
+        run: pnpm test:e2e tests/e2e/guardian-stale-unlink.spec.ts
+      - name: Stop and discard local Supabase
         if: always()
         run: pnpm db:stop
