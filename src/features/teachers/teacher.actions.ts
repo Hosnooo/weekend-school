@@ -31,7 +31,7 @@ import {isLocale} from '@/i18n/config';
 import {requireAdministrator} from '@/lib/auth/require-profile';
 import {createServiceRoleSupabaseClient} from '@/lib/supabase/service-role';
 import type {ActionState} from '@/lib/validation/action-state';
-import {initialActionState, saveFailure, validationFailure} from '@/lib/validation/action-state';
+import {initialActionState, persistenceFailure, saveFailure, validationFailure} from '@/lib/validation/action-state';
 import {databaseUuid} from '@/lib/validation/fields';
 
 function localeFrom(formData: FormData) {
@@ -166,7 +166,7 @@ export async function createTeacherAction(
   const locale = localeFrom(formData);
   const profile = await requireAdministrator(locale);
   const parsed = teacherSchema.safeParse(teacherInput(formData));
-  if (!parsed.success) return validationFailure();
+  if (!parsed.success) return validationFailure(parsed.success ? undefined : parsed.error);
   try {
     await createTeacherBusinessRecord(
       {...parsed.data, schoolId: profile.schoolId},
@@ -174,7 +174,7 @@ export async function createTeacherAction(
     );
   } catch (error) {
     console.error('Unable to create teacher', {error});
-    return saveFailure();
+    return persistenceFailure(error);
   }
   revalidatePath(`/${locale}/teachers`);
   redirect(`/${locale}/teachers`);
@@ -192,12 +192,12 @@ export async function updateTeacherAction(
     email: formData.get('email'),
     preferredLanguage: formData.get('preferredLanguage')
   });
-  if (!parsed.success) return validationFailure();
+  if (!parsed.success) return validationFailure(parsed.success ? undefined : parsed.error);
   try {
     await updateTeacher(profile.schoolId, parsed.data);
   } catch (error) {
     console.error('Unable to update teacher', {error});
-    return saveFailure();
+    return persistenceFailure(error);
   }
   revalidateTeacherSurfaces(locale, parsed.data.id);
   redirect(`/${locale}/teachers/${parsed.data.id}`);
@@ -214,12 +214,12 @@ export async function assignTeacherAction(
     classSubjectId: formData.get('classSubjectId'),
     startsOn: formData.get('startsOn')
   });
-  if (!parsed.success) return validationFailure();
+  if (!parsed.success) return validationFailure(parsed.success ? undefined : parsed.error);
   try {
     await assignTeacher(profile.schoolId, parsed.data);
   } catch (error) {
     console.error('Unable to add teaching assignment', {error});
-    return saveFailure();
+    return persistenceFailure(error);
   }
   revalidateTeacherSurfaces(locale, parsed.data.teacherId);
   return initialActionState;

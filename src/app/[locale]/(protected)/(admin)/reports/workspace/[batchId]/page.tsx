@@ -36,6 +36,20 @@ const performanceValues: ReportPerformance[] = [
   'NEEDS_SUPPORT'
 ];
 
+function userReportError(t: (key: any) => string, reason: string) {
+  switch (reason) {
+    case 'validation': return t('validation');
+    case 'send': return t('sendError');
+    case 'sent': return t('errorAlreadySent');
+    case 'attendance': return t('errorAttendanceConflict');
+    case 'sources': return t('errorSourcesMissing');
+    case 'stale': return t('errorStale');
+    case 'permission': return t('errorPermission');
+    case 'rule': return t('errorRule');
+    default: return t('saveError');
+  }
+}
+
 function statusVariant(
   status: AdminReportContextStatus
 ): BadgeVariant {
@@ -152,7 +166,7 @@ export default async function AdminReportWorkspacePage({
 
         {query.error ? (
           <Alert variant="danger">
-            {t('saveError')}
+            {userReportError(t, query.error)}
           </Alert>
         ) : null}
 

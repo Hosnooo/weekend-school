@@ -32,6 +32,7 @@ import {
   finalizeClassReportCycleReports
 } from './class-report-finalization.repository';
 import {reportPeriodSchema} from './report.schemas';
+import {reportWorkflowErrorCode} from './report-error-guidance';
 import {getActiveReportTemplate} from './report-template.repository';
 import type {ReportPerformance} from './report.types';
 
@@ -319,7 +320,7 @@ export async function openAdminReportContextAction(
         period.data.periodStart,
         period.data.periodEnd,
         undefined,
-        'error=save'
+        `error=${reportWorkflowErrorCode(error)}`
       )
     );
   }
@@ -364,7 +365,7 @@ export async function saveAdminReportWorkspaceAction(
         payload.periodStart,
         payload.periodEnd,
         payload.batchId,
-        'error=save'
+        `error=${reportWorkflowErrorCode(error)}`
       )
     );
   }
@@ -435,7 +436,7 @@ export async function finalizeAdminReportWorkspaceAction(
         payload.periodStart,
         payload.periodEnd,
         payload.batchId,
-        'error=save'
+        `error=${reportWorkflowErrorCode(error)}`
       )
     );
   }
@@ -481,7 +482,7 @@ export async function reopenAdminReportWorkspaceAction(
         period.data.periodStart,
         period.data.periodEnd,
         batchId.data,
-        'error=save'
+        `error=${reportWorkflowErrorCode(error)}`
       )
     );
   }
@@ -514,7 +515,7 @@ export async function cancelClassReportCycleAction(
     await deleteClassReportCycle(profile.schoolId, batchId.data);
   } catch (error) {
     console.error('Unable to cancel Report Cycle', {error});
-    redirect(`/${locale}/reports?error=save`);
+    redirect(`/${locale}/reports?error=${reportWorkflowErrorCode(error)}`);
   }
 
   revalidatePath(`/${locale}/reports`);
@@ -558,7 +559,7 @@ export async function createClassReportCycleAction(
         period.data.periodStart,
         period.data.periodEnd,
         undefined,
-        'error=save'
+        `error=${reportWorkflowErrorCode(error)}`
       )
     );
   }
@@ -606,7 +607,7 @@ export async function saveClassReportReviewContextAction(
         payload.periodStart,
         payload.periodEnd,
         payload.batchId,
-        'error=save'
+        `error=${reportWorkflowErrorCode(error)}`
       )
     );
   }
@@ -661,7 +662,7 @@ export async function rebuildClassReportReviewContextAction(
         period.data.periodStart,
         period.data.periodEnd,
         batchId.data,
-        'error=save'
+        `error=${reportWorkflowErrorCode(error)}`
       )
     );
   }
@@ -709,7 +710,7 @@ export async function setReportCycleSourceIncludedAction(
     );
 
     redirect(
-      `/${locale}/reports/workspace/${batchId.data}?error=save`
+      `/${locale}/reports/workspace/${batchId.data}?error=${reportWorkflowErrorCode(error)}`
     );
   }
 
@@ -765,7 +766,7 @@ export async function requestReportCycleMissingUpdateAction(
     );
 
     redirect(
-      `/${locale}/reports/workspace/${batchId.data}?error=save`
+      `/${locale}/reports/workspace/${batchId.data}?error=${reportWorkflowErrorCode(error)}`
     );
   }
 
@@ -831,7 +832,7 @@ export async function finalizeClassReportCycleAction(
         period.data.periodStart,
         period.data.periodEnd,
         batchId.data,
-        'error=save'
+        `error=${reportWorkflowErrorCode(error)}`
       )
     );
   }

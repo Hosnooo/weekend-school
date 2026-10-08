@@ -38,23 +38,29 @@ export function ReportEditForm({
   saveLabel,
   cancelLabel,
   saveErrorLabel,
-  lockedSaveErrorLabel
+  lockedSaveErrorLabel,
+  validationErrorLabel,
+  rosterChangedErrorLabel,
+  attendanceErrorLabels
 }: {
   children: ReactNode;
   saveAction: (
     formData: FormData
   ) => Promise<
     | {ok: true; studentIds: string[]}
-    | {ok: false; reason?: 'sent' | 'unknown'}
+    | {ok: false; reason?: 'sent' | 'unknown' | 'validation' | 'rosterChanged' | 'attendanceIncomplete' | 'attendanceInvalid' | 'attendanceExceeds'; studentId?: string}
   >;
   saveLabel: string;
   cancelLabel: string;
   saveErrorLabel: string;
   lockedSaveErrorLabel: string;
+  validationErrorLabel: string;
+  rosterChangedErrorLabel: string;
+  attendanceErrorLabels: Record<'attendanceIncomplete' | 'attendanceInvalid' | 'attendanceExceeds', string>;
 }) {
   const formRef = useRef<HTMLFormElement>(null);
   const router = useRouter();
-  const [error, setError] = useState<'generic' | 'sent' | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -68,7 +74,16 @@ export function ReportEditForm({
       const result = await saveAction(formData);
 
       if (!result.ok) {
-        setError(result.reason === 'sent' ? 'sent' : 'generic');
+        const reason = result.reason ?? 'unknown';
+        if (reason === 'sent') setError(lockedSaveErrorLabel);
+        else if (reason === 'rosterChanged') setError(rosterChangedErrorLabel);
+        else if (reason === 'validation') setError(validationErrorLabel);
+        else if (reason in attendanceErrorLabels) {
+          const input = Array.from(form.querySelectorAll<HTMLInputElement>('input[name="studentId"]'))
+            .find((item) => item.value === result.studentId);
+          const student = input?.closest('.record-card')?.querySelector('.record-name')?.textContent?.trim() ?? '';
+          setError(attendanceErrorLabels[reason as keyof typeof attendanceErrorLabels].replace('{student}', student));
+        } else setError(saveErrorLabel);
         return;
       }
 
@@ -80,6 +95,8 @@ export function ReportEditForm({
           detail: {studentIds: result.studentIds}
         })
       );
+    } catch {
+      setError(saveErrorLabel);
     } finally {
       setSaving(false);
     }
@@ -97,7 +114,7 @@ export function ReportEditForm({
 
       {error ? (
         <p className="form-error" role="alert">
-          {error === 'sent' ? lockedSaveErrorLabel : saveErrorLabel}
+          {error}
         </p>
       ) : null}
 

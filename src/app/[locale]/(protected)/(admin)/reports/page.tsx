@@ -26,6 +26,20 @@ import {isLocale} from '@/i18n/config';
 import {Link} from '@/i18n/navigation';
 import {requireProfile} from '@/lib/auth/require-profile';
 
+function userReportError(t: (key: any) => string, reason: string) {
+  switch (reason) {
+    case 'validation': return t('validation');
+    case 'send': return t('sendError');
+    case 'sent': return t('errorAlreadySent');
+    case 'attendance': return t('errorAttendanceConflict');
+    case 'sources': return t('errorSourcesMissing');
+    case 'stale': return t('errorStale');
+    case 'permission': return t('errorPermission');
+    case 'rule': return t('errorRule');
+    default: return t('saveError');
+  }
+}
+
 function statusVariant(
   status: AdminReportContextStatus
 ): BadgeVariant {
@@ -155,9 +169,7 @@ export default async function ReportsPage({
         ) : null}
         {query.error ? (
           <p className="form-error">
-            {query.error === 'validation'
-              ? t('validation')
-              : t('saveError')}
+            {userReportError(t, query.error)}
           </p>
         ) : null}
         <div className="section-heading">

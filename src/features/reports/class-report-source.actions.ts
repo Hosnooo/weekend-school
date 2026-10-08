@@ -10,6 +10,7 @@ import {createServerSupabaseClient} from '@/lib/supabase/server';
 import {databaseUuid} from '@/lib/validation/fields';
 
 import {setClassReportCycleSourceIncluded} from './class-report-review.repository';
+import {reportWorkflowErrorCode} from './report-error-guidance';
 
 function localeFrom(formData: FormData): Locale {
   const raw = String(formData.get('locale') ?? 'en');
@@ -52,7 +53,7 @@ export async function setClassReportCycleSourceIncludedAction(
   } catch (error) {
     console.error('Unable to change Report Cycle source selection', {error});
     redirect(
-      `/${locale}/reports/workspace/${batchId.data}?error=save`
+      `/${locale}/reports/workspace/${batchId.data}?error=${reportWorkflowErrorCode(error)}`
     );
   }
 

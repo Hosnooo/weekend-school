@@ -6,6 +6,7 @@ import {redirect} from 'next/navigation';
 import {z} from 'zod';
 
 import {isLocale} from '@/i18n/config';
+import {validationIssues} from '@/lib/validation/error-guidance';
 import {requireTeachingAccount} from '@/lib/auth/require-profile';
 import {
   databaseUuid,
@@ -169,7 +170,8 @@ export async function saveTeachingUpdateDraftAction(
       status: 'error',
       error: 'validation',
       submissionId: null,
-      overlaps: []
+      overlaps: [],
+      issues: parsed.success ? [] : validationIssues(parsed.error)
     };
   }
 
@@ -230,7 +232,12 @@ export async function submitTeachingUpdateAction(
     return;
   }
 
-  await submitTeachingUpdate(parsed.data);
+  try {
+    await submitTeachingUpdate(parsed.data);
+  } catch (error) {
+    const reason = mutationError(error) === 'conflict' ? 'conflict' : 'submit';
+    redirect(`/${locale}/my-teaching/update?submissionId=${parsed.data.submissionId}&error=${reason}`);
+  }
   refresh(locale);
   redirect(`/${locale}/history`);
 }
