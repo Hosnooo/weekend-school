@@ -133,10 +133,10 @@ test(
     ).toBeVisible();
 
     const sourceCard = page
+      .locator('.report-source-context')
+      .filter({hasText: 'Faith & Character'})
+      .first()
       .locator('.report-source-row')
-      .filter({
-        hasText: 'Faith & Character'
-      })
       .first();
 
     await expect(sourceCard).toContainText('Included');
@@ -203,9 +203,9 @@ test(
     await expect(page.getByRole('button', {
       name: 'Finalize and prepare to send'
     })).toBeVisible();
-    await expect(page.locator('.report-source-row')
+    await expect(page.locator('.report-source-context')
       .filter({hasText: 'Faith & Character'})
-      .first()).toContainText('Included');
+      .first().locator('.report-source-row').first()).toContainText('Included');
 
     await page.getByRole('button', {name: 'Finalize and prepare to send'}).click();
     await expect(page.getByText(
