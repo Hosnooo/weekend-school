@@ -41,6 +41,10 @@ export default async function TeacherAccessPage({params, searchParams}: {
 
       {access === 'sent' ? <Alert variant="success">{t('accessSent')}</Alert> : null}
       {access === 'failed' ? <Alert variant="danger">{t('accessFailed')}</Alert> : null}
+      {access === 'accountUnavailable' ? <Alert variant="danger">{t('accessAccountUnavailable')}</Alert> : null}
+      {access === 'emailMissing' ? <Alert variant="danger">{t('accessEmailMissing')}</Alert> : null}
+      {access === 'rateLimited' ? <Alert variant="danger">{t('accessRateLimited')}</Alert> : null}
+      {access === 'stale' ? <Alert variant="danger">{t('accessStale')}</Alert> : null}
       {access === 'unlinkFailed' ? <Alert variant="danger">{t('accessUnlinkFailed')}</Alert> : null}
       {access === 'unlinked' ? <Alert variant="success">{t('accessUnlinked')}</Alert> : null}
       {access === 'invalid' ? <Alert variant="danger">{t('accessInvalid')}</Alert> : null}

@@ -201,7 +201,10 @@ export async function updateStudentGuardianAction(
   return initialActionState;
 }
 
-export async function unlinkStudentGuardianAction(formData: FormData) {
+export async function unlinkStudentGuardianAction(
+  _previousState: ActionState,
+  formData: FormData
+): Promise<ActionState> {
   const locale = localeFrom(formData);
   await requireProfile(locale, 'ADMIN');
 
@@ -209,10 +212,17 @@ export async function unlinkStudentGuardianAction(formData: FormData) {
     studentId: formData.get('studentId'),
     guardianId: formData.get('guardianId')
   });
-  if (!parsed.success) return;
+  if (!parsed.success) return validationFailure(parsed.error);
 
-  await unlinkGuardianFromStudent(parsed.data.studentId, parsed.data.guardianId);
+  try {
+    // The school-scoped RPC checks the exact Student–Guardian link under lock.
+    await unlinkGuardianFromStudent(parsed.data.studentId, parsed.data.guardianId);
+  } catch (error) {
+    return guardianMutationFailure(error);
+  }
+
   refresh(locale, parsed.data.guardianId, parsed.data.studentId);
+  return initialActionState;
 }
 
 export async function changeGuardianActiveMutationAction(formData: FormData) {

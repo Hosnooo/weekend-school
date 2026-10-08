@@ -1,6 +1,7 @@
 'use server';
 
 import {revalidatePath} from 'next/cache';
+import {accountAccessError} from '@/features/auth/account-access-error';
 import {headers} from 'next/headers';
 import {redirect} from 'next/navigation';
 import {z} from 'zod';
@@ -268,7 +269,7 @@ export async function resendTeacherAccessAction(formData: FormData) {
   const parsed = databaseUuid.safeParse(formData.get('id'));
   if (!parsed.success) return;
 
-  let outcome: 'sent' | 'failed' = 'sent';
+  let outcome: 'sent' | 'accountUnavailable' | 'emailMissing' | 'rateLimited' | 'stale' | 'failed' = 'sent';
   try {
     const teacher = await getTeacher(profile.schoolId, parsed.data);
     if (!teacher?.email) throw new Error('Teacher login email is unavailable');
@@ -287,7 +288,7 @@ export async function resendTeacherAccessAction(formData: FormData) {
     }, createAccessDependencies());
   } catch (error) {
     console.error('Unable to send teacher access', {error});
-    outcome = 'failed';
+    outcome = accountAccessError(error);
   }
 
   revalidateTeacherSurfaces(locale, parsed.data);

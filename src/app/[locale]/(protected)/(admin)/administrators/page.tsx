@@ -38,6 +38,10 @@ export default async function AdministratorsPage({params, searchParams}: {
       {query.created === '1' ? <Alert variant="success">{t('created')}</Alert> : null}
       {query.deleted === '1' ? <Alert variant="success">{t('deleted')}</Alert> : null}
       {query.access === 'failed' ? <Alert variant="danger">{t('accessFailed')}</Alert> : null}
+      {query.access === 'accountUnavailable' ? <Alert variant="danger">{t('accessAccountUnavailable')}</Alert> : null}
+      {query.access === 'emailMissing' ? <Alert variant="danger">{t('accessEmailMissing')}</Alert> : null}
+      {query.access === 'rateLimited' ? <Alert variant="danger">{t('accessRateLimited')}</Alert> : null}
+      {query.access === 'stale' ? <Alert variant="danger">{t('accessStale')}</Alert> : null}
       {query.error === 'validation' ? <Alert variant="danger">{common('validation')}</Alert> : null}
       {query.error === 'save' ? <Alert variant="danger">{common('saveError')}</Alert> : null}
       {query.error === 'permission' ? <Alert variant="danger">{common('permission')}</Alert> : null}

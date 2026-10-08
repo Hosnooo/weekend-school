@@ -177,13 +177,17 @@
     "sendAccess": "Send access link",
     "resendAccess": "Resend access link",
     "accessSent": "Administrator login access was updated. If a new invitation or reset link was needed, it was sent.",
-    "accessFailed": "Administrator access could not be created or sent. The Administrator remains inactive until access succeeds.",
+    "accessFailed": "The invitation or access link could not be confirmed. Check the current account status before retrying; contact the administrator if the problem persists.",
     "created": "Administrator added.",
     "deleted": "Administrator deleted. Shared login and Teacher access were preserved.",
     "delete": "Delete administrator",
     "lastAdministrator": "At least one active Administrator must remain.",
     "empty": "No Administrator records are available.",
-    "emptyHelp": "Add an Administrator record to grant school-management capability."
+    "emptyHelp": "Add an Administrator record to grant school-management capability.",
+    "accessAccountUnavailable": "This login cannot be linked to the current school. Check the email and ask a school administrator to review account access. No invitation was confirmed.",
+    "accessEmailMissing": "Enter a valid login email in the person's details before sending an access link.",
+    "accessRateLimited": "The email service temporarily limited access links. Check the account status and try again later; avoid repeatedly sending.",
+    "accessStale": "This account or its school record has changed. Refresh the page, review the current account status and try again."
   },
   "common": {
     "add": "Add",
@@ -442,7 +446,7 @@
     "editGuardian": "Edit guardian",
     "unlinkGuardian": "Unlink from student",
     "removeGuardianFromStudent": "Remove from student",
-    "removeGuardianConfirm": "Remove {name} from this student? The guardian will remain active if linked to another student; otherwise the guardian will be archived.",
+    "removeGuardianConfirm": "Remove {name} from this student? Other student links stay unchanged. If this is the last link, the guardian will be archived.",
     "noLinked": "No guardian is linked to this student.",
     "sharedContactHelp": "Guardian contact changes apply anywhere this guardian is linked.",
     "standaloneNoticeTitle": "Guardian management has moved",
@@ -572,10 +576,14 @@
     "unknown": "Status unavailable",
     "resendAccess": "Resend access link",
     "accessSent": "Login access updated. If a new invitation or reset link was needed, it was sent.",
-    "accessFailed": "Login access could not be created or the link could not be sent. Check the teacher's login email and try again. If it continues, contact the administrator.",
+    "accessFailed": "The invitation or access link could not be confirmed. Check the current account status before retrying; contact the administrator if the problem persists.",
     "accessUnlinkFailed": "Login access could not be disconnected. It may still be active. Refresh this page and try again; if it continues, contact an administrator.",
     "accessUnlinked": "Teacher login access was disconnected. The Teacher record and teaching history were preserved.",
-    "accessInvalid": "The selected login link changed or is no longer valid. Refresh this page and try again."
+    "accessInvalid": "The selected login link changed or is no longer valid. Refresh this page and try again.",
+    "accessAccountUnavailable": "This login cannot be linked to the current school. Check the email and ask a school administrator to review account access. No invitation was confirmed.",
+    "accessEmailMissing": "Enter a valid login email in the person's details before sending an access link.",
+    "accessRateLimited": "The email service temporarily limited access links. Check the account status and try again later; avoid repeatedly sending.",
+    "accessStale": "This account or its school record has changed. Refresh the page, review the current account status and try again."
   },
   "reportLanguages": {
     "en": "English",
