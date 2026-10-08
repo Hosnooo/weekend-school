@@ -183,7 +183,11 @@ describe('administrator and teacher UX completion contract', () => {
     expect(page).toContain("query.error === 'last-admin'");
     expect(page).toContain("t('lastAdministrator')");
     expect(service).toContain('Cannot remove the last active Administrator');
-    expect(actions).toContain('isLastAdministratorError');
+    // Lifecycle errors are normalized by the shared, code-aware adapter.
+    expect(actions).toContain('administratorLifecycleError');
+    const lifecycle = source('src/features/administrators/administrator-lifecycle-error.ts');
+    expect(lifecycle).toContain('Cannot remove the last active Administrator');
+    expect(lifecycle).toContain("'last-admin'");
     expect(actions).toContain('/administrators');
     expect(actions).not.toContain('/settings/administrators');
     expect(actions).not.toContain('teacher_accounts');
