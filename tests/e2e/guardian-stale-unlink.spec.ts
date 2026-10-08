@@ -83,7 +83,10 @@ test.describe('isolated stale Student–Guardian relationship', () => {
       // After unlinking, the Guardian still exists and can legitimately
       // appear in the "Link existing Guardian" directory below the cards.
       // Only the linked Guardian card must disappear for this student.
-      await expect(page.locator('.record-card').filter({hasText: guardianName})).toHaveCount(0);
+      const linkedGuardianCard = page.locator('.record-card')
+        .filter({hasText: guardianName})
+        .filter({has: page.getByRole('button', {name: 'Remove from student'})});
+      await expect(linkedGuardianCard).toHaveCount(0);
     } finally {
       await supabase.from('student_guardians').delete()
         .eq('school_id',schoolId)
