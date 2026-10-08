@@ -177,6 +177,17 @@ describe('Reports workflow UX contract', () => {
     expect(ar.navigation.deliveryStatus).toBe('حالة التسليم');
   });
 
+  it('uses a string translation for the Class Report Cycle delivery-status link', () => {
+    const review = read('src/features/reports/class-report-cycle-review.tsx');
+    const en = JSON.parse(read('messages/en.json'));
+    const ar = JSON.parse(read('messages/ar.json'));
+
+    expect(review).toContain("t('viewDeliveryStatus')");
+    expect(review).not.toContain("t('deliveryStatus')");
+    expect(typeof en.reports.viewDeliveryStatus).toBe('string');
+    expect(typeof ar.reports.viewDeliveryStatus).toBe('string');
+  });
+
   it('keeps historical report detail read-only and delivery-aware', () => {
     const page = read(
       'src/app/[locale]/(protected)/(admin)/reports/[id]/page.tsx'
