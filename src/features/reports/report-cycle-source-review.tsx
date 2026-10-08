@@ -297,7 +297,7 @@ export async function ReportCycleSourceReview({
                       cancelLabel={ui.cancel}
                       saveAction={saveClassReportReviewWithAttendanceInlineAction}
                       saveErrorLabel={t('saveError')}
-                       lockedSaveErrorLabel={ui.lockedSaveError}
+                      lockedSaveErrorLabel={ui.lockedSaveError}
                       saveLabel={ui.saveAndClose}
                     >
                       {sharedHidden}

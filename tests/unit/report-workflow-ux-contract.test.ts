@@ -99,7 +99,7 @@ describe('Reports workflow UX contract', () => {
     expect(actions).toContain('openClassReportEditorAction');
     expect(actions).toContain('await reopenAdminReportWorkspace');
     expect(actions).toContain('report-edit-');
-    expect(actions).toContain("if (review.status === 'FINALIZED')");
+    expect(actions).toContain("if (review?.status === 'FINALIZED')");
     expect(source).toContain('action={openClassReportEditorAction}');
     expect(source).toContain('canEditFinalized');
     expect(reopen).toContain("'reopen_unsent_report_batch'");

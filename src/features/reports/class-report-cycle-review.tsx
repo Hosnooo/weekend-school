@@ -33,8 +33,8 @@ const copy = {
     previewUnavailable:
       'Email preview is unavailable until report issues are resolved.',
     parentEmailTo: 'To',
-    parentEmailSubject: 'Subject',
-   },
+    parentEmailSubject: 'Subject'
+  },
   ar: {
     emailReview: 'مراجعة البريد الإلكتروني',
     emailBody: 'محتوى البريد',
@@ -43,8 +43,8 @@ const copy = {
     previewUnavailable:
       'لا تتوفر معاينة البريد حتى يتم حل مشكلات التقرير.',
     parentEmailTo: 'إلى',
-    parentEmailSubject: 'الموضوع',
-   }
+    parentEmailSubject: 'الموضوع'
+  }
 } as const;
 
 export async function ClassReportCycleReview({
