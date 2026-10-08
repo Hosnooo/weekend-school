@@ -72,6 +72,10 @@ describe('Reports workflow UX contract', () => {
     expect(review).not.toContain('Reopen & edit');
     expect(review).toContain('finalizeClassReportCycleAction');
     expect(review).toContain('sendAdminReportBatchAction');
+    expect(review).toContain('reopenAdminReportWorkspaceAction');
+    expect(review).toContain('canReopen ? (');
+    expect(review).toContain("t('reopenCycleForAdmin')");
+    expect(review).toContain("t('reopenCycleConfirm')");
 
     expect(review).not.toContain('renderStudentReportV2');
     expect(review).not.toContain('previewReport');
@@ -89,6 +93,21 @@ describe('Reports workflow UX contract', () => {
     expect(component).toContain('canEditFinalized');
     expect(component).toContain('report-source-editor');
     expect(component).not.toContain('View update');
+  });
+
+  it('offers a separate administrator-only reopen action for finalized unsent cycles', () => {
+    const review = read('src/features/reports/class-report-cycle-review.tsx');
+    const actions = read('src/features/reports/admin-report-workflow.actions.ts');
+    const en = JSON.parse(read('messages/en.json'));
+    const ar = JSON.parse(read('messages/ar.json'));
+
+    expect(review).toContain('<form action={reopenAdminReportWorkspaceAction}>');
+    expect(review).toContain('ConfirmSubmitButton');
+    expect(review).toContain('canReopen ? (');
+    expect(actions).toContain("await reopenAdminReportWorkspace(");
+    expect(actions).toContain('revalidatePath(`/${locale}/reports/workspace/${batchId.data}`)');
+    expect(en.reports.reopenCycleForAdmin).toBeTruthy();
+    expect(ar.reports.reopenCycleForAdmin).toBeTruthy();
   });
 
   it('keeps administrator edits separate from teacher resubmission', () => {
