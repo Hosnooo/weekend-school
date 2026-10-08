@@ -32,7 +32,7 @@ import {isLocale} from '@/i18n/config';
 import {requireAdministrator} from '@/lib/auth/require-profile';
 import {createServiceRoleSupabaseClient} from '@/lib/supabase/service-role';
 import type {ActionState} from '@/lib/validation/action-state';
-import {initialActionState, persistenceFailure, saveFailure, validationFailure} from '@/lib/validation/action-state';
+import {initialActionState, persistenceFailure, validationFailure} from '@/lib/validation/action-state';
 import {databaseUuid} from '@/lib/validation/fields';
 
 function localeFrom(formData: FormData) {
