@@ -118,10 +118,16 @@ function pairedBlocks(
 function attendanceMetric(
   attended: number,
   total: number,
-  language: ReportLanguage
+  language: ReportLanguage,
+  unverified = false
 ) {
-  const english = `Attendance: ${attended} of ${total} sessions`;
-  const arabic = `الحضور: ${attended} من ${total} حصص`;
+  const notRecorded = total === 0 || unverified;
+  const english = notRecorded
+    ? 'Attendance: Not recorded'
+    : `Attendance: ${attended} of ${total} sessions`;
+  const arabic = notRecorded
+    ? 'الحضور: غير مسجل'
+    : `الحضور: ${attended} من ${total} حصص`;
 
   if (language === 'both') {
     return pairedBlocks(english, arabic, false);
@@ -282,7 +288,8 @@ export function renderStudentReportV2(
       const attendance = attendanceMetric(
         section.attendance.present,
         section.attendance.sessions,
-        language
+        language,
+        section.attendance.unverified
       );
 
       return `<section><h2>${subject}${group ? ` — ${group}` : ''}</h2><div class="attendance-metric">${attendance}</div><h3>${mainReportLabel || escapeHtml(ui.progress)}</h3><div class="report-copy">${progress || '—'}</div>${showPerformance ? `<h3>${performanceLabel || escapeHtml(ui.performance)}</h3><div class="report-copy">${performanceValue}</div>` : ''}${showStudentComments && comment ? `<h3>${studentCommentLabel || escapeHtml(ui.comments)}</h3><div class="report-copy">${comment}</div>` : ''}</section>`;

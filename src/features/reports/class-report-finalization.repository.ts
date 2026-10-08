@@ -313,12 +313,6 @@ async function buildClassReportCycleSnapshots(
         explicitOverride?.attendance_total
       );
 
-      if (!attendance.overridden && attendance.total === 0) {
-        throw new Error(
-          `Attendance must be reviewed before finalizing ${student.id}:${approval.classSubjectId}`
-        );
-      }
-
       const sourcePerformance = studentObservations
         .map(({performance_override}) => performance_override)
         .filter((value): value is ReportPerformance => value !== null)

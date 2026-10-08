@@ -66,9 +66,10 @@ describe('subject-aware report snapshot v2',()=>{
   expect(html).not.toContain('Internal Teacher Two');
  });
 
- it('blocks finalization and identifies the affected Subject while attendance is unresolved',()=>{
+ it('allows report generation while disputed attendance is unverified',()=>{
   const result=buildReportSnapshotV2({...v2Base,sections:[quranSection,{...arabicSection,unresolvedAttendanceConflicts:1}]});
-  expect(result.snapshot).toBeNull();
+  expect(result.snapshot?.version).toBe(2);
   expect(result.issues).toEqual([{code:'UNRESOLVED_ATTENDANCE_CONFLICT',classSubjectId:'cs-arabic'}]);
+  expect(renderStudentReportV2(result.snapshot!, 'both')).toContain('Attendance: Not recorded');
  });
 });

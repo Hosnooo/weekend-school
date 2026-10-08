@@ -188,10 +188,8 @@ export function buildReportSnapshotV2(
       ? [{code: 'UNRESOLVED_ATTENDANCE_CONFLICT', classSubjectId: section.classSubjectId}]
       : []
   );
-  if (issues.length > 0) return {snapshot: null, issues};
-
   return {
-    issues: [],
+    issues,
     snapshot: {
       version: 2,
       school: input.school,
@@ -208,7 +206,10 @@ export function buildReportSnapshotV2(
         approvedProgressEn: section.approvedProgressEn,
         approvedProgressAr: section.approvedProgressAr,
         performance: section.performance,
-        attendance: {...section.attendance},
+        attendance: {
+          ...section.attendance,
+          unverified: section.unresolvedAttendanceConflicts > 0
+        },
         commentEn: section.commentEn,
         commentAr: section.commentAr
       })),

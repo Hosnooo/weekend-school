@@ -466,9 +466,18 @@ export async function saveClassReportReviewContext(input: {
     );
 
     if (!hasOverride) {
+      // Preserve any attendance override in this row. Clearing report fields
+      // must not require DELETE permission or erase attendance corrections.
       const {error} = await db
         .from('report_student_overrides')
-        .delete()
+        .update({
+          progress_en: null,
+          progress_ar: null,
+          performance: null,
+          performance_overridden: false,
+          comment_en: null,
+          comment_ar: null
+        })
         .eq('school_id', input.schoolId)
         .eq('approval_id', approvalId)
         .eq('student_id', student.studentId);

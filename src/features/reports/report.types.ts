@@ -48,7 +48,7 @@ export type ReportSnapshotV2Section = {
   approvedProgressEn: string | null;
   approvedProgressAr: string | null;
   performance: ReportPerformance | null;
-  attendance: {present: number; absent: number; sessions: number};
+  attendance: {present: number; absent: number; sessions: number; unverified?: boolean};
   commentEn: string | null;
   commentAr: string | null;
 };

@@ -60,5 +60,31 @@ describe('Class Report Cycle finalized attendance', () => {
     expect(html).toContain('الحضور: 7 من 8 حصص');
     expect(html).not.toContain('Present:');
     expect(html).not.toContain('Absent:');
+
+    const missing = renderStudentReportV2({
+      ...snapshot,
+      sections: [{
+        ...snapshot.sections[0]!,
+        attendance: {present: 0, absent: 0, sessions: 0}
+      }]
+    });
+    expect(missing).toContain('Attendance: Not recorded');
+    expect(missing).toContain('الحضور: غير مسجل');
+    expect(missing).not.toContain('Attendance: 0 of 0 sessions');
+
+    const disputed = renderStudentReportV2({
+      ...snapshot,
+      sections: [{
+        ...snapshot.sections[0]!,
+        attendance: {present: 7, absent: 1, sessions: 8, unverified: true}
+      }]
+    });
+    expect(disputed).toContain('Attendance: Not recorded');
+  });
+
+  it('clears report text overrides without requiring DELETE privileges', () => {
+    const repository = readFileSync('src/features/reports/class-report-review.repository.ts', 'utf8');
+    expect(repository).not.toMatch(/\.from\('report_student_overrides'\)\s*\.delete\(\)/);
+    expect(repository).toContain('performance_overridden: false');
   });
 });
