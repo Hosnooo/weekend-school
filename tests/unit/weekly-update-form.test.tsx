@@ -29,6 +29,8 @@ import {saveWeeklyUpdateAction} from '@/features/weekly-updates/weekly-update.ac
 
 const template = {
   ...defaultReportTemplateConfig(),
+  // Opt in for the tests exercising optional performance controls.
+  performanceEnabled: true,
   mainReportLabelEn: 'Weekly learning',
   mainReportHelpEn: 'Tell families what happened this week.',
   performanceLabelEn: 'Progress level',
