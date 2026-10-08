@@ -40,11 +40,13 @@ test('English redesigned workflow reaches a finalized Class report', async ({pag
   await createCycle.locator('input[name="periodEnd"]').fill('2026-09-14');
   await createCycle.getByRole('button', {name: 'Create Report Cycle'}).click();
   await expect(page.getByRole('heading', {name: 'Report Cycle · Foundations'})).toBeVisible();
-  await expect(page.locator('.report-source-list').first().locator('.report-source-row').filter({hasText: 'Arabic Reading · Blue'})).toHaveCount(2);
-  await page.getByRole('button', {name: 'Generate student reports'}).click();
-  await expect(page.getByText('Ready to send', {exact: true}).first()).toBeVisible();
-  await page.getByRole('link', {name: 'Preview report'}).first().click();
-  const frame = page.frameLocator('iframe[title="Report preview"]');
+  const blueSource = page.locator('.report-source-context').filter({hasText: 'Arabic Reading · Blue'});
+  await expect(blueSource.locator('.report-source-row')).toHaveCount(2);
+  await page.getByRole('button', {name: 'Finalize and prepare to send'}).click();
+  await expect(page.getByText('Student reports are ready to send.', {exact: true})).toBeVisible();
+  const preview = page.locator('section.report-email-review-panel').last();
+  await preview.locator('select').selectOption('e0000000-0000-0000-0000-000000000003');
+  const frame = preview.frameLocator('iframe.report-preview');
   await expect(frame.getByText('MCE Weekend School')).toBeVisible();
   await expect(frame.getByText('Whole-class character lesson')).toBeVisible();
   await expect(frame.getByText('Blue reading lesson')).toBeVisible();
