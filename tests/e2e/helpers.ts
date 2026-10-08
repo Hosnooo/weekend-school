@@ -55,7 +55,10 @@ export async function submitTeachingUpdate(page: Page, input: {
   }
   if (input.progressEn) await page.getByLabel(input.locale === 'ar' ? 'ماذا غطّيت؟ (بالإنجليزية)' : 'What did you cover? (English)').fill(input.progressEn);
   if (input.progressAr) await page.getByLabel(input.locale === 'ar' ? 'ماذا غطّيت؟ (بالعربية)' : 'What did you cover? (Arabic)').fill(input.progressAr);
-  await page.getByLabel(input.locale === 'ar' ? 'الأداء الافتراضي' : 'Default performance').selectOption('GOOD');
+  // The active template must be readable by Teachers (including optional fields).
+  const defaultPerformance = page.getByLabel(input.locale === 'ar' ? 'الأداء الافتراضي' : 'Default performance');
+  await expect(defaultPerformance).toBeVisible({timeout: 5_000});
+  await defaultPerformance.selectOption('GOOD');
   if (input.exceptionStudent) {
     await page.getByRole('row', {name: new RegExp(input.exceptionStudent)}).locator('select').nth(1).selectOption('EXCELLENT');
   }
