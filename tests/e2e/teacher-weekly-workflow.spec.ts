@@ -33,15 +33,13 @@ test.describe('Teacher Teaching Update workflow', () => {
     await expect(page.getByRole('heading', {level: 1, name: 'Teaching Updates'})).toBeVisible();
     await expect(page.locator('.teacher-new-update-list')).toBeVisible();
     await expect(page.locator('.teacher-new-update-list').getByText('students', {exact: false})).toHaveCount(0);
-    const englishGroups = page.locator('.teacher-group-management:not(.teacher-group-settings):not(.teacher-group-history)');
-    await expect(englishGroups.locator(':scope > summary')).toHaveText('Manage groups', {timeout: 10_000});
-    await expect(englishGroups.getByRole('button', {name: 'Create group'}).first()).toBeHidden();
-    await englishGroups.locator(':scope > summary').click();
-    await expect(englishGroups.locator('.teacher-group-roster').first()).toBeVisible();
-    await expect(englishGroups.getByRole('button', {name: 'Create group'}).first()).toBeHidden();
-    await englishGroups.locator('.teacher-group-settings > summary').first().click();
-    await expect(englishGroups.getByRole('button', {name: 'Create group'}).first()).toBeVisible();
-    await englishGroups.locator(':scope > summary').click();
+    // The roster is now always visible; group settings and history are secondary disclosures.
+    await expect(page.locator('.teacher-group-roster').first()).toBeVisible();
+    const englishSettings = page.locator('details.teacher-group-settings').first();
+    await expect(englishSettings.getByRole('button', {name: 'Create group'})).toBeHidden();
+    await englishSettings.locator('summary').click();
+    await expect(englishSettings.getByRole('button', {name: 'Create group'})).toBeVisible();
+    await englishSettings.locator('summary').click();
     await assertNoHorizontalOverflow(page);
     await page.screenshot({path: testInfo.outputPath('en-teacher-queue-desktop.png'), fullPage: true, caret: 'initial'});
 
@@ -91,15 +89,12 @@ test.describe('Teacher Teaching Update workflow', () => {
     await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
     await expect(page.getByRole('heading', {level: 1, name: 'تحديثات التدريس'})).toBeVisible();
     await expect(page.locator('.teacher-new-update-list')).toBeVisible();
-    const arabicGroups = page.locator('.teacher-group-management:not(.teacher-group-settings):not(.teacher-group-history)');
-    await expect(arabicGroups.locator(':scope > summary')).toHaveText('إدارة المجموعات');
-    await expect(arabicGroups.getByRole('button', {name: 'إنشاء مجموعة'}).first()).toBeHidden();
-    await arabicGroups.locator(':scope > summary').click();
-    await expect(arabicGroups.locator('.teacher-group-roster').first()).toBeVisible();
-    await expect(arabicGroups.getByRole('button', {name: 'إنشاء مجموعة'}).first()).toBeHidden();
-    await arabicGroups.locator('.teacher-group-settings > summary').first().click();
-    await expect(arabicGroups.getByRole('button', {name: 'إنشاء مجموعة'}).first()).toBeVisible();
-    await arabicGroups.locator(':scope > summary').click();
+    await expect(page.locator('.teacher-group-roster').first()).toBeVisible();
+    const arabicSettings = page.locator('details.teacher-group-settings').first();
+    await expect(arabicSettings.getByRole('button', {name: 'إنشاء مجموعة'})).toBeHidden();
+    await arabicSettings.locator('summary').click();
+    await expect(arabicSettings.getByRole('button', {name: 'إنشاء مجموعة'})).toBeVisible();
+    await arabicSettings.locator('summary').click();
     await assertNoHorizontalOverflow(page);
     await page.screenshot({path: testInfo.outputPath('ar-teacher-queue-desktop.png'), fullPage: true, caret: 'initial'});
 
