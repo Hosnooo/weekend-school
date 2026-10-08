@@ -116,13 +116,13 @@ jobs:
         if: always()
         run: pnpm db:stop
 
-  administrator-guard-review:
-    # This review-only suite runs on manual dispatch of this exact branch.
-    # No secrets, hosted Supabase URL, or production migration workflow.
+  administrator-full-review:
+    # Runs only when manually dispatched on the unmerged review branch.
+    # Local-only Supabase; does not read remote project secrets or deploy SQL.
     if: ${{ github.ref_name == 'review/atomic-last-admin-guard-20261008' }}
-    name: Guardian browser verification (isolated local database)
+    name: Full regression: quality, historical migration, browser flows
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 80
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -134,31 +134,75 @@ jobs:
           corepack prepare pnpm@11.19.0 --activate
       - name: Install locked dependencies
         run: pnpm install --frozen-lockfile
-      # Already passed on run 37741955332: skip repeat test execution.
-      # The standard manually dispatched CI on main still runs all test suites.
-      - name: Stage unmerged SQL candidate in disposable local migrations
+      - name: Lint all source and tests
+        run: pnpm lint
+      - name: Validate TypeScript
+        run: pnpm typecheck
+      - name: Run every unit and component test
+        run: pnpm test
+      - name: Compile Next.js production application
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://example.invalid
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-build-placeholder
+          SUPABASE_SERVICE_ROLE_KEY: ci-build-placeholder
+          BREVO_API_KEY: ci-build-placeholder
+          EMAIL_FROM: ci@example.invalid
+          CRON_SECRET: ci-build-placeholder
+        # Full unit suite just ran; invoke Next directly to avoid rerunning
+        # the critical-error subset from the package.json build script.
+        run: pnpm exec next build
+
+      - name: Stage candidate SQL migration only in disposable local workspace
         run: |
           set -euo pipefail
           test -f docs/db-review/last-active-administrator-guard.sql
-          test -f docs/db-review/last-active-administrator-guard.test.sql
           pnpm exec supabase migration new last_active_administrator_manual_review
           candidate="$(find supabase/migrations -maxdepth 1 -type f -name '*_last_active_administrator_manual_review.sql' | sort | tail -1)"
           test -n "$candidate"
           cp docs/db-review/last-active-administrator-guard.sql "$candidate"
-          cp docs/db-review/last-active-administrator-guard.test.sql supabase/tests/last-active-administrator-guard.test.sql
-      - name: Start disposable local Supabase
+      - name: Start local Supabase
         run: pnpm db:start
-      - name: Reset with candidate migration against local database only
-        run: pnpm db:reset
-      # Existing database checks (429 tests) and two-session concurrency check
-      # both passed on run 37741955332; only the browser assertion changed.
-      - name: Load local-only browser test fixtures
+      - name: Confirm local database is isolated
         run: |
           set -euo pipefail
           eval "$(pnpm exec supabase status -o env)"
           case "$DB_URL" in
             *"@127.0.0.1:"*|*"@localhost:"*) ;;
-            *) echo "Refusing nonlocal database" >&2; exit 1 ;;
+            *) echo "Refusing hosted database for full regression" >&2; exit 1 ;;
+          esac
+          case "$API_URL" in
+            "http://127.0.0.1:"*|"http://localhost:"*) ;;
+            *) echo "Refusing hosted API for full regression" >&2; exit 1 ;;
+          esac
+      - name: Reset to historical pre-role-cutover local schema
+        run: pnpm exec supabase db reset --version 202609230027
+      - name: Load historical Teacher attribution fixture
+        run: |
+          set -euo pipefail
+          eval "$(pnpm exec supabase status -o env)"
+          case "$DB_URL" in
+            *"@127.0.0.1:"*|*"@localhost:"*) ;;
+            *) echo "Refusing nonlocal fixture load" >&2; exit 1 ;;
+          esac
+          psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/fixtures/teacher_id_history_pre_role_cutover.sql
+      - name: Apply forward migrations locally, including the candidate
+        run: pnpm exec supabase migration up --local
+      - name: Verify historical Teacher attribution survived upgrade
+        run: pnpm exec supabase test db --local supabase/fixtures/teacher_id_history_upgrade.test.sql
+
+      - name: Reset disposable local database for all browser workflows
+        run: pnpm db:reset
+      - name: Load isolated E2E fixture and local-only app settings
+        run: |
+          set -euo pipefail
+          eval "$(pnpm exec supabase status -o env)"
+          case "$DB_URL" in
+            *"@127.0.0.1:"*|*"@localhost:"*) ;;
+            *) echo "Refusing hosted browser fixtures" >&2; exit 1 ;;
+          esac
+          case "$API_URL" in
+            "http://127.0.0.1:"*|"http://localhost:"*) ;;
+            *) echo "Refusing hosted API for browser tests" >&2; exit 1 ;;
           esac
           psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/seed.e2e.sql
           cat > .env.local <<EOF
@@ -170,17 +214,16 @@ jobs:
           CRON_SECRET=ci-local-placeholder
           E2E_BASE_URL=http://127.0.0.1:3000
           EOF
-      - name: Install Chromium
+      - name: Install Chromium browser once
         run: pnpm exec playwright install --with-deps chromium
-      - name: Run only isolated stale-Guardian browser scenario
+      - name: Run all 24 browser test files
         run: |
           set -euo pipefail
           eval "$(pnpm exec supabase status -o env)"
-          # Playwright configuration and the browser fixture run in Node
-          # subprocesses, so reading .env.local alone is insufficient.
           export NEXT_PUBLIC_SUPABASE_URL="$API_URL"
           export SUPABASE_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY"
-          pnpm test:e2e tests/e2e/guardian-stale-unlink.spec.ts
-      - name: Stop and discard local Supabase
+          pnpm test:e2e
+
+      - name: Stop and discard disposable local Supabase
         if: always()
         run: pnpm db:stop
