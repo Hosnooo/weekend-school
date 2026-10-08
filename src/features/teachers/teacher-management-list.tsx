@@ -1,6 +1,8 @@
 'use client';
 
 import {useState} from 'react';
+
+import {lifecycleErrorKey} from '@/lib/validation/lifecycle-feedback';
 import {useTranslations} from 'next-intl';
 
 import {archiveManagedEntityAction} from '@/features/archives/archive.actions';
@@ -30,6 +32,7 @@ export function TeacherManagementList({
   const common = useTranslations('common');
   const language = useTranslations('language');
   const router = useRouter();
+  const [failure, setFailure] = useState<string | null>(null);
   const [lifecycleTarget, setLifecycleTarget] = useState<TeacherListItem | null>(null);
 
   if (teachers.length === 0) {
@@ -46,14 +49,25 @@ export function TeacherManagementList({
     const formData = new FormData();
     formData.set('locale', locale);
     formData.set('id', lifecycleTarget.id);
-    if (lifecycleTarget.isActive) {
-      formData.set('entityType', 'TEACHER');
-      await archiveManagedEntityAction(formData);
-    } else {
-      formData.set('isActive', 'true');
-      await setTeacherActiveAction(formData);
+    try {
+      const result = lifecycleTarget.isActive
+        ? await (async () => {
+            formData.set('entityType', 'TEACHER');
+            return archiveManagedEntityAction(formData);
+          })()
+        : await (async () => {
+            formData.set('isActive', 'true');
+            return setTeacherActiveAction(formData);
+          })();
+      if (!result.ok) {
+        setFailure(common(lifecycleErrorKey(result.error)));
+        return;
+      }
+      setFailure(null);
+      router.refresh();
+    } catch {
+      setFailure(common('lifecycleError'));
     }
-    router.refresh();
   }
 
   const columns: DataTableColumn<TeacherListItem>[] = [
@@ -111,7 +125,7 @@ export function TeacherManagementList({
           <DropdownMenuItem onSelect={() => router.push(`/teachers/${teacher.id}/assignments`)}>
             {t('assignments')}
           </DropdownMenuItem>
-          <DropdownMenuItem destructive={teacher.isActive} onSelect={() => setLifecycleTarget(teacher)}>
+          <DropdownMenuItem destructive={teacher.isActive} onSelect={() => {setFailure(null); setLifecycleTarget(teacher);}}>
             {teacher.isActive ? t('archiveTeacher') : common('reactivate')}
           </DropdownMenuItem>
         </DropdownMenu>
@@ -121,6 +135,7 @@ export function TeacherManagementList({
 
   return (
     <>
+      {failure ? <p className="form-error" role="alert" aria-live="polite">{failure}</p> : null}
       <DataTable
         caption={t('listCaption')}
         columns={columns}

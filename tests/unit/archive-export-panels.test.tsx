@@ -53,7 +53,7 @@ const exportLabels = {
   pdfs: 'Finalized report PDFs',
   fileOptions: 'File options',
   submit: 'Create export',
-  errors: {period: 'Fix dates', datasets: 'Choose data', scope: 'Choose a scope', generic: 'Download failed'}
+  errors: {period: 'Fix dates', datasets: 'Choose data', scope: 'Choose a scope', generic: 'Download failed', expired: 'Expired', access: 'Access denied'}
 };
 
 describe('archives and exports admin panels', () => {

@@ -41,6 +41,9 @@ export default async function TeacherAccessPage({params, searchParams}: {
 
       {access === 'sent' ? <Alert variant="success">{t('accessSent')}</Alert> : null}
       {access === 'failed' ? <Alert variant="danger">{t('accessFailed')}</Alert> : null}
+      {access === 'unlinkFailed' ? <Alert variant="danger">{t('accessUnlinkFailed')}</Alert> : null}
+      {access === 'unlinked' ? <Alert variant="success">{t('accessUnlinked')}</Alert> : null}
+      {access === 'invalid' ? <Alert variant="danger">{t('accessInvalid')}</Alert> : null}
 
       <Card>
         <SectionHeader title={t('loginAccess')} description={t('accessSeparationHelp')} />

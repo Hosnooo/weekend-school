@@ -65,7 +65,9 @@ export default async function ExportsPage({
       period: t('errorPeriod'),
       datasets: t('errorDatasets'),
       scope: t('errorScope'),
-      generic: t('errorDownload')
+      generic: t('errorDownload'),
+      expired: t('errorExpired'),
+      access: t('errorAccess')
     }
   };
 
@@ -86,7 +88,12 @@ export default async function ExportsPage({
           schoolRoster: t('rosterSchool'),
           classRosters: t('rosterClasses'),
           downloadSchool: t('downloadSchoolRoster'),
-          downloadClass: t('downloadClassRoster')
+          downloadClass: t('downloadClassRoster'),
+          errors: {
+            expired: t('errorExpired'),
+            access: t('errorAccess'),
+            unavailable: t('errorDownload')
+          }
         }}
         locale={locale}
       />
