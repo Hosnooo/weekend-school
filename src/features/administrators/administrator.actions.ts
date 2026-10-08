@@ -8,11 +8,10 @@ import {z} from 'zod';
 
 import {
   countActiveAdministratorsWithServiceRole,
-  deleteAdministratorRecordWithServiceRole,
+  deleteAdministratorWithAccountLinksWithServiceRole,
   insertAdministrator,
   loadAdministratorWithServiceRole,
   setAdministratorActiveWithServiceRole,
-  unlinkAdministratorAccountsWithServiceRole
 } from '@/features/administrators/administrator.repository';
 import {
   createAdministratorBusinessRecord,
@@ -25,6 +24,7 @@ import {
 import {isLocale} from '@/i18n/config';
 import type {ActionState} from '@/lib/validation/action-state';
 import {persistenceFailure, validationFailure} from '@/lib/validation/action-state';
+import {administratorLifecycleError} from './administrator-lifecycle-error';
 import {requireAdministrator} from '@/lib/auth/require-profile';
 import {createServiceRoleSupabaseClient} from '@/lib/supabase/service-role';
 import {databaseUuid} from '@/lib/validation/fields';
@@ -144,19 +144,8 @@ function lifecycleDependencies(): AdministratorLifecycleDependencies {
     },
     countActiveAdministrators: countActiveAdministratorsWithServiceRole,
     setAdministratorActive: setAdministratorActiveWithServiceRole,
-    unlinkAdministratorAccounts: unlinkAdministratorAccountsWithServiceRole,
-    deleteAdministratorRecord: deleteAdministratorRecordWithServiceRole
+    deleteAdministratorWithAccountLinks: deleteAdministratorWithAccountLinksWithServiceRole
   };
-}
-
-function isLastAdministratorError(error: unknown) {
-  return error instanceof Error && error.message.includes('last active Administrator');
-}
-
-function administratorLifecycleError(error: unknown) {
-  if (isLastAdministratorError(error)) return 'last-admin';
-  const reason = persistenceFailure(error).error;
-  return reason && reason !== 'validation' ? reason : 'save';
 }
 
 export async function createAdministratorAction(

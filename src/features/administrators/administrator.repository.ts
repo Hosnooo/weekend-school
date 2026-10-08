@@ -130,24 +130,14 @@ export async function setAdministratorActiveWithServiceRole(
   if (error) throw error;
 }
 
-export async function unlinkAdministratorAccountsWithServiceRole(
+export async function deleteAdministratorWithAccountLinksWithServiceRole(
   schoolId: string,
   administratorId: string
 ) {
   const db = createServiceRoleSupabaseClient();
-  const {error} = await db.from('administrator_accounts').delete()
-    .eq('school_id', schoolId)
-    .eq('administrator_id', administratorId);
-  if (error) throw error;
-}
-
-export async function deleteAdministratorRecordWithServiceRole(
-  schoolId: string,
-  administratorId: string
-) {
-  const db = createServiceRoleSupabaseClient();
-  const {error} = await db.from('administrators').delete()
-    .eq('school_id', schoolId)
-    .eq('id', administratorId);
+  const {error} = await db.rpc('delete_administrator_with_accounts', {
+    p_school_id: schoolId,
+    p_administrator_id: administratorId
+  });
   if (error) throw error;
 }

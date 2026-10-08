@@ -56,8 +56,7 @@ export type AdministratorLifecycleDependencies = {
   } | null>;
   countActiveAdministrators(schoolId: string): Promise<number>;
   setAdministratorActive(schoolId: string, administratorId: string, isActive: boolean): Promise<void>;
-  unlinkAdministratorAccounts(schoolId: string, administratorId: string): Promise<void>;
-  deleteAdministratorRecord(schoolId: string, administratorId: string): Promise<void>;
+  deleteAdministratorWithAccountLinks(schoolId: string, administratorId: string): Promise<void>;
 };
 
 function normalizeEmail(email: string) {
@@ -217,6 +216,7 @@ export async function deleteAdministratorSafely(
     if (activeCount <= 1) throw lastAdministratorError();
   }
 
-  await dependencies.unlinkAdministratorAccounts(input.schoolId, input.administratorId);
-  await dependencies.deleteAdministratorRecord(input.schoolId, input.administratorId);
+  // The database RPC rechecks the last-active invariant after obtaining its
+  // per-school lock, and rolls back account unlinking on any deletion error.
+  await dependencies.deleteAdministratorWithAccountLinks(input.schoolId, input.administratorId);
 }
