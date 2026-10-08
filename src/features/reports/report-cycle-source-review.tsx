@@ -13,7 +13,10 @@ import type {ClassReportReviewWorkspaceWithAttendance} from './class-report-atte
 import {
   setClassReportCycleSourceIncludedAction
 } from './class-report-source.actions';
-import {saveClassReportReviewWithAttendanceInlineAction} from './class-report-review.actions';
+import {
+  openClassReportEditorAction,
+  saveClassReportReviewWithAttendanceInlineAction
+} from './class-report-review.actions';
 import type {
   ClassReportCycleWorkspace,
   ReportBatchSource
@@ -40,6 +43,8 @@ const copy = {
     sessions: 'sessions',
     attendanceNeedsReview:
       'Source attendance disagrees. Confirm the attended and total session counts before finalizing.',
+    sentReadOnly: 'Already sent — corrections require a new report revision.',
+    lockedSaveError: 'This report has entered delivery and cannot be edited here.',
     saveAndClose: 'Save & close',
     cancel: 'Cancel'
   },
@@ -54,6 +59,8 @@ const copy = {
     sessions: 'حصص',
     attendanceNeedsReview:
       'توجد اختلافات في بيانات الحضور. يرجى تأكيد عدد الحصص المحضورة وإجمالي الحصص قبل الإنهاء.',
+    sentReadOnly: 'تم إرسال التقرير — تتطلب التصحيحات إصدار نسخة معدلة.',
+    lockedSaveError: 'بدأ إرسال هذا التقرير ولا يمكن تعديله من هنا.',
     saveAndClose: 'حفظ وإغلاق',
     cancel: 'إلغاء'
   }
@@ -67,10 +74,12 @@ function contextKey(
 }
 
 export async function ReportCycleSourceReview({
+  canEditFinalized,
   classCycle,
   locale,
   review
 }: {
+  canEditFinalized: boolean;
   classCycle: ClassReportCycleWorkspace;
   locale: Locale;
   review: ClassReportReviewWorkspaceWithAttendance;
@@ -196,13 +205,27 @@ export async function ReportCycleSourceReview({
                     ) : null}
                   </div>
 
-                  {classCycle.batch.status !== 'FINALIZED' && context ? (
-                    <a
-                      className="button button-secondary action-link"
-                      href={`#${editorId}`}
-                    >
-                      {ui.editUpdate}
-                    </a>
+                  {context && (
+                    classCycle.batch.status !== 'FINALIZED' || canEditFinalized
+                  ) ? (
+                    <form action={openClassReportEditorAction}>
+                      {sharedHidden}
+                      <input
+                        name="classSubjectId"
+                        type="hidden"
+                        value={context.classSubjectId}
+                      />
+                      <input
+                        name="subjectGroupId"
+                        type="hidden"
+                        value={context.subjectGroupId ?? ''}
+                      />
+                      <button className="button button-secondary" type="submit">
+                        {ui.editUpdate}
+                      </button>
+                    </form>
+                  ) : classCycle.batch.status === 'FINALIZED' ? (
+                    <span className="record-meta">{ui.sentReadOnly}</span>
                   ) : null}
                 </div>
 
@@ -274,6 +297,7 @@ export async function ReportCycleSourceReview({
                       cancelLabel={ui.cancel}
                       saveAction={saveClassReportReviewWithAttendanceInlineAction}
                       saveErrorLabel={t('saveError')}
+                      lockedSaveErrorLabel={ui.lockedSaveError}
                       saveLabel={ui.saveAndClose}
                     >
                       {sharedHidden}

@@ -2,6 +2,7 @@
 
 import type {FormEvent, ReactNode} from 'react';
 import {useRef, useState} from 'react';
+import {useRouter} from 'next/navigation';
 
 function rememberSavedValues(form: HTMLFormElement) {
   for (const element of Array.from(form.elements)) {
@@ -36,40 +37,44 @@ export function ReportEditForm({
   saveAction,
   saveLabel,
   cancelLabel,
-  saveErrorLabel
+  saveErrorLabel,
+  lockedSaveErrorLabel
 }: {
   children: ReactNode;
   saveAction: (
     formData: FormData
   ) => Promise<
     | {ok: true; studentIds: string[]}
-    | {ok: false}
+    | {ok: false; reason?: 'sent' | 'unknown'}
   >;
   saveLabel: string;
   cancelLabel: string;
   saveErrorLabel: string;
+  lockedSaveErrorLabel: string;
 }) {
   const formRef = useRef<HTMLFormElement>(null);
-  const [error, setError] = useState(false);
+  const router = useRouter();
+  const [error, setError] = useState<'generic' | 'sent' | null>(null);
   const [saving, setSaving] = useState(false);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = event.currentTarget;
     const formData = new window.FormData(form);
-    setError(false);
+    setError(null);
     setSaving(true);
 
     try {
       const result = await saveAction(formData);
 
       if (!result.ok) {
-        setError(true);
+        setError(result.reason === 'sent' ? 'sent' : 'generic');
         return;
       }
 
       rememberSavedValues(form);
       closeEditor();
+      router.refresh();
       window.dispatchEvent(
         new CustomEvent('report-cycle:saved', {
           detail: {studentIds: result.studentIds}
@@ -82,7 +87,7 @@ export function ReportEditForm({
 
   function cancel() {
     formRef.current?.reset();
-    setError(false);
+    setError(null);
     closeEditor();
   }
 
@@ -92,7 +97,7 @@ export function ReportEditForm({
 
       {error ? (
         <p className="form-error" role="alert">
-          {saveErrorLabel}
+          {error === 'sent' ? lockedSaveErrorLabel : saveErrorLabel}
         </p>
       ) : null}
 

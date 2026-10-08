@@ -14,6 +14,8 @@ import {
 } from './class-report-attendance.repository';
 import {reportAttendanceOverride} from './report-attendance';
 import {saveClassReportReviewContext} from './class-report-review.repository';
+import {reopenAdminReportWorkspace} from './admin-report-workspace.repository';
+import {getReportBatchWorkspace} from './report-batch.repository';
 import {reportPeriodSchema} from './report.schemas';
 import type {ReportPerformance} from './report.types';
 
@@ -200,6 +202,12 @@ async function persistClassReportReview(
     };
   });
 
+  // An admin may have an already open editor when another admin finalizes.
+  // Reopen only unsent report snapshots; do not change teacher submissions.
+  if (review?.status === 'FINALIZED') {
+    await reopenAdminReportWorkspace(schoolId, payload.batchId);
+  }
+
   await saveClassReportReviewContext({
     schoolId,
     batchId: payload.batchId,
@@ -240,13 +248,22 @@ export async function saveClassReportReviewWithAttendanceInlineAction(
 
   try {
     await persistClassReportReview(profile.schoolId, payload);
+    revalidatePath(`/${locale}/reports/workspace/${payload.batchId}`);
     return {
       ok: true as const,
       studentIds: payload.students.map(({studentId}) => studentId)
     };
   } catch (error) {
     console.error('Unable to save Class Report Cycle review inline', {error});
-    return {ok: false as const};
+    const message = error && typeof error === 'object' && 'message' in error
+      ? String(error.message)
+      : '';
+    return {
+      ok: false as const,
+      reason: message.includes('delivered or pending reports cannot be reopened')
+        ? 'sent' as const
+        : 'unknown' as const
+    };
   }
 }
 
@@ -279,4 +296,50 @@ export async function saveClassReportReviewWithAttendanceAction(
     saved: '1'
   });
   redirect(`/${locale}/reports/workspace/${payload.batchId}?${params.toString()}`);
+}
+
+/**
+ * Opening a report editor is an admin-only report operation.
+ * It never reopens or requests another teacher Teaching Update.
+ */
+export async function openClassReportEditorAction(formData: FormData) {
+  const locale = localeFrom(formData);
+  const profile = await requireProfile(locale, 'ADMIN');
+  const batchId = databaseUuid.safeParse(formData.get('batchId'));
+  const classSubjectId = databaseUuid.safeParse(formData.get('classSubjectId'));
+  const subjectGroupId = optionalGroupIdFrom(formData);
+
+  if (!batchId.success || !classSubjectId.success || !subjectGroupId.success) {
+    redirect(`/${locale}/reports?error=validation`);
+  }
+
+  const workspacePath = `/${locale}/reports/workspace/${batchId.data}`;
+  try {
+    const workspace = await getReportBatchWorkspace(profile.schoolId, batchId.data);
+    if (
+      !workspace ||
+      workspace.batch.scopeType !== 'CLASS' ||
+      !workspace.sources.some(
+        (source) =>
+          source.included &&
+          source.classSubjectId === classSubjectId.data &&
+          source.subjectGroupId === subjectGroupId.data
+      )
+    ) {
+      throw new Error('Report context not found');
+    }
+
+    // Unlock prepared admin report snapshots only when none are sent/pending.
+    if (workspace.batch.status === 'FINALIZED') {
+      await reopenAdminReportWorkspace(profile.schoolId, batchId.data);
+    }
+  } catch (error) {
+    console.error('Unable to open Class Report Cycle editor', {error});
+    redirect(`${workspacePath}?error=save`);
+  }
+
+  revalidatePath(workspacePath);
+  redirect(
+    `${workspacePath}#report-edit-${classSubjectId.data}-${subjectGroupId.data ?? 'whole'}`
+  );
 }

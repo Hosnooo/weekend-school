@@ -37,7 +37,7 @@ export async function canReopenClassReportCycle(
   const db = await createServerSupabaseClient();
   const {data, error} = await db
     .from('reports')
-    .select('id,email_deliveries(status)')
+    .select('id,status,email_deliveries(status)')
     .eq('school_id', schoolId)
     .eq('batch_id', batchId);
 
@@ -45,6 +45,7 @@ export async function canReopenClassReportCycle(
   if (!data || data.length === 0) return false;
 
   return !data.some((report) =>
+    report.status === 'SENT' ||
     (report.email_deliveries ?? []).some(({status}) =>
       status === 'PENDING' ||
       status === 'SENT' ||
