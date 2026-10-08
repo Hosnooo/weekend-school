@@ -23,21 +23,25 @@ SQL
 
 first_log="$(mktemp)"
 second_log="$(mktemp)"
-trap 'rm -f "$first_log" "$second_log"' EXIT
+first_ready="$(mktemp)"
+rm -f "$first_ready"
+trap 'rm -f "$first_log" "$second_log" "$first_ready"' EXIT
 
-# Hold the school lock in session 1 long enough to overlap session 2.
-psql "$DB_URL" -v ON_ERROR_STOP=1 -c "
-  begin;
-  update public.administrators set is_active=false where id='$admin_one';
-  select pg_sleep(4);
-  commit;
-" >"$first_log" 2>&1 &
+# Hold the school lock in session 1 while session 2 attempts its update.
+# A psql -c command with multiple SQL statements may print only its final
+# command result. Signal readiness from psql after its UPDATE instead.
+psql "$DB_URL" -v ON_ERROR_STOP=1 >"$first_log" 2>&1 <<SQL &
+begin;
+update public.administrators set is_active=false where id='$admin_one';
+\! touch "$first_ready"
+select pg_sleep(7);
+commit;
+SQL
 first_pid=$!
 
-# Wait for the first update to acquire the lock; don't assume a sleep alone.
 ready=0
 for attempt in $(seq 1 150); do
-  if grep -q 'UPDATE 1' "$first_log"; then ready=1; break; fi
+  if [[ -f "$first_ready" ]]; then ready=1; break; fi
   if ! kill -0 "$first_pid" 2>/dev/null; then break; fi
   sleep 0.1
 done

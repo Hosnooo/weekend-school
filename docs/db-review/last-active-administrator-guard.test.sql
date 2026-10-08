@@ -50,9 +50,9 @@ select lives_ok(
 );
 
 select lives_ok(
-  $select public.delete_administrator_with_accounts(
+  $$select public.delete_administrator_with_accounts(
      '6a000000-0000-4000-8000-000000000001',
-     '6b000000-0000-4000-8000-000000000002')$,
+     '6b000000-0000-4000-8000-000000000002')$$,
   'Atomic removal of an active Administrator succeeds when another remains'
 );
 
@@ -63,16 +63,16 @@ select throws_ok(
 );
 
 select results_eq(
-  $select count(*)::bigint from public.administrators
-    where school_id='6a000000-0000-4000-8000-000000000001' and is_active$,
-  $values (1::bigint)$,
+  $$select count(*)::bigint from public.administrators
+    where school_id='6a000000-0000-4000-8000-000000000001' and is_active$$,
+  $$values (1::bigint)$$,
   'Failed deletion preserves the sole active Administrator'
 );
 
 select throws_ok(
-  $select public.delete_administrator_with_accounts(
+  $$select public.delete_administrator_with_accounts(
     '6a000000-0000-4000-8000-000000000001',
-    '6b000000-0000-4000-8000-000000000001')$,
+    '6b000000-0000-4000-8000-000000000001')$$,
   'P0001',null,
   'Atomic RPC refuses to remove the last Administrator'
 );
