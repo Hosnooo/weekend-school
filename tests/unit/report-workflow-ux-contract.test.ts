@@ -69,7 +69,7 @@ describe('Reports workflow UX contract', () => {
     expect(emailReview).toContain('selectStudentPlaceholder');
     expect(emailReview).toContain('<option value="">');
     expect(review).not.toContain('studentOptions[0]');
-    expect(review).toContain('Reopen & edit');
+    expect(review).not.toContain('Reopen & edit');
     expect(review).toContain('finalizeClassReportCycleAction');
     expect(review).toContain('sendAdminReportBatchAction');
 
@@ -85,9 +85,25 @@ describe('Reports workflow UX contract', () => {
     );
 
     expect(component).toContain('Edit update');
-    expect(component).toContain('href={`#${editorId}`}');
+    expect(component).toContain('action={openClassReportEditorAction}');
+    expect(component).toContain('canEditFinalized');
     expect(component).toContain('report-source-editor');
     expect(component).not.toContain('View update');
+  });
+
+  it('keeps administrator edits separate from teacher resubmission', () => {
+    const actions = read('src/features/reports/class-report-review.actions.ts');
+    const source = read('src/features/reports/report-cycle-source-review.tsx');
+    const reopen = read('src/features/reports/admin-report-workspace.repository.ts');
+
+    expect(actions).toContain('openClassReportEditorAction');
+    expect(actions).toContain('await reopenAdminReportWorkspace');
+    expect(actions).toContain('report-edit-');
+    expect(actions).toContain("if (review.status === 'FINALIZED')");
+    expect(source).toContain('action={openClassReportEditorAction}');
+    expect(source).toContain('canEditFinalized');
+    expect(reopen).toContain("'reopen_unsent_report_batch'");
+    expect(actions).not.toContain('reopen_weekly_submission');
   });
 
   it('exposes the approved administrator-facing workflow statuses', () => {

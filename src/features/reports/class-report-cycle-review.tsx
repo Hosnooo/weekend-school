@@ -5,10 +5,7 @@ import {sendAdminReportBatchAction} from '@/features/reports/admin-report-delive
 import type {Locale} from '@/i18n/config';
 import {Link} from '@/i18n/navigation';
 
-import {
-  finalizeClassReportCycleAction,
-  reopenAdminReportWorkspaceAction
-} from './admin-report-workflow.actions';
+import {finalizeClassReportCycleAction} from './admin-report-workflow.actions';
 import {getClassReportReviewWorkspaceWithAttendance} from './class-report-attendance.repository';
 import {getClassReportCycleLivePreview} from './class-report-finalization.repository';
 import {getClassReportCycleEmailPreviewAction} from './class-report-preview.actions';
@@ -37,8 +34,7 @@ const copy = {
       'Email preview is unavailable until report issues are resolved.',
     parentEmailTo: 'To',
     parentEmailSubject: 'Subject',
-    reopenEdit: 'Reopen & edit'
-  },
+   },
   ar: {
     emailReview: 'مراجعة البريد الإلكتروني',
     emailBody: 'محتوى البريد',
@@ -48,8 +44,7 @@ const copy = {
       'لا تتوفر معاينة البريد حتى يتم حل مشكلات التقرير.',
     parentEmailTo: 'إلى',
     parentEmailSubject: 'الموضوع',
-    reopenEdit: 'إعادة الفتح والتعديل'
-  }
+   }
 } as const;
 
 export async function ClassReportCycleReview({
@@ -186,6 +181,7 @@ export async function ClassReportCycleReview({
   return (
     <>
       <ReportCycleSourceReview
+        canEditFinalized={canReopen}
         classCycle={classCycle}
         locale={locale}
         review={review}
@@ -243,18 +239,6 @@ export async function ClassReportCycleReview({
           </form>
         ) : (
           <div className="row-actions">
-            {canReopen ? (
-              <form action={reopenAdminReportWorkspaceAction}>
-                {sharedHidden}
-                <button
-                  className="button button-secondary"
-                  type="submit"
-                >
-                  {ui.reopenEdit}
-                </button>
-              </form>
-            ) : null}
-
             {classCycle.reports.length > 0 ? (
               <form action={sendAdminReportBatchAction}>
                 {sharedHidden}

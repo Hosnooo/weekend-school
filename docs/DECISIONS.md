@@ -231,3 +231,9 @@ Teacher History lists submitted Teaching Updates by their saved RANGE or DATES c
 Public trigger functions are internal database helpers, not application RPCs. Revoke direct execution from `PUBLIC`, `anon`, and `authenticated` on functions returning `trigger`; retain intentional authenticated RPC grants. Production migration application is an explicit, protected operation against the exact reviewed release-candidate commit, before that application's automatic `main` deployment. The workflow links the intended project and previews the pending migrations first; a migration-history mismatch stops application. Only backward-compatible schema may precede the currently deployed application. Incompatible changes require an expand/migrate/contract sequence. Development seeds never run in production.
 
 The historical Teacher identity cutover test requires rows inserted before the independent-role migration. Keep that upgrade scenario as a named compatibility fixture; the ordinary local database/RLS gate starts from a clean full reset.
+
+## D-031 — Admin report edits are independent of teacher corrections
+
+**Status:** Accepted — 2026-10-08
+
+The administrator's **Edit update** changes report review content without reopening or resubmitting teachers' Teaching Updates. The edit action checks current report state; if the report cycle was finalized but not sent, it uses the pre-existing admin-only `reopen_unsent_report_batch` operation to move its prepared report snapshots back to draft and opens the chosen editor. This does not modify teacher data, request updates from teachers, or send email. Administrators finalize again before sending the changed reports, retaining immutable previous snapshots and revisions. Once email delivery is pending or sent, the editor remains locked and corrections require a separate revision flow. Saving from a stale editor honors the same unsent-only restriction.
