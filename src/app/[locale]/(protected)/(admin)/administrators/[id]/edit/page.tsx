@@ -2,10 +2,10 @@ import {getTranslations} from 'next-intl/server';
 import {notFound} from 'next/navigation';
 
 import {Alert} from '@/components/ui/alert';
-import {Button} from '@/components/ui/button';
 import {PageHeader} from '@/components/ui/page-header';
 import {listAdministrators} from '@/features/administrators/administrator.repository';
 import {updateAdministratorDetailsAction} from '@/features/administrators/administrator-edit.actions';
+import {AdministratorDetailsForm} from '@/features/administrators/administrator-details-form';
 import {isLocale} from '@/i18n/config';
 import {Link} from '@/i18n/navigation';
 import {requireAdministrator} from '@/lib/auth/require-profile';
@@ -36,23 +36,22 @@ export default async function EditAdministratorPage({params, searchParams}: {
       {query.error === 'validation' ? <Alert variant="danger">{common('validation')}</Alert> : null}
       {query.error === 'save' ? <Alert variant="danger">{common('saveError')}</Alert> : null}
 
-      <form action={updateAdministratorDetailsAction} className="record-form">
-        <input name="locale" type="hidden" value={locale} />
-        <input name="id" type="hidden" value={administrator.id} />
-        <label>
-          <span>{t('displayName')}</span>
-          <input defaultValue={administrator.displayName} maxLength={120} name="displayName" required />
-        </label>
-        <label>
-          <span>{t('email')}</span>
-          <input defaultValue={administrator.email ?? ''} disabled type="email" />
-          <span className="form-hint">{t('emailAccessHelp')}</span>
-        </label>
-        <div className="form-actions">
-          <Button type="submit">{common('save')}</Button>
-          <Link className="button button-secondary action-link" href={`/administrators/${administrator.id}`}>{common('cancel')}</Link>
-        </div>
-      </form>
+      <AdministratorDetailsForm
+        action={updateAdministratorDetailsAction}
+        locale={locale}
+        id={administrator.id}
+        displayName={administrator.displayName}
+        email={administrator.email ?? ''}
+        labels={{
+          displayName: t('displayName'),
+          email: t('email'),
+          addHelp: t('addHelp'),
+          emailAccessHelp: t('emailAccessHelp'),
+          submit: common('save'),
+          cancel: common('cancel')
+        }}
+        cancelHref={`/administrators/${administrator.id}`}
+      />
     </section>
   );
 }

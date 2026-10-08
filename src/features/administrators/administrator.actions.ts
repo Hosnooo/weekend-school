@@ -22,6 +22,8 @@ import {
   type AdministratorLifecycleDependencies
 } from '@/features/administrators/administrator.service';
 import {isLocale} from '@/i18n/config';
+import type {ActionState} from '@/lib/validation/action-state';
+import {persistenceFailure, validationFailure} from '@/lib/validation/action-state';
 import {requireAdministrator} from '@/lib/auth/require-profile';
 import {createServiceRoleSupabaseClient} from '@/lib/supabase/service-role';
 import {databaseUuid} from '@/lib/validation/fields';
@@ -150,14 +152,17 @@ function isLastAdministratorError(error: unknown) {
   return error instanceof Error && error.message.includes('last active Administrator');
 }
 
-export async function createAdministratorAction(formData: FormData) {
+export async function createAdministratorAction(
+  _state: ActionState,
+  formData: FormData
+): Promise<ActionState> {
   const locale = localeFrom(formData);
   const profile = await requireAdministrator(locale);
   const parsed = administratorInputSchema.safeParse({
     displayName: formData.get('displayName'),
     email: formData.get('email')
   });
-  if (!parsed.success) redirect(`/${locale}/administrators/new?error=validation`);
+  if (!parsed.success) return validationFailure(parsed.error);
 
   let administratorId: string;
   try {
@@ -167,7 +172,7 @@ export async function createAdministratorAction(formData: FormData) {
     }, {createAdministrator: insertAdministrator});
   } catch (error) {
     console.error('Unable to create administrator', {error});
-    redirect(`/${locale}/administrators/new?error=save`);
+    return persistenceFailure(error);
   }
 
   try {

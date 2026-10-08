@@ -32,6 +32,7 @@ export type ExportPanelLabels = {
   pdfs: string;
   fileOptions: string;
   submit: string;
+  errors: Record<'period' | 'datasets' | 'scope' | 'generic', string>;
 };
 
 export type ExportPanelOptions = {
@@ -74,7 +75,7 @@ export function ExportPanel({
     <section className="detail-section export-panel" aria-label={labels.title}>
       <h2>{labels.title}</h2>
 
-      <ProtectedDownloadForm action={action} className="form-stack export-workflow">
+      <ProtectedDownloadForm action={action} className="form-stack export-workflow" mode="export" errorLabels={labels.errors}>
         <input name="locale" type="hidden" value={locale} />
 
         <fieldset>

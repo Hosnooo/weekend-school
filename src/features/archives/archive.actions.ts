@@ -20,6 +20,7 @@ import {
   type ManagedArchiveEntityType
 } from './archive.repository';
 import {validatePermanentDeleteRequest} from './archive.service';
+import {archiveErrorReason} from './archive-error-guidance';
 
 const managedEntitySchema = z.enum(['TEACHER', 'GUARDIAN', 'CLASS', 'SUBJECT', 'GROUP']);
 
@@ -57,10 +58,15 @@ export async function archiveStudentAction(formData: FormData) {
 export async function restoreArchivedStudentAction(formData: FormData) {
   const locale = localeFrom(formData);
   await requireProfile(locale, 'ADMIN');
-  await restoreArchivedStudent(idFrom(formData));
+  try {
+    await restoreArchivedStudent(idFrom(formData));
+  } catch (error) {
+    console.error('Unable to restore archived student', {error});
+    redirect(`/${locale}/archives?error=${archiveErrorReason(error,'restore')}`);
+  }
   revalidatePath(`/${locale}/students`);
   revalidatePath(`/${locale}/archives`);
-  redirect(`/${locale}/archives`);
+  redirect(`/${locale}/archives?restored=1`);
 }
 
 export async function permanentlyDeleteArchivedStudentAction(
@@ -89,30 +95,8 @@ export async function permanentlyDeleteArchivedStudentAction(
       confirmation
     );
   } catch (error) {
-    const code =
-      typeof error === 'object' &&
-      error !== null &&
-      'code' in error
-        ? String(error.code)
-        : null;
-
-    const message =
-      error instanceof Error ? error.message : '';
-
-    if (
-      code === '22023' ||
-      /confirmation/i.test(message)
-    ) {
-      redirect(
-        `/${locale}/archives?error=confirmation`
-      );
-    }
-
-    console.error(
-      'Unable to permanently delete archived student',
-      {error}
-    );
-    redirect(`/${locale}/archives?error=delete`);
+    console.error('Unable to permanently delete archived student', {error});
+    redirect(`/${locale}/archives?error=${archiveErrorReason(error,'delete')}`);
   }
 
   redirect(`/${locale}/archives?deleted=1`);
@@ -130,9 +114,14 @@ export async function archiveManagedEntityAction(formData: FormData) {
 export async function restoreManagedEntityAction(formData: FormData) {
   const locale = localeFrom(formData);
   await requireProfile(locale, 'ADMIN');
-  await restoreManagedEntity(managedEntityFrom(formData), idFrom(formData));
+  try {
+    await restoreManagedEntity(managedEntityFrom(formData), idFrom(formData));
+  } catch (error) {
+    console.error('Unable to restore managed archived record', {error});
+    redirect(`/${locale}/archives?error=${archiveErrorReason(error,'restore')}`);
+  }
   revalidateLifecycle(locale);
-  redirect(`/${locale}/archives`);
+  redirect(`/${locale}/archives?restored=1`);
 }
 
 export async function permanentlyDeleteManagedEntityAction(
@@ -163,30 +152,8 @@ export async function permanentlyDeleteManagedEntityAction(
       confirmation
     );
   } catch (error) {
-    const code =
-      typeof error === 'object' &&
-      error !== null &&
-      'code' in error
-        ? String(error.code)
-        : null;
-
-    const message =
-      error instanceof Error ? error.message : '';
-
-    if (
-      code === '22023' ||
-      /confirmation/i.test(message)
-    ) {
-      redirect(
-        `/${locale}/archives?error=confirmation`
-      );
-    }
-
-    console.error(
-      'Unable to permanently delete archived record',
-      {error}
-    );
-    redirect(`/${locale}/archives?error=delete`);
+    console.error('Unable to permanently delete archived record', {error});
+    redirect(`/${locale}/archives?error=${archiveErrorReason(error,'delete')}`);
   }
 
   revalidateLifecycle(locale);

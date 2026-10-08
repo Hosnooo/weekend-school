@@ -60,7 +60,13 @@ export default async function ExportsPage({
     csv: t('csv'),
     pdfs: t('pdfs'),
     fileOptions: t('fileOptions'),
-    submit: t('submit')
+    submit: t('submit'),
+    errors: {
+      period: t('errorPeriod'),
+      datasets: t('errorDatasets'),
+      scope: t('errorScope'),
+      generic: t('errorDownload')
+    }
   };
 
   return (

@@ -14,6 +14,7 @@ export type ArchivePanelLabels = DeleteImpactLabels & {
   downloadFirst: string;
   permanentDelete: string;
   confirmation: string;
+  downloadError: string;
 };
 
 export type ArchivedStudentItem = {
@@ -52,7 +53,15 @@ export function ArchivePanel({
               <button className="button button-secondary" type="submit">{labels.restore}</button>
             </form>
             <a href={`/${locale}/students/${student.id}/edit`}>{labels.viewHistory}</a>
-            <ProtectedDownloadForm action={downloadAction}>
+            <ProtectedDownloadForm
+              action={downloadAction}
+              errorLabels={{
+                generic: labels.downloadError,
+                period: labels.downloadError,
+                datasets: labels.downloadError,
+                scope: labels.downloadError
+              }}
+            >
               <input name="locale" type="hidden" value={locale}/>
               <input name="id" type="hidden" value={student.id}/>
               <button className="button button-secondary" type="submit">{labels.downloadData}</button>
