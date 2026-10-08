@@ -34,11 +34,11 @@ Both database functions are security-invoker, use fully-qualified table names, l
 
 The repository already contains `.github/workflows/ci.yml` with **only** `workflow_dispatch` (no `push`, `pull_request`, or scheduled triggers). On branch `review/atomic-last-admin-guard-20261008`, its review-specific job:
 
-1. Runs the critical-error unit suite.
-2. Creates a **temporary** migration file using the Supabase CLI and copies in the unmerged candidate SQL and pgTAP tests.
-3. Starts Docker-backed local Supabase, resets the disposable database, runs existing PostgreSQL/RLS and candidate pgTAP tests.
-4. Runs `scripts/test-last-administrator-race.sh` against **localhost only** with two SQL sessions racing to deactivate different Administrators. The test requires precisely one rejected transaction and one active Administrator remaining.
-5. Loads only local browser fixtures and executes `tests/e2e/guardian-stale-unlink.spec.ts` in Chromium.
+1. Runs repository-wide ESLint and TypeScript checks, all Vitest unit/component/integration-contract tests, and a Next.js production compilation.
+2. Creates a **temporary** CLI-generated migration in the disposable runner, stages the candidate guard SQL, and copies its 13 pgTAP assertions into the local Supabase test directory.
+3. Replays the historical pre-role-cutover fixture through the forward migrations and checks Teacher attribution survived the upgrade.
+4. Runs all PostgreSQL/RLS tests plus the candidate Administrator-guard pgTAP checks, then runs `scripts/test-last-administrator-race.sh` against **localhost only**; one concurrent deactivation must be rejected and one active Administrator must remain.
+5. Resets the disposable database, loads local-only browser fixtures, and runs the complete Playwright E2E suite in Chromium (24 spec files). The local fixture explicitly enables optional Performance ratings for those browser scenarios; production defaults remain unchanged.
 6. Stops local Supabase using an `if: always()` cleanup step.
 
 All three general CI jobs are skipped when this review branch is selected, avoiding duplicate runs and extra Actions minutes. On other refs their original behavior remains unchanged.
