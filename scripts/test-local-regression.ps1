@@ -3,7 +3,8 @@
 [CmdletBinding()]
 param(
   [ValidateSet('Unit', 'Quality', 'Database', 'Smoke', 'Browser', 'All')]
-  [string]$Mode = 'Smoke'
+  [string]$Mode = 'Smoke',
+  [switch]$ResetLocalFixtures
 )
 
 Set-StrictMode -Version Latest
@@ -60,6 +61,19 @@ $needsDatabase = $Mode -in @('Database', 'Smoke', 'Browser', 'All')
 $needsBrowser = $Mode -in @('Smoke', 'Browser', 'All')
 if ($needsDatabase) {
   Assert-LocalSupabase
+}
+if ($ResetLocalFixtures) {
+  if (-not $needsDatabase) {
+    throw 'ResetLocalFixtures applies only to Database, Smoke, Browser or All modes.'
+  }
+  Write-Warning 'Resetting the disposable LOCAL Webapp database. All existing LOCAL records will be lost.'
+  Invoke-Pnpm @('db:reset')
+  if ($needsBrowser) {
+    & docker cp 'supabase/seed.e2e.sql' 'supabase_db_Webapp:/tmp/seed.e2e.sql'
+    if ($LASTEXITCODE -ne 0) { throw 'Could not copy local E2E fixtures into Docker.' }
+    & docker exec supabase_db_Webapp psql -U postgres -d postgres -v ON_ERROR_STOP=1 -f /tmp/seed.e2e.sql
+    if ($LASTEXITCODE -ne 0) { throw 'Loading local E2E fixtures failed.' }
+  }
 }
 if ($needsBrowser) {
   if (-not (Test-Path -LiteralPath '.env.local')) {
