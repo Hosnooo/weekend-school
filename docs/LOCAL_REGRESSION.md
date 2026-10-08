@@ -27,6 +27,14 @@ docker exec supabase_db_Webapp psql -U postgres -d postgres -v ON_ERROR_STOP=1 -
 
 This loads the current Class/Subject/Group fixtures and activates optional Performance ratings **only in the local E2E database**. The new Teacher-template read policy is supplied by this branch's forward migration. Do not expect fresh fixtures without a reset: browser tests change records as they run.
 
+Alternatively, the local runner can do **the same explicit local-only reset and fixture load** when you request it:
+
+```powershell
+.\scripts\test-local-regression.ps1 -Mode Smoke -ResetLocalFixtures
+```
+
+Without `-ResetLocalFixtures`, the runner never resets or reseeds the database.
+
 ## Fast iteration (no repeated installations or reset)
 
 Run in PowerShell from the repository root:
