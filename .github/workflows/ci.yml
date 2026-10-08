@@ -120,7 +120,7 @@ jobs:
     # Runs only when manually dispatched on the unmerged review branch.
     # Local-only Supabase; does not read remote project secrets or deploy SQL.
     if: ${{ github.ref_name == 'review/atomic-last-admin-guard-20261008' }}
-    name: Full regression: quality, historical migration, browser flows
+    name: "Full regression: quality, historical migration, browser flows"
     runs-on: ubuntu-latest
     timeout-minutes: 80
     steps:
