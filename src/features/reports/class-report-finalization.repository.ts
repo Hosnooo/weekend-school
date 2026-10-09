@@ -73,6 +73,10 @@ type OverrideRow = {
   progress_ar: string | null;
   performance: ReportPerformance | null;
   performance_overridden: boolean;
+  progress_en_overridden: boolean;
+  progress_ar_overridden: boolean;
+  comment_en_overridden: boolean;
+  comment_ar_overridden: boolean;
   comment_en: string | null;
   comment_ar: string | null;
   attendance_attended: number | null;
@@ -184,7 +188,7 @@ async function buildClassReportCycleSnapshots(
     db
       .from('report_student_overrides')
       .select(
-        'approval_id,student_id,progress_en,progress_ar,performance,performance_overridden,comment_en,comment_ar,attendance_attended,attendance_total'
+        'approval_id,student_id,progress_en,progress_ar,progress_en_overridden,progress_ar_overridden,performance,performance_overridden,comment_en,comment_ar,comment_en_overridden,comment_ar_overridden,attendance_attended,attendance_total'
       )
       .eq('school_id', schoolId)
       .in('approval_id', approvalIds)
@@ -314,17 +318,19 @@ async function buildClassReportCycleSnapshots(
         // An earlier partial-coverage fallback could silently replace
         // Admin-approved text with raw Teacher text in final reports.
         approvedProgressEn:
-          clean(explicitOverride?.progress_en) ??
-          (approval.progressEnApproved
+          (explicitOverride?.progress_en_overridden
+            ? explicitOverride.progress_en
+            : (approval.progressEnApproved
             ? approval.approvedProgressEn
             : approval.approvedProgressEn ??
-              joinUnique(selectedSources.map(({progressEn}) => progressEn))),
+              joinUnique(selectedSources.map(({progressEn}) => progressEn)))),
         approvedProgressAr:
-          clean(explicitOverride?.progress_ar) ??
-          (approval.progressArApproved
+          (explicitOverride?.progress_ar_overridden
+            ? explicitOverride.progress_ar
+            : (approval.progressArApproved
             ? approval.approvedProgressAr
             : approval.approvedProgressAr ??
-              joinUnique(selectedSources.map(({progressAr}) => progressAr))),
+              joinUnique(selectedSources.map(({progressAr}) => progressAr)))),
         performance: explicitOverride?.performance_overridden
           ? explicitOverride.performance
           : sourcePerformance ?? (partialCoverage
@@ -340,11 +346,13 @@ async function buildClassReportCycleSnapshots(
         },
         commentEn: appendText(
           partialCoverage ? null : approval.commentEn,
-          clean(explicitOverride?.comment_en) ?? sourceCommentEn
+          explicitOverride?.comment_en_overridden
+            ? explicitOverride.comment_en : sourceCommentEn
         ),
         commentAr: appendText(
           partialCoverage ? null : approval.commentAr,
-          clean(explicitOverride?.comment_ar) ?? sourceCommentAr
+          explicitOverride?.comment_ar_overridden
+            ? explicitOverride.comment_ar : sourceCommentAr
         ),
         sourceTeacherNames: selectedSources.map(({teacherName}) => teacherName),
         unresolvedAttendanceConflicts: attendance.unresolvedConflicts
