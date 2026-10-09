@@ -46,6 +46,56 @@ Session-token and flow-state counts are a moving snapshot, **not** a requirement
 to make old tokens usable after recovery. MFA AMR claims do not imply enrolled
 MFA factors; in the observed inventory there are zero enrolled factors.
 
+## Completed offline backup inventory — October 9, 2026
+
+The operator ran `sha256sum --check --status SHA256SUMS` successfully and
+`scripts/audit-private-auth-dump.py` against the private verified
+`report-upgrade-20261009T082214Z/data.sql` backup on Linux.
+
+**Actual Auth COPY row counts from the private backup match read-only production**
+for every populated Auth data table listed below:
+
+| Managed Auth data table | Backup COPY rows | Production read-only rows |
+|---|---:|---:|
+| `auth.users` | 6 | 6 |
+| `auth.identities` | 6 | 6 |
+| `auth.sessions` | 8 | 8 |
+| `auth.refresh_tokens` | 31 | 31 |
+| `auth.flow_state` | 7 | 7 |
+| `auth.one_time_tokens` | 3 | 3 |
+| `auth.mfa_amr_claims` | 8 | 8 |
+
+The following other Auth COPY tables were recorded as **0** in the backup:
+`audit_log_entries`, `custom_oauth_providers`, `instances`,
+`mfa_challenges`, `mfa_factors`, `mfa_recovery_code_sets`,
+`mfa_recovery_codes`, `oauth_authorizations`, `oauth_client_states`,
+`oauth_clients`, `oauth_consents`, `saml_providers`,
+`saml_relay_states`, `scim_tokens`, `scim_users`,
+`sso_domains`, `sso_providers`, `webauthn_challenges`,
+and `webauthn_credentials`. No MFA factors or registered credentials
+were found in the checked snapshot.
+
+**Important distinction:** Production has 82 `auth.schema_migrations` rows,
+but **the Auth schema migration table is not present in the data-only dump**.
+This means the backup is not a self-contained replay of the managed Auth
+schema/version history. Recovery must provision a compatible managed Auth
+environment and revalidate schema compatibility; copying its migration-history
+rows across independently versioned deployments is not a safe substitute.
+The working core identity/role-link restore and local browser smoke covered
+users/identities only and intentionally excluded saved sessions/tokens.
+
+A separate read-only production recheck confirmed the application counts remain:
+3 draft cycles; 21 old draft V2 reports; 10 approvals; 87 Admin attendance
+pairs; 13 comment rows; **zero delivery rows**; zero Storage buckets/objects.
+Neither of the pending application migration versions
+`20261009090000` or `20261009091000` is in production
+`supabase_migrations.schema_migrations` as of this check.
+
+The backup inventory requirement is **complete**. It does **not** independently
+prove valid source password hashes, complete Auth/platform-secret recovery,
+or reusability of old sessions. The recovery/session policy still needs
+explicit acceptance before the coordinated deployment.
+
 ## Recovery decision for this report-authority release
 
 **Prefer identity-preserving, fresh-session recovery**, subject to the school
@@ -97,7 +147,7 @@ read-only production inventory taken near the maintenance window.
 
 - [x] Unit, static, pgTAP, actual-public-data migration, output parity,
       SQL save/finalization and rollback, core Auth and UI browser checks
-- [ ] Compare the offline backup's **all managed Auth-table counts** against
+- [x] Compare the offline backup's **all managed Auth-table counts** against
       the read-only inventory; document schema/version-specific omissions
 - [ ] Operator accepts fresh-sign-in session policy or requests a complete
       managed Auth/session restoration rehearsal
