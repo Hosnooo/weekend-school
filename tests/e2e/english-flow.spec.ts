@@ -47,7 +47,11 @@ test('English redesigned workflow reaches a finalized Class report', async ({pag
   const preview = page.locator('section.report-email-review-panel').last();
   await preview.locator('select').selectOption('e0000000-0000-0000-0000-000000000003');
   const frame = preview.frameLocator('iframe.report-preview');
-  await expect(frame.getByText('MCE Weekend School')).toBeVisible();
+  // School branding is inside the bilingual report header; the old
+  // "MCE Weekend School" text came from the removed internal Source footer.
+  await expect(frame.locator('header > p').first()).toContainText('Weekend School');
+  await expect(frame.locator('body')).toContainText('Regards,');
+  await expect(frame.locator('body')).not.toContainText('Source / المصدر');
   await expect(frame.getByText('Whole-class character lesson')).toBeVisible();
   await expect(frame.getByText('Blue reading lesson')).toBeVisible();
   await expect(frame.getByText('Second independent Blue source')).toBeVisible();
