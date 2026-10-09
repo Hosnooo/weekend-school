@@ -18,6 +18,7 @@ fi
 echo "PHASE 1: focused unit and contract tests"
 pnpm exec vitest run --configLoader runner \
   tests/unit/report-attendance.test.ts \
+  tests/unit/teacher-numeric-attendance-ui.test.ts \
   tests/unit/class-report-attendance-finalization.test.ts \
   tests/unit/report-performance-optional-contract.test.ts \
   tests/unit/report-email-customization.test.ts \
