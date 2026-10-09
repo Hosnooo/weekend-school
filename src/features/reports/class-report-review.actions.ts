@@ -9,12 +9,11 @@ import {requireProfile} from '@/lib/auth/require-profile';
 import {databaseUuid} from '@/lib/validation/fields';
 
 import {
-  getClassReportReviewWorkspaceWithAttendance,
-  saveClassReportAttendanceOverrides
+  getClassReportReviewWorkspaceWithAttendance
 } from './class-report-attendance.repository';
+import {createServerSupabaseClient} from '@/lib/supabase/server';
 import {reportAttendanceOverride} from './report-attendance';
 import {attendanceInputIssue} from './report-attendance-input';
-import {saveClassReportReviewContext} from './class-report-review.repository';
 import {reopenAdminReportWorkspace} from './admin-report-workspace.repository';
 import {getReportBatchWorkspace} from './report-batch.repository';
 import {reportPeriodSchema} from './report.schemas';
@@ -212,33 +211,37 @@ async function persistClassReportReview(
     await reopenAdminReportWorkspace(schoolId, payload.batchId);
   }
 
-  await saveClassReportReviewContext({
-    schoolId,
-    batchId: payload.batchId,
-    classSubjectId: payload.classSubjectId,
-    subjectGroupId: payload.subjectGroupId,
-    mainReportEn: payload.mainReportEn,
-    mainReportAr: payload.mainReportAr,
-    includePerformance: payload.includePerformance,
-    includeStudentComments: payload.includeStudentComments,
-    students: payload.students.map((student) => ({
-      studentId: student.studentId,
-      progressEn: student.progressEn,
-      progressAr: student.progressAr,
-      performance: student.performance,
-      performanceOverridden: student.performanceOverridden,
-      commentEn: student.commentEn,
-      commentAr: student.commentAr
-    }))
+  // The entire approval + every student override (including attendance)
+  // is committed in one PostgreSQL transaction. The security-definer RPC
+  // checks school, Admin role, unsent status and source context again.
+  const db = await createServerSupabaseClient();
+  const {data: saved, error} = await db.rpc('save_class_report_review_atomic', {
+    p_batch_id: payload.batchId,
+    p_class_subject_id: payload.classSubjectId,
+    p_subject_group_id: payload.subjectGroupId,
+    p_main_report_en: payload.mainReportEn,
+    p_main_report_ar: payload.mainReportAr,
+    p_include_performance: payload.includePerformance,
+    p_include_student_comments: payload.includeStudentComments,
+    p_students: payload.students.map((student) => {
+      const attendance = attendanceOverrides.find(
+        (item) => item.studentId === student.studentId
+      )!;
+      return {
+        student_id: student.studentId,
+        progress_en: student.progressEn,
+        progress_ar: student.progressAr,
+        performance: student.performance,
+        performance_overridden: student.performanceOverridden,
+        comment_en: student.commentEn,
+        comment_ar: student.commentAr,
+        attendance_attended: attendance.attendanceAttended,
+        attendance_total: attendance.attendanceTotal
+      };
+    })
   });
-
-  await saveClassReportAttendanceOverrides({
-    schoolId,
-    batchId: payload.batchId,
-    classSubjectId: payload.classSubjectId,
-    subjectGroupId: payload.subjectGroupId,
-    students: attendanceOverrides
-  });
+  if (error) throw error;
+  if (saved !== true) throw new Error('Report approval was not saved');
 }
 
 export async function saveClassReportReviewWithAttendanceInlineAction(
