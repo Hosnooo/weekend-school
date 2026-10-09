@@ -73,6 +73,83 @@ describe('report attendance', () => {
     });
   });
 
+  it('sums actual numeric sessions across disjoint dates, not one per submission', () => {
+    const result = deriveReportAttendance({
+      sources: [
+        {id: 'n1', weekStart: '2026-09-01', coverageKind: 'DATES',
+          coveredDates: ['2026-09-01', '2026-09-02']},
+        {id: 'n2', weekStart: '2026-09-01', coverageKind: 'DATES',
+          coveredDates: ['2026-09-03', '2026-09-04']}
+      ],
+      observations: [
+        {submissionId: 'n1', studentId: 'student-1',
+          attendanceStatus: null, attended: 2, total: 2},
+        {submissionId: 'n2', studentId: 'student-1',
+          attendanceStatus: null, attended: 1, total: 2}
+      ],
+      resolutions: [],
+      classSubjectId: 'subject-1',
+      subjectGroupId: null,
+      studentId: 'student-1'
+    });
+    expect(result).toEqual({attended: 3, total: 4, unresolvedConflicts: 0});
+  });
+
+  it('does not double count overlapping numeric date coverage', () => {
+    const result = deriveReportAttendance({
+      sources: [
+        {id: 'n1', weekStart: '2026-09-01', coverageKind: 'RANGE',
+          periodStart: '2026-09-01', periodEnd: '2026-09-05'},
+        {id: 'n2', weekStart: '2026-09-04', coverageKind: 'DATES',
+          coveredDates: ['2026-09-04', '2026-09-06']}
+      ],
+      observations: [
+        {submissionId: 'n1', studentId: 'student-1',
+          attendanceStatus: null, attended: 3, total: 4},
+        {submissionId: 'n2', studentId: 'student-1',
+          attendanceStatus: null, attended: 2, total: 2}
+      ],
+      resolutions: [],
+      classSubjectId: 'subject-1',
+      subjectGroupId: null,
+      studentId: 'student-1'
+    });
+    expect(result).toEqual({attended: 0, total: 0, unresolvedConflicts: 1});
+    expect(effectiveReportAttendance(result, 5, 6))
+      .toEqual({attended: 5, total: 6, unresolvedConflicts: 0, overridden: true});
+  });
+
+  it('refuses to silently apply numeric counts from partial coverage', () => {
+    const result = deriveReportAttendance({
+      sources: [
+        {id: 'outside', weekStart: '2026-09-01',
+          partialOverlap: true, periodStart: '2026-09-01',
+          periodEnd: '2026-09-30'}
+      ],
+      observations: [{
+        submissionId: 'outside', studentId: 'student-1',
+        attendanceStatus: null, attended: 4, total: 6
+      }],
+      resolutions: [],
+      classSubjectId: 'subject-1',
+      subjectGroupId: null,
+      studentId: 'student-1'
+    });
+    expect(result).toEqual({attended: 0, total: 0, unresolvedConflicts: 1});
+  });
+
+  it('keeps historical Present/Absent status only as a legacy source', () => {
+    const result = deriveReportAttendance({
+      sources: [{id: 'old', weekStart: '2026-09-01'}],
+      observations: [{submissionId: 'old', studentId: 'student-1',
+        attendanceStatus: 'PRESENT'}],
+      resolutions: [],
+      classSubjectId: 'subject-1', subjectGroupId: null,
+      studentId: 'student-1'
+    });
+    expect(result).toEqual({attended: 1, total: 1, unresolvedConflicts: 0});
+  });
+
   it('uses a complete Admin override as the authoritative report attendance', () => {
     const source = {
       attended: 1,
