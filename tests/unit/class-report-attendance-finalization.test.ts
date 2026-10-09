@@ -25,13 +25,13 @@ describe('Class Report Cycle finalized attendance', () => {
       'utf8'
     );
     expect(source).toMatch(
-      /approvedProgressEn:\\s*clean\\(explicitOverride\\?\\.progress_en\\)\\s*\\?\\?\\s*approval\\.approvedProgressEn\\s*\\?\\?/
+      /approvedProgressEn:\s*clean\(explicitOverride\?\.progress_en\)\s*\?\?\s*approval\.approvedProgressEn\s*\?\?/
     );
     expect(source).toMatch(
-      /approvedProgressAr:\\s*clean\\(explicitOverride\\?\\.progress_ar\\)\\s*\\?\\?\\s*approval\\.approvedProgressAr\\s*\\?\\?/
+      /approvedProgressAr:\s*clean\(explicitOverride\?\.progress_ar\)\s*\?\?\s*approval\.approvedProgressAr\s*\?\?/
     );
     expect(source).not.toMatch(
-      /partialCoverage\\s*\\?\\s*joinUnique\\(selectedSources\\.map\\(\\(\\{progress(En|Ar)\\}/
+      /partialCoverage\s*\?\s*joinUnique\(selectedSources\.map\(\(\{progress(En|Ar)\}/
     );
   });
 
