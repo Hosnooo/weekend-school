@@ -11,9 +11,24 @@ if [[ "$(git branch --show-current)" != 'review/atomic-last-admin-guard-20261008
   echo "REFUSED: switch to the Administrator review branch." >&2
   exit 1
 fi
-if [[ -n "$(git status --porcelain)" ]]; then
-  echo "REFUSED: uncommitted changes found; preserve them before generating migration." >&2
+# Unrelated local edits and untracked files must remain untouched.
+# Require only the reviewed migration inputs to match this branch's commit.
+review_inputs=(
+  docs/db-review/last-active-administrator-guard.sql
+  docs/db-review/last-active-administrator-guard.test.sql
+  scripts/test-last-administrator-race.sh
+  tests/integration/database/migrations.test.ts
+  supabase/config.toml
+  supabase/seed.sql
+)
+if ! git diff --quiet HEAD -- "${review_inputs[@]}"; then
+  echo "REFUSED: reviewed migration inputs have local modifications:" >&2
+  git status --short -- "${review_inputs[@]}" >&2
   exit 1
+fi
+if [[ -n "$(git status --porcelain)" ]]; then
+  echo "INFO: preserving unrelated local changes and existing staging."
+  git status --short
 fi
 command -v psql >/dev/null || {
   echo "PostgreSQL psql client is required." >&2
@@ -82,8 +97,11 @@ pnpm exec vitest run --configLoader runner \
   tests/unit/administrator-management.test.ts \
   tests/unit/administrator-lifecycle-error.test.ts
 
+# --only limits the commit to these two paths. This does not include
+# any unrelated changes that the user has already staged.
 git add -- "$migration" supabase/tests/last_active_administrator_guard.test.sql
-git commit -m "fix(db): enforce last active Administrator with atomic deletion migration"
+git commit --only -m "fix(db): enforce last active Administrator with atomic deletion migration" -- \
+  "$migration" supabase/tests/last_active_administrator_guard.test.sql
 
 echo 'PASS: formal migration created, replayed, tested, and COMMITTED LOCALLY.'
 echo "Migration: $migration"
