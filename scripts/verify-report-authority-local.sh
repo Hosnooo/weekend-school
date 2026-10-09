@@ -29,6 +29,7 @@ pnpm exec vitest run --configLoader runner \
   tests/unit/class-report-attendance-finalization.test.ts \
   tests/unit/report-performance-optional-contract.test.ts \
   tests/unit/report-email-customization.test.ts \
+  tests/unit/report-approved-email-parity.test.ts \
   tests/unit/report-service.test.ts \
   tests/unit/admin-submitted-update-view.test.ts \
   tests/unit/admin-report-preview-authority.test.ts \
