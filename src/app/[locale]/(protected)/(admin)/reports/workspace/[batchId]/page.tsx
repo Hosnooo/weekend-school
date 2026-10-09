@@ -88,6 +88,7 @@ export default async function AdminReportWorkspacePage({
     skipped?: string;
     requested?: string;
     student?: string;
+    editor?: string;
   }>;
 }) {
   const {locale, batchId: rawBatchId} = await params;
@@ -214,6 +215,7 @@ export default async function AdminReportWorkspacePage({
           locale={locale}
           schoolId={profile.schoolId}
           selectedStudentId={query.student}
+          openedEditorId={query.editor}
         />
       </section>
     );
