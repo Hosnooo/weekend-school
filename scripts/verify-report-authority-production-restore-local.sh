@@ -31,7 +31,7 @@ docker info >/dev/null 2>&1 || { echo "ERROR: Docker is unavailable."; exit 1; }
 
 tmp="$(mktemp -d -t weekend-school-restore-XXXXXXXX)"
 project="WebappRestoreReview$$"
-log="$backup/restore-verification-PRIVATE.log"
+log="$backup/restore-verification-$(date -u +%Y%m%dT%H%M%SZ)-PRIVATE.log"
 : > "$log"
 chmod 600 "$log"
 
