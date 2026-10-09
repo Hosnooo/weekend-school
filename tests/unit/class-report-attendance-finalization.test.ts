@@ -101,6 +101,13 @@ describe('Class Report Cycle finalized attendance', () => {
   it('clears report text overrides without requiring DELETE privileges', () => {
     const repository = readFileSync('src/features/reports/class-report-review.repository.ts', 'utf8');
     expect(repository).not.toMatch(/\.from\('report_student_overrides'\)\s*\.delete\(\)/);
-    expect(repository).toContain('performance_overridden: false');
+    expect(repository).toContain(
+      'fields.performance_overridden = student.performanceOverridden'
+    );
+    expect(repository).toContain('if (input.includePerformance)');
+    expect(repository).toContain('if (input.includeStudentComments)');
+    expect(repository).toContain('.update(fields)');
+    expect(repository).toContain('.insert({');
+    expect(repository).not.toContain('performance_overridden: false');
   });
 });
