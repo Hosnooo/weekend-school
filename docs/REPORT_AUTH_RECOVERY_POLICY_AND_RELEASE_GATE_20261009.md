@@ -92,40 +92,59 @@ Neither of the pending application migration versions
 `supabase_migrations.schema_migrations` as of this check.
 
 The backup inventory requirement is **complete**. It does **not** independently
-prove valid source password hashes, complete Auth/platform-secret recovery,
-or reusability of old sessions. The recovery/session policy still needs
-explicit acceptance before the coordinated deployment.
+prove compatible managed Auth platform configuration or reusability of archived
+tokens in a different Supabase project. That separate disaster-recovery problem
+must not be conflated with the normal PR #36 rollout.
 
-## Recovery decision for this report-authority release
+## Authentication continuity for the planned PR #36 release
 
-**Prefer identity-preserving, fresh-session recovery**, subject to the school
-operator's approval:
+**Default requirement: preserve existing passwords and active sessions.**
 
-1. Secure a fresh, private, verified database backup and retain the previous
-   backup outside Git and deployment artifacts.
-2. In an isolated environment, restore the application schema, data, and core
-   Auth users/identities with matching account IDs; verify every profile and
-   Admin/Teacher school role link.
-3. Recreate or explicitly verify Auth platform configuration (JWT secrets,
-   OAuth/SMTP providers and redirect URLs, any active security factors), because
-   database row recovery does not restore dashboard configuration or secrets.
-4. In a genuine restoration scenario, **do not import active production
-   auth.sessions, auth.refresh_tokens, one-time tokens or flow_state into the
-   browser-test project**. Invalidate or let old sessions expire, then require
-   new sign-in. Never copy valid refresh tokens to another online Auth instance.
-5. If original password hashes are restorable in a compatible Auth stack,
-   verify normal sign-in privately; otherwise use the controlled password-reset
-   flow. The local smoke test sets temporary passwords and **does not prove
-   original passwords will still work**.
-6. Verify the reported zero Storage buckets/objects is still accurate in
-   production before recovery. Database rows alone cannot replace object
-   storage contents if new objects have been added later.
+PR #36 is an in-place application/database update against the **same production
+Supabase project**. The two report/attendance migrations target application
+tables and functions in `public`, not `auth.users`, `auth.sessions`,
+`auth.refresh_tokens` or password hashes. We should:
 
-This is a **recovery strategy**, not a claim of fully rehearsed managed Auth
-disaster recovery. If automatic preservation of existing sessions or exact
-managed Auth/platform state is a business requirement, a separately provisioned
-compatible Supabase project and an approved full restore rehearsal are necessary;
-that release gate remains open.
+1. Keep the current production Supabase project URL, signing-key setup, Auth
+   credentials and client/session-cookie settings stable.
+2. Do **not** replay Auth backups, reset passwords, call global sign-out, revoke
+   refresh tokens, rotate JWT keys or migrate Auth users as part of this release.
+3. Back up production immediately before DDL, apply the two approved
+   **forward-only report migrations** in place, and deploy the compatible app
+   once after explicit authorization.
+4. Test an existing already-signed-in browser session after deployment and
+   normal session refresh, plus fresh sign-in with an existing password where
+   permitted. Never expose or collect account credentials in logs or tickets.
+5. If session behavior changes unexpectedly, stop delivery and investigate
+   cookie, redirect, Auth configuration and signing-key changes before any
+   password resets or large-scale sign-outs.
+
+Existing sign-in continuity is the **intended release behavior**, not proof
+that a specific browser session will survive every unrelated cookie or
+client-side app bug; postdeployment smoke checks remain necessary.
+
+## Separate disaster-recovery policy — only if the Auth project itself is lost
+
+For true restoration to a *different* or rebuilt Supabase Auth service, aim
+to preserve users' IDs, profile/role links, password hashes and, **if safely
+feasible**, active sessions. Restoration of active sessions depends on a
+compatible managed Auth schema and configuration (including token-signing
+keys, session lifecycle and refresh-token state). The six-user smoke test did
+not test those conditions: it used disposable passwords, restored only core
+users/identities, and deliberately omitted live sessions/refresh tokens.
+
+Never copy production-valid session/refresh credentials into an unrelated
+online test instance. Recovery of old sessions must instead be planned and
+verified using a secured compatible disaster-recovery procedure and controls
+for signing-key access. If continuity cannot be guaranteed in an actual
+outage, a fresh login may be needed; **a password reset is not inherently
+required** where the original password hashes are recovered correctly.
+
+This additional disaster-recovery rehearsal remains optional for the
+in-place PR #36 release, subject to the school's broader resilience policy.
+It is not an authorization to force sign-outs or reset passwords during
+deployment. Supabase reference:
+https://supabase.com/docs/guides/auth/sessions
 
 ## Offline, private backup inventory
 
@@ -149,8 +168,9 @@ read-only production inventory taken near the maintenance window.
       SQL save/finalization and rollback, core Auth and UI browser checks
 - [x] Compare the offline backup's **all managed Auth-table counts** against
       the read-only inventory; document schema/version-specific omissions
-- [ ] Operator accepts fresh-sign-in session policy or requests a complete
-      managed Auth/session restoration rehearsal
+- [x] Release policy: preserve the existing production Auth project, password
+      hashes and sessions; do not trigger session revocation/key rotation/reset
+- [ ] Verify existing signed-in browser remains authenticated after deployment
 - [ ] Set release window, avoid concurrent report edits, take a fresh
       timestamped checksum-verified backup, confirm production row counts
 - [ ] Run approved **forward-only** migrations once
