@@ -1066,6 +1066,7 @@
     }
   },
   "adminTeachingUpdates": {
+    "viewDirectReport": "عرض تقارير الطلاب",
     "backToUpdates": "العودة إلى تحديثات التدريس",
     "submittedViewTitle": "تحديث التدريس المُقدَّم",
     "cycleApprovedVersions": "نسخ التقرير حسب دورات التقارير",
