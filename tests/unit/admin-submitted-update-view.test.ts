@@ -24,7 +24,11 @@ describe('Administrator submitted Teaching Update viewing', () => {
     expect(page).toContain('teacherSourceAudit');
     expect(page).toContain('submission.progressEn');
     expect(page).toContain('submission.progressAr');
-    expect(page).not.toMatch(/<form[^>]*action/);
+    // Viewing the original Teacher submission remains read-only. A separate
+    // Admin-only form is expected for editing its associated Report Cycle.
+    const auditSection = page.slice(page.indexOf("t('teacherSourceAudit')"));
+    expect(auditSection).not.toMatch(/<form[^>]*action/);
+    expect(page).toContain('action={openClassReportEditorAction}');
   });
 
   it('isolates linked approvals to school, exact subject and group', () => {
