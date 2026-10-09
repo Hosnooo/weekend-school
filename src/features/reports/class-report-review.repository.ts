@@ -72,6 +72,8 @@ export type ClassReportReviewStudent = {
   performanceOverridden: boolean;
   commentEn: string | null;
   commentAr: string | null;
+  commentEnOverridden: boolean;
+  commentArOverridden: boolean;
 };
 
 export type ClassReportReviewContext = {
@@ -260,7 +262,9 @@ export async function getClassReportReviewWorkspace(
         commentEn: override?.comment_en_overridden
           ? override.comment_en : sourceCommentEn,
         commentAr: override?.comment_ar_overridden
-          ? override.comment_ar : sourceCommentAr
+          ? override.comment_ar : sourceCommentAr,
+        commentEnOverridden: override?.comment_en_overridden ?? false,
+        commentArOverridden: override?.comment_ar_overridden ?? false
       }];
     });
 
