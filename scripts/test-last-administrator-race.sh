@@ -3,14 +3,20 @@ set -euo pipefail
 
 # Only a disposable local database is acceptable for a destructive race test.
 : "${DB_URL:?The local Supabase DB_URL is required}"
-case "$DB_URL" in
-  *"@127.0.0.1:"*|*"@localhost:"*) ;;
-  *) echo "Refusing to run Administrator race test outside localhost" >&2; exit 1 ;;
-esac
+node <<'NODE'
+const db = new URL(process.env.DB_URL || '');
+if (!['127.0.0.1', 'localhost'].includes(db.hostname) ||
+    db.port !== '55322' || db.pathname !== '/postgres' ||
+    !['postgres:', 'postgresql:'].includes(db.protocol)) {
+  console.error('Refusing to run Administrator race test outside the configured local database.');
+  process.exit(1);
+}
+NODE
 
-school_id='7a000000-0000-4000-8000-000000000001'
-admin_one='7b000000-0000-4000-8000-000000000001'
-admin_two='7b000000-0000-4000-8000-000000000002'
+# Unique fixtures keep the local test repeatable without another DB reset.
+read -r school_id admin_one admin_two < <(
+  node -e 'const {randomUUID} = require("node:crypto"); console.log([randomUUID(),randomUUID(),randomUUID()].join(" "))'
+)
 
 psql "$DB_URL" -v ON_ERROR_STOP=1 <<SQL
 insert into public.schools(id,name_en,name_ar)
