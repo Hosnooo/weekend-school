@@ -1000,7 +1000,7 @@ export async function finalizeReportBatch(schoolId: string, batchId: string) {
         },
         generatedAt
       });
-      if (!built.snapshot) {
+      if (!built.snapshot || built.issues.length > 0) {
         throw new Error('Unresolved attendance conflicts block report finalization');
       }
       reports.push({student_id: student.id, language, snapshot_json: built.snapshot});
