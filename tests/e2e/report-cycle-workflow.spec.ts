@@ -214,7 +214,7 @@ test(
     expect(emailHtml).toContain('Regards,');
     expect(emailHtml).toContain('مع التحية،');
     expect(emailHtml).not.toContain('Source / المصدر');
-    expect(emailHtml).not.toMatch(/<strong>Source(?:\\s*\\/\\s*المصدر)?:<\\/strong>/);
+    expect(emailHtml).not.toContain('<strong>Source');
     expect(emailHtml!.indexOf('Regards,')).toBeGreaterThan(
       emailHtml!.indexOf('Report cycle source lesson')
     );
