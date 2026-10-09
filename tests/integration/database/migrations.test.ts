@@ -65,7 +65,7 @@ describe('migration contract', () => {
     // standalone concurrency verification. Permit exactly one such
     // forward migration without weakening the historical migration order.
     const guardFiles = filenames.filter((name) =>
-      /^\\d{14}_prevent_last_active_administrator_race\\.sql$/.test(name)
+      /^\d{14}_prevent_last_active_administrator_race\.sql$/.test(name)
     );
     expect(guardFiles.length).toBeLessThanOrEqual(1);
     if (guardFiles.length === 1) {
