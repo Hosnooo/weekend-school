@@ -109,6 +109,19 @@ if ! docker exec -i "$container" psql -U postgres -d postgres \
   exit 1
 fi
 
+echo "Preparing a PUBLIC-only restore from the existing verified dump..."
+# pg_dump --data-only contains Auth/Storage COPY blocks but the CLI schema
+# dump excludes managed schemas. Local Supabase's Auth schema can be a
+# different version (for example missing auth.mfa_recovery_code_sets).
+# Filter only into the temporary directory; NEVER edit the original backup.
+public_copy="$tmp/public-data-PRIVATE.sql"
+if ! python3 "$root/scripts/filter-public-pg-dump.py" \
+    "$backup/data.sql" "$public_copy"; then
+  echo "ERROR: Refusing incomplete or unexpected public-data fixture." >&2
+  exit 1
+fi
+chmod 600 "$public_copy"
+
 echo "Restoring backed-up PUBLIC application data into disposable DB..."
 # One transaction; trigger/FK checks are disabled ONLY inside this local restore
 # transaction, allowing COPY of circular references among groups/reports.
@@ -116,7 +129,7 @@ if ! docker exec -i "$container" psql -U postgres -d postgres \
     -X -q -1 -v ON_ERROR_STOP=1 -v VERBOSITY=sqlstate \
     -c 'SET session_replication_role=replica' -f - \
     -c 'SET session_replication_role=origin' \
-    < "$backup/data.sql" >>"$log" 2>&1; then
+    < "$public_copy" >>"$log" 2>&1; then
   echo "ERROR: Production public-data dump could not be restored on baseline schema." >&2
   show_safe_sqlstate
   echo "Original backup and production data are untouched. Keep PRIVATE log local." >&2
