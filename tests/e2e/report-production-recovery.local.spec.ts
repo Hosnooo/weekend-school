@@ -34,9 +34,13 @@ test('restored Administrator signs in, saves a real draft edit, reloads and prev
   const studentId = await editor.locator('input[name="studentId"]').first().inputValue();
   expect(studentId).toBeTruthy();
   const sharedEnglish = editor.locator('textarea[name="mainReportEn"]');
+  const sharedArabic = editor.locator('textarea[name="mainReportAr"]');
   const original = await sharedEnglish.inputValue();
+  const originalArabic = await sharedArabic.inputValue();
   const next = [original, marker].filter(Boolean).join('\n');
+  const nextArabic = [originalArabic, 'AR_LOCAL_RECOVERY_CHECK'].filter(Boolean).join('\n');
   await sharedEnglish.fill(next);
+  await sharedArabic.fill(nextArabic);
   await editor.getByRole('button', {name: 'Save & close'}).click();
   await expect(editor).toBeHidden({timeout: 30_000});
 
@@ -45,6 +49,7 @@ test('restored Administrator signs in, saves a real draft edit, reloads and prev
   await reopened.click();
   const persisted = page.locator('.report-source-editor:visible').first();
   await expect(persisted.locator('textarea[name="mainReportEn"]')).toHaveValue(next);
+  await expect(persisted.locator('textarea[name="mainReportAr"]')).toHaveValue(nextArabic);
   await persisted.getByRole('button', {name: 'Cancel'}).click();
 
   const email = page.locator('section.report-email-review-panel');
@@ -55,6 +60,7 @@ test('restored Administrator signs in, saves a real draft edit, reloads and prev
   const frame = email.locator('iframe.report-preview');
   await expect(frame).toHaveAttribute('srcdoc', new RegExp(marker), {timeout: 60_000});
   expect(await frame.getAttribute('srcdoc')).toContain(marker);
+  expect(await frame.getAttribute('srcdoc')).toContain('AR_LOCAL_RECOVERY_CHECK');
   console.log('PASS: Restored Admin browser save, reload and bilingual email-preview smoke.');
 });
 
