@@ -50,7 +50,9 @@ function periodOverlaps(
 type SubmissionStudentRow = {
   submission_id: string;
   student_id: string;
-  attendance_status: 'PRESENT' | 'ABSENT';
+  attendance_status: 'PRESENT' | 'ABSENT' | null;
+  attendance_attended: number | null;
+  attendance_total: number | null;
   performance_override: ReportPerformance | null;
   comment_en: string | null;
   comment_ar: string | null;
@@ -166,7 +168,7 @@ async function buildClassReportCycleSnapshots(
     db
       .from('weekly_submission_students')
       .select(
-        'submission_id,student_id,attendance_status,performance_override,comment_en,comment_ar'
+        'submission_id,student_id,attendance_status,attendance_attended,attendance_total,performance_override,comment_en,comment_ar'
       )
       .eq('school_id', schoolId)
       .in('submission_id', sourceIds),
@@ -267,11 +269,16 @@ async function buildClassReportCycleSnapshots(
           row.student_id === student.id
       );
       const sourceAttendance = deriveReportAttendance({
-        sources: selectedSources.map(({id, weekStart}) => ({id, weekStart})),
+        sources: selectedSources.map(({id, weekStart, coverageKind, periodStart, periodEnd, coveredDates, partialOverlap}) => ({
+          id, weekStart, coverageKind, periodStart, periodEnd,
+          coveredDates, partialOverlap
+        })),
         observations: studentObservations.map((row) => ({
           submissionId: row.submission_id,
           studentId: row.student_id,
-          attendanceStatus: row.attendance_status
+          attendanceStatus: row.attendance_status,
+          attended: row.attendance_attended,
+          total: row.attendance_total
         })),
         resolutions: normalizedResolutions,
         classSubjectId: approval.classSubjectId,
