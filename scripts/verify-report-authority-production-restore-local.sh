@@ -409,5 +409,5 @@ if [[ "${REPORT_AUTH_UI:-0}" == 1 ]]; then
   echo "PASS: Local browser Administrator report save/reload and bilingual guardian-email preview."
   echo "PASS: Restored Teacher-only identity blocked from Administrator editor."
   echo "LIMIT: Only core Auth users/identities were restored; sessions, MFA and Auth configuration are NOT fully verified."
-  echo "PASS: Disposable project and temporary credentials are removed by EXIT cleanup."
+  echo "Disposable project and temporary credentials will be removed by the EXIT cleanup."
 fi
