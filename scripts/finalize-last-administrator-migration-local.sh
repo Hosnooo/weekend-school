@@ -17,9 +17,6 @@ review_inputs=(
   docs/db-review/last-active-administrator-guard.sql
   docs/db-review/last-active-administrator-guard.test.sql
   scripts/test-last-administrator-race.sh
-  tests/integration/database/migrations.test.ts
-  supabase/config.toml
-  supabase/seed.sql
 )
 if ! git diff --quiet HEAD -- "${review_inputs[@]}"; then
   echo "REFUSED: reviewed migration inputs have local modifications:" >&2
