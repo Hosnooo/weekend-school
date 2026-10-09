@@ -41,8 +41,10 @@ if [[ "${RESET_LOCAL_SUPABASE:-}" != 1 ]]; then
   exit 0
 fi
 
-supabase status | tee /tmp/weekend-school-report-authority-local-db-status.txt
-if ! grep -Eq '127[.]0[.]0[.]1|localhost' /tmp/weekend-school-report-authority-local-db-status.txt; then
+# Supabase status may include local database credentials. Never print them
+# or write them into an easily shared test log.
+local_status="$(supabase status 2>&1)"
+if ! printf '%s' "$local_status" | grep -Eq '127[.]0[.]0[.]1|localhost'; then
   echo "ERROR: local Supabase URL was not confirmed. Do not reset a linked DB." >&2
   exit 1
 fi
