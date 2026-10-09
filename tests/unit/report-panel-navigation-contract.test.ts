@@ -26,7 +26,18 @@ describe('Report Cycle panel navigation contract', () => {
     expect(actions).toContain(
       'redirect(`${workspacePath}?editor=${encodeURIComponent(editorId)}#${editorId}`)'
     );
-    expect(sourceReview).toContain('report-source-editor');
+    expect(sourceReview).toContain('openOnArrival={openedEditorId === editorId}');
+    expect(sourceReview).toContain('<ReportEditPanel');
+    const panel = read('src/features/reports/report-edit-panel.tsx');
+    expect(panel).toContain('report-source-editor');
+    expect(panel).toContain('hidden={!open}');
+    expect(panel).toContain("window.addEventListener('hashchange', syncFromHash)");
+    const cycle = read('src/features/reports/class-report-cycle-review.tsx');
+    const page = read(
+      'src/app/[locale]/(protected)/(admin)/reports/workspace/[batchId]/page.tsx'
+    );
+    expect(cycle).toContain('openedEditorId={openedEditorId}');
+    expect(page).toContain('openedEditorId={query.editor}');
     expect(sourceReview).not.toContain('?edit=${encodeURIComponent(editorId)}');
   });
 
