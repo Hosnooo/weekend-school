@@ -14,7 +14,7 @@ const cases = [
   {
     locale: 'en' as const,
     account: credentials.englishTeacher,
-    history: 'History', profile: 'My Profile', loginIdentity: 'Login identity', teacherRecords: 'Teacher records',
+    history: 'History', profile: 'My account', loginIdentity: 'Sign-in email', teacherRecords: 'Linked Teacher records',
     newUpdate: 'New Teaching Update', selectedDates: 'Selected dates', markAll: 'Mark all present',
     progress: 'What did you cover? (English)', performance: 'Default performance',
     save: 'Save update', submit: 'Submit update', view: 'View', reopen: 'Reopen and edit'
@@ -22,7 +22,7 @@ const cases = [
   {
     locale: 'ar' as const,
     account: credentials.arabicTeacher,
-    history: 'السجل', profile: 'ملفي الشخصي', loginIdentity: 'هوية الدخول', teacherRecords: 'سجلات المعلم',
+    history: 'السجل', profile: 'حسابي', loginIdentity: 'البريد الإلكتروني لتسجيل الدخول', teacherRecords: 'سجلات المعلم المرتبطة',
     newUpdate: 'تحديث تدريس جديد', selectedDates: 'تواريخ محددة', markAll: 'تحديد الجميع حاضرين',
     progress: 'ماذا غطّيت؟ (بالعربية)', performance: 'الأداء الافتراضي',
     save: 'حفظ التحديث', submit: 'إرسال التحديث', view: 'عرض', reopen: 'إعادة الفتح والتعديل'
@@ -61,7 +61,7 @@ for (const item of cases) {
     await assertNoHorizontalOverflow(page);
     await page.screenshot({path: testInfo.outputPath(`${item.locale}-history-detail-desktop.png`), fullPage: true});
 
-    await page.goto(`/${item.locale}/profile`);
+    await page.goto(`/${item.locale}/account`);
     await expect(page.getByRole('heading', {level: 1, name: item.profile})).toBeVisible();
     await expect(page.getByRole('heading', {name: item.loginIdentity})).toBeVisible();
     await expect(page.getByRole('heading', {name: item.teacherRecords})).toBeVisible();
@@ -78,7 +78,7 @@ for (const item of cases) {
     await expect(page.getByRole('radio', {name: item.selectedDates})).toBeChecked();
     await assertNoHorizontalOverflow(page);
     await page.screenshot({path: testInfo.outputPath(`${item.locale}-history-detail-mobile.png`), fullPage: true});
-    await page.goto(`/${item.locale}/profile`);
+    await page.goto(`/${item.locale}/account`);
     await expect(page.getByRole('heading', {level: 1, name: item.profile})).toBeVisible();
     await assertNoHorizontalOverflow(page);
     await page.screenshot({path: testInfo.outputPath(`${item.locale}-profile-mobile.png`), fullPage: true});

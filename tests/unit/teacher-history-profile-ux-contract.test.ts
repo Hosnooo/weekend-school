@@ -42,9 +42,9 @@ describe('Teacher History and Profile UX contract', () => {
     expect(page).toContain("submission.status !== 'SUBMITTED'");
   });
 
-  it('renders My Profile from translations with shared read-only components', () => {
+  it('renders the one shared My account screen for Teacher and Administrator profiles', () => {
     const page = read(
-      'src/app/[locale]/(protected)/(teacher)/profile/page.tsx'
+      'src/app/[locale]/(protected)/account/page.tsx'
     );
 
     expect(page).not.toContain('AdminPage');
@@ -53,10 +53,16 @@ describe('Teacher History and Profile UX contract', () => {
     expect(page).toContain('StatusBadge');
     expect(page).toContain('EmptyState');
     expect(page).toContain('getTranslations');
+    expect(page).toContain('AccountSettingsWorkspace');
 
     expect(page).not.toContain("locale==='ar'");
     expect(page).not.toContain("locale === 'ar'");
     expect(page).not.toContain("'Inactive'");
+  });
+
+  it('keeps the former Teacher profile URL as a locale-preserving account redirect', () => {
+    expect(read('src/app/[locale]/(protected)/(teacher)/profile/page.tsx'))
+      .toContain('redirect(`/${locale}/account`)');
   });
 
   it('keeps legacy My Groups as a locale-preserving redirect', () => {

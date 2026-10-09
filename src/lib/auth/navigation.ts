@@ -19,7 +19,8 @@ export type NavigationMessageKey =
   | 'settings'
   | 'updates'
   | 'history'
-  | 'myProfile';
+  | 'myProfile'
+  | 'myAccount';
 
 export type NavigationSectionId =
   | 'overview'
@@ -28,7 +29,8 @@ export type NavigationSectionId =
   | 'reports'
   | 'data'
   | 'settings'
-  | 'myTeaching';
+  | 'myTeaching'
+  | 'account';
 
 export type NavigationItem = {href: string; messageKey: NavigationMessageKey};
 export type NavigationSection = {id: NavigationSectionId; items: readonly NavigationItem[]};
@@ -72,15 +74,15 @@ const teachingSection: NavigationSection = {
   id: 'myTeaching',
   items: [
     {href: '/my-teaching', messageKey: 'updates'},
-    {href: '/history', messageKey: 'history'},
-    {href: '/profile', messageKey: 'myProfile'}
+    {href: '/history', messageKey: 'history'}
   ]
 };
 
 export function getNavigationSections(capabilities: AccountCapabilities): readonly NavigationSection[] {
   return [
     ...(capabilities.isAdmin ? administratorSections : []),
-    ...(capabilities.teacherIds.length > 0 ? [teachingSection] : [])
+    ...(capabilities.teacherIds.length > 0 ? [teachingSection] : []),
+    {id: 'account', items: [{href: '/account', messageKey: 'myAccount'}]}
   ];
 }
 
