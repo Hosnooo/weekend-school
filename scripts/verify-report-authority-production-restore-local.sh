@@ -7,7 +7,7 @@ umask 077
 
 root="$(git rev-parse --show-toplevel)"
 cli="$root/node_modules/.bin/supabase"
-backup="$1"
+backup="${1:-}"
 if [[ -z "$backup" || ! -d "$backup" ]]; then
   echo "Usage: bash scripts/verify-report-authority-production-restore-local.sh /absolute/private/backup-directory" >&2
   exit 1
@@ -124,18 +124,18 @@ FOREACH name IN ARRAY ARRAY[
 ] LOOP
   expr := CASE name
     WHEN 'report_section_approvals' THEN
-      'to_jsonb(row) - ''progress_en_approved'' - ''progress_ar_approved'''
+      'to_jsonb(src) - ''progress_en_approved'' - ''progress_ar_approved'''
     WHEN 'report_student_overrides' THEN
-      'to_jsonb(row) - ''progress_en_overridden'' - ''progress_ar_overridden'' - ''comment_en_overridden'' - ''comment_ar_overridden'''
-    WHEN 'weekly_submissions' THEN 'to_jsonb(row) - ''attendance_format'''
+      'to_jsonb(src) - ''progress_en_overridden'' - ''progress_ar_overridden'' - ''comment_en_overridden'' - ''comment_ar_overridden'''
+    WHEN 'weekly_submissions' THEN 'to_jsonb(src) - ''attendance_format'''
     WHEN 'weekly_submission_students' THEN
-      'to_jsonb(row) - ''attendance_attended'' - ''attendance_total'''
-    ELSE 'to_jsonb(row)'
+      'to_jsonb(src) - ''attendance_attended'' - ''attendance_total'''
+    ELSE 'to_jsonb(src)'
   END;
   EXECUTE format('INSERT INTO review_before
       SELECT %L, count(*),
       md5(coalesce(string_agg((%s)::text, ''|'' ORDER BY (%s)::text), ''''))
-      FROM public.%I AS row',name,expr,expr,name);
+      FROM public.%I AS src',name,expr,expr,name);
 END LOOP;
 END $$;
 SQL
@@ -148,17 +148,17 @@ BEGIN
 FOR baseline IN SELECT * FROM review_before LOOP
   expr := CASE baseline.table_name
     WHEN 'report_section_approvals' THEN
-      'to_jsonb(row) - ''progress_en_approved'' - ''progress_ar_approved'''
+      'to_jsonb(src) - ''progress_en_approved'' - ''progress_ar_approved'''
     WHEN 'report_student_overrides' THEN
-      'to_jsonb(row) - ''progress_en_overridden'' - ''progress_ar_overridden'' - ''comment_en_overridden'' - ''comment_ar_overridden'''
-    WHEN 'weekly_submissions' THEN 'to_jsonb(row) - ''attendance_format'''
+      'to_jsonb(src) - ''progress_en_overridden'' - ''progress_ar_overridden'' - ''comment_en_overridden'' - ''comment_ar_overridden'''
+    WHEN 'weekly_submissions' THEN 'to_jsonb(src) - ''attendance_format'''
     WHEN 'weekly_submission_students' THEN
-      'to_jsonb(row) - ''attendance_attended'' - ''attendance_total'''
-    ELSE 'to_jsonb(row)'
+      'to_jsonb(src) - ''attendance_attended'' - ''attendance_total'''
+    ELSE 'to_jsonb(src)'
   END;
   EXECUTE format('SELECT count(*),
       md5(coalesce(string_agg((%s)::text, ''|'' ORDER BY (%s)::text), ''''))
-      FROM public.%I AS row',expr,expr,baseline.table_name)
+      FROM public.%I AS src',expr,expr,baseline.table_name)
     INTO n,hash;
   IF n <> baseline.n OR hash <> baseline.hash THEN
     RAISE EXCEPTION 'Original values changed in protected table %',baseline.table_name;
