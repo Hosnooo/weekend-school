@@ -207,7 +207,8 @@ test(
     // The local school's display name is "Weekend School". The previous
     // "MCE Weekend School" came from the internal Source footer, which must
     // not be shown in guardian emails.
-    await expect(frame.locator('header').getByText('Weekend School', {exact: true})).toBeVisible();
+    // Bilingual snapshots display both school names in the same header line.
+    await expect(frame.locator('header > p').first()).toContainText('Weekend School');
     await expect(frame.getByText('Report cycle source lesson')).toBeVisible();
     await expect(frame.getByText('Regards,')).toBeVisible();
     await expect(frame.getByText('Source / المصدر')).toHaveCount(0);
