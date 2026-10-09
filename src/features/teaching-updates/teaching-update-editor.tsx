@@ -134,6 +134,7 @@ export function TeachingUpdateEditor({
   const canSubmit =
     update.status === 'OPEN' &&
     !dirty &&
+    update.roster.length > 0 &&
     attendance.length === update.roster.length &&
     attendance.every(({attended, total}) =>
       attended !== null &&
