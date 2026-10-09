@@ -204,10 +204,14 @@ test(
     await expect(emailReview.locator('iframe.report-preview')).toBeVisible();
 
     const frame = emailReview.frameLocator('iframe.report-preview');
-    await expect(frame.getByText('MCE Weekend School')).toBeVisible();
+    // The local school's display name is "Weekend School". The previous
+    // "MCE Weekend School" came from the internal Source footer, which must
+    // not be shown in guardian emails.
+    await expect(frame.locator('header').getByText('Weekend School', {exact: true})).toBeVisible();
     await expect(frame.getByText('Report cycle source lesson')).toBeVisible();
     await expect(frame.getByText('Regards,')).toBeVisible();
     await expect(frame.getByText('Source / المصدر')).toHaveCount(0);
+    await expect(frame.getByText('Source:', {exact: false})).toHaveCount(0);
 
     // A prepared but unsent cycle must be editable without asking the Teacher
     // to resubmit. Reopen returns prepared reports to review state.
