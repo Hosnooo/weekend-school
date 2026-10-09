@@ -10,8 +10,9 @@ Review branch: `review/admin-authoritative-reports-numeric-attendance-20261009`
 2. **Administrator corrections are authoritative for their particular Report Cycle, class subject, group and student.** The Report Cycle editor, submitted/approved report views, live Parent Email Review, finalized snapshot and eventual sent email must resolve to the **same approved value** for attendance, shared report text (English/Arabic), individual text/comments, and performance.
 3. **Teacher-submitted content is provenance, not a second competing approved report.** Keep original submissions immutable as the audit/source layer; the normal *approved-report* view must display the Administrator's authoritative version when approved. Where one Teaching Update is linked to several Report Cycles, show the associated cycle explicitly; do not globally rewrite every report for one Teacher submission.
 4. **Administrators can VIEW and EDIT submitted content without entering a cycle by accident.** A direct read-only View action opens approved report detail. Edit links to the correct cycle/context and respects the existing immutable-after-delivery rules. Submitted Teaching Update view must show its source alongside any cycle-specific approved version without misleadingly labeling Teacher source text as final.
-5. **Preserve all production data and manual work.** Existing corrections, text, performance, comments, included source selections, dated roster history, report revisions and unsent draft report snapshots must not be lost.
-6. **No sending, no production rewrites, no main merge until verification.** Keep CI manual-only; do not use Vercel deployments to test.
+5. **Performance is optional from Teacher to email.** Teacher-wide and per-student performance selections are optional and may stay null. Admin may inherit the Teacher's rating, choose a specific different rating, or explicitly choose **Omit performance**, even if Teacher gave a rating. A null effective rating results in **no Performance section** in guardian preview/finalized email (not a "Not rated" placeholder). The school report template may disable the entire category, without destroying stored historical ratings or saved Admin choices. Explicit Admin omission is represented by `performance_overridden = true` with `performance = null`, distinct from inheritance (`false`, `null`).
+6. **Preserve all production data and manual work.** Existing corrections, text, performance, comments, included source selections, dated roster history, report revisions and unsent draft report snapshots must not be lost.
+7. **No sending, no production rewrites, no main merge until verification.** Keep CI manual-only; do not use Vercel deployments to test.
 
 ## Verified production audit baseline (read-only)
 
@@ -72,6 +73,9 @@ One shared resolver, consumed by editor/preview/finalization/email/submitted rep
 
 ## Release acceptance tests
 
+- [ ] Admin can select **Use Teacher rating**, a specific rating, or **Omit performance**; saved choice survives reload, preview, finalization and email.
+- [ ] Empty Teacher rating with no Admin rating renders no Performance section in both languages; a rating renders it, and template-disabled Performance stays hidden without deleting saved values.
+- [ ] Disabling Performance or student comments in the report template does not clear historical Admin performance or comment overrides.
 - [ ] Existing baseline counts preserved (87 numeric Admin corrections, 13 comment override rows, all shared approvals, three cycles, 21 prior draft report rows; no email deliveries).
 - [ ] Admin numeric overrides 4/6 stay 4/6 through save, reload, source-toggle, preview, finalize and email rendering.
 - [ ] Same subject in two groups does **not** apply the wrong group's approved attendance or text.
