@@ -252,8 +252,10 @@ if [[ "${REPORT_OUTPUT_PARITY:-0}" == 1 ]]; then
     echo "ERROR: Could not validate local-only API URL and service key; no parity test run." >&2
     exit 1
   fi
+  parity_result="$tmp/PRIVATE-parity-result.txt"
   if ! (cd "$root" &&
     REPORT_PARITY_URL="$api_url" REPORT_PARITY_SERVICE_ROLE_KEY="$service_key" \
+      REPORT_PARITY_RESULT_FILE="$parity_result" \
       pnpm exec vitest run --configLoader runner \
       tests/integration/report-production-parity.local.test.ts >>"$log" 2>&1); then
     unset api_url service_key
@@ -262,7 +264,22 @@ if [[ "${REPORT_OUTPUT_PARITY:-0}" == 1 ]]; then
     exit 1
   fi
   unset api_url service_key
-  grep '^PASS: 3 cycles;' "$log" | tail -n 1 || true
+  # Vitest exits successfully when a suite is skipped. Require a private
+  # per-run marker written ONLY after every real-cycle assertion passed.
+  if [[ ! -f "$parity_result" ]]; then
+    echo "FAIL: Parity suite did not produce its execution marker; it may have been skipped." >&2
+    echo "Inspect the PRIVATE local log; do not share school records." >&2
+    exit 1
+  fi
+  parity_summary="$(cat "$parity_result")"
+  if ! printf '%s\\n' "$parity_summary" | grep -Eq '^PASS: 3 cycles; reports=[0-9]+; report sections=[0-9]+; eligible attendance pairs=[0-9]+; out-of-eligibility historical pairs=[0-9]+; checked explicit Admin fields=[0-9]+
+  echo "LIMIT: The actual finalization RPC is intentionally intercepted; no database reports or emails were created."
+fi
+; then
+    echo "FAIL: Parity execution marker is malformed; no release pass established." >&2
+    exit 1
+  fi
+  printf '%s\\n' "$parity_summary"
   echo "PASS: Application finalization payload, live preview and guardian email parity against restored production PUBLIC data."
   echo "LIMIT: The actual finalization RPC is intentionally intercepted; no database reports or emails were created."
 fi
