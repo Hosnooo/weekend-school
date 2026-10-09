@@ -131,5 +131,13 @@ describe('approved report snapshot and guardian email parity', () => {
     expect(action).toContain('resolveReportCommentOverride');
     expect(action).toContain('comment_en_overridden:');
     expect(action).toContain('comment_ar_overridden:');
+    expect(action).toContain('initialCommentEn:');
+    expect(action).toContain('initialCommentAr:');
+    const editor = readFileSync(
+      'src/features/reports/report-cycle-source-review.tsx',
+      'utf8'
+    );
+    expect(editor).toContain('initialCommentEn:');
+    expect(editor).toContain('initialCommentAr:');
   });
 });
