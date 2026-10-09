@@ -305,3 +305,109 @@ if [[ "${REPORT_DB_RPC_ROLLBACK:-0}" == 1 ]]; then
   echo "PASS: All RPC writes rolled back; protected records, Teacher data and previous report snapshots match baseline hashes."
   echo "LIMIT: SQL finalization uses a minimal valid V2 envelope; full output/email parity was verified separately."
 fi
+
+if [[ "${REPORT_AUTH_UI:-0}" == 1 ]]; then
+  echo "Testing restored Auth identities and browser UI in the SAME disposable local project..."
+  # Fail closed: do not import ANY Auth record into a nonempty target.
+  if ! docker exec "$container" psql -U postgres -d postgres -X -At \
+      -c 'select (select count(*) from auth.users) + (select count(*) from auth.identities)' |
+      grep -qx '0'; then
+    echo "FAIL: Disposable Auth target is not empty. No Auth import attempted." >&2
+    exit 1
+  fi
+  local_auth_schema="$tmp/PRIVATE-auth-schema.json"
+  if ! docker exec "$container" psql -U postgres -d postgres -X -At \
+      -c "SELECT json_build_object(
+         'auth.users', (SELECT coalesce(json_agg(column_name ORDER BY ordinal_position), '[]'::json)
+           FROM information_schema.columns WHERE table_schema='auth' AND table_name='users'),
+         'auth.identities', (SELECT coalesce(json_agg(column_name ORDER BY ordinal_position), '[]'::json)
+           FROM information_schema.columns WHERE table_schema='auth' AND table_name='identities'))::text" \
+      >"$local_auth_schema" 2>>"$log"; then
+    echo "FAIL: Cannot inspect isolated local Auth schema." >&2
+    exit 1
+  fi
+  auth_copy="$tmp/PRIVATE-auth-identity-fixture.sql"
+  if ! python3 "$root/scripts/prepare-local-auth-recovery.py" \
+       "$backup/data.sql" "$local_auth_schema" "$auth_copy"; then
+    echo "FAIL: Managed Auth table compatibility preflight; no Auth import attempted." >&2
+    exit 1
+  fi
+  # Only the six backed-up users and identities are imported. Session/refresh
+  # tokens must NEVER be copied into the local browser-test environment.
+  if ! docker exec -i "$container" psql -U postgres -d postgres -X -q -1 \
+      -v ON_ERROR_STOP=1 -v VERBOSITY=sqlstate \
+      -c 'SET session_replication_role=replica' -f - \
+      -c 'SET session_replication_role=origin' \
+      < "$auth_copy" >>"$log" 2>&1; then
+    echo "FAIL: Supabase-managed Auth data incompatible with local GoTrue schema." >&2
+    show_safe_sqlstate
+    echo "Original backup and production remain untouched." >&2
+    exit 1
+  fi
+  # Validate ALL restored profile references and identity-user keys without
+  # printing or accessing personally identifying values.
+  if ! docker exec "$container" psql -U postgres -d postgres -X -At \
+      -v ON_ERROR_STOP=1 -c "SELECT
+         (SELECT count(*) FROM auth.users)=6 AND
+         (SELECT count(*) FROM auth.identities)=6 AND
+         (SELECT count(*) FROM public.profiles)=6 AND
+         NOT EXISTS (SELECT 1 FROM public.profiles p LEFT JOIN auth.users u
+                      ON p.auth_user_id=u.id WHERE u.id IS NULL) AND
+         NOT EXISTS (SELECT 1 FROM auth.identities i LEFT JOIN auth.users u
+                      ON i.user_id=u.id WHERE u.id IS NULL)" \
+        2>>"$log" | grep -qx t; then
+    echo "FAIL: Restored user, identity and profile referential integrity." >&2
+    exit 1
+  fi
+  echo "PASS: Six backed-up Auth users, identities and public profiles reference valid restored identities."
+
+  local_status="$(cd "$tmp" && "$cli" status -o env)" || {
+    echo "ERROR: Disposable Supabase credentials unavailable." >&2; exit 1;
+  }
+  api_url="$(printf '%s\n' "$local_status" | sed -n 's/^API_URL=//p' | head -n 1 | tr -d '"')"
+  service_key="$(printf '%s\n' "$local_status" | sed -n 's/^SERVICE_ROLE_KEY=//p' | head -n 1 | tr -d '"')"
+  anon_key="$(printf '%s\n' "$local_status" | sed -n 's/^ANON_KEY=//p' | head -n 1 | tr -d '"')"
+  unset local_status
+  if [[ "$api_url" != http://127.0.0.1:56421 || -z "$service_key" || -z "$anon_key" ]]; then
+    echo "FAIL: Unexpected isolated API URL or missing local-only Auth keys." >&2
+    exit 1
+  fi
+  local_creds="$tmp/PRIVATE-restored-auth-browser-credentials.json"
+  if ! (cd "$root" &&
+      REPORT_RECOVERY_API_URL="$api_url" \
+      REPORT_RECOVERY_SERVICE_KEY="$service_key" \
+      REPORT_RECOVERY_ANON_KEY="$anon_key" \
+      REPORT_RECOVERY_CREDENTIAL_FILE="$local_creds" \
+      node scripts/prepare-local-auth-ui-smoke.mjs >>"$log" 2>&1); then
+    echo "FAIL: Restored GoTrue Auth password sign-in or role-account checks." >&2
+    echo "Inspect private local log; never share identity/credentials." >&2
+    exit 1
+  fi
+  echo "PASS: Restored Administrator and Teacher-only account can sign in using temporary local-only credentials."
+
+  # Browser tests deliberately do not finalize reports or invoke email send.
+  # Empty email credentials prevent contacting Brevo, even accidentally.
+  if ! (cd "$root" &&
+      NEXT_PUBLIC_SUPABASE_URL="$api_url" \
+      NEXT_PUBLIC_SUPABASE_ANON_KEY="$anon_key" \
+      SUPABASE_SERVICE_ROLE_KEY="$service_key" \
+      BREVO_API_KEY='' EMAIL_FROM='' \
+      REPORT_RECOVERY_CREDENTIAL_FILE="$local_creds" \
+      REPORT_RECOVERY_ARTIFACT_DIR="$tmp/PRIVATE-playwright" \
+      pnpm exec playwright test --config playwright.report-recovery.config.ts \
+      >>"$log" 2>&1); then
+    echo "FAIL: Administrator/Teacher browser smoke tests against restored local project." >&2
+    echo "Review PRIVATE log only. Production remains untouched." >&2
+    exit 1
+  fi
+  if ! grep -Fq 'PASS: Restored Admin browser save, reload and bilingual email-preview smoke.' "$log" ||
+     ! grep -Fq 'PASS: Restored Teacher-only browser identity cannot open Admin report editor.' "$log"; then
+    echo "FAIL: Browser suite exited without both required execution markers." >&2
+    exit 1
+  fi
+  unset api_url service_key anon_key
+  echo "PASS: Local browser Administrator report save/reload and bilingual guardian-email preview."
+  echo "PASS: Restored Teacher-only identity blocked from Administrator editor."
+  echo "LIMIT: Only core Auth users/identities were restored; sessions, MFA and Auth configuration are NOT fully verified."
+  echo "PASS: Disposable project and temporary credentials are removed by EXIT cleanup."
+fi
