@@ -1,6 +1,5 @@
 import type {ValidationIssue} from '@/lib/validation/error-guidance';
 import type {
-  AttendanceStatus,
   Performance,
   StudentException
 } from '@/features/weekly-updates/weekly-update.model';
@@ -53,7 +52,10 @@ export type TeachingUpdate = TeachingUpdateContext & {
   roster: TeachingUpdateRosterStudent[];
   attendance: Array<{
     studentId: string;
-    status: AttendanceStatus;
+    attended: number | null;
+    total: number | null;
+    /** Historical archived status; never used for a new submission. */
+    legacyStatus?: 'PRESENT' | 'ABSENT' | null;
   }>;
   exceptions: StudentException[];
 };
