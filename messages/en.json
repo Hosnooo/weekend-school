@@ -591,6 +591,7 @@
     "both": "English and Arabic"
   },
   "reports": {
+    "approvalPreviewUnavailable": "This report needs Administrator review before an accurate preview can be shown. Open its Report Cycle and resolve missing or overlapping attendance.",
     "omitPerformance": "Omit performance from this student's report",
     "useTeacherPerformance": "Use Teacher rating (if available)",
     "title": "Reports",
