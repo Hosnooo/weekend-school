@@ -292,7 +292,7 @@ describe.skipIf(!enabled)('private restored-production report and email parity',
       '; eligible attendance pairs=' + attendanceChecked +
       '; out-of-eligibility historical pairs=' + excludedAttendance +
       '; checked explicit Admin fields=' + explicitFieldsChecked;
-    writeFileSync(resultFile, summary + '\\n', {flag: 'wx', mode: 0o600});
+    writeFileSync(resultFile, summary + '\n', {flag: 'wx', mode: 0o600});
     // Only aggregate statistics go to the terminal; never print school data.
     console.log(summary);
   });
