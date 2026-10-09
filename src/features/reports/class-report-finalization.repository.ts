@@ -405,7 +405,7 @@ async function buildClassReportCycleSnapshots(
       generatedAt
     });
 
-    if (!built.snapshot) {
+    if (!built.snapshot || built.issues.length > 0) {
       throw new Error(
         'Unresolved attendance conflicts block report finalization'
       );
