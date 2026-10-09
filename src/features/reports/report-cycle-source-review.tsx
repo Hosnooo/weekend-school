@@ -215,9 +215,14 @@ export async function ReportCycleSourceReview({
                     ) : null}
                   </div>
 
-                  {context && (
-                    classCycle.batch.status !== 'FINALIZED' || canEditFinalized
-                  ) ? (
+                  {context && classCycle.batch.status !== 'FINALIZED' ? (
+                    <a
+                      className="button button-secondary action-link"
+                      href={`#${editorId}`}
+                    >
+                      {ui.editUpdate}
+                    </a>
+                  ) : context && canEditFinalized ? (
                     <form action={openClassReportEditorAction}>
                       {sharedHidden}
                       <input
