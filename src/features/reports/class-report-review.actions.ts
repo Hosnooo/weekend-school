@@ -13,6 +13,7 @@ import {
 } from './class-report-attendance.repository';
 import {createServerSupabaseClient} from '@/lib/supabase/server';
 import {reportAttendanceOverride} from './report-attendance';
+import {resolveReportCommentOverride} from './report-comment-override';
 import {attendanceInputIssue} from './report-attendance-input';
 import {reopenAdminReportWorkspace} from './admin-report-workspace.repository';
 import {getReportBatchWorkspace} from './report-batch.repository';
@@ -235,6 +236,26 @@ async function persistClassReportReview(
         performance_overridden: student.performanceOverridden,
         comment_en: student.commentEn,
         comment_ar: student.commentAr,
+        comment_en_overridden: resolveReportCommentOverride({
+          visible: payload.includeStudentComments,
+          wasOverridden: context.students.find((item) =>
+            item.studentId === student.studentId
+          )!.commentEnOverridden,
+          currentComment: context.students.find((item) =>
+            item.studentId === student.studentId
+          )!.commentEn,
+          submittedComment: student.commentEn
+        }),
+        comment_ar_overridden: resolveReportCommentOverride({
+          visible: payload.includeStudentComments,
+          wasOverridden: context.students.find((item) =>
+            item.studentId === student.studentId
+          )!.commentArOverridden,
+          currentComment: context.students.find((item) =>
+            item.studentId === student.studentId
+          )!.commentAr,
+          submittedComment: student.commentAr
+        }),
         attendance_attended: attendance.attendanceAttended,
         attendance_total: attendance.attendanceTotal
       };
