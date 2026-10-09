@@ -434,14 +434,17 @@ export async function ReportCycleSourceReview({
                                     <select
                                       defaultValue={
                                         student.performanceOverridden
-                                          ? student.performance ?? ''
-                                          : ''
+                                           ? student.performance ?? '__OMIT__'
+                                           : ''
                                       }
                                       name={`performance:${student.studentId}`}
                                     >
                                       <option value="">
                                         {weekly('useDefault')}
                                       </option>
+                                       <option value="__OMIT__">
+                                         {t('omitPerformance')}
+                                       </option>
                                       {performanceValues.map((value) => (
                                         <option key={value} value={value}>
                                           {weekly(`performance.${value}`)}
