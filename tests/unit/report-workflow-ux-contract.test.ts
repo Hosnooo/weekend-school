@@ -92,7 +92,11 @@ describe('Reports workflow UX contract', () => {
     expect(component).toContain('Edit update');
     expect(component).toContain('action={openClassReportEditorAction}');
     expect(component).toContain('canEditFinalized');
-    expect(component).toContain('report-source-editor');
+    const panel = read('src/features/reports/report-edit-panel.tsx');
+    expect(component).toContain('<ReportEditPanel');
+    expect(component).toContain('openOnArrival={openedEditorId === editorId}');
+    expect(panel).toContain('report-source-editor');
+    expect(panel).toContain('hidden={!open}');
     expect(component).not.toContain('View update');
   });
 
