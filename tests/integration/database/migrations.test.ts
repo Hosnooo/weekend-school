@@ -70,7 +70,7 @@ describe('migration contract', () => {
     expect(guardFiles.length).toBeLessThanOrEqual(1);
     if (guardFiles.length === 1) {
       expect(guardFiles[0]!).toBe(filenames[filenames.length - 1]);
-      expect(guardFiles[0]!.slice(0, 14)).toBeGreaterThan('20261008090000');
+      expect(Number(guardFiles[0]!.slice(0, 14))).toBeGreaterThan(20261008090000);
       const guardSql = await readFile(join(migrationDirectory, guardFiles[0]!), 'utf8');
       expect(guardSql).toContain('administrators_preserve_last_active');
       expect(guardSql).toContain('delete_administrator_with_accounts');
