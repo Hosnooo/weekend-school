@@ -1,3 +1,14 @@
+> **Historical review record (October 9, 2026).** Some checklists and
+> test gaps described below were written **before** the successful restored-
+> production test runs. The canonical current evidence is in
+> [Auth recovery and release gate](./REPORT_AUTH_RECOVERY_POLICY_AND_RELEASE_GATE_20261009.md)
+> and the latest PR #36 description. As of the final local test run,
+> the 29-report content/email parity, actual SQL save/finalization/rollback,
+> six-user core Auth restore, and Administrator/Teacher browser smoke **passed**.
+> Full managed Auth session/configuration recovery was **not** rehearsed.
+> Do not interpret this historical document's unchecked tests as newly
+> required reruns unless the tested files or operational requirements change.
+>
 # Report authority release: production preflight
 
 **Date:** 2026-10-09. **Environment:** existing production Supabase project; **READ ONLY**.  
