@@ -24,7 +24,7 @@ const draft: TeachingUpdateDraftInput = {
   progressEn: 'Covered lesson',
   progressAr: null,
   defaultPerformance: 'GOOD',
-  attendance: [{studentId, status: 'PRESENT'}],
+  attendance: [{studentId, attended: 4, total: 6}],
   exceptions: [{studentId, performanceOverride: 'EXCELLENT', commentEn: 'Well done', commentAr: null}],
   expectedVersion: 1
 };
@@ -36,7 +36,7 @@ describe('Teaching Update draft RPC payload', () => {
     await saveTeachingUpdateDraft(draft);
 
     expect(rpc).toHaveBeenCalledWith('save_teaching_update_draft', expect.objectContaining({
-      p_attendance: [{student_id: studentId, status: 'PRESENT'}],
+      p_attendance: [{student_id: studentId, attended: 4, total: 6}],
       p_exceptions: [{
         student_id: studentId,
         performance_override: 'EXCELLENT',
