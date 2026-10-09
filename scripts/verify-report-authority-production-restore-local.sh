@@ -34,6 +34,19 @@ project="WebappRestoreReview$$"
 log="$backup/restore-verification-PRIVATE.log"
 : > "$log"
 chmod 600 "$log"
+
+# Error context may include private records in PostgreSQL DETAIL statements.
+# Never print those lines. SQLSTATE is a fixed five-character diagnostic code.
+show_safe_sqlstate() {
+  local match state
+  match="$(grep -Eo 'ERROR:[[:space:]]+[0-9A-Z]{5}([[:space:]]|$)' "$log" | tail -n 1 || true)"
+  if [[ -z "$match" ]]; then
+    echo "Database error category not available. Inspect PRIVATE local log only." >&2
+    return
+  fi
+  state="$(printf '%s' "$match" | grep -Eo '[0-9A-Z]{5}' | tail -n 1)"
+  printf 'Safe diagnostic only — PostgreSQL SQLSTATE: %s\n' "$state" >&2
+}
 cleanup() {
   (cd "$tmp" && "$cli" stop --project-id "$project" --no-backup >/dev/null 2>&1) || true
   rm -rf -- "$tmp"
@@ -85,6 +98,7 @@ for name in roles schema; do
       -X -q -1 -v ON_ERROR_STOP=1 -v VERBOSITY=sqlstate -f - \
       < "$backup/${name}.sql" >>"$log" 2>&1; then
     echo "ERROR: The exported ${name} could not be loaded into a clean local DB." >&2
+  show_safe_sqlstate
     echo "This is an isolated-restore compatibility problem, not a production change." >&2
     echo "Review the PRIVATE log locally; do not upload it or any personal data." >&2
     exit 1
@@ -100,6 +114,7 @@ if ! docker exec -i "$container" psql -U postgres -d postgres \
     -c 'SET session_replication_role=origin' \
     < "$backup/data.sql" >>"$log" 2>&1; then
   echo "ERROR: Production public-data dump could not be restored on baseline schema." >&2
+  show_safe_sqlstate
   echo "Original backup and production data are untouched. Keep PRIVATE log local." >&2
   exit 1
 fi
@@ -195,6 +210,7 @@ SQL
 } | docker exec -i "$container" psql -U postgres -d postgres -X -q -1 \
     -v ON_ERROR_STOP=1 -v VERBOSITY=sqlstate -f - >>"$log" 2>&1; then
   echo "ERROR: Baseline comparison, upgrade, or preserved-value verification failed." >&2
+  show_safe_sqlstate
   echo "Everything was rolled back in the disposable database. Production unchanged." >&2
   echo "Do not share private SQL logs or school records." >&2
   exit 1
