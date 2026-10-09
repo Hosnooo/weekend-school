@@ -13,6 +13,20 @@ update public.report_section_approvals
 set progress_en_approved = true, progress_ar_approved = true
 where not progress_en_approved or not progress_ar_approved;
 
+-- Explicitly distinguish "Admin cleared this field" from "inherit Teacher".
+-- Preserve prior non-empty Student overrides as authoritative by default.
+alter table public.report_student_overrides
+  add column if not exists progress_en_overridden boolean not null default false,
+  add column if not exists progress_ar_overridden boolean not null default false,
+  add column if not exists comment_en_overridden boolean not null default false,
+  add column if not exists comment_ar_overridden boolean not null default false;
+
+update public.report_student_overrides
+set progress_en_overridden = (progress_en is not null),
+    progress_ar_overridden = (progress_ar is not null),
+    comment_en_overridden = (comment_en is not null),
+    comment_ar_overridden = (comment_ar is not null);
+
 create or replace function public.save_class_report_review_atomic(
   p_batch_id uuid,
   p_class_subject_id uuid,
@@ -144,6 +158,10 @@ begin
       set
         progress_en = nullif(trim(coalesce(v_student.progress_en, '')), ''),
         progress_ar = nullif(trim(coalesce(v_student.progress_ar, '')), ''),
+        progress_en_overridden = v_existing.progress_en_overridden
+          or nullif(trim(coalesce(v_student.progress_en, '')), '') is not null,
+        progress_ar_overridden = v_existing.progress_ar_overridden
+          or nullif(trim(coalesce(v_student.progress_ar, '')), '') is not null,
         performance = case
           when p_include_performance then v_performance else v_existing.performance end,
         performance_overridden = case
@@ -155,6 +173,10 @@ begin
         comment_ar = case when p_include_student_comments
           then nullif(trim(coalesce(v_student.comment_ar, '')), '')
           else v_existing.comment_ar end,
+        comment_en_overridden = v_existing.comment_en_overridden
+          or coalesce(p_include_student_comments, false),
+        comment_ar_overridden = v_existing.comment_ar_overridden
+          or coalesce(p_include_student_comments, false),
         attendance_attended = v_student.attendance_attended,
         attendance_total = v_student.attendance_total
       where school_id = v_school_id and id = v_existing.id;
@@ -162,13 +184,17 @@ begin
       insert into public.report_student_overrides (
         school_id, approval_id, student_id,
         progress_en, progress_ar,
+        progress_en_overridden, progress_ar_overridden,
         performance, performance_overridden,
         comment_en, comment_ar,
+        comment_en_overridden, comment_ar_overridden,
         attendance_attended, attendance_total
       ) values (
         v_school_id, v_approval_id, v_student.student_id,
         nullif(trim(coalesce(v_student.progress_en, '')), ''),
         nullif(trim(coalesce(v_student.progress_ar, '')), ''),
+        nullif(trim(coalesce(v_student.progress_en, '')), '') is not null,
+        nullif(trim(coalesce(v_student.progress_ar, '')), '') is not null,
         v_performance,
         coalesce(p_include_performance, false)
           and coalesce(v_student.performance_overridden, false),
@@ -176,6 +202,8 @@ begin
           then nullif(trim(coalesce(v_student.comment_en, '')), '') else null end,
         case when p_include_student_comments
           then nullif(trim(coalesce(v_student.comment_ar, '')), '') else null end,
+        coalesce(p_include_student_comments, false),
+        coalesce(p_include_student_comments, false),
         v_student.attendance_attended,
         v_student.attendance_total
       );
