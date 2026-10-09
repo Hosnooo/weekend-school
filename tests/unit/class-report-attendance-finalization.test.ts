@@ -19,19 +19,19 @@ describe('Class Report Cycle finalized attendance', () => {
     expect(source).toContain('onlyStudentId');
   });
 
-  it('never substitutes raw Teacher text for approved text on partial coverage', () => {
+  it('never substitutes Teacher text for saved Admin-approved text or a blank', () => {
     const source = readFileSync(
       'src/features/reports/class-report-finalization.repository.ts',
       'utf8'
     );
-    expect(source).toMatch(
-      /approvedProgressEn:\s*clean\(explicitOverride\?\.progress_en\)\s*\?\?\s*approval\.approvedProgressEn\s*\?\?/
-    );
-    expect(source).toMatch(
-      /approvedProgressAr:\s*clean\(explicitOverride\?\.progress_ar\)\s*\?\?\s*approval\.approvedProgressAr\s*\?\?/
-    );
+    expect(source).toContain('explicitOverride?.progress_en_overridden');
+    expect(source).toContain('explicitOverride?.progress_ar_overridden');
+    expect(source).toContain('approval.progressEnApproved');
+    expect(source).toContain('approval.progressArApproved');
+    expect(source).toContain('? approval.approvedProgressEn');
+    expect(source).toContain('? approval.approvedProgressAr');
     expect(source).not.toMatch(
-      /partialCoverage\s*\?\s*joinUnique\(selectedSources\.map\(\(\{progress(En|Ar)\}/
+      /partialCoverage\\s*\\?\\s*joinUnique\\(selectedSources\\.map\\(\\(\\{progress(En|Ar)\\}/
     );
   });
 
