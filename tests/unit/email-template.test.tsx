@@ -1,4 +1,5 @@
 import {describe, expect, it} from 'vitest';
+import {renderStudentReportV2} from '@/features/reports/report.renderer';
 import {
   renderReportEmail,
   renderReportEmailSubject
@@ -69,6 +70,75 @@ describe('report email', () => {
     expect(html).toContain('Quran');
     expect(html).toContain('Surah Al-Fatiha');
     expect(html).toContain('سورة الفاتحة');
+  });
+
+  it('places the bilingual email closing and school signoff after the report', () => {
+    const html = renderReportEmail(snapshotV2);
+
+    expect(html.indexOf('Dear Parent/Guardian,')).toBeLessThan(
+      html.indexOf('Surah Al-Fatiha')
+    );
+    expect(html.lastIndexOf('Regards,')).toBeGreaterThan(
+      html.indexOf('Surah Al-Fatiha')
+    );
+    expect(html.lastIndexOf('مع التحية،')).toBeGreaterThan(
+      html.indexOf('سورة الفاتحة')
+    );
+    expect(html.lastIndexOf('MCE Weekend School')).toBeGreaterThan(
+      html.indexOf('Surah Al-Fatiha')
+    );
+    expect(html).not.toContain('Source / المصدر:');
+  });
+
+  it('omits the internal report Source footer from guardian emails only', () => {
+    const standaloneReport = renderStudentReportV2(snapshotV2);
+    const guardianEmail = renderReportEmail(snapshotV2);
+
+    expect(standaloneReport).toContain('Source / المصدر');
+    expect(guardianEmail).not.toContain('Source / المصدر');
+  });
+
+  it('adds one dashed subject divider between two sections, not before the first', () => {
+    const multiSubject: ReportSnapshotV2 = {
+      ...snapshotV2,
+      sections: [
+        ...snapshotV2.sections,
+        {
+          ...snapshotV2.sections[0]!,
+          classSubjectId: 'cs-faith',
+          subjectNameEn: 'Faith & Character',
+          subjectNameAr: 'الإيمان والأخلاق',
+          groupNameEn: null,
+          groupNameAr: null,
+          approvedProgressEn: 'Learned respect and kindness',
+          approvedProgressAr: 'تعلمنا الاحترام واللطف'
+        }
+      ]
+    };
+    const html = renderReportEmail(multiSubject);
+    const divider = 'border-top:1px dashed #cbd5e1';
+
+    expect(html.split(divider)).toHaveLength(2);
+    expect(html.indexOf('Surah Al-Fatiha')).toBeLessThan(html.indexOf(divider));
+    expect(html.indexOf(divider)).toBeLessThan(html.indexOf('Learned respect and kindness'));
+    expect(html.lastIndexOf('Regards,')).toBeGreaterThan(
+      html.indexOf('Learned respect and kindness')
+    );
+  });
+
+  it('respects an intentionally blank email closing', () => {
+    const withoutClosing: ReportSnapshotV2 = {
+      ...snapshotV2,
+      template: {
+        ...snapshotV2.template,
+        emailClosingEn: null,
+        emailClosingAr: null
+      }
+    };
+
+    const html = renderReportEmail(withoutClosing);
+    expect(html).not.toContain('Regards,');
+    expect(html).not.toContain('مع التحية،');
   });
 
   it('does not invent English email copy when a v2 template is Arabic-only', () => {
