@@ -390,6 +390,18 @@ export async function ReportCycleSourceReview({
                                   type="hidden"
                                   value={student.studentId}
                                 />
+                                {/* Record original text separately to avoid freezing a
+                                    newer Teacher update if this editor is stale. */}
+                                <input
+                                  name={`initialCommentEn:${student.studentId}`}
+                                  type="hidden"
+                                  value={student.commentEn ?? ''}
+                                />
+                                <input
+                                  name={`initialCommentAr:${student.studentId}`}
+                                  type="hidden"
+                                  value={student.commentAr ?? ''}
+                                />
 
                                 <div>
                                   <strong>{ui.attendance}</strong>
