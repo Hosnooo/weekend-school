@@ -280,3 +280,27 @@ if [[ "${REPORT_OUTPUT_PARITY:-0}" == 1 ]]; then
   echo "PASS: Application finalization payload, live preview and guardian email parity against restored production PUBLIC data."
   echo "LIMIT: The actual finalization RPC is intentionally intercepted; no database reports or emails were created."
 fi
+
+if [[ "${REPORT_DB_RPC_ROLLBACK:-0}" == 1 ]]; then
+  echo "Testing ACTUAL Administrator-save and finalization SQL in disposable restore..."
+  if ! docker ps --format '{{.Names}}' | grep -Fxq "$container"; then
+    echo "ERROR: Isolated restore container disappeared; refusing SQL verification." >&2
+    exit 1
+  fi
+  if ! docker exec -i "$container" psql -U postgres -d postgres \
+      -X -q -v ON_ERROR_STOP=1 -v VERBOSITY=sqlstate -f - \
+      < "$root/scripts/verify-report-authority-rpcs-rollback.sql" >>"$log" 2>&1; then
+    echo "FAIL: Actual report RPC rollback verification failed." >&2
+    echo "Review the PRIVATE local log only; do not share private database records." >&2
+    exit 1
+  fi
+  if ! grep -Fq 'PASS: Actual atomic Admin RPC + 3 finalized cycles + 29 saved revisions validated inside disposable transaction' "$log" ||
+     ! grep -Fq 'PASS: Transaction rollback restored all protected report, Teacher and school rows unchanged' "$log"; then
+    echo "FAIL: RPC execution or rollback confirmation marker missing." >&2
+    exit 1
+  fi
+  echo "PASS: Actual atomic Admin save rejects invalid input and commits bilingual/numeric corrections inside transaction."
+  echo "PASS: Actual finalization RPC created 29 unsent READY revisions for all three cycles in disposable database."
+  echo "PASS: All RPC writes rolled back; protected records, Teacher data and previous report snapshots match baseline hashes."
+  echo "LIMIT: SQL finalization uses a minimal valid V2 envelope; full output/email parity was verified separately."
+fi
