@@ -24,6 +24,7 @@ pnpm exec vitest run --configLoader runner \
   tests/unit/report-email-customization.test.ts \
   tests/unit/report-service.test.ts \
   tests/unit/admin-submitted-update-view.test.ts \
+  tests/unit/admin-report-preview-authority.test.ts \
   tests/integration/database/migrations.test.ts
 
 echo "PHASE 2: lint + TypeScript + all Vitest tests"
