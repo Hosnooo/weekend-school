@@ -22,6 +22,7 @@ import type {
   ReportBatchSource
 } from './report-batch.repository';
 import {ReportEditForm} from './report-edit-form';
+import {ReportEditPanel} from './report-edit-panel';
 import type {ReportPerformance} from './report.types';
 
 const performanceValues: ReportPerformance[] = [
@@ -87,11 +88,13 @@ export async function ReportCycleSourceReview({
   canEditFinalized,
   classCycle,
   locale,
+  openedEditorId,
   review
 }: {
   canEditFinalized: boolean;
   classCycle: ClassReportCycleWorkspace;
   locale: Locale;
+  openedEditorId?: string;
   review: ClassReportReviewWorkspaceWithAttendance;
 }) {
   const [t, weekly] = await Promise.all([
@@ -162,11 +165,6 @@ export async function ReportCycleSourceReview({
 
   return (
     <section className="detail-section report-cycle-sources">
-      <style>{`
-        .report-edit-panel { display: none; }
-        .report-edit-panel:target { display: block; }
-      `}</style>
-
       <div className="section-heading">
         <div>
           <h2>{t('sourcesStage')}</h2>
@@ -304,9 +302,9 @@ export async function ReportCycleSourceReview({
                 </div>
 
                 {classCycle.batch.status !== 'FINALIZED' && context ? (
-                  <div
-                    className="report-edit-panel report-source-editor"
+                  <ReportEditPanel
                     id={editorId}
+                    openOnArrival={openedEditorId === editorId}
                   >
                     <ReportEditForm
                       cancelLabel={ui.cancel}
@@ -508,7 +506,7 @@ export async function ReportCycleSourceReview({
                         </div>
                       </section>
                     </ReportEditForm>
-                  </div>
+                  </ReportEditPanel>
                 ) : null}
               </article>
             );
