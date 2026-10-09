@@ -27,6 +27,16 @@ The operator exported the production database to a **private local folder outsid
 
 **Scope limitation:** This verified PUBLIC application data restoration and additive migration value preservation. It is **not** a complete platform/Auth/Storage restore, a production deploy, or end-to-end finalization and guardian-email rendering. The full export remains private and unchanged. The timestamp-preservation migration change has passed the production-clone check but the standalone pgTAP run predates that tiny SQL change.
 
+## Additional output-parity regression staged (requires verification)
+
+After the last successful 450-test database run, a focused source review found that an Admin editing attendance while student comments were visible could unintentionally freeze inherited Teacher comments as Admin overrides. Draft PR #36 now stages a fix:
+- Carry existing EN/AR comment authority flags into the Admin review workspace.
+- Compare submitted comments against each editor's **originally displayed** comment, not the potentially newer Teacher source; unchanged inherited comments remain inherited, edited or deliberately cleared comments gain an explicit override.
+- Persist those explicit flags atomically in the Admin RPC instead of marking every visible comment as overridden.
+- Add unit checks for Teacher inheritance and rendering of approved bilingual fields, two groups sharing a subject, performance omission, comment visibility, and guardian email parity.
+
+**These newest changes are NOT yet locally verified** by the user; repeat focused Vitest, TypeScript and disposable pgTAP, then (for release) restore and preservation check again because the migration SQL changed. This test coverage confirms output rendering for representative fixtures, not a complete browser-level dry-run against all three existing real cycles. No production migration, send or deploy.
+
 ## Read-only production snapshot (queried October 9)
 
 | Check | Count |
