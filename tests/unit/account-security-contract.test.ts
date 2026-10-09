@@ -10,6 +10,7 @@ describe('personal account authorization and non-retrievable passwords', () => {
     expect(actions).toContain('db.auth.getUser()');
     expect(actions).toContain(".eq('auth_user_id', user.id)");
     expect(actions).toContain('auth.updateUser');
+    expect(actions).toContain('current_password: parsed.values.currentPassword');
     expect(actions).toContain('signInWithPassword');
     expect(actions).toContain("persistSession: false");
     expect(actions).toContain("scope: 'local'");

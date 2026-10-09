@@ -75,7 +75,10 @@ export async function changeOwnPasswordAction(formData: FormData): Promise<Accou
         ? 'incorrectPassword' : 'passwordUnavailable'};
     }
 
-    const {error: updateError} = await db.auth.updateUser({password: parsed.values.newPassword});
+    const {error: updateError} = await db.auth.updateUser({
+      password: parsed.values.newPassword,
+      current_password: parsed.values.currentPassword
+    });
     if (!updateError) return {status: 'success'};
     if (updateError.code === 'same_password') return {status: 'error', reason: 'samePassword'};
     if (updateError.code === 'weak_password') return {status: 'error', reason: 'invalidPassword'};
