@@ -1,5 +1,6 @@
 // Opt-in production-derived parity check. Runs only with a disposable Supabase
 // restore. Never connect to a remote Supabase URL or send email.
+import {writeFileSync} from 'node:fs';
 import {beforeAll, describe, expect, it, vi} from 'vitest';
 import {createClient, type SupabaseClient} from '@supabase/supabase-js';
 
@@ -280,11 +281,19 @@ describe.skipIf(!enabled)('private restored-production report and email parity',
 
     expect(attendanceChecked + excludedAttendance).toBe(87);
     expect(studentOverrides).toBeGreaterThanOrEqual(87);
-    // Only aggregate statistics go to the terminal; never print school data.
-    console.log('PASS: 3 cycles; reports=' + reportsChecked +
+    // This private per-run marker proves the test body actually executed.
+    // A skipped Vitest suite can exit 0; without the marker the wrapper fails.
+    const resultFile = process.env.REPORT_PARITY_RESULT_FILE ?? '';
+    if (!resultFile) {
+      throw new Error('Missing disposable parity result file');
+    }
+    const summary = 'PASS: 3 cycles; reports=' + reportsChecked +
       '; report sections=' + sectionsChecked +
       '; eligible attendance pairs=' + attendanceChecked +
       '; out-of-eligibility historical pairs=' + excludedAttendance +
-      '; checked explicit Admin fields=' + explicitFieldsChecked);
+      '; checked explicit Admin fields=' + explicitFieldsChecked;
+    writeFileSync(resultFile, summary + '\\n', {flag: 'wx', mode: 0o600});
+    // Only aggregate statistics go to the terminal; never print school data.
+    console.log(summary);
   });
 });
