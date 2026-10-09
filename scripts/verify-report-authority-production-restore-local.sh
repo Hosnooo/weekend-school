@@ -49,9 +49,12 @@ grep -qx 'project_id = "Webapp"' "$config" || {
 }
 sed -i -e "s/^project_id = \"Webapp\"$/project_id = \"$project\"/" \
        -e 's/5532/5642/g' "$config"
-# Delete both new migrations ONLY in this temporary copy.
-rm -f "$tmp/supabase/migrations/20261009090000_numeric_teacher_attendance.sql"
-rm -f "$tmp/supabase/migrations/20261009091000_admin_approved_reports_atomic.sql"
+# The original database may contain Supabase-managed schema changes and
+# migration timestamp drift not present in this Git worktree. A faithful
+# production restore MUST use the schema in the saved production dump, not
+# replay the app migrations and then try to COPY into a different schema.
+# Remove migrations ONLY from the disposable copy, never the source worktree.
+find "$tmp/supabase/migrations" -maxdepth 1 -type f -name '*.sql' -delete
 # No fake demo school/Student records may be present when restoring real data.
 : > "$tmp/supabase/seed.sql"
 
@@ -67,20 +70,32 @@ status="$(cd "$tmp" && "$cli" status 2>&1)" || {
 if [[ "$status" != *"127.0.0.1:56422"* && "$status" != *"localhost:56422"* ]]; then
   echo "ERROR: The isolated local database address could not be verified."; exit 1;
 fi
-echo "Replaying pre-upgrade schema without test seed data..."
+echo "Preparing an empty isolated database (no app migrations or demo seed)..."
 if ! (cd "$tmp" && "$cli" db reset --local >>"$log" 2>&1); then
-  echo "ERROR: Pre-upgrade schema replay failed; see PRIVATE log."; exit 1;
+  echo "ERROR: Disposable empty database initialization failed; see PRIVATE log."; exit 1;
 fi
 container="supabase_db_$project"
 docker ps --format '{{.Names}}' | grep -Fxq "$container" || {
   echo "ERROR: The specifically named local Postgres container was not found."; exit 1;
 }
 
+echo "Restoring roles and the ACTUAL production application schema..."
+for name in roles schema; do
+  if ! docker exec -i "$container" psql -U postgres -d postgres \
+      -X -q -1 -v ON_ERROR_STOP=1 -v VERBOSITY=sqlstate -f - \
+      < "$backup/${name}.sql" >>"$log" 2>&1; then
+    echo "ERROR: The exported ${name} could not be loaded into a clean local DB." >&2
+    echo "This is an isolated-restore compatibility problem, not a production change." >&2
+    echo "Review the PRIVATE log locally; do not upload it or any personal data." >&2
+    exit 1
+  fi
+done
+
 echo "Restoring backed-up PUBLIC application data into disposable DB..."
 # One transaction; trigger/FK checks are disabled ONLY inside this local restore
 # transaction, allowing COPY of circular references among groups/reports.
 if ! docker exec -i "$container" psql -U postgres -d postgres \
-    -X -q -1 -v ON_ERROR_STOP=1 \
+    -X -q -1 -v ON_ERROR_STOP=1 -v VERBOSITY=sqlstate \
     -c 'SET session_replication_role=replica' -f - \
     -c 'SET session_replication_role=origin' \
     < "$backup/data.sql" >>"$log" 2>&1; then
@@ -178,7 +193,7 @@ END IF;
 END $$;
 SQL
 } | docker exec -i "$container" psql -U postgres -d postgres -X -q -1 \
-    -v ON_ERROR_STOP=1 -f - >>"$log" 2>&1; then
+    -v ON_ERROR_STOP=1 -v VERBOSITY=sqlstate -f - >>"$log" 2>&1; then
   echo "ERROR: Baseline comparison, upgrade, or preserved-value verification failed." >&2
   echo "Everything was rolled back in the disposable database. Production unchanged." >&2
   echo "Do not share private SQL logs or school records." >&2
