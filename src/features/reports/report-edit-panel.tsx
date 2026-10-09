@@ -28,7 +28,6 @@ export function ReportEditPanel({
     if (openOnArrival) {
       // Some App Router server-action redirects keep the preceding hash.
       // Re-align the URL with the editor selected by the guarded action.
-      setOpen(true);
       if (window.location.hash !== `#${id}`) {
         window.location.hash = id;
       }
