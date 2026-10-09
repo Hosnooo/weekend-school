@@ -7,7 +7,7 @@ import {isLocale} from '@/i18n/config';
 import {requireProfile} from '@/lib/auth/require-profile';
 import type {ActionState} from '@/lib/validation/action-state';
 import {
-  persistenceFailure, saveFailure,
+  persistenceFailure,
   validationFailure
 } from '@/lib/validation/action-state';
 

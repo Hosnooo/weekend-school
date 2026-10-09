@@ -55,12 +55,14 @@ export async function ClassReportCycleReview({
   schoolId,
   locale,
   classCycle,
-  selectedStudentId
+  selectedStudentId,
+  openedEditorId
 }: {
   schoolId: string;
   locale: Locale;
   classCycle: ClassReportCycleWorkspace;
   selectedStudentId?: string;
+  openedEditorId?: string;
 }) {
   const t = await getTranslations({locale, namespace: 'reports'});
   const ui = copy[locale];
@@ -186,6 +188,7 @@ export async function ClassReportCycleReview({
     <>
       <ReportCycleSourceReview
         canEditFinalized={canReopen}
+        openedEditorId={openedEditorId}
         classCycle={classCycle}
         locale={locale}
         review={review}
@@ -272,7 +275,7 @@ export async function ClassReportCycleReview({
               className="button button-secondary action-link"
               href="/reports/delivery-status"
             >
-              {t('deliveryStatus')}
+              {t('viewDeliveryStatus')}
             </Link>
           </div>
         )}

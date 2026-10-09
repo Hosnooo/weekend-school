@@ -1,5 +1,10 @@
 -- E2E-only fixtures for the redesigned Class -> Subject -> optional Group architecture.
 -- Load only after a local `supabase db reset`; never use against hosted projects.
+-- Performance ratings are optional and disabled by default in production.
+-- Enable them only for this local E2E fixture to exercise the full UI path.
+insert into public.report_templates (school_id, name, performance_enabled)
+values ('a0000000-0000-0000-0000-000000000001', 'E2E extended report template', true)
+on conflict (school_id, name) do update set performance_enabled = excluded.performance_enabled;
 
 insert into public.students (id,school_id,first_name_en,last_name_en,first_name_ar,last_name_ar,is_active) values
   ('e0000000-0000-0000-0000-000000000013','a0000000-0000-0000-0000-000000000001','Archive','Candidate','مرشح','الأرشيف',true)

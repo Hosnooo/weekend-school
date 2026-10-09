@@ -27,7 +27,7 @@ for (const item of cases) {
       await expect(history.locator('summary')).toHaveText(item.history);
       await expect(history.locator('select').first()).toBeHidden();
       await history.locator('summary').click();
-      await expect(history.locator('select')).toHaveCount(2);
+      await expect(history.locator('select')).toHaveCount(1);
       await expect(history.locator('select').first()).toBeVisible();
       await noHorizontalOverflow(page);
       await page.screenshot({path: testInfo.outputPath(`${item.locale}-admin-updates-${width}.png`), fullPage: true});

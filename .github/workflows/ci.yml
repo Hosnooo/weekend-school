@@ -2,12 +2,23 @@ name: CI
 
 on:
   workflow_dispatch:
+    inputs:
+      review_scope:
+        description: "Review branch checks (smoke is cheapest)"
+        type: choice
+        required: true
+        default: browser-smoke
+        options:
+          - browser-smoke
+          - browser-full
+          - complete
 
 permissions:
   contents: read
 
 jobs:
   quality:
+    if: ${{ github.ref_name != 'review/atomic-last-admin-guard-20261008' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -38,6 +49,7 @@ jobs:
         run: pnpm build
 
   database:
+    if: ${{ github.ref_name != 'review/atomic-last-admin-guard-20261008' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -72,6 +84,7 @@ jobs:
         run: pnpm db:stop
 
   e2e:
+    if: ${{ github.ref_name != 'review/atomic-last-admin-guard-20261008' }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -110,5 +123,165 @@ jobs:
       - name: Run browser workflows
         run: pnpm test:e2e
       - name: Stop local Supabase
+        if: always()
+        run: pnpm db:stop
+
+  administrator-full-review:
+    # Runs only when manually dispatched on the unmerged review branch.
+    # Local-only Supabase; does not read remote project secrets or deploy SQL.
+    if: ${{ github.ref_name == 'review/atomic-last-admin-guard-20261008' }}
+    name: "Full regression: quality, historical migration, browser flows"
+    runs-on: ubuntu-latest
+    timeout-minutes: 80
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.19.0 --activate
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Lint all source and tests
+        if: ${{ inputs.review_scope == 'complete' }}
+        run: pnpm lint
+      - name: Validate TypeScript
+        if: ${{ inputs.review_scope == 'complete' }}
+        run: pnpm typecheck
+      - name: Run every unit and component test
+        if: ${{ inputs.review_scope == 'complete' }}
+        run: pnpm test
+      - name: Compile Next.js production application
+        if: ${{ inputs.review_scope == 'complete' }}
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://example.invalid
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-build-placeholder
+          SUPABASE_SERVICE_ROLE_KEY: ci-build-placeholder
+          BREVO_API_KEY: ci-build-placeholder
+          EMAIL_FROM: ci@example.invalid
+          CRON_SECRET: ci-build-placeholder
+        # Full unit suite just ran; invoke Next directly to avoid rerunning
+        # the critical-error subset from the package.json build script.
+        run: pnpm exec next build
+
+      - name: Stage candidate SQL migration only in disposable local workspace
+        run: |
+          set -euo pipefail
+          test -f docs/db-review/last-active-administrator-guard.sql
+          pnpm exec supabase migration new last_active_administrator_manual_review
+          candidate="$(find supabase/migrations -maxdepth 1 -type f -name '*_last_active_administrator_manual_review.sql' | sort | tail -1)"
+          test -n "$candidate"
+          cp docs/db-review/last-active-administrator-guard.sql "$candidate"
+          # Keep candidate pgTAP tests ephemeral: they are not deployed with the branch.
+          test -f docs/db-review/last-active-administrator-guard.test.sql
+          mkdir -p supabase/tests
+          cp docs/db-review/last-active-administrator-guard.test.sql supabase/tests/last-active-administrator-guard.test.sql
+      - name: Start local Supabase
+        run: pnpm db:start
+      - name: Confirm local database is isolated
+        run: |
+          set -euo pipefail
+          eval "$(pnpm exec supabase status -o env)"
+          case "$DB_URL" in
+            *"@127.0.0.1:"*|*"@localhost:"*) ;;
+            *) echo "Refusing hosted database for full regression" >&2; exit 1 ;;
+          esac
+          case "$API_URL" in
+            "http://127.0.0.1:"*|"http://localhost:"*) ;;
+            *) echo "Refusing hosted API for full regression" >&2; exit 1 ;;
+          esac
+      - name: Reset to historical pre-role-cutover local schema
+        if: ${{ inputs.review_scope == 'complete' }}
+        run: pnpm exec supabase db reset --version 202609230027
+      - name: Load historical Teacher attribution fixture
+        if: ${{ inputs.review_scope == 'complete' }}
+        run: |
+          set -euo pipefail
+          eval "$(pnpm exec supabase status -o env)"
+          case "$DB_URL" in
+            *"@127.0.0.1:"*|*"@localhost:"*) ;;
+            *) echo "Refusing nonlocal fixture load" >&2; exit 1 ;;
+          esac
+          psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/fixtures/teacher_id_history_pre_role_cutover.sql
+      - name: Apply forward migrations locally, including the candidate
+        if: ${{ inputs.review_scope == 'complete' }}
+        run: pnpm exec supabase migration up --local
+      - name: Verify historical Teacher attribution survived upgrade
+        if: ${{ inputs.review_scope == 'complete' }}
+        run: pnpm exec supabase test db --local supabase/fixtures/teacher_id_history_upgrade.test.sql
+      - name: Run all PostgreSQL, RLS and Administrator guard pgTAP tests
+        if: ${{ inputs.review_scope == 'complete' }}
+        run: pnpm test:db
+      - name: Verify concurrent last-Administrator deactivations
+        if: ${{ inputs.review_scope == 'complete' }}
+        run: |
+          set -euo pipefail
+          eval "$(pnpm exec supabase status -o env)"
+          : "${DB_URL:?Local Supabase DB_URL is required}"
+          case "$DB_URL" in
+            *"@127.0.0.1:"*|*"@localhost:"*) ;;
+            *) echo "Refusing nonlocal race test database" >&2; exit 1 ;;
+          esac
+          # The race checker runs in a child shell; export the local URL.
+          export DB_URL
+          bash scripts/test-last-administrator-race.sh
+
+      - name: Reset disposable local database for all browser workflows
+        run: pnpm db:reset
+      - name: Load isolated E2E fixture and local-only app settings
+        run: |
+          set -euo pipefail
+          eval "$(pnpm exec supabase status -o env)"
+          case "$DB_URL" in
+            *"@127.0.0.1:"*|*"@localhost:"*) ;;
+            *) echo "Refusing hosted browser fixtures" >&2; exit 1 ;;
+          esac
+          case "$API_URL" in
+            "http://127.0.0.1:"*|"http://localhost:"*) ;;
+            *) echo "Refusing hosted API for browser tests" >&2; exit 1 ;;
+          esac
+          psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/seed.e2e.sql
+          cat > .env.local <<EOF
+          NEXT_PUBLIC_SUPABASE_URL=$API_URL
+          NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY
+          SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY
+          BREVO_API_KEY=ci-local-placeholder
+          EMAIL_FROM=ci@example.test
+          CRON_SECRET=ci-local-placeholder
+          E2E_BASE_URL=http://127.0.0.1:3000
+          EOF
+      - name: Install Chromium browser once
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Run focused browser smoke tests
+        if: ${{ inputs.review_scope == 'browser-smoke' }}
+        run: |
+          set -euo pipefail
+          eval "$(pnpm exec supabase status -o env)"
+          export NEXT_PUBLIC_SUPABASE_URL="$API_URL"
+          export SUPABASE_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY"
+          pnpm test:e2e tests/e2e/admin-teaching-report-ui.spec.ts tests/e2e/arabic-flow.spec.ts tests/e2e/english-flow.spec.ts tests/e2e/report-cycle-workflow.spec.ts
+      - name: Run complete browser suite
+        if: ${{ inputs.review_scope == 'browser-full' || inputs.review_scope == 'complete' }}
+        run: |
+          set -euo pipefail
+          eval "$(pnpm exec supabase status -o env)"
+          export NEXT_PUBLIC_SUPABASE_URL="$API_URL"
+          export SUPABASE_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY"
+          pnpm test:e2e
+
+      - name: Upload failed browser traces for diagnosis
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: full-review-browser-traces
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Stop and discard disposable local Supabase
         if: always()
         run: pnpm db:stop

@@ -6,7 +6,7 @@ import {redirect} from 'next/navigation';
 import {isLocale} from '@/i18n/config';
 import {requireProfile} from '@/lib/auth/require-profile';
 import type {ActionState} from '@/lib/validation/action-state';
-import {persistenceFailure, saveFailure, validationFailure} from '@/lib/validation/action-state';
+import {persistenceFailure, validationFailure} from '@/lib/validation/action-state';
 
 import {updateSchoolSettings} from './school-settings.repository';
 import {schoolSettingsSchema} from './school-settings.schemas';

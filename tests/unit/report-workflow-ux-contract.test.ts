@@ -92,7 +92,11 @@ describe('Reports workflow UX contract', () => {
     expect(component).toContain('Edit update');
     expect(component).toContain('action={openClassReportEditorAction}');
     expect(component).toContain('canEditFinalized');
-    expect(component).toContain('report-source-editor');
+    const panel = read('src/features/reports/report-edit-panel.tsx');
+    expect(component).toContain('<ReportEditPanel');
+    expect(component).toContain('openOnArrival={openedEditorId === editorId}');
+    expect(panel).toContain('report-source-editor');
+    expect(panel).toContain('hidden={!open}');
     expect(component).not.toContain('View update');
   });
 
@@ -175,6 +179,17 @@ describe('Reports workflow UX contract', () => {
 
     expect(en.navigation.deliveryStatus).toBe('Delivery status');
     expect(ar.navigation.deliveryStatus).toBe('حالة التسليم');
+  });
+
+  it('uses a string translation for the Class Report Cycle delivery-status link', () => {
+    const review = read('src/features/reports/class-report-cycle-review.tsx');
+    const en = JSON.parse(read('messages/en.json'));
+    const ar = JSON.parse(read('messages/ar.json'));
+
+    expect(review).toContain("t('viewDeliveryStatus')");
+    expect(review).not.toContain("t('deliveryStatus')");
+    expect(typeof en.reports.viewDeliveryStatus).toBe('string');
+    expect(typeof ar.reports.viewDeliveryStatus).toBe('string');
   });
 
   it('keeps historical report detail read-only and delivery-aware', () => {

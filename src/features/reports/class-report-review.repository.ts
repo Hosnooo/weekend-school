@@ -37,15 +37,6 @@ function contextKey(
   return `${classSubjectId}:${subjectGroupId ?? 'whole'}`;
 }
 
-function periodOverlaps(
-  startsOn: string,
-  endsOn: string | null,
-  start: string,
-  end: string
-) {
-  return startsOn <= end && (!endsOn || endsOn >= start);
-}
-
 type OverrideRow = {
   approval_id: string;
   student_id: string;

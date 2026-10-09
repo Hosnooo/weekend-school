@@ -26,7 +26,18 @@ import {isLocale} from '@/i18n/config';
 import {Link} from '@/i18n/navigation';
 import {requireProfile} from '@/lib/auth/require-profile';
 
-function userReportError(t: (key: any) => string, reason: string) {
+type ReportErrorKey =
+  | 'validation'
+  | 'sendError'
+  | 'errorAlreadySent'
+  | 'errorAttendanceConflict'
+  | 'errorSourcesMissing'
+  | 'errorStale'
+  | 'errorPermission'
+  | 'errorRule'
+  | 'saveError';
+
+function userReportError(t: (key: ReportErrorKey) => string, reason: string) {
   switch (reason) {
     case 'validation': return t('validation');
     case 'send': return t('sendError');

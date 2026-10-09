@@ -121,9 +121,10 @@ test.describe('Student, enrollment, and Guardian management', () => {
     await addGuardianDetails
       .getByLabel('Phone')
       .fill('+1 780 555 0300');
-    await addGuardianDetails
-      .getByLabel('Report language')
-      .selectOption('both');
+    // Reports are always generated bilingually. The hidden field retains
+    // the schema compatibility value without a selectable language control.
+    await expect(addGuardianDetails.locator('input[name="reportLanguage"]'))
+      .toHaveValue('both');
 
     await addGuardianDetails
       .getByRole('button', {name: 'Add new guardian'})
@@ -161,9 +162,13 @@ test.describe('Student, enrollment, and Guardian management', () => {
       .getByRole('button', {name: 'Remove from student'})
       .click();
 
+    // Unlinking changes this student's relationship, not necessarily the
+    // global Guardian directory. Check the linked-card action specifically.
     await expect(
-      page.getByText('Second Guardian Updated', {exact: true})
-    ).toBeHidden();
+      page.locator('.record-card')
+        .filter({hasText: 'Second Guardian Updated'})
+        .filter({has: page.getByRole('button', {name: 'Remove from student'})})
+    ).toHaveCount(0);
 
     // The standalone Guardians route is informational only.
     await page.goto('/en/guardians');

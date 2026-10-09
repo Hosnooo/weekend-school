@@ -176,7 +176,8 @@ export function renderStudentReport(
 
 export function renderStudentReportV2(
   snapshot: ReportSnapshotV2,
-  language: ReportLanguage = snapshot.language
+  language: ReportLanguage = snapshot.language,
+  {includeSource = true}: {includeSource?: boolean} = {}
 ) {
   const ui = uiLabels(language);
   const contentDriven = language === 'both';
@@ -252,7 +253,7 @@ export function renderStudentReportV2(
     snapshot.template.studentCommentsEnabled !== false;
 
   const sections = snapshot.sections
-    .map((section) => {
+    .map((section, index) => {
       const subject = localizedName(
         section.subjectNameEn,
         section.subjectNameAr,
@@ -292,9 +293,19 @@ export function renderStudentReportV2(
         section.attendance.unverified
       );
 
-      return `<section><h2>${subject}${group ? ` — ${group}` : ''}</h2><div class="attendance-metric">${attendance}</div><h3>${mainReportLabel || escapeHtml(ui.progress)}</h3><div class="report-copy">${progress || '—'}</div>${showPerformance ? `<h3>${performanceLabel || escapeHtml(ui.performance)}</h3><div class="report-copy">${performanceValue}</div>` : ''}${showStudentComments && comment ? `<h3>${studentCommentLabel || escapeHtml(ui.comments)}</h3><div class="report-copy">${comment}</div>` : ''}</section>`;
+      // Inline styling is essential: the email embeds only the report body,
+      // so styles from the standalone report <head> are not available.
+      const divider = index > 0
+        ? ' style="border-top:1px dashed #cbd5e1;padding-top:20px;margin-top:24px"'
+        : '';
+
+      return `<section${divider}><h2>${subject}${group ? ` — ${group}` : ''}</h2><div class="attendance-metric">${attendance}</div><h3>${mainReportLabel || escapeHtml(ui.progress)}</h3><div class="report-copy">${progress || '—'}</div>${showPerformance ? `<h3>${performanceLabel || escapeHtml(ui.performance)}</h3><div class="report-copy">${performanceValue}</div>` : ''}${showStudentComments && comment ? `<h3>${studentCommentLabel || escapeHtml(ui.comments)}</h3><div class="report-copy">${comment}</div>` : ''}</section>`;
     })
     .join('');
 
-  return `<!doctype html><html lang="${language === 'both' ? 'en' : language}" dir="${dir}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(ui.report)}</title><style>body{font-family:Arial,sans-serif;max-width:48rem;margin:auto;padding:1.5rem;color:#172033}section{margin-block:1.5rem}h1,h2,h3{color:#155e75}.localized-block{margin-block:.35rem}.report-copy .localized-block,.attendance-metric .localized-block{margin-block:.6rem}.attendance-metric{padding:.5rem;background:#f3f4f6;border-radius:.35rem}</style></head><body><header><p>${school}</p><h1>${escapeHtml(ui.report)} — ${student}</h1><p><strong>${escapeHtml(ui.class)}:</strong> ${className}</p><p><strong>${escapeHtml(ui.period)}:</strong> <span dir="ltr" style="display:inline-block;white-space:nowrap">${escapeHtml(snapshot.period.start)} – ${escapeHtml(snapshot.period.end)}</span></p>${intro ? `<div class="report-copy">${intro}</div>` : ''}</header>${sections}${closing ? `<footer><div class="report-copy">${closing}</div><p><strong>${escapeHtml(ui.author)}:</strong> ${escapeHtml(snapshot.author)}</p></footer>` : `<footer><p><strong>${escapeHtml(ui.author)}:</strong> ${escapeHtml(snapshot.author)}</p></footer>`}</body></html>`;
+  const sourceLine = includeSource
+    ? `<p><strong>${escapeHtml(ui.author)}:</strong> ${escapeHtml(snapshot.author)}</p>`
+    : '';
+
+  return `<!doctype html><html lang="${language === 'both' ? 'en' : language}" dir="${dir}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(ui.report)}</title><style>body{font-family:Arial,sans-serif;max-width:48rem;margin:auto;padding:1.5rem;color:#172033}section{margin-block:1.5rem}h1,h2,h3{color:#155e75}.localized-block{margin-block:.35rem}.report-copy .localized-block,.attendance-metric .localized-block{margin-block:.6rem}.attendance-metric{padding:.5rem;background:#f3f4f6;border-radius:.35rem}</style></head><body><header><p>${school}</p><h1>${escapeHtml(ui.report)} — ${student}</h1><p><strong>${escapeHtml(ui.class)}:</strong> ${className}</p><p><strong>${escapeHtml(ui.period)}:</strong> <span dir="ltr" style="display:inline-block;white-space:nowrap">${escapeHtml(snapshot.period.start)} – ${escapeHtml(snapshot.period.end)}</span></p>${intro ? `<div class="report-copy">${intro}</div>` : ''}</header>${sections}${closing || sourceLine ? `<footer>${closing ? `<div class="report-copy">${closing}</div>` : ''}${sourceLine}</footer>` : ''}</body></html>`;
 }

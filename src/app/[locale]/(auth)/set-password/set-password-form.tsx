@@ -32,10 +32,13 @@ export function SetPasswordForm({locale}: {locale: Locale}) {
     const refreshToken = hash.get('refresh_token');
 
     if (linkError) {
-      setReady(false);
-      setError('invalid');
+      // Respond asynchronously to the URL state and cancel on unmount.
+      const invalidLinkTimer = setTimeout(() => {
+        if (active) setError('invalid');
+      }, 0);
       return () => {
         active = false;
+        clearTimeout(invalidLinkTimer);
       };
     }
 

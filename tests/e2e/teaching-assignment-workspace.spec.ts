@@ -35,8 +35,13 @@ test.describe('Teaching Assignments reference CRUD flow', () => {
       .in('starts_on', ['2040-10-01', '2040-10-02']);
     if (cleanupError) throw cleanupError;
 
+    // Keep submitted history from earlier E2E specifications covered.
+    // The teacher-weekly workflow may submit updates after September 2026,
+    // so cutting the existing assignment off in 2026 would violate the
+    // history protection when we edit a separate 2040 assignment below.
+    // End immediately before the isolated future assignment instead.
     const {error: windowError} = await supabase.from('teaching_assignments')
-      .update({ends_on: '2026-09-30'})
+      .update({ends_on: '2040-09-30'})
       .eq('school_id', schoolId)
       .eq('id', existingArabicAssignmentId);
     if (windowError) throw windowError;

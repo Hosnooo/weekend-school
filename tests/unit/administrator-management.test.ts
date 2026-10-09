@@ -44,8 +44,7 @@ function lifecycleDependencies(
     }),
     countActiveAdministrators: vi.fn().mockResolvedValue(2),
     setAdministratorActive: vi.fn().mockResolvedValue(undefined),
-    unlinkAdministratorAccounts: vi.fn().mockResolvedValue(undefined),
-    deleteAdministratorRecord: vi.fn().mockResolvedValue(undefined),
+    deleteAdministratorWithAccountLinks: vi.fn().mockResolvedValue(undefined),
     ...overrides
   };
 }
@@ -169,8 +168,7 @@ describe('administrator lifecycle safeguards', () => {
     await expect(deleteAdministratorSafely({schoolId, administratorId}, deps))
       .rejects.toThrow('last active Administrator');
 
-    expect(deps.unlinkAdministratorAccounts).not.toHaveBeenCalled();
-    expect(deps.deleteAdministratorRecord).not.toHaveBeenCalled();
+    expect(deps.deleteAdministratorWithAccountLinks).not.toHaveBeenCalled();
   });
 
   it('deletes only Administrator links and the Administrator record when another active Admin remains', async () => {
@@ -178,7 +176,6 @@ describe('administrator lifecycle safeguards', () => {
 
     await deleteAdministratorSafely({schoolId, administratorId}, deps);
 
-    expect(deps.unlinkAdministratorAccounts).toHaveBeenCalledWith(schoolId, administratorId);
-    expect(deps.deleteAdministratorRecord).toHaveBeenCalledWith(schoolId, administratorId);
+    expect(deps.deleteAdministratorWithAccountLinks).toHaveBeenCalledWith(schoolId, administratorId);
   });
 });

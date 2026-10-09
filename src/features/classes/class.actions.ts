@@ -10,7 +10,7 @@ import {addSubjectToClass,changeDefaultGroup,createClassForSchool,createGroupFor
 import {isLocale} from '@/i18n/config';
 import {requireProfile,requireTeachingAccount} from '@/lib/auth/require-profile';
 import type {ActionState} from '@/lib/validation/action-state';
-import {persistenceFailure,saveFailure,validationFailure} from '@/lib/validation/action-state';
+import {persistenceFailure,validationFailure} from '@/lib/validation/action-state';
 import {databaseUuid} from '@/lib/validation/fields';
 
 function localeFrom(formData:FormData){const value=String(formData.get('locale')??'en');return isLocale(value)?value:'en';}

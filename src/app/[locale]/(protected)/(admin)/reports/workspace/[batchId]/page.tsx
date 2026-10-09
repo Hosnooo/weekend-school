@@ -36,7 +36,18 @@ const performanceValues: ReportPerformance[] = [
   'NEEDS_SUPPORT'
 ];
 
-function userReportError(t: (key: any) => string, reason: string) {
+type ReportErrorKey =
+  | 'validation'
+  | 'sendError'
+  | 'errorAlreadySent'
+  | 'errorAttendanceConflict'
+  | 'errorSourcesMissing'
+  | 'errorStale'
+  | 'errorPermission'
+  | 'errorRule'
+  | 'saveError';
+
+function userReportError(t: (key: ReportErrorKey) => string, reason: string) {
   switch (reason) {
     case 'validation': return t('validation');
     case 'send': return t('sendError');
@@ -77,6 +88,7 @@ export default async function AdminReportWorkspacePage({
     skipped?: string;
     requested?: string;
     student?: string;
+    editor?: string;
   }>;
 }) {
   const {locale, batchId: rawBatchId} = await params;
@@ -203,6 +215,7 @@ export default async function AdminReportWorkspacePage({
           locale={locale}
           schoolId={profile.schoolId}
           selectedStudentId={query.student}
+          openedEditorId={query.editor}
         />
       </section>
     );

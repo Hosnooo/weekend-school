@@ -345,7 +345,9 @@ export async function openClassReportEditorAction(formData: FormData) {
   }
 
   revalidatePath(workspacePath);
-  redirect(
-    `${workspacePath}#report-edit-${classSubjectId.data}-${subjectGroupId.data ?? 'whole'}`
-  );
+  const editorId =
+    `report-edit-${classSubjectId.data}-${subjectGroupId.data ?? 'whole'}`;
+  // A query change forces fresh route data after reopening a finalized cycle.
+  // The hash still targets the inline editor once it is rendered.
+  redirect(`${workspacePath}?editor=${encodeURIComponent(editorId)}#${editorId}`);
 }

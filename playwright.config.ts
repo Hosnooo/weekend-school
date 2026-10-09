@@ -13,7 +13,10 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
   retries: 0,
-  reporter: process.env.CI ? 'github' : 'list',
+  // Stop CI after the first real browser failure instead of consuming minutes
+  // running unrelated specs. Local development can still collect all failures.
+  maxFailures: process.env.CI || process.env.E2E_FAIL_FAST === 'true' ? 1 : 0,
+  reporter: process.env.CI ? [['list'], ['github']] : 'list',
   use: {
     actionTimeout: 60_000,
     baseURL: process.env.E2E_BASE_URL ?? 'http://127.0.0.1:3000',

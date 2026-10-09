@@ -21,7 +21,7 @@
     "db:status": "supabase status",
     "db:reset": "supabase db reset",
     "db:stop": "supabase stop --no-backup",
-    "test:critical-errors": "vitest run --configLoader runner tests/unit/isolated-access-failures.test.ts tests/unit/isolated-guardian-unlink.test.ts tests/unit/teacher-invitation.test.ts tests/unit/administrator-management.test.ts tests/unit/actionable-form-errors.test.ts"
+    "test:critical-errors": "vitest run --configLoader runner tests/unit/isolated-access-failures.test.ts tests/unit/isolated-guardian-unlink.test.ts tests/unit/teacher-invitation.test.ts tests/unit/administrator-management.test.ts tests/unit/actionable-form-errors.test.ts tests/unit/administrator-lifecycle-error.test.ts"
   },
   "dependencies": {
     "@fontsource/noto-sans-arabic": "5.3.0",

@@ -6,20 +6,10 @@ import {expect, test} from '@playwright/test';
 import {redesign} from './redesign-fixtures';
 import {credentials, login} from './helpers';
 
-const dayMs = 24 * 60 * 60 * 1000;
-const startBase = Date.UTC(2035, 0, 1);
-const randomDayOffset = Math.floor(Math.random() * 20_000);
-
-const startDate = new Date(
-  startBase + randomDayOffset * dayMs
-);
-const endDate = new Date(startDate.getTime() + 6 * dayMs);
-
-const dateOnly = (value: Date) =>
-  value.toISOString().slice(0, 10);
-
-const cycleStart = dateOnly(startDate);
-const cycleEnd = dateOnly(endDate);
+// Fresh local E2E databases are reset for each workflow run, so fixed
+// enrollment-overlapping test dates avoid random, hard-to-reproduce failures.
+const cycleStart = '2026-09-29';
+const cycleEnd = '2026-10-05';
 
 const sourceId = randomUUID();
 
@@ -29,9 +19,9 @@ test.beforeAll(async () => {
   const serviceRoleKey =
     process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  if (!url || !serviceRoleKey) {
+  if (!url || !/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(url) || !serviceRoleKey) {
     throw new Error(
-      'Local Supabase service-role configuration is required'
+      'Refusing Report Cycle setup against a nonlocal Supabase project'
     );
   }
 
@@ -143,10 +133,10 @@ test(
     ).toBeVisible();
 
     const sourceCard = page
+      .locator('.report-source-context')
+      .filter({hasText: 'Faith & Character'})
+      .first()
       .locator('.report-source-row')
-      .filter({
-        hasText: 'Faith & Character'
-      })
       .first();
 
     await expect(sourceCard).toContainText('Included');
@@ -159,17 +149,27 @@ test(
 
     await expect(sourceCard).toContainText('Excluded');
 
-    await expect(
-      page.getByRole('button', {
-        name: 'Generate student reports'
-      })
-    ).toBeDisabled();
+    // Exclusion must be reflected before finalization. The button may stay
+    // enabled if other reviewed contexts remain; don't infer its state from
+    // only this one Teaching Update.
+    await expect(sourceCard).toContainText('Excluded');
 
     await sourceCard
       .getByRole('button', {name: 'Include'})
       .click();
 
     await expect(sourceCard).toContainText('Included');
+
+    // Editable cycles must open the inline editor with a local hash change,
+    // without posting a server action or reloading the page.
+    const reportContext = page.locator('.report-source-context')
+      .filter({hasText: 'Faith & Character'}).first();
+    await reportContext.getByRole('link', {name: 'Edit update'}).click();
+    await expect(reportContext.locator('.report-source-editor')).toBeVisible();
+    await expect(page).toHaveURL(/#report-edit-/);
+    await reportContext.locator('.report-source-editor')
+      .getByRole('button', {name: 'Cancel'}).click();
+    await expect(reportContext.locator('.report-source-editor')).toBeHidden();
 
     await expect(
       page.getByRole('button', {
@@ -178,46 +178,108 @@ test(
     ).toBeVisible();
 
     await page.getByRole('button', {
-      name: 'Generate student reports'
+      name: 'Finalize and prepare to send'
     }).click();
 
     await expect(
-      page.getByText('Ready to send', {
-        exact: true
-      }).first()
+      page.getByText('Student reports are ready to send.', {exact: true})
     ).toBeVisible();
 
-    const preview = page.getByRole('link', {
-      name: 'Preview report'
-    }).first();
+    // Finalization prepares immutable reports but must not start email delivery.
+    await expect(page.getByRole('button', {name: 'Send reports'})).toBeVisible();
+    await expect(page.getByRole('button', {
+      name: 'Reopen for admin editing'
+    })).toBeVisible();
+    await expect(page.getByRole('link', {
+      name: 'View delivery status'
+    })).toBeVisible();
 
-    await expect(preview).toBeVisible();
+    // The modern editor renders an inline parent-email preview for the
+    // selected student. There is no separate "Preview report" link.
+    const emailReview = page.locator('.report-email-review-panel');
+    await expect(emailReview).toBeVisible();
+    await emailReview.locator('select').selectOption(
+      'e0000000-0000-0000-0000-000000000001'
+    );
+    await expect(emailReview.locator('iframe.report-preview')).toBeVisible();
 
-    await expect(
-      page.getByRole('button', {
-        name: 'Send reports'
-      })
-    ).toBeVisible();
-
-    await expect(
-      page.getByRole('link', {
-        name: 'View delivery status'
-      })
-    ).toBeVisible();
-
-    await preview.click();
-
-    const frame = page.frameLocator(
-      'iframe[title="Report preview"]'
+    // Test both the exact email HTML used for delivery and what the guardian
+    // can read in the preview. Avoid exact-text locators on bilingual elements.
+    const iframe = emailReview.locator('iframe.report-preview');
+    await expect(iframe).toHaveAttribute('srcdoc', /Report cycle source lesson/);
+    const emailHtml = await iframe.getAttribute('srcdoc');
+    expect(emailHtml, 'Email preview must contain an HTML document').toBeTruthy();
+    expect(emailHtml).toContain('Weekend School');
+    expect(emailHtml).toContain('Report cycle source lesson');
+    expect(emailHtml).toContain('Regards,');
+    expect(emailHtml).toContain('مع التحية،');
+    expect(emailHtml).not.toContain('Source / المصدر');
+    expect(emailHtml).not.toContain('<strong>Source');
+    expect(emailHtml!.indexOf('Regards,')).toBeGreaterThan(
+      emailHtml!.indexOf('Report cycle source lesson')
     );
 
-    await expect(
-      frame.getByText('MCE Weekend School')
-    ).toBeVisible();
+    const frame = emailReview.frameLocator('iframe.report-preview');
+    await expect(frame.locator('body')).toContainText('Report cycle source lesson');
+    await expect(frame.locator('body')).toContainText('Regards,');
 
-    await expect(
-      frame.getByText('Report cycle source lesson')
-    ).toBeVisible();
+    // A prepared but unsent cycle must be editable without asking the Teacher
+    // to resubmit. Reopen returns prepared reports to review state.
+    page.once('dialog', (dialog) => dialog.accept());
+    await page.getByRole('button', {name: 'Reopen for admin editing'}).click();
+    await expect(page.getByRole('button', {
+      name: 'Finalize and prepare to send'
+    })).toBeVisible();
+    await expect(page.locator('.report-source-context')
+      .filter({hasText: 'Faith & Character'})
+      .first().locator('.report-source-row').first()).toContainText('Included');
+
+    await page.getByRole('button', {name: 'Finalize and prepare to send'}).click();
+    await expect(page.getByText(
+      'Student reports are ready to send.', {exact: true}
+    )).toBeVisible();
+
+    // Re-finalization keeps immutable old snapshots, but the current
+    // selector must show each Student only once and use the latest revision.
+    const currentStudentIds = await page
+      .locator('.report-email-review-panel select option[value]:not([value=""])')
+      .evaluateAll((options) =>
+        options.map((option) => (option as HTMLOptionElement).value)
+      );
+    expect(currentStudentIds.length).toBeGreaterThan(0);
+    expect(new Set(currentStudentIds).size).toBe(currentStudentIds.length);
+
+    // A finalized, unsent cycle needs a guarded server reopen. Its Edit
+    // update action must display the inline editor immediately afterward;
+    // the administrator must not have to refresh the page manually.
+    await reportContext.getByRole('button', {name: 'Edit update'}).click();
+    await expect(page).toHaveURL(/\?editor=report-edit-/);
+    const reopenedPanel = page.locator('.report-source-context')
+      .filter({hasText: 'Faith & Character'}).first()
+      .locator('.report-source-editor');
+    await expect(reopenedPanel).toBeVisible();
+    await reopenedPanel.getByRole('button', {name: 'Cancel'}).click();
+    await expect(reopenedPanel).toBeHidden();
+    // The editor can immediately be reopened locally; no refresh required.
+    await reportContext.getByRole('link', {name: 'Edit update'}).click();
+    await expect(reopenedPanel).toBeVisible();
+    await expect(page.getByRole('button', {
+      name: 'Finalize and prepare to send'
+    })).toBeVisible();
+    await page.getByRole('button', {
+      name: 'Finalize and prepare to send'
+    }).click();
+    await expect(page.getByText(
+      'Student reports are ready to send.', {exact: true}
+    )).toBeVisible();
+
+    // Dismissing only an unsent cycle should remove its prepared reports and
+    // review data. The submitted Teacher update must remain in the database.
+    page.once('dialog', (dialog) => dialog.accept());
+    await page.getByRole('button', {name: 'Dismiss cycle'}).click();
+    await expect(page).toHaveURL(/\/en\/reports\?cancelled=1/);
+    await expect(page.getByText('Unsent Report Cycle dismissed.')).toBeVisible();
+
     expect(runtimeErrors).toEqual([]);
   }
 );

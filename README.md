@@ -67,6 +67,8 @@ Open `http://127.0.0.1:3000/en/login` or `http://127.0.0.1:3000/ar/login`. On Wi
 
 ## Tests
 
+For Windows local-first regression testing without repeated GitHub Actions minutes, see [docs/LOCAL_REGRESSION.md](docs/LOCAL_REGRESSION.md) and run `scripts/test-local-regression.ps1`. The local runner never resets data unless explicitly requested.
+
 ```text
 pnpm lint           # ESLint
 pnpm typecheck      # strict TypeScript

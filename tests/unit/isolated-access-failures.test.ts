@@ -114,8 +114,7 @@ describe('isolated access invitation and rollback scenarios (no emails or Supaba
       loadAdministrator:async () => ({id:administratorId,schoolId,isActive:true}),
       countActiveAdministrators:async () => 1,
       setAdministratorActive:setActive,
-      unlinkAdministratorAccounts:async () => {},
-      deleteAdministratorRecord:async () => {}
+      deleteAdministratorWithAccountLinks:async () => {}
     })).rejects.toThrow(/last active Administrator/);
     expect(setActive).not.toHaveBeenCalled();
   });

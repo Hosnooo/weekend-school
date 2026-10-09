@@ -61,8 +61,23 @@ describe('migration contract', () => {
 
   it('keeps migrations in dependency order', async () => {
     const {filenames} = await readMigrations();
+    // A local CLI-generated guard migration is staged only after the
+    // standalone concurrency verification. Permit exactly one such
+    // forward migration without weakening the historical migration order.
+    const guardFiles = filenames.filter((name) =>
+      /^\d{14}_prevent_last_active_administrator_race\.sql$/.test(name)
+    );
+    expect(guardFiles.length).toBeLessThanOrEqual(1);
+    if (guardFiles.length === 1) {
+      expect(guardFiles[0]!).toBe(filenames[filenames.length - 1]);
+      expect(Number(guardFiles[0]!.slice(0, 14))).toBeGreaterThan(20261008090000);
+      const guardSql = await readFile(join(migrationDirectory, guardFiles[0]!), 'utf8');
+      expect(guardSql).toContain('administrators_preserve_last_active');
+      expect(guardSql).toContain('delete_administrator_with_accounts');
+      expect(guardSql).toContain('update of is_active, school_id');
+    }
 
-    expect(filenames).toEqual([
+    expect(filenames.filter((name) => !guardFiles.includes(name))).toEqual([
       '202609200001_extensions_and_enums.sql',
       '202609200002_identity_and_school.sql',
       '202609200003_administration.sql',
@@ -115,7 +130,14 @@ describe('migration contract', () => {
       '20260930053000_roster_import_create_classes.sql',
       '20260930063417_restrict_internal_trigger_execution.sql',
       '20260930224102_enrollment_start_correction.sql',
-      '20260930225139_correct_transfer_boundary.sql'
+      '20260930225139_correct_transfer_boundary.sql',
+      '20261001090000_report_template_bilingual_defaults.sql',
+      '20261001100000_preserve_report_review_on_source_toggle.sql',
+      '20261001110000_report_attendance_overrides.sql',
+      '20261006042000_grant_report_batch_delete.sql',
+      '20261006043000_cancel_reopened_report_cycle.sql',
+      '20261008050122_cancel_prepared_unsent_report_cycle.sql',
+      '20261008090000_allow_teachers_read_active_report_template.sql'
     ]);
   });
 
