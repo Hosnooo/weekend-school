@@ -266,12 +266,14 @@ export async function getClassReportReviewWorkspace(
       subjectNameAr: first.subjectNameAr,
       groupNameEn: first.groupNameEn,
       groupNameAr: first.groupNameAr,
-      mainReportEn:
-        approval?.approvedProgressEn ??
-        joinUnique(sources.map(({progressEn}) => progressEn)),
-      mainReportAr:
-        approval?.approvedProgressAr ??
-        joinUnique(sources.map(({progressAr}) => progressAr)),
+      mainReportEn: approval?.progressEnApproved
+        ? approval.approvedProgressEn
+        : approval?.approvedProgressEn ??
+          joinUnique(sources.map(({progressEn}) => progressEn)),
+      mainReportAr: approval?.progressArApproved
+        ? approval.approvedProgressAr
+        : approval?.approvedProgressAr ??
+          joinUnique(sources.map(({progressAr}) => progressAr)),
       sources,
       students
     });
@@ -426,7 +428,9 @@ export async function saveClassReportReviewContext(input: {
     .from('report_section_approvals')
     .update({
       approved_progress_en: clean(input.mainReportEn),
-      approved_progress_ar: clean(input.mainReportAr)
+      approved_progress_ar: clean(input.mainReportAr),
+      progress_en_approved: true,
+      progress_ar_approved: true
     })
     .eq('school_id', input.schoolId)
     .eq('id', approvalId);
@@ -538,11 +542,23 @@ export async function rebuildClassReportReviewContext(input: {
   );
 
   const db = await createServerSupabaseClient();
+  // Once Admin-approved, a source refresh must never silently replace text.
+  const {data: approvalFlags, error: flagsError} = await db
+    .from('report_section_approvals')
+    .select('progress_en_approved,progress_ar_approved')
+    .eq('school_id', input.schoolId)
+    .eq('id', approvalId)
+    .single();
+  if (flagsError) throw flagsError;
   const {error} = await db
     .from('report_section_approvals')
     .update({
-      approved_progress_en: joinUnique(sources.map(({progressEn}) => progressEn)),
-      approved_progress_ar: joinUnique(sources.map(({progressAr}) => progressAr))
+      ...(approvalFlags.progress_en_approved ? {} : {
+        approved_progress_en: joinUnique(sources.map(({progressEn}) => progressEn))
+      }),
+      ...(approvalFlags.progress_ar_approved ? {} : {
+        approved_progress_ar: joinUnique(sources.map(({progressAr}) => progressAr))
+      })
     })
     .eq('school_id', input.schoolId)
     .eq('id', approvalId);
