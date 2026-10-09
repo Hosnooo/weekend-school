@@ -15,11 +15,17 @@ describe('Report Cycle panel navigation contract', () => {
       'src/features/reports/report-cycle-source-review.tsx'
     );
 
+    expect(sourceReview).toContain('href={`#${editorId}`}');
+    expect(sourceReview).toContain("context && classCycle.batch.status !== 'FINALIZED'");
+    expect(sourceReview).toContain("context && canEditFinalized");
     expect(sourceReview).toContain('action={openClassReportEditorAction}');
     expect(sourceReview).toContain('id={editorId}');
     const actions = read('src/features/reports/class-report-review.actions.ts');
+    expect(actions).toContain("if (workspace.batch.status === 'FINALIZED')");
     expect(actions).toContain('await reopenAdminReportWorkspace(');
-    expect(actions).toContain('`${workspacePath}#report-edit-');
+    expect(actions).toContain(
+      'redirect(`${workspacePath}?editor=${encodeURIComponent(editorId)}#${editorId}`)'
+    );
     expect(sourceReview).toContain('report-source-editor');
     expect(sourceReview).not.toContain('?edit=${encodeURIComponent(editorId)}');
   });
