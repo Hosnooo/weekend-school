@@ -25,7 +25,16 @@ export function ReportEditPanel({
       setOpen(hash === id || (openOnArrival && hash === ''));
     };
 
-    syncFromHash();
+    if (openOnArrival) {
+      // Some App Router server-action redirects keep the preceding hash.
+      // Re-align the URL with the editor selected by the guarded action.
+      setOpen(true);
+      if (window.location.hash !== `#${id}`) {
+        window.location.hash = id;
+      }
+    } else {
+      syncFromHash();
+    }
     window.addEventListener('hashchange', syncFromHash);
     return () => window.removeEventListener('hashchange', syncFromHash);
   }, [id, openOnArrival]);
