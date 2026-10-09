@@ -245,20 +245,20 @@ if [[ "${REPORT_OUTPUT_PARITY:-0}" == 1 ]]; then
     echo "ERROR: Cannot retrieve disposable local Supabase configuration." >&2
     exit 1
   }
-  api_url="$(printf '%s\\n' "$local_status" | sed -n 's/^API_URL=//p' | head -n 1)"
-  service_key="$(printf '%s\\n' "$local_status" | sed -n 's/^SERVICE_ROLE_KEY=//p' | head -n 1)"
-  api_url="${api_url#\\\"}"
-  api_url="${api_url%\\\"}"
-  service_key="${service_key#\\\"}"
-  service_key="${service_key%\\\"}"
+  api_url="$(printf '%s\n' "$local_status" | sed -n 's/^API_URL=//p' | head -n 1)"
+  service_key="$(printf '%s\n' "$local_status" | sed -n 's/^SERVICE_ROLE_KEY=//p' | head -n 1)"
+  api_url="${api_url#\\"}"
+  api_url="${api_url%\\"}"
+  service_key="${service_key#\\"}"
+  service_key="${service_key%\\"}"
   unset local_status
   if [[ "$api_url" != "http://127.0.0.1:56421" || -z "$service_key" ]]; then
     echo "ERROR: Could not validate local-only API URL and service key; no parity test run." >&2
     exit 1
   fi
   if ! (cd "$root" &&
-    REPORT_PARITY_URL="$api_url" REPORT_PARITY_SERVICE_ROLE_KEY="$service_key" \\
-      pnpm exec vitest run --configLoader runner \\
+    REPORT_PARITY_URL="$api_url" REPORT_PARITY_SERVICE_ROLE_KEY="$service_key" \
+      pnpm exec vitest run --configLoader runner \
       tests/integration/report-production-parity.local.test.ts >>"$log" 2>&1); then
     unset api_url service_key
     echo "FAIL: Restored-production report-output parity. Production unchanged." >&2
