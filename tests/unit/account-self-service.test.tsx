@@ -32,8 +32,8 @@ describe('one personal My account screen', () => {
     expect(screen.getByDisplayValue('Amina')).toBeInTheDocument();
     expect(screen.getByText('amina@example.com')).toBeInTheDocument();
     for (const field of ['currentPassword', 'newPassword', 'confirmPassword']) {
-      expect(screen.getByLabelText(field)).toHaveAttribute('type', 'password');
-      expect(screen.getByLabelText(field)).toHaveValue('');
+      expect(screen.getByLabelText(new RegExp(`^${field}`))).toHaveAttribute('type', 'password');
+      expect(screen.getByLabelText(new RegExp(`^${field}`))).toHaveValue('');
     }
     expect(screen.queryByText('old password')).not.toBeInTheDocument();
   });
@@ -98,8 +98,8 @@ describe('one personal My account screen', () => {
     expect(form.get('newPassword')).toBe('NewPassword1');
     await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('passwordChanged'));
     for (const field of ['currentPassword', 'newPassword', 'confirmPassword']) {
-      expect(screen.getByLabelText(field)).toHaveValue('');
-      expect(screen.getByLabelText(field)).toHaveAttribute('type', 'password');
+      expect(screen.getByLabelText(new RegExp(`^${field}`))).toHaveValue('');
+      expect(screen.getByLabelText(new RegExp(`^${field}`))).toHaveAttribute('type', 'password');
     }
   });
 });
