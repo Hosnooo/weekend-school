@@ -274,18 +274,16 @@ export function renderStudentReportV2(
         : localizedText(section.commentEn, section.commentAr, language);
       const performance = section.performance
         ? ui[section.performance]
-        : ui.notRated;
-      const performanceValue = contentDriven
-        ? pairedBlocks(
-            section.performance
-              ? labels.en[section.performance]
-              : labels.en.notRated,
-            section.performance
-              ? labels.ar[section.performance]
-              : labels.ar.notRated,
-            false
-          )
-        : escapeHtml(performance);
+        : null;
+      const performanceValue = section.performance
+        ? contentDriven
+          ? pairedBlocks(
+              labels.en[section.performance],
+              labels.ar[section.performance],
+              false
+            )
+          : escapeHtml(performance ?? '')
+        : '';
       const attendance = attendanceMetric(
         section.attendance.present,
         section.attendance.sessions,
@@ -299,7 +297,7 @@ export function renderStudentReportV2(
         ? ' style="border-top:1px dashed #cbd5e1;padding-top:20px;margin-top:24px"'
         : '';
 
-      return `<section${divider}><h2>${subject}${group ? ` — ${group}` : ''}</h2><div class="attendance-metric">${attendance}</div><h3>${mainReportLabel || escapeHtml(ui.progress)}</h3><div class="report-copy">${progress || '—'}</div>${showPerformance ? `<h3>${performanceLabel || escapeHtml(ui.performance)}</h3><div class="report-copy">${performanceValue}</div>` : ''}${showStudentComments && comment ? `<h3>${studentCommentLabel || escapeHtml(ui.comments)}</h3><div class="report-copy">${comment}</div>` : ''}</section>`;
+      return `<section${divider}><h2>${subject}${group ? ` — ${group}` : ''}</h2><div class="attendance-metric">${attendance}</div><h3>${mainReportLabel || escapeHtml(ui.progress)}</h3><div class="report-copy">${progress || '—'}</div>${showPerformance && section.performance ? `<h3>${performanceLabel || escapeHtml(ui.performance)}</h3><div class="report-copy">${performanceValue}</div>` : ''}${showStudentComments && comment ? `<h3>${studentCommentLabel || escapeHtml(ui.comments)}</h3><div class="report-copy">${comment}</div>` : ''}</section>`;
     })
     .join('');
 
