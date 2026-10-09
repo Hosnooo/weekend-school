@@ -1066,6 +1066,7 @@
     }
   },
   "adminTeachingUpdates": {
+    "viewDirectReport": "View student reports",
     "backToUpdates": "Back to Teaching Updates",
     "submittedViewTitle": "Submitted Teaching Update",
     "cycleApprovedVersions": "Report Cycle versions",
