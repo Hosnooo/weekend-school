@@ -50,7 +50,9 @@ function periodOverlaps(
 type SubmissionStudentRow = {
   submission_id: string;
   student_id: string;
-  attendance_status: 'PRESENT' | 'ABSENT';
+  attendance_status: 'PRESENT' | 'ABSENT' | null;
+  attendance_attended: number | null;
+  attendance_total: number | null;
   performance_override: ReportPerformance | null;
   comment_en: string | null;
   comment_ar: string | null;
@@ -71,6 +73,10 @@ type OverrideRow = {
   progress_ar: string | null;
   performance: ReportPerformance | null;
   performance_overridden: boolean;
+  progress_en_overridden: boolean;
+  progress_ar_overridden: boolean;
+  comment_en_overridden: boolean;
+  comment_ar_overridden: boolean;
   comment_en: string | null;
   comment_ar: string | null;
   attendance_attended: number | null;
@@ -166,7 +172,7 @@ async function buildClassReportCycleSnapshots(
     db
       .from('weekly_submission_students')
       .select(
-        'submission_id,student_id,attendance_status,performance_override,comment_en,comment_ar'
+        'submission_id,student_id,attendance_status,attendance_attended,attendance_total,performance_override,comment_en,comment_ar'
       )
       .eq('school_id', schoolId)
       .in('submission_id', sourceIds),
@@ -182,7 +188,7 @@ async function buildClassReportCycleSnapshots(
     db
       .from('report_student_overrides')
       .select(
-        'approval_id,student_id,progress_en,progress_ar,performance,performance_overridden,comment_en,comment_ar,attendance_attended,attendance_total'
+        'approval_id,student_id,progress_en,progress_ar,progress_en_overridden,progress_ar_overridden,performance,performance_overridden,comment_en,comment_ar,comment_en_overridden,comment_ar_overridden,attendance_attended,attendance_total'
       )
       .eq('school_id', schoolId)
       .in('approval_id', approvalIds)
@@ -267,11 +273,16 @@ async function buildClassReportCycleSnapshots(
           row.student_id === student.id
       );
       const sourceAttendance = deriveReportAttendance({
-        sources: selectedSources.map(({id, weekStart}) => ({id, weekStart})),
+        sources: selectedSources.map(({id, weekStart, coverageKind, periodStart, periodEnd, coveredDates, partialOverlap}) => ({
+          id, weekStart, coverageKind, periodStart, periodEnd,
+          coveredDates, partialOverlap
+        })),
         observations: studentObservations.map((row) => ({
           submissionId: row.submission_id,
           studentId: row.student_id,
-          attendanceStatus: row.attendance_status
+          attendanceStatus: row.attendance_status,
+          attended: row.attendance_attended,
+          total: row.attendance_total
         })),
         resolutions: normalizedResolutions,
         classSubjectId: approval.classSubjectId,
@@ -302,16 +313,24 @@ async function buildClassReportCycleSnapshots(
         subjectNameAr: source.subjectNameAr,
         groupNameEn: source.groupNameEn,
         groupNameAr: source.groupNameAr,
+        // The report approval is the authoritative version for this
+        // cycle, including when only some Teacher sources were selected.
+        // An earlier partial-coverage fallback could silently replace
+        // Admin-approved text with raw Teacher text in final reports.
         approvedProgressEn:
-          clean(explicitOverride?.progress_en) ??
-          (partialCoverage
-            ? joinUnique(selectedSources.map(({progressEn}) => progressEn))
-            : approval.approvedProgressEn),
+          (explicitOverride?.progress_en_overridden
+            ? explicitOverride.progress_en
+            : (approval.progressEnApproved
+            ? approval.approvedProgressEn
+            : approval.approvedProgressEn ??
+              joinUnique(selectedSources.map(({progressEn}) => progressEn)))),
         approvedProgressAr:
-          clean(explicitOverride?.progress_ar) ??
-          (partialCoverage
-            ? joinUnique(selectedSources.map(({progressAr}) => progressAr))
-            : approval.approvedProgressAr),
+          (explicitOverride?.progress_ar_overridden
+            ? explicitOverride.progress_ar
+            : (approval.progressArApproved
+            ? approval.approvedProgressAr
+            : approval.approvedProgressAr ??
+              joinUnique(selectedSources.map(({progressAr}) => progressAr)))),
         performance: explicitOverride?.performance_overridden
           ? explicitOverride.performance
           : sourcePerformance ?? (partialCoverage
@@ -327,11 +346,13 @@ async function buildClassReportCycleSnapshots(
         },
         commentEn: appendText(
           partialCoverage ? null : approval.commentEn,
-          clean(explicitOverride?.comment_en) ?? sourceCommentEn
+          explicitOverride?.comment_en_overridden
+            ? explicitOverride.comment_en : sourceCommentEn
         ),
         commentAr: appendText(
           partialCoverage ? null : approval.commentAr,
-          clean(explicitOverride?.comment_ar) ?? sourceCommentAr
+          explicitOverride?.comment_ar_overridden
+            ? explicitOverride.comment_ar : sourceCommentAr
         ),
         sourceTeacherNames: selectedSources.map(({teacherName}) => teacherName),
         unresolvedAttendanceConflicts: attendance.unresolvedConflicts
@@ -392,7 +413,7 @@ async function buildClassReportCycleSnapshots(
       generatedAt
     });
 
-    if (!built.snapshot) {
+    if (!built.snapshot || built.issues.length > 0) {
       throw new Error(
         'Unresolved attendance conflicts block report finalization'
       );

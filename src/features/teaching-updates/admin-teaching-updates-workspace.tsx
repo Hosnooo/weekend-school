@@ -2,6 +2,7 @@
 
 import {useState} from 'react';
 import {useTranslations} from 'next-intl';
+import {Link} from '@/i18n/navigation';
 
 import {Badge, type BadgeVariant} from '@/components/ui/badge';
 import {Button} from '@/components/ui/button';
@@ -129,14 +130,24 @@ export function AdminTeachingUpdatesWorkspace({
       key: 'actions',
       header: t('details'),
       render: (update) => (
-        <Button
-          onClick={() => setSelected(update)}
-          size="compact"
-          type="button"
-          variant="secondary"
-        >
-          {t('viewDetails')}
-        </Button>
+        <div className="row-actions">
+          {update.status === 'SUBMITTED' ? (
+            <Link
+              className="button button-secondary action-link"
+              href={`/teaching-updates/${update.id}`}
+            >
+              {t('viewSubmitted')}
+            </Link>
+          ) : null}
+          <Button
+            onClick={() => setSelected(update)}
+            size="compact"
+            type="button"
+            variant="secondary"
+          >
+            {t('viewDetails')}
+          </Button>
+        </div>
       )
     }
   ];
@@ -313,13 +324,21 @@ function TeachingUpdateDetails({
         ) : null}
 
         {update.status === 'SUBMITTED' ? (
-          <form action={reopenAdminTeachingUpdateAction}>
-            <input name="locale" type="hidden" value={locale}/>
-            <input name="submissionId" type="hidden" value={update.id}/>
-            <Button type="submit" variant="secondary">
-              {t('reopen')}
-            </Button>
-          </form>
+          <div className="row-actions">
+            <Link
+              className="button button-secondary action-link"
+              href={`/teaching-updates/${update.id}`}
+            >
+              {t('viewSubmitted')}
+            </Link>
+            <form action={reopenAdminTeachingUpdateAction}>
+              <input name="locale" type="hidden" value={locale}/>
+              <input name="submissionId" type="hidden" value={update.id}/>
+              <Button type="submit" variant="secondary">
+                {t('reopen')}
+              </Button>
+            </form>
+          </div>
         ) : null}
 
         <DialogClose>{t('close')}</DialogClose>

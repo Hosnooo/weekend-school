@@ -6,7 +6,6 @@ import {
   optionalUuid
 } from '@/lib/validation/fields';
 import {
-  attendanceStatusSchema,
   performanceSchema
 } from '@/features/weekly-updates/weekly-update.schemas';
 
@@ -36,7 +35,11 @@ export const teachingUpdateDraftSchema = z.object({
   attendance: z.array(
     z.object({
       studentId: databaseUuid,
-      status: attendanceStatusSchema
+      attended: z.number().int().min(0),
+      total: z.number().int().min(0)
+    }).refine((value) => value.attended <= value.total, {
+      message: 'Attended sessions cannot exceed total sessions',
+      path: ['attended']
     })
   ),
   exceptions: z.array(

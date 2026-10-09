@@ -44,6 +44,10 @@ type OverrideRow = {
   progress_ar: string | null;
   performance: ReportPerformance | null;
   performance_overridden: boolean;
+  progress_en_overridden: boolean;
+  progress_ar_overridden: boolean;
+  comment_en_overridden: boolean;
+  comment_ar_overridden: boolean;
   comment_en: string | null;
   comment_ar: string | null;
 };
@@ -68,6 +72,8 @@ export type ClassReportReviewStudent = {
   performanceOverridden: boolean;
   commentEn: string | null;
   commentAr: string | null;
+  commentEnOverridden: boolean;
+  commentArOverridden: boolean;
 };
 
 export type ClassReportReviewContext = {
@@ -125,7 +131,7 @@ export async function getClassReportReviewWorkspace(
         ? db
             .from('report_student_overrides')
             .select(
-              'approval_id,student_id,progress_en,progress_ar,performance,performance_overridden,comment_en,comment_ar'
+              'approval_id,student_id,progress_en,progress_ar,progress_en_overridden,progress_ar_overridden,performance,performance_overridden,comment_en,comment_ar,comment_en_overridden,comment_ar_overridden'
             )
             .eq('school_id', schoolId)
             .in('approval_id', approvalIds)
@@ -253,8 +259,12 @@ export async function getClassReportReviewWorkspace(
           : sourcePerformance,
         performanceOverridden:
           override?.performance_overridden ?? false,
-        commentEn: override?.comment_en ?? sourceCommentEn,
-        commentAr: override?.comment_ar ?? sourceCommentAr
+        commentEn: override?.comment_en_overridden
+          ? override.comment_en : sourceCommentEn,
+        commentAr: override?.comment_ar_overridden
+          ? override.comment_ar : sourceCommentAr,
+        commentEnOverridden: override?.comment_en_overridden ?? false,
+        commentArOverridden: override?.comment_ar_overridden ?? false
       }];
     });
 
@@ -266,12 +276,14 @@ export async function getClassReportReviewWorkspace(
       subjectNameAr: first.subjectNameAr,
       groupNameEn: first.groupNameEn,
       groupNameAr: first.groupNameAr,
-      mainReportEn:
-        approval?.approvedProgressEn ??
-        joinUnique(sources.map(({progressEn}) => progressEn)),
-      mainReportAr:
-        approval?.approvedProgressAr ??
-        joinUnique(sources.map(({progressAr}) => progressAr)),
+      mainReportEn: approval?.progressEnApproved
+        ? approval.approvedProgressEn
+        : approval?.approvedProgressEn ??
+          joinUnique(sources.map(({progressEn}) => progressEn)),
+      mainReportAr: approval?.progressArApproved
+        ? approval.approvedProgressAr
+        : approval?.approvedProgressAr ??
+          joinUnique(sources.map(({progressAr}) => progressAr)),
       sources,
       students
     });
@@ -426,7 +438,9 @@ export async function saveClassReportReviewContext(input: {
     .from('report_section_approvals')
     .update({
       approved_progress_en: clean(input.mainReportEn),
-      approved_progress_ar: clean(input.mainReportAr)
+      approved_progress_ar: clean(input.mainReportAr),
+      progress_en_approved: true,
+      progress_ar_approved: true
     })
     .eq('school_id', input.schoolId)
     .eq('id', approvalId);
@@ -435,38 +449,46 @@ export async function saveClassReportReviewContext(input: {
   for (const student of input.students) {
     const progressEn = clean(student.progressEn);
     const progressAr = clean(student.progressAr);
-    const commentEn = input.includeStudentComments
-      ? clean(student.commentEn)
-      : null;
-    const commentAr = input.includeStudentComments
-      ? clean(student.commentAr)
-      : null;
-    const performanceOverridden =
-      input.includePerformance && student.performanceOverridden;
-    const performance = performanceOverridden
-      ? student.performance
-      : null;
-    const hasOverride = Boolean(
+
+    // A hidden template field must not destroy an existing Admin correction.
+    // In particular, turning off performance globally affects rendering,
+    // not the saved performance decision (including explicit omission).
+    const fields: {
+      progress_en: string | null;
+      progress_ar: string | null;
+      performance?: ReportPerformance | null;
+      performance_overridden?: boolean;
+      comment_en?: string | null;
+      comment_ar?: string | null;
+    } = {
+      progress_en: progressEn,
+      progress_ar: progressAr
+    };
+    if (input.includePerformance) {
+      fields.performance = student.performanceOverridden
+        ? student.performance
+        : null;
+      fields.performance_overridden = student.performanceOverridden;
+    }
+    if (input.includeStudentComments) {
+      fields.comment_en = clean(student.commentEn);
+      fields.comment_ar = clean(student.commentAr);
+    }
+
+    const hasVisibleOverride = Boolean(
       progressEn ||
       progressAr ||
-      commentEn ||
-      commentAr ||
-      performanceOverridden
+      (input.includeStudentComments &&
+        (fields.comment_en || fields.comment_ar)) ||
+      (input.includePerformance && student.performanceOverridden)
     );
 
-    if (!hasOverride) {
-      // Preserve any attendance override in this row. Clearing report fields
-      // must not require DELETE permission or erase attendance corrections.
+    if (!hasVisibleOverride) {
+      // Clearing visible fields preserves attendance, performance and comments
+      // whenever their controls are hidden by the report template.
       const {error} = await db
         .from('report_student_overrides')
-        .update({
-          progress_en: null,
-          progress_ar: null,
-          performance: null,
-          performance_overridden: false,
-          comment_en: null,
-          comment_ar: null
-        })
+        .update(fields)
         .eq('school_id', input.schoolId)
         .eq('approval_id', approvalId)
         .eq('student_id', student.studentId);
@@ -474,22 +496,35 @@ export async function saveClassReportReviewContext(input: {
       continue;
     }
 
-    const {error} = await db
+    // Avoid upserting defaults into hidden columns: PostgREST's conflict
+    // handling could replace saved Admin edits that are not in the form.
+    const {data: existing, error: lookupError} = await db
       .from('report_student_overrides')
-      .upsert({
-        school_id: input.schoolId,
-        approval_id: approvalId,
-        student_id: student.studentId,
-        progress_en: progressEn,
-        progress_ar: progressAr,
-        performance,
-        performance_overridden: performanceOverridden,
-        comment_en: commentEn,
-        comment_ar: commentAr
-      }, {
-        onConflict: 'school_id,approval_id,student_id'
-      });
-    if (error) throw error;
+      .select('id')
+      .eq('school_id', input.schoolId)
+      .eq('approval_id', approvalId)
+      .eq('student_id', student.studentId)
+      .maybeSingle();
+    if (lookupError) throw lookupError;
+
+    if (existing) {
+      const {error} = await db
+        .from('report_student_overrides')
+        .update(fields)
+        .eq('school_id', input.schoolId)
+        .eq('id', existing.id);
+      if (error) throw error;
+    } else {
+      const {error} = await db
+        .from('report_student_overrides')
+        .insert({
+          school_id: input.schoolId,
+          approval_id: approvalId,
+          student_id: student.studentId,
+          ...fields
+        });
+      if (error) throw error;
+    }
   }
 }
 
@@ -517,11 +552,23 @@ export async function rebuildClassReportReviewContext(input: {
   );
 
   const db = await createServerSupabaseClient();
+  // Once Admin-approved, a source refresh must never silently replace text.
+  const {data: approvalFlags, error: flagsError} = await db
+    .from('report_section_approvals')
+    .select('progress_en_approved,progress_ar_approved')
+    .eq('school_id', input.schoolId)
+    .eq('id', approvalId)
+    .single();
+  if (flagsError) throw flagsError;
   const {error} = await db
     .from('report_section_approvals')
     .update({
-      approved_progress_en: joinUnique(sources.map(({progressEn}) => progressEn)),
-      approved_progress_ar: joinUnique(sources.map(({progressAr}) => progressAr))
+      ...(approvalFlags.progress_en_approved ? {} : {
+        approved_progress_en: joinUnique(sources.map(({progressEn}) => progressEn))
+      }),
+      ...(approvalFlags.progress_ar_approved ? {} : {
+        approved_progress_ar: joinUnique(sources.map(({progressAr}) => progressAr))
+      })
     })
     .eq('school_id', input.schoolId)
     .eq('id', approvalId);

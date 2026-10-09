@@ -390,6 +390,18 @@ export async function ReportCycleSourceReview({
                                   type="hidden"
                                   value={student.studentId}
                                 />
+                                {/* Record original text separately to avoid freezing a
+                                    newer Teacher update if this editor is stale. */}
+                                <input
+                                  name={`initialCommentEn:${student.studentId}`}
+                                  type="hidden"
+                                  value={student.commentEn ?? ''}
+                                />
+                                <input
+                                  name={`initialCommentAr:${student.studentId}`}
+                                  type="hidden"
+                                  value={student.commentAr ?? ''}
+                                />
 
                                 <div>
                                   <strong>{ui.attendance}</strong>
@@ -434,14 +446,17 @@ export async function ReportCycleSourceReview({
                                     <select
                                       defaultValue={
                                         student.performanceOverridden
-                                          ? student.performance ?? ''
-                                          : ''
+                                           ? student.performance ?? '__OMIT__'
+                                           : ''
                                       }
                                       name={`performance:${student.studentId}`}
                                     >
                                       <option value="">
-                                        {weekly('useDefault')}
+                                        {t('useTeacherPerformance')}
                                       </option>
+                                       <option value="__OMIT__">
+                                         {t('omitPerformance')}
+                                       </option>
                                       {performanceValues.map((value) => (
                                         <option key={value} value={value}>
                                           {weekly(`performance.${value}`)}

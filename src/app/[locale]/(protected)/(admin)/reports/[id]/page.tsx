@@ -2,9 +2,11 @@ import {getTranslations} from 'next-intl/server';
 import {notFound} from 'next/navigation';
 
 import {Card} from '@/components/ui/card';
+import {Alert} from '@/components/ui/alert';
 import {DataTable} from '@/components/ui/data-table';
 import {EmptyState} from '@/components/ui/empty-state';
 import {PageHeader} from '@/components/ui/page-header';
+import {getClassReportCycleLivePreview} from '@/features/reports/class-report-finalization.repository';
 import {StatusBadge} from '@/components/ui/status-badge';
 import {
   renderStudentReport,
@@ -18,6 +20,7 @@ import {
 import {isLocale} from '@/i18n/config';
 import {Link} from '@/i18n/navigation';
 import {requireProfile} from '@/lib/auth/require-profile';
+import {createServerSupabaseClient} from '@/lib/supabase/server';
 
 export default async function ReportPreviewPage({
   params
@@ -37,10 +40,42 @@ export default async function ReportPreviewPage({
     listReportDeliveries(profile.schoolId, id)
   ]);
 
+  // Unsent stored snapshots may predate Administrator corrections.
+  // The live approval resolver is authoritative until the cycle is finalized.
+  let effectiveSnapshot = report.snapshot;
+  let approvedPreviewUnavailable = false;
+  const db = await createServerSupabaseClient();
+  const {data: source, error: sourceError} = await db.from('reports')
+    .select('batch_id,report_batches(status,scope_type)')
+    .eq('school_id', profile.schoolId)
+    .eq('id', id)
+    .maybeSingle();
+  if (sourceError) throw sourceError;
+  const batch = source?.report_batches as unknown as
+    | {status: string; scope_type: string}
+    | null;
+  if (batch?.status !== 'FINALIZED' && batch?.scope_type === 'CLASS' && source?.batch_id) {
+    try {
+      const live = await getClassReportCycleLivePreview(
+        profile.schoolId,
+        source.batch_id,
+        report.studentId
+      );
+      if (live?.snapshot) {
+        effectiveSnapshot = live.snapshot;
+      } else {
+        approvedPreviewUnavailable = true;
+      }
+    } catch (error) {
+      console.error('Unsent report approval preview needs review', {error});
+      approvedPreviewUnavailable = true;
+    }
+  }
+
   const html =
-    report.snapshot.version === 2
-      ? renderStudentReportV2(report.snapshot, report.language)
-      : renderStudentReport(report.snapshot, report.language);
+    effectiveSnapshot.version === 2
+      ? renderStudentReportV2(effectiveSnapshot, report.language)
+      : renderStudentReport(effectiveSnapshot, report.language);
 
   const backHref =
     `/reports?periodStart=${report.periodStart}` +
@@ -79,10 +114,14 @@ export default async function ReportPreviewPage({
       />
 
       <Card className="content-section">
-        <ReportPreviewFrame
-          html={html}
-          title={t('previewTitle')}
-        />
+        {approvedPreviewUnavailable ? (
+          <Alert variant="warning">{t('approvalPreviewUnavailable')}</Alert>
+        ) : (
+          <ReportPreviewFrame
+            html={html}
+            title={t('previewTitle')}
+          />
+        )}
       </Card>
 
       <Card className="content-section">

@@ -1,6 +1,3 @@
--- Make report template language pairs symmetric and disable Performance by default.
--- Existing report snapshots and guardian language values are preserved.
-
 alter table public.report_templates
   alter column main_report_label_en drop not null,
   alter column performance_label_en drop not null,

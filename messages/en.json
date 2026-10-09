@@ -591,6 +591,9 @@
     "both": "English and Arabic"
   },
   "reports": {
+    "approvalPreviewUnavailable": "This report needs Administrator review before an accurate preview can be shown. Open its Report Cycle and resolve missing or overlapping attendance.",
+    "omitPerformance": "Omit performance from this student's report",
+    "useTeacherPerformance": "Use Teacher rating (if available)",
     "title": "Reports",
     "description": "Review teaching-context reports, make corrections, and send finalized student reports.",
     "periodStart": "Period start",
@@ -780,6 +783,7 @@
     "errorRule": "The selected report dates or records conflict with the current cycle. Review its period and selected sources before trying again."
   },
   "weekly": {
+    "performanceOptionalHelp": "Optional: leave blank if no performance rating is needed.",
     "thisWeek": "This week",
     "noTeachingHelp": "If you expected teaching work here, ask an administrator to check your current teaching assignment and Teacher login access.",
     "startUpdate": "Start update",
@@ -1017,6 +1021,11 @@
     "emailLivePreviewHelp": "This preview updates as you type. Sample names and dates are shown only for preview."
   },
   "teachingUpdates": {
+    "sessionsAttended": "Sessions attended",
+    "sessionsHeld": "Total sessions held",
+    "markAllAttended": "Mark all students as attending all sessions",
+    "historicalAttendanceUncounted": "Historical attendance status: session count unknown. Not converted automatically.",
+    "numericAttendanceRequired": "Enter attended and total sessions for every student, then save the update.",
     "title": "Teaching Updates",
     "myTeachingDescription": "Create flexible updates for the Classes and Subjects you teach, or continue an open update.",
     "teachingUpdate": "Teaching Update",
@@ -1058,6 +1067,25 @@
     }
   },
   "adminTeachingUpdates": {
+    "viewDirectReport": "View student reports",
+    "backToUpdates": "Back to Teaching Updates",
+    "submittedViewTitle": "Submitted Teaching Update",
+    "cycleApprovedVersions": "Report Cycle versions",
+    "approvedVersionHelp": "Cycle-specific Administrator-approved values are shown first. Open a cycle for the full current report and email preview; the original Teacher submission remains in the audit section.",
+    "includedInCycle": "Included in report",
+    "excludedFromCycle": "Excluded from report",
+    "approvedEnglish": "English text",
+    "approvedArabic": "Arabic text",
+    "savedStudentCorrections": "Saved student corrections",
+    "student": "Student",
+    "attendanceFromSource": "Attendance from Teacher source",
+    "viewCycleReport": "View report in cycle",
+    "editCycleReport": "Edit approved report",
+    "noCycleApproval": "No Report Cycle has included or approved this Teaching Update yet. The original submitted content is available below.",
+    "teacherSourceAudit": "Original Teacher submission (audit history)",
+    "teacherSourceHelp": "Read-only source record, not the final Administrator-approved report.",
+    "viewSubmitted": "View submitted update",
+
     "title": "Teaching Updates",
     "description": "Request, review, and manage teaching source updates before parent reporting.",
     "requestUpdate": "Request update",

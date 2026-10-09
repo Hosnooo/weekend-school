@@ -79,6 +79,42 @@ describe('customizable report email', () => {
     expect(html).toContain('مع التحية،');
   });
 
+  it('omits performance entirely when Teacher and Admin leave it unselected', () => {
+    const section: ReportSnapshotV2['sections'][number] = {
+      classSubjectId: 'subject-1',
+      subjectNameEn: 'Quran',
+      subjectNameAr: 'القرآن',
+      groupNameEn: null,
+      groupNameAr: null,
+      approvedProgressEn: 'Working on memorization',
+      approvedProgressAr: 'يتدرب على الحفظ',
+      performance: null,
+      attendance: {present: 5, absent: 1, sessions: 6},
+      commentEn: null,
+      commentAr: null
+    };
+
+    const html = renderReportEmail({...snapshot, sections: [section]});
+    expect(html).toContain('Attendance: 5 of 6 sessions');
+    expect(html).not.toContain('<h3>Performance</h3>');
+    expect(html).not.toContain('Not rated');
+    expect(html).not.toContain('غير مقيّم');
+
+    const rated = renderReportEmail({
+      ...snapshot,
+      sections: [{...section, performance: 'GOOD'}]
+    });
+    expect(rated).toContain('Performance');
+    expect(rated).toContain('Good');
+
+    const hidden = renderReportEmail({
+      ...snapshot,
+      template: {...snapshot.template, performanceEnabled: false},
+      sections: [{...section, performance: 'GOOD'}]
+    });
+    expect(hidden).not.toContain('<h3>Performance</h3>');
+  });
+
   it('renders the configured subject for the report language', () => {
     expect(renderReportEmailSubject(snapshot)).toBe(
       'Sara Ali — Weekend School Student Report / ' +

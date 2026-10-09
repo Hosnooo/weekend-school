@@ -19,6 +19,21 @@ describe('Class Report Cycle finalized attendance', () => {
     expect(source).toContain('onlyStudentId');
   });
 
+  it('never substitutes Teacher text for saved Admin-approved text or a blank', () => {
+    const source = readFileSync(
+      'src/features/reports/class-report-finalization.repository.ts',
+      'utf8'
+    );
+    expect(source).toContain('explicitOverride?.progress_en_overridden');
+    expect(source).toContain('explicitOverride?.progress_ar_overridden');
+    expect(source).toContain('approval.progressEnApproved');
+    expect(source).toContain('approval.progressArApproved');
+    expect(source).toContain('? approval.approvedProgressEn');
+    expect(source).toContain('? approval.approvedProgressAr');
+    // Partial coverage must not replace explicit Admin approval with Teacher text.
+    expect(source).not.toMatch(/partialCoverage\s*\?\s*joinUnique\(/);
+  });
+
   it('renders one attended-out-of-total metric for each V2 subject', () => {
     const snapshot: ReportSnapshotV2 = {
       version: 2,
@@ -85,6 +100,13 @@ describe('Class Report Cycle finalized attendance', () => {
   it('clears report text overrides without requiring DELETE privileges', () => {
     const repository = readFileSync('src/features/reports/class-report-review.repository.ts', 'utf8');
     expect(repository).not.toMatch(/\.from\('report_student_overrides'\)\s*\.delete\(\)/);
-    expect(repository).toContain('performance_overridden: false');
+    expect(repository).toContain(
+      'fields.performance_overridden = student.performanceOverridden'
+    );
+    expect(repository).toContain('if (input.includePerformance)');
+    expect(repository).toContain('if (input.includeStudentComments)');
+    expect(repository).toContain('.update(fields)');
+    expect(repository).toContain('.insert({');
+    expect(repository).not.toContain('performance_overridden: false');
   });
 });

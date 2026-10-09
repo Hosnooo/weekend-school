@@ -1,6 +1,3 @@
--- Add nullable report-level attendance overrides without rewriting source attendance
--- or existing finalized report snapshots.
-
 alter table public.report_student_overrides
   add column if not exists attendance_attended integer,
   add column if not exists attendance_total integer;

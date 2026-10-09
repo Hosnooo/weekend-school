@@ -1,6 +1,3 @@
--- Source include/exclude changes must not overwrite Admin-reviewed report text.
--- Recomposition is now explicit through the report review "Rebuild from selected updates" action.
-
 create or replace function public.set_report_cycle_source_included(
   p_batch_id uuid,
   p_submission_id uuid,
