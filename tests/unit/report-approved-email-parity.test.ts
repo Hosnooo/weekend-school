@@ -17,7 +17,11 @@ const approvedReport = () => buildReportSnapshotV2({
     performanceEnabled: true,
     studentCommentsEnabled: true,
     mainReportLabelEn: 'Approved progress',
-    mainReportLabelAr: 'التقدم المعتمد'
+    mainReportLabelAr: 'التقدم المعتمد',
+    introEn: null,
+    introAr: null,
+    closingEn: null,
+    closingAr: null
   },
   sections: [
     {
