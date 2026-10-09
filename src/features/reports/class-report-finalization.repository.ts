@@ -313,7 +313,7 @@ async function buildClassReportCycleSnapshots(
         approvedProgressAr:
           clean(explicitOverride?.progress_ar) ??
           approval.approvedProgressAr ??
-          joinUnique(selectedSources.map(({progressAr}) => progressAr),
+          joinUnique(selectedSources.map(({progressAr}) => progressAr)),
         performance: explicitOverride?.performance_overridden
           ? explicitOverride.performance
           : sourcePerformance ?? (partialCoverage
