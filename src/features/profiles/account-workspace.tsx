@@ -50,16 +50,6 @@ function PasswordInput({id, label, value, setValue, busy, revealed, toggle, auto
   );
 }
 
-function Response({result}: {result: AccountResult | null}) {
-  const t = useTranslations('account');
-  if (!result) return null;
-  if (result.status !== 'error') {
-    const key = result.status === 'sent' ? 'emailSent' : 'nameUpdated';
-    return <p className="form-success" role="status">{t(key)}</p>;
-  }
-  return <p className="form-error" role="alert">{t(result.reason)}</p>;
-}
-
 export function AccountWorkspace({displayName, email}: {displayName: string; email: string}) {
   const t = useTranslations('account');
   const router = useRouter();

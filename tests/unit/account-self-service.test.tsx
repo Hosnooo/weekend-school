@@ -40,7 +40,7 @@ describe('one personal My account screen', () => {
 
   it('toggles only the typed password with accessible eye controls', () => {
     setup();
-    const current = screen.getByLabelText('currentPassword');
+    const current = screen.getByLabelText(/^currentPassword/);
     fireEvent.change(current, {target: {value: 'TypedPassword1'}});
     const show = screen.getByRole('button', {name: 'show currentpassword'});
     expect(current).toHaveAttribute('type', 'password');
@@ -49,12 +49,12 @@ describe('one personal My account screen', () => {
     expect(current).toHaveValue('TypedPassword1');
     fireEvent.click(screen.getByRole('button', {name: 'hide currentpassword'}));
     expect(current).toHaveAttribute('type', 'password');
-    expect(screen.getByLabelText('newPassword')).toHaveAttribute('type', 'password');
+    expect(screen.getByLabelText(/^newPassword/)).toHaveAttribute('type', 'password');
   });
 
   it('changes only the authenticated profile name and refreshes on success', async () => {
     setup();
-    fireEvent.change(screen.getByLabelText('displayName'), {target: {value: 'Amina B.'}});
+    fireEvent.change(screen.getByLabelText(/^displayName/), {target: {value: 'Amina B.'}});
     fireEvent.click(screen.getByRole('button', {name: 'changeName'}));
     await waitFor(() => expect(changeOwnNameAction).toHaveBeenCalledOnce());
     const form = vi.mocked(changeOwnNameAction).mock.calls[0][0];
@@ -67,7 +67,7 @@ describe('one personal My account screen', () => {
 
   it('requests confirmed email change without altering the displayed current login', async () => {
     setup();
-    fireEvent.change(screen.getByLabelText('newEmail'), {target: {value: 'new@example.com'}});
+    fireEvent.change(screen.getByLabelText(/^newEmail/), {target: {value: 'new@example.com'}});
     fireEvent.click(screen.getByRole('button', {name: 'changeEmail'}));
     await waitFor(() => expect(requestOwnEmailChangeAction).toHaveBeenCalledOnce());
     const form = vi.mocked(requestOwnEmailChangeAction).mock.calls[0][0];
@@ -78,9 +78,9 @@ describe('one personal My account screen', () => {
 
   it('rejects a mismatch before sending any password to the server action', () => {
     setup();
-    fireEvent.change(screen.getByLabelText('currentPassword'), {target: {value: 'CurrentPass1'}});
-    fireEvent.change(screen.getByLabelText('newPassword'), {target: {value: 'NewPassword1'}});
-    fireEvent.change(screen.getByLabelText('confirmPassword'), {target: {value: 'DifferentPass1'}});
+    fireEvent.change(screen.getByLabelText(/^currentPassword/), {target: {value: 'CurrentPass1'}});
+    fireEvent.change(screen.getByLabelText(/^newPassword/), {target: {value: 'NewPassword1'}});
+    fireEvent.change(screen.getByLabelText(/^confirmPassword/), {target: {value: 'DifferentPass1'}});
     fireEvent.click(screen.getByRole('button', {name: 'changePassword'}));
     expect(screen.getByRole('alert')).toHaveTextContent('mismatch');
     expect(changeOwnPasswordAction).not.toHaveBeenCalled();
@@ -88,9 +88,9 @@ describe('one personal My account screen', () => {
 
   it('clears passwords after a successful own-account change', async () => {
     setup();
-    fireEvent.change(screen.getByLabelText('currentPassword'), {target: {value: 'CurrentPass1'}});
-    fireEvent.change(screen.getByLabelText('newPassword'), {target: {value: 'NewPassword1'}});
-    fireEvent.change(screen.getByLabelText('confirmPassword'), {target: {value: 'NewPassword1'}});
+    fireEvent.change(screen.getByLabelText(/^currentPassword/), {target: {value: 'CurrentPass1'}});
+    fireEvent.change(screen.getByLabelText(/^newPassword/), {target: {value: 'NewPassword1'}});
+    fireEvent.change(screen.getByLabelText(/^confirmPassword/), {target: {value: 'NewPassword1'}});
     fireEvent.click(screen.getByRole('button', {name: 'changePassword'}));
     await waitFor(() => expect(changeOwnPasswordAction).toHaveBeenCalledOnce());
     const form = vi.mocked(changeOwnPasswordAction).mock.calls[0][0];

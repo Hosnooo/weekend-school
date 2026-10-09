@@ -53,7 +53,7 @@ describe('Teacher History and Profile UX contract', () => {
     expect(page).toContain('StatusBadge');
     expect(page).toContain('EmptyState');
     expect(page).toContain('getTranslations');
-    expect(page).toContain('AccountSettingsWorkspace');
+    expect(page).toContain('AccountWorkspace');
 
     expect(page).not.toContain("locale==='ar'");
     expect(page).not.toContain("locale === 'ar'");
