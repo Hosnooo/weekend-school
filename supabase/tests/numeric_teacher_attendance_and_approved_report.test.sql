@@ -8,7 +8,9 @@ select has_column('public', 'weekly_submission_students', 'attendance_attended',
   'numeric sessions attended column exists');
 select has_column('public', 'weekly_submission_students', 'attendance_total',
   'numeric sessions total column exists');
-select col_is_null('public', 'weekly_submission_students', 'attendance_status',
+select ok((select is_nullable = 'YES' from information_schema.columns
+  where table_schema='public' and table_name='weekly_submission_students'
+    and column_name='attendance_status'),
   'historical status may be null for numeric observations');
 
 select ok(exists (
