@@ -833,7 +833,7 @@ export async function finalizeReportBatch(schoolId: string, batchId: string) {
     db.from('attendance_resolutions').select('class_subject_id,subject_group_id,week_start,student_id,resolved_status').eq('school_id', schoolId).gte('week_start', workspace.batch.periodStart).lte('week_start', workspace.batch.periodEnd).in('class_subject_id', classSubjectIds),
     db.from('student_guardians').select('student_id,guardian_id,receives_reports').eq('school_id', schoolId),
     db.from('guardians').select('id,report_language,is_active').eq('school_id', schoolId),
-    db.from('report_student_overrides') .select('approval_id,student_id,progress_en,progress_ar,performance,performance_overridden,comment_en,comment_ar,attendance_attended,attendance_total').eq('school_id', schoolId).in('approval_id', approvalIds)
+    db.from('report_student_overrides') .select('approval_id,student_id,progress_en,progress_ar,progress_en_overridden,progress_ar_overridden,performance,performance_overridden,comment_en,comment_ar,comment_en_overridden,comment_ar_overridden,attendance_attended,attendance_total').eq('school_id', schoolId).in('approval_id', approvalIds)
   ]);
   for (const result of [studentsResult, enrollmentsResult, exclusionsResult, membershipsResult, observationResult, resolutionResult, guardianLinkResult, guardianResult, overrideResult]) {
     requireNoError(result.error);
@@ -926,11 +926,13 @@ export async function finalizeReportBatch(schoolId: string, batchId: string) {
         subjectNameAr: source.subjectNameAr,
         groupNameEn: source.groupNameEn,
         groupNameAr: source.groupNameAr,
-        approvedProgressEn: clean(explicitOverride?.progress_en) ??
-          (approval.progressEnApproved ? approval.approvedProgressEn :
+        approvedProgressEn: explicitOverride?.progress_en_overridden
+          ? explicitOverride.progress_en
+          : (approval.progressEnApproved ? approval.approvedProgressEn :
             approval.approvedProgressEn ?? joinUnique(selectedSources.map(({progressEn}) => progressEn))),
-        approvedProgressAr: clean(explicitOverride?.progress_ar) ??
-          (approval.progressArApproved ? approval.approvedProgressAr :
+        approvedProgressAr: explicitOverride?.progress_ar_overridden
+          ? explicitOverride.progress_ar
+          : (approval.progressArApproved ? approval.approvedProgressAr :
             approval.approvedProgressAr ?? joinUnique(selectedSources.map(({progressAr}) => progressAr))),
         performance: explicitOverride?.performance_overridden
           ? (explicitOverride.performance as ReportPerformance | null)
@@ -940,8 +942,10 @@ export async function finalizeReportBatch(schoolId: string, batchId: string) {
           absent: attendance.total - attendance.attended,
           sessions: attendance.total
         },
-        commentEn: appendText(approval.commentEn, clean(explicitOverride?.comment_en) ?? sourceCommentEn),
-        commentAr: appendText(approval.commentAr, clean(explicitOverride?.comment_ar) ?? sourceCommentAr),
+        commentEn: appendText(approval.commentEn,
+          explicitOverride?.comment_en_overridden ? explicitOverride.comment_en : sourceCommentEn),
+        commentAr: appendText(approval.commentAr,
+          explicitOverride?.comment_ar_overridden ? explicitOverride.comment_ar : sourceCommentAr),
         sourceTeacherNames: selectedSources.map(({teacherName}) => teacherName),
         unresolvedAttendanceConflicts: attendance.unresolvedConflicts
       });
