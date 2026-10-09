@@ -291,6 +291,7 @@ if [[ "${REPORT_DB_RPC_ROLLBACK:-0}" == 1 ]]; then
       -X -q -v ON_ERROR_STOP=1 -v VERBOSITY=sqlstate -f - \
       < "$root/scripts/verify-report-authority-rpcs-rollback.sql" >>"$log" 2>&1; then
     echo "FAIL: Actual report RPC rollback verification failed." >&2
+    show_safe_sqlstate
     echo "Review the PRIVATE local log only; do not share private database records." >&2
     exit 1
   fi
