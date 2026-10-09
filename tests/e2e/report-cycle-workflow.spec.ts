@@ -206,6 +206,8 @@ test(
     const frame = emailReview.frameLocator('iframe.report-preview');
     await expect(frame.getByText('MCE Weekend School')).toBeVisible();
     await expect(frame.getByText('Report cycle source lesson')).toBeVisible();
+    await expect(frame.getByText('Regards,')).toBeVisible();
+    await expect(frame.getByText('Source / المصدر')).toHaveCount(0);
 
     // A prepared but unsent cycle must be editable without asking the Teacher
     // to resubmit. Reopen returns prepared reports to review state.
