@@ -92,18 +92,22 @@ docker ps --format '{{.Names}}' | grep -Fxq "$container" || {
   echo "ERROR: The specifically named local Postgres container was not found."; exit 1;
 }
 
-echo "Restoring roles and the ACTUAL production application schema..."
-for name in roles schema; do
-  if ! docker exec -i "$container" psql -U postgres -d postgres \
-      -X -q -1 -v ON_ERROR_STOP=1 -v VERBOSITY=sqlstate -f - \
-      < "$backup/${name}.sql" >>"$log" 2>&1; then
-    echo "ERROR: The exported ${name} could not be loaded into a clean local DB." >&2
+# Local Supabase already provisions platform roles (postgres, authenticated,
+# anon, service_role, supabase_admin and friends). Production roles.sql can
+# contain grants and ALTER ROLE commands requiring Supabase-internal admin
+# privileges; replaying it is neither safe nor needed for PUBLIC value-parity.
+# Retain roles.sql in the original backup for full disaster recovery separately.
+echo "Using locally provisioned Supabase platform roles (not replaying roles.sql)..."
+echo "Restoring the ACTUAL production public application schema..."
+if ! docker exec -i "$container" psql -U postgres -d postgres \
+    -X -q -1 -v ON_ERROR_STOP=1 -v VERBOSITY=sqlstate -f - \
+    < "$backup/schema.sql" >>"$log" 2>&1; then
+  echo "ERROR: The production public schema could not be restored to the local clone." >&2
   show_safe_sqlstate
-    echo "This is an isolated-restore compatibility problem, not a production change." >&2
-    echo "Review the PRIVATE log locally; do not upload it or any personal data." >&2
-    exit 1
-  fi
-done
+  echo "This is an isolated-restore compatibility problem, not a production change." >&2
+  echo "Review the PRIVATE log locally; do not upload it or any personal data." >&2
+  exit 1
+fi
 
 echo "Restoring backed-up PUBLIC application data into disposable DB..."
 # One transaction; trigger/FK checks are disabled ONLY inside this local restore
