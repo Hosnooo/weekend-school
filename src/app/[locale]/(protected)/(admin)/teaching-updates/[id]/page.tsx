@@ -174,14 +174,26 @@ export default async function AdminSubmittedTeachingUpdatePage({
 
                 <div className="row-actions">
                   {(() => {
-                    const direct = (reportRows ?? []).find((report) =>
-                      report.batch_id === cycle.id
-                    );
-                    return direct ? (
-                      <Link className="button button-secondary action-link"
-                        href={`/reports/${direct.id}`}>
-                        {t('viewDirectReport')}
-                      </Link>
+                    const latest = new Map<string, NonNullable<typeof reportRows>[number]>();
+                    for (const report of reportRows ?? []) {
+                      if (report.batch_id !== cycle.id) continue;
+                      const key = `${report.student_id}:${report.language}`;
+                      if (!latest.has(key)) latest.set(key, report);
+                    }
+                    return latest.size ? (
+                      <details className="secondary-disclosure">
+                        <summary>{t('viewDirectReport')}</summary>
+                        <div className="stack">
+                          {[...latest.values()].map((report) => (
+                            <Link className="button button-secondary action-link"
+                              href={`/reports/${report.id}`}
+                              key={report.id}>
+                              {names.get(report.student_id) ?? t('student')}
+                              {' · '}{report.language}
+                            </Link>
+                          ))}
+                        </div>
+                      </details>
                     ) : null;
                   })()}
                   <Link className="button button-secondary action-link"
