@@ -302,16 +302,18 @@ async function buildClassReportCycleSnapshots(
         subjectNameAr: source.subjectNameAr,
         groupNameEn: source.groupNameEn,
         groupNameAr: source.groupNameAr,
+        // The report approval is the authoritative version for this
+        // cycle, including when only some Teacher sources were selected.
+        // An earlier partial-coverage fallback could silently replace
+        // Admin-approved text with raw Teacher text in final reports.
         approvedProgressEn:
           clean(explicitOverride?.progress_en) ??
-          (partialCoverage
-            ? joinUnique(selectedSources.map(({progressEn}) => progressEn))
-            : approval.approvedProgressEn),
+          approval.approvedProgressEn ??
+          joinUnique(selectedSources.map(({progressEn}) => progressEn)),
         approvedProgressAr:
           clean(explicitOverride?.progress_ar) ??
-          (partialCoverage
-            ? joinUnique(selectedSources.map(({progressAr}) => progressAr))
-            : approval.approvedProgressAr),
+          approval.approvedProgressAr ??
+          joinUnique(selectedSources.map(({progressAr}) => progressAr),
         performance: explicitOverride?.performance_overridden
           ? explicitOverride.performance
           : sourcePerformance ?? (partialCoverage
