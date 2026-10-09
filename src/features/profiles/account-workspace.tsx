@@ -139,7 +139,7 @@ export function AccountWorkspace({displayName, email}: {displayName: string; ema
             </FormField>
             {nameResult ? <p className={nameResult.status === 'success' ? 'form-success' : 'form-error'}
               role={nameResult.status === 'success' ? 'status' : 'alert'}>
-              {t(nameResult.status === 'success' ? 'nameUpdated' : nameResult.reason)}
+              {t(nameResult.status === 'error' ? nameResult.reason : 'nameUpdated')}
             </p> : null}
             <div><Button disabled={busy !== null} type="submit">{busy === 'name' ? t('saving') : t('changeName')}</Button></div>
           </form>

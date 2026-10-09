@@ -1,7 +1,7 @@
 import {z} from 'zod';
 
 export const ownNameSchema = z.string().trim().min(2).max(100);
-export const ownEmailSchema = z.email().trim().max(254);
+export const ownEmailSchema = z.string().trim().email().max(254);
 export const ownPasswordSchema = z.object({
   currentPassword: z.string().min(1).max(1024),
   newPassword: z.string().min(8).max(128).regex(/[A-Za-z]/).regex(/[0-9]/),
