@@ -203,16 +203,25 @@ test(
     );
     await expect(emailReview.locator('iframe.report-preview')).toBeVisible();
 
+    // Test both the exact email HTML used for delivery and what the guardian
+    // can read in the preview. Avoid exact-text locators on bilingual elements.
+    const iframe = emailReview.locator('iframe.report-preview');
+    await expect(iframe).toHaveAttribute('srcdoc', /Report cycle source lesson/);
+    const emailHtml = await iframe.getAttribute('srcdoc');
+    expect(emailHtml, 'Email preview must contain an HTML document').toBeTruthy();
+    expect(emailHtml).toContain('Weekend School');
+    expect(emailHtml).toContain('Report cycle source lesson');
+    expect(emailHtml).toContain('Regards,');
+    expect(emailHtml).toContain('مع التحية،');
+    expect(emailHtml).not.toContain('Source / المصدر');
+    expect(emailHtml).not.toMatch(/<strong>Source(?:\\s*\\/\\s*المصدر)?:<\\/strong>/);
+    expect(emailHtml!.indexOf('Regards,')).toBeGreaterThan(
+      emailHtml!.indexOf('Report cycle source lesson')
+    );
+
     const frame = emailReview.frameLocator('iframe.report-preview');
-    // The local school's display name is "Weekend School". The previous
-    // "MCE Weekend School" came from the internal Source footer, which must
-    // not be shown in guardian emails.
-    // Bilingual snapshots display both school names in the same header line.
-    await expect(frame.locator('header > p').first()).toContainText('Weekend School');
-    await expect(frame.getByText('Report cycle source lesson')).toBeVisible();
-    await expect(frame.getByText('Regards,')).toBeVisible();
-    await expect(frame.getByText('Source / المصدر')).toHaveCount(0);
-    await expect(frame.getByText('Source:', {exact: false})).toHaveCount(0);
+    await expect(frame.locator('body')).toContainText('Report cycle source lesson');
+    await expect(frame.locator('body')).toContainText('Regards,');
 
     // A prepared but unsent cycle must be editable without asking the Teacher
     // to resubmit. Reopen returns prepared reports to review state.
