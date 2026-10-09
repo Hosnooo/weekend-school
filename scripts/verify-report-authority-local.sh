@@ -15,6 +15,13 @@ if [[ -n "$(git status --porcelain)" ]]; then
   exit 1
 fi
 
+if [[ "${DB_ONLY:-0}" == 1 ]]; then
+  if [[ "${RESET_LOCAL_SUPABASE:-0}" != 1 ]]; then
+    echo "ERROR: DB_ONLY requires RESET_LOCAL_SUPABASE=1 for explicit local test consent." >&2
+    exit 1
+  fi
+  echo "Skipping app tests because this same review commit was already verified."
+else
 echo "PHASE 1: focused unit and contract tests"
 pnpm exec vitest run --configLoader runner \
   tests/unit/report-attendance.test.ts \
@@ -34,22 +41,14 @@ pnpm test
 
 echo "PHASE 3: production build (local only)"
 pnpm build
+fi
 
-echo "PHASE 4: local disposable Supabase test database"
-if [[ "${RESET_LOCAL_SUPABASE:-}" != 1 ]]; then
-  echo "Local code checks passed; to reset only the disposable local DB and run"
-  echo "the complete pgTAP migration suite, re-run with RESET_LOCAL_SUPABASE=1."
+echo "PHASE 4: isolated disposable Supabase database tests"
+if [[ "${RESET_LOCAL_SUPABASE:-0}" != 1 ]]; then
+  echo "Local application checks passed. For isolated pgTAP migration tests, run"
+  echo "RESET_LOCAL_SUPABASE=1 bash scripts/verify-report-authority-local.sh"
   exit 0
 fi
 
-# Supabase status may include local database credentials. Never print them
-# or write them into an easily shared test log.
-local_status="$(supabase status 2>&1)"
-if ! printf '%s' "$local_status" | grep -Eq '127[.]0[.]0[.]1|localhost'; then
-  echo "ERROR: local Supabase URL was not confirmed. Do not reset a linked DB." >&2
-  exit 1
-fi
-supabase db reset
-pnpm test:db
-
-echo "PASS: local report-authority tests and migration checks. No production data changed."
+bash "$PWD/scripts/verify-report-authority-db-isolated.sh"
+echo "PASS: local report-authority checks. No production data changed."
