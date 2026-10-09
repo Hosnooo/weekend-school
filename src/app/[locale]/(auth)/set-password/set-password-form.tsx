@@ -20,6 +20,8 @@ export function SetPasswordForm({locale}: {locale: Locale}) {
   const db = useMemo(() => createBrowserSupabaseClient(), []);
   const [ready, setReady] = useState(false);
   const [pending, setPending] = useState(false);
+  const [linkVerification, setLinkVerification] = useState<{tokenHash: string; type: 'recovery' | 'invite'} | null>(null);
+  const [verifyingLink, setVerifyingLink] = useState(false);
   const [error, setError] = useState<'invalid' | 'password' | 'samePassword' | null>(null);
 
   useEffect(() => {
@@ -30,6 +32,8 @@ export function SetPasswordForm({locale}: {locale: Locale}) {
     const linkError = hash.get('error') || hash.get('error_code');
     const accessToken = hash.get('access_token');
     const refreshToken = hash.get('refresh_token');
+    const tokenHash = hash.get('token_hash');
+    const otpType = hash.get('type');
 
     if (linkError) {
       // Respond asynchronously to the URL state and cancel on unmount.
@@ -39,6 +43,23 @@ export function SetPasswordForm({locale}: {locale: Locale}) {
       return () => {
         active = false;
         clearTimeout(invalidLinkTimer);
+      };
+    }
+
+    if (tokenHash !== null) {
+      // Landing here must not consume the single-use token. Email scanners can
+      // open links, so only an explicit click may verify recovery/invite OTPs.
+      const selectionTimer = setTimeout(() => {
+        if (!active) return;
+        if (tokenHash && (otpType === 'recovery' || otpType === 'invite')) {
+          setLinkVerification({tokenHash, type: otpType});
+        } else {
+          setError('invalid');
+        }
+      }, 0);
+      return () => {
+        active = false;
+        clearTimeout(selectionTimer);
       };
     }
 
@@ -74,6 +95,41 @@ export function SetPasswordForm({locale}: {locale: Locale}) {
       subscription.unsubscribe();
     };
   }, [db]);
+
+  async function verifyLink() {
+    if (!linkVerification || verifyingLink) return;
+    setVerifyingLink(true);
+    try {
+      const {data, error: verifyError} = await db.auth.verifyOtp({
+        token_hash: linkVerification.tokenHash,
+        type: linkVerification.type
+      });
+      // Strip the bearer-like one-time token from browser history on either
+      // outcome. Never put it in logs, server requests, or a query parameter.
+      window.history.replaceState(
+        window.history.state,
+        '',
+        window.location.pathname + window.location.search
+      );
+      setLinkVerification(null);
+      if (verifyError || !data.session) {
+        setError('invalid');
+        return;
+      }
+      setReady(true);
+      setError(null);
+    } catch {
+      window.history.replaceState(
+        window.history.state,
+        '',
+        window.location.pathname + window.location.search
+      );
+      setLinkVerification(null);
+      setError('invalid');
+    } finally {
+      setVerifyingLink(false);
+    }
+  }
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -144,6 +200,17 @@ export function SetPasswordForm({locale}: {locale: Locale}) {
         </p>
         <Link href={`/${locale}/forgot-password`}>{t('requestNewLink')}</Link>
       </>
+    );
+  }
+
+  if (linkVerification) {
+    return (
+      <div className="login-form">
+        <p className="form-hint">{t('verifyPasswordLinkHint')}</p>
+        <Button disabled={verifyingLink} onClick={() => void verifyLink()} type="button">
+          {verifyingLink ? t('verifyingPasswordLink') : t('verifyPasswordLink')}
+        </Button>
+      </div>
     );
   }
 

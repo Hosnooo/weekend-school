@@ -23,11 +23,11 @@ describe('password recovery', () => {
   });
 
   it('accepts only a matching application origin for recovery links', () => {
-    expect(buildPasswordRecoveryRedirect('https://weekend-school-nine.vercel.app', 'weekend-school-nine.vercel.app', 'ar'))
-      .toBe('https://weekend-school-nine.vercel.app/ar/set-password');
-    expect(() => buildPasswordRecoveryRedirect('https://attacker.example', 'weekend-school-nine.vercel.app', 'en'))
+    expect(buildPasswordRecoveryRedirect('https://mceschoolreporting.vercel.app', 'mceschoolreporting.vercel.app', 'ar'))
+      .toBe('https://mceschoolreporting.vercel.app/ar/set-password');
+    expect(() => buildPasswordRecoveryRedirect('https://attacker.example', 'mceschoolreporting.vercel.app', 'en'))
       .toThrow();
-    expect(() => buildPasswordRecoveryRedirect('http://weekend-school-nine.vercel.app', 'weekend-school-nine.vercel.app', 'en'))
+    expect(() => buildPasswordRecoveryRedirect('http://mceschoolreporting.vercel.app', 'mceschoolreporting.vercel.app', 'en'))
       .toThrow();
   });
 });

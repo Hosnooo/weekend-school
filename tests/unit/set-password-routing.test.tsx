@@ -9,7 +9,8 @@ const state = vi.hoisted(() => ({
   replace: vi.fn(),
   refresh: vi.fn(),
   onAuthStateChange: vi.fn(),
-  getSession: vi.fn()
+  getSession: vi.fn(),
+  verifyOtp: vi.fn()
 }));
 
 vi.mock('next/navigation', () => ({
@@ -25,6 +26,7 @@ vi.mock('@/lib/supabase/browser', () => ({
     auth: {
       onAuthStateChange: state.onAuthStateChange,
       getSession: state.getSession,
+      verifyOtp: state.verifyOtp,
       updateUser: async () => ({error: null}),
       getUser: async () => ({data: {user: {id: 'auth-user'}}, error: null})
     },
@@ -59,6 +61,8 @@ describe('password setup routing', () => {
     state.refresh.mockClear();
     state.onAuthStateChange.mockReset();
     state.getSession.mockReset();
+    state.verifyOtp.mockReset();
+    state.verifyOtp.mockResolvedValue({data: {session: {user: {id: 'auth-user'}}}, error: null});
     state.onAuthStateChange.mockImplementation((callback: (_event: string, session: unknown) => void) => {
       callback('INITIAL_SESSION', {user: {id: 'auth-user'}});
       return {data: {subscription: {unsubscribe() {}}}};
@@ -78,6 +82,63 @@ describe('password setup routing', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('invalidInvitation');
     expect(state.onAuthStateChange).not.toHaveBeenCalled();
+    expect(state.getSession).not.toHaveBeenCalled();
+  });
+
+  it('does not redeem a recovery token until the recipient confirms, even when already signed in', async () => {
+    window.history.replaceState(
+      {},
+      '',
+      '/en/set-password#token_hash=recovery-test-hash&type=recovery'
+    );
+    render(<SetPasswordForm locale="en" />);
+
+    const button = await screen.findByRole('button', {name: 'verifyPasswordLink'});
+    expect(state.verifyOtp).not.toHaveBeenCalled();
+    expect(state.getSession).not.toHaveBeenCalled();
+    expect(state.onAuthStateChange).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', {name: 'setPassword'})).not.toBeInTheDocument();
+
+    fireEvent.click(button);
+    await waitFor(() => expect(state.verifyOtp).toHaveBeenCalledWith({
+      token_hash: 'recovery-test-hash',
+      type: 'recovery'
+    }));
+    await waitFor(() => expect(screen.getByRole('button', {name: 'setPassword'})).toBeEnabled());
+    expect(window.location.hash).toBe('');
+  });
+
+  it('keeps a failed token locked instead of reusing an existing browser session', async () => {
+    state.verifyOtp.mockResolvedValueOnce({data: {session: null}, error: {code: 'otp_expired'}});
+    window.history.replaceState({}, '', '/en/set-password#token_hash=expired-test-hash&type=recovery');
+
+    render(<SetPasswordForm locale="en" />);
+    fireEvent.click(await screen.findByRole('button', {name: 'verifyPasswordLink'}));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('invalidInvitation');
+    expect(state.getSession).not.toHaveBeenCalled();
+    expect(window.location.hash).toBe('');
+  });
+
+  it('verifies invitation hashes with the invite OTP type only after confirmation', async () => {
+    window.history.replaceState({}, '', '/en/set-password#token_hash=invite-test-hash&type=invite');
+
+    render(<SetPasswordForm locale="en" />);
+    expect(state.verifyOtp).not.toHaveBeenCalled();
+    fireEvent.click(await screen.findByRole('button', {name: 'verifyPasswordLink'}));
+
+    await waitFor(() => expect(state.verifyOtp).toHaveBeenCalledWith({
+      token_hash: 'invite-test-hash',
+      type: 'invite'
+    }));
+    await waitFor(() => expect(screen.getByRole('button', {name: 'setPassword'})).toBeEnabled());
+  });
+
+  it('rejects unrecognized token types without redeeming them', async () => {
+    window.history.replaceState({}, '', '/en/set-password#token_hash=test-hash&type=magiclink');
+    render(<SetPasswordForm locale="en" />);
+    expect(await screen.findByRole('alert')).toHaveTextContent('invalidInvitation');
+    expect(state.verifyOtp).not.toHaveBeenCalled();
     expect(state.getSession).not.toHaveBeenCalled();
   });
 

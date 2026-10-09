@@ -4,6 +4,14 @@ Weekend School is a bilingual school-operations application for administrators a
 
 One login can have Administrator capability, Teacher capability, both, or neither. Supabase Auth supplies the login identity. Independent school business records and explicit account links grant the capabilities; matching names or email addresses never grant access.
 
+## Production website
+
+**Canonical website:** https://mceschoolreporting.vercel.app
+
+The application runs on Vercel, with Supabase Auth and PostgreSQL. The production Auth Site URL and the English/Arabic `/set-password` redirect allowlist must use the canonical domain. Do not copy a `vercel.app` address from a specific deployment as the permanent website URL.
+
+Authentication email links are single-use. The guarded recovery/invitation flow and the operator-only Supabase email-template rollout are documented in [docs/AUTH_EMAIL_LINK_HANDOFF_20261009.md](docs/AUTH_EMAIL_LINK_HANDOFF_20261009.md).
+
 ## Main workflows
 
 - **Access:** Administrators invite or link accounts. Users set or recover passwords through Supabase Auth. Public signup is disabled for the invite-only deployment.
