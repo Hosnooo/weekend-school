@@ -273,8 +273,8 @@ BEGIN
     RAISE EXCEPTION 'Admin save was not blocked after actual finalization';
   END IF;
 
-  RAISE NOTICE 'PASS: Actual atomic Admin RPC + 3 finalized cycles + 29 saved revisions validated inside disposable transaction';
-END $$;
+END $;
+\echo PASS: Actual atomic Admin RPC + 3 finalized cycles + 29 saved revisions validated inside disposable transaction
 
 -- Roll back all RPC writes before checking original public-data fingerprints.
 ROLLBACK;
@@ -297,5 +297,5 @@ BEGIN
       RAISE EXCEPTION 'Disposable rollback did not restore table %', original.table_name;
     END IF;
   END LOOP;
-  RAISE NOTICE 'PASS: Transaction rollback restored all protected report, Teacher and school rows unchanged';
-END $$;
+END $;
+\echo PASS: Transaction rollback restored all protected report, Teacher and school rows unchanged
