@@ -476,6 +476,9 @@ export function TeachingUpdateEditor({
           hidden={!template.performanceEnabled}
         >
           <h2>{performanceLabel}</h2>
+          <p className="field-help">
+            {weekly('performanceOptionalHelp')}
+          </p>
 
           <select
             aria-label={weekly('defaultPerformance')}
