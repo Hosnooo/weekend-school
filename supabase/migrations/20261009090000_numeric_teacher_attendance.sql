@@ -27,6 +27,14 @@ alter table public.weekly_submission_students
     )
   );
 
+-- New Teaching Updates are explicitly marked numeric. Existing legacy rows,
+-- including historical fixtures and compatibility API records, are preserved.
+alter table public.weekly_submissions
+  add column if not exists attendance_format text not null default 'LEGACY';
+alter table public.weekly_submissions
+  add constraint weekly_submissions_attendance_format_check
+  check (attendance_format in ('LEGACY', 'NUMERIC'));
+
 -- Replace exactly the existing UUID-signature function, preserving its access
 -- controls, teacher/school context checks and optimistic version locking.
 -- Flexible Teacher-authored Teaching Update draft persistence.
@@ -149,6 +157,7 @@ begin
       period_start,
       period_end,
       created_by_profile_id,
+      attendance_format,
       version
     ) values (
       target_school_id,
@@ -164,6 +173,7 @@ begin
       normalized_start,
       normalized_end,
       target_profile_id,
+      'NUMERIC',
       1
     )
     returning id into target_submission_id;
@@ -222,6 +232,7 @@ begin
       progress_en = nullif(trim(coalesce(p_progress_en, '')), ''),
       progress_ar = nullif(trim(coalesce(p_progress_ar, '')), ''),
       default_performance = p_default_performance,
+      attendance_format = 'NUMERIC',
       version = version + 1
     where school_id = target_school_id
       and id = target_submission_id;
@@ -346,6 +357,7 @@ declare
 begin
   if new.status = 'SUBMITTED'
      and old.status is distinct from 'SUBMITTED'
+     and new.attendance_format = 'NUMERIC'
   then
     select count(*) into expected_count
     from public.get_weekly_submission_roster(
@@ -378,10 +390,6 @@ create trigger require_numeric_teaching_update_attendance
 before update of status on public.weekly_submissions
 for each row execute function public.assert_numeric_teaching_update_attendance();
 
--- Numeric input is the only current Teacher submission format. Keep the
--- legacy weekly mutation function inaccessible to new authenticated calls,
--- while preserving old archived records and migration history.
-revoke execute on function public.save_weekly_submission(
-  uuid, uuid, uuid, uuid, date, text, text,
-  public.performance_level, jsonb, jsonb, boolean
-) from public, anon, authenticated;
+-- The original weekly_status RPC remains solely for compatibility with
+-- archived clients/fixtures. No current Teacher form calls that API.
+-- Public-facing Teacher UI and save_teaching_update_draft use NUMERIC only.
