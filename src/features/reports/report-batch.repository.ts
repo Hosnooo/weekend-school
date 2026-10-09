@@ -5,6 +5,7 @@ import type {SupabaseClient} from '@supabase/supabase-js';
 import {createServerSupabaseClient} from '@/lib/supabase/server';
 
 import {buildReportSnapshotV2} from './report.service';
+import {deriveReportAttendance, effectiveReportAttendance} from './report-attendance';
 import {getActiveReportTemplate} from './report-template.repository';
 import {selectLatestReportRevisionsByStudent} from './select-latest-report-revisions';
 import type {ReportLanguage, ReportPerformance} from './report.types';
@@ -52,7 +53,9 @@ type ApprovalRow = {
 type StudentObservationRow = {
   submission_id: string;
   student_id: string;
-  attendance_status: 'PRESENT' | 'ABSENT';
+  attendance_status: 'PRESENT' | 'ABSENT' | null;
+  attendance_attended: number | null;
+  attendance_total: number | null;
   performance_override: ReportPerformance | null;
   comment_en: string | null;
   comment_ar: string | null;
@@ -363,7 +366,7 @@ export async function getReportBatchWorkspace(
       ? await db
           .from('weekly_submission_students')
           .select(
-            'submission_id,student_id,attendance_status,performance_override,comment_en,comment_ar'
+            'submission_id,student_id,attendance_status,attendance_attended,attendance_total,performance_override,comment_en,comment_ar'
           )
           .eq('school_id', schoolId)
           .in('submission_id', submissionIds)
@@ -505,7 +508,7 @@ export async function getReportBatchWorkspace(
           submissionById.get(observation.submission_id)?.week_start ?? '';
 
         const statuses = weekStatuses.get(week) ?? new Set<string>();
-        statuses.add(observation.attendance_status);
+        if (observation.attendance_status) statuses.add(observation.attendance_status);
         weekStatuses.set(week, statuses);
       }
 
@@ -553,12 +556,16 @@ export async function getReportBatchWorkspace(
           student?.first_name_ar && student?.last_name_ar
             ? `${student.first_name_ar} ${student.last_name_ar}`
             : null,
-        presentCount: studentObservations.filter(
-          ({attendance_status}) => attendance_status === 'PRESENT'
-        ).length,
-        absentCount: studentObservations.filter(
-          ({attendance_status}) => attendance_status === 'ABSENT'
-        ).length,
+        presentCount: studentObservations.reduce(
+          (sum, row) => sum + (row.attendance_attended ??
+            (row.attendance_status === 'PRESENT' ? 1 : 0)), 0
+        ),
+        absentCount: studentObservations.reduce(
+          (sum, row) => sum + (row.attendance_total !== null &&
+          row.attendance_attended !== null
+            ? row.attendance_total - row.attendance_attended
+            : row.attendance_status === 'ABSENT' ? 1 : 0), 0
+        ),
         performance:
           latestObservation?.performance_override ??
           latestSubmission?.default_performance ??
@@ -718,7 +725,9 @@ export async function reviewReportBatch(schoolId: string, batchId: string) {
 type SubmissionStudentRow = {
   submission_id: string;
   student_id: string;
-  attendance_status: 'PRESENT' | 'ABSENT';
+  attendance_status: 'PRESENT' | 'ABSENT' | null;
+  attendance_attended: number | null;
+  attendance_total: number | null;
   performance_override: ReportPerformance | null;
   comment_en: string | null;
   comment_ar: string | null;
@@ -795,11 +804,11 @@ export async function finalizeReportBatch(schoolId: string, batchId: string) {
     db.from('class_enrollments').select('student_id,starts_on,ends_on').eq('school_id', schoolId).eq('class_id', workspace.batch.classId),
     db.from('subject_exclusions').select('student_id,class_subject_id,starts_on,ends_on').eq('school_id', schoolId).in('class_subject_id', classSubjectIds),
     db.from('subject_group_memberships').select('student_id,class_subject_id,subject_group_id,starts_on,ends_on').eq('school_id', schoolId).in('class_subject_id', classSubjectIds),
-    db.from('weekly_submission_students').select('submission_id,student_id,attendance_status,performance_override,comment_en,comment_ar').eq('school_id', schoolId).in('submission_id', sourceIds),
+    db.from('weekly_submission_students').select('submission_id,student_id,attendance_status,attendance_attended,attendance_total,performance_override,comment_en,comment_ar').eq('school_id', schoolId).in('submission_id', sourceIds),
     db.from('attendance_resolutions').select('class_subject_id,subject_group_id,week_start,student_id,resolved_status').eq('school_id', schoolId).gte('week_start', workspace.batch.periodStart).lte('week_start', workspace.batch.periodEnd).in('class_subject_id', classSubjectIds),
     db.from('student_guardians').select('student_id,guardian_id,receives_reports').eq('school_id', schoolId),
     db.from('guardians').select('id,report_language,is_active').eq('school_id', schoolId),
-    db.from('report_student_overrides').select('approval_id,student_id,progress_en,progress_ar,performance,performance_overridden,comment_en,comment_ar').eq('school_id', schoolId).in('approval_id', approvalIds)
+    db.from('report_student_overrides') .select('approval_id,student_id,progress_en,progress_ar,performance,performance_overridden,comment_en,comment_ar,attendance_attended,attendance_total').eq('school_id', schoolId).in('approval_id', approvalIds)
   ]);
   for (const result of [studentsResult, enrollmentsResult, exclusionsResult, membershipsResult, observationResult, resolutionResult, guardianLinkResult, guardianResult, overrideResult]) {
     requireNoError(result.error);
@@ -843,33 +852,41 @@ export async function finalizeReportBatch(schoolId: string, batchId: string) {
       if (selectedSources.length === 0) continue;
       const selectedIds = new Set(selectedSources.map(({id}) => id));
       const studentObservations = observations.filter((row) => row.student_id === student.id && selectedIds.has(row.submission_id));
-      const observationsByWeek = new Map<string, Set<'PRESENT' | 'ABSENT'>>();
-      for (const source of selectedSources) {
-        const row = studentObservations.find((item) => item.submission_id === source.id);
-        if (!row) continue;
-        const statuses = observationsByWeek.get(source.weekStart) ?? new Set<'PRESENT' | 'ABSENT'>();
-        statuses.add(row.attendance_status);
-        observationsByWeek.set(source.weekStart, statuses);
-      }
-
-      let present = 0;
-      let absent = 0;
-      let unresolvedAttendanceConflicts = 0;
-      for (const [weekStart, statuses] of observationsByWeek) {
-        let official: 'PRESENT' | 'ABSENT' | null = statuses.size === 1 ? [...statuses][0]! : null;
-        if (statuses.size > 1) {
-          official = resolutions.find((row) =>
-            row.class_subject_id === approval.classSubjectId &&
-            row.subject_group_id === approval.subjectGroupId &&
-            row.week_start === weekStart && row.student_id === student.id
-          )?.resolved_status ?? null;
-          if (!official) unresolvedAttendanceConflicts += 1;
-        }
-        if (official === 'PRESENT') present += 1;
-        if (official === 'ABSENT') absent += 1;
-      }
+      const derivedAttendance = deriveReportAttendance({
+        sources: selectedSources.map((source) => ({
+          id: source.id,
+          weekStart: source.weekStart,
+          coverageKind: source.coverageKind,
+          periodStart: source.periodStart,
+          periodEnd: source.periodEnd,
+          coveredDates: source.coveredDates,
+          partialOverlap: source.partialOverlap
+        })),
+        observations: studentObservations.map((row) => ({
+          submissionId: row.submission_id,
+          studentId: row.student_id,
+          attendanceStatus: row.attendance_status,
+          attended: row.attendance_attended,
+          total: row.attendance_total
+        })),
+        resolutions: resolutions.map((row) => ({
+          classSubjectId: row.class_subject_id,
+          subjectGroupId: row.subject_group_id,
+          weekStart: row.week_start,
+          studentId: row.student_id,
+          resolvedStatus: row.resolved_status
+        })),
+        classSubjectId: approval.classSubjectId,
+        subjectGroupId: approval.subjectGroupId,
+        studentId: student.id
+      });
 
       const explicitOverride = overrides.find((row) => row.approval_id === approval.id && row.student_id === student.id);
+      const attendance = effectiveReportAttendance(
+        derivedAttendance,
+        explicitOverride?.attendance_attended,
+        explicitOverride?.attendance_total
+      );
       const sourcePerformance = studentObservations
         .map(({performance_override}) => performance_override)
         .filter((value): value is ReportPerformance => value !== null)
@@ -889,11 +906,15 @@ export async function finalizeReportBatch(schoolId: string, batchId: string) {
         performance: explicitOverride?.performance_overridden
           ? (explicitOverride.performance as ReportPerformance | null)
           : sourcePerformance ?? approval.performance,
-        attendance: {present, absent, sessions: present + absent},
+        attendance: {
+          present: attendance.attended,
+          absent: attendance.total - attendance.attended,
+          sessions: attendance.total
+        },
         commentEn: appendText(approval.commentEn, clean(explicitOverride?.comment_en) ?? sourceCommentEn),
         commentAr: appendText(approval.commentAr, clean(explicitOverride?.comment_ar) ?? sourceCommentAr),
         sourceTeacherNames: selectedSources.map(({teacherName}) => teacherName),
-        unresolvedAttendanceConflicts
+        unresolvedAttendanceConflicts: attendance.unresolvedConflicts
       });
     }
 
