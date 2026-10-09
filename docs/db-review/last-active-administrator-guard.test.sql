@@ -57,9 +57,9 @@ select ok(
 );
 
 select throws_ok(
-  $update public.administrators
+  $guard_sql$update public.administrators
       set school_id='00000000-0000-0000-0000-000000000099'
-      where id='6b000000-0000-4000-8000-000000000001'$,
+      where id='6b000000-0000-4000-8000-000000000001'$guard_sql$,
   '23514', null,
   'Administrator school ownership cannot be reassigned by direct updates'
 );
