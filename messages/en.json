@@ -1020,6 +1020,11 @@
     "emailLivePreviewHelp": "This preview updates as you type. Sample names and dates are shown only for preview."
   },
   "teachingUpdates": {
+    "sessionsAttended": "Sessions attended",
+    "sessionsHeld": "Total sessions held",
+    "markAllAttended": "Mark all students as attending all sessions",
+    "historicalAttendanceUncounted": "Historical attendance status: session count unknown. Not converted automatically.",
+    "numericAttendanceRequired": "Enter attended and total sessions for every student, then save the update.",
     "title": "Teaching Updates",
     "myTeachingDescription": "Create flexible updates for the Classes and Subjects you teach, or continue an open update.",
     "teachingUpdate": "Teaching Update",
