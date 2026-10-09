@@ -160,6 +160,17 @@ test(
 
     await expect(sourceCard).toContainText('Included');
 
+    // Editable cycles must open the inline editor with a local hash change,
+    // without posting a server action or reloading the page.
+    const reportContext = page.locator('.report-source-context')
+      .filter({hasText: 'Faith & Character'}).first();
+    await reportContext.getByRole('link', {name: 'Edit update'}).click();
+    await expect(reportContext.locator('.report-source-editor')).toBeVisible();
+    await expect(page).toHaveURL(/#report-edit-/);
+    await reportContext.locator('.report-source-editor')
+      .getByRole('button', {name: 'Cancel'}).click();
+    await expect(reportContext.locator('.report-source-editor')).toBeHidden();
+
     await expect(
       page.getByRole('button', {
         name: 'Request update'
@@ -221,6 +232,24 @@ test(
       );
     expect(currentStudentIds.length).toBeGreaterThan(0);
     expect(new Set(currentStudentIds).size).toBe(currentStudentIds.length);
+
+    // A finalized, unsent cycle needs a guarded server reopen. Its Edit
+    // update action must display the inline editor immediately afterward;
+    // the administrator must not have to refresh the page manually.
+    await reportContext.getByRole('button', {name: 'Edit update'}).click();
+    await expect(page).toHaveURL(/\?editor=report-edit-/);
+    await expect(page.locator('.report-source-context')
+      .filter({hasText: 'Faith & Character'}).first()
+      .locator('.report-source-editor')).toBeVisible();
+    await expect(page.getByRole('button', {
+      name: 'Finalize and prepare to send'
+    })).toBeVisible();
+    await page.getByRole('button', {
+      name: 'Finalize and prepare to send'
+    }).click();
+    await expect(page.getByText(
+      'Student reports are ready to send.', {exact: true}
+    )).toBeVisible();
 
     // Dismissing only an unsent cycle should remove its prepared reports and
     // review data. The submitted Teacher update must remain in the database.
