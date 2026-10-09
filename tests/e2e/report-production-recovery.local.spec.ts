@@ -31,6 +31,8 @@ test('restored Administrator signs in, saves a real draft edit, reloads and prev
   await edit.click();
   const editor = page.locator('.report-source-editor:visible').first();
   await expect(editor).toBeVisible();
+  const studentId = await editor.locator('input[name="studentId"]').first().inputValue();
+  expect(studentId).toBeTruthy();
   const sharedEnglish = editor.locator('textarea[name="mainReportEn"]');
   const original = await sharedEnglish.inputValue();
   const next = [original, marker].filter(Boolean).join('\n');
@@ -48,10 +50,8 @@ test('restored Administrator signs in, saves a real draft edit, reloads and prev
   const email = page.locator('section.report-email-review-panel');
   await expect(email).toBeVisible();
   const select = email.locator('select');
-  await expect(select.locator('option').count()).resolves.toBeGreaterThan(1);
-  const studentId = await select.locator('option').nth(1).getAttribute('value');
-  expect(studentId).toBeTruthy();
-  await select.selectOption(studentId!);
+  expect(await select.locator('option').count()).toBeGreaterThan(1);
+  await select.selectOption(studentId);
   const frame = email.locator('iframe.report-preview');
   await expect(frame).toHaveAttribute('srcdoc', new RegExp(marker), {timeout: 60_000});
   expect(await frame.getAttribute('srcdoc')).toContain(marker);
