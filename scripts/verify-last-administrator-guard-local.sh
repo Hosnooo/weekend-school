@@ -32,6 +32,16 @@ if (!local.has(db.hostname) || db.port !== '55322' ||
 }
 NODE
 
+# The CLI mounts tests from supabase/tests, not the docs review folder.
+# Stage the candidate alongside the ordinary pgTAP files and remove it on exit.
+candidate_test='supabase/tests/zz_last_active_administrator_guard_review.test.sql'
+if [[ -e "$candidate_test" ]]; then
+  echo "REFUSED: review test path already exists: $candidate_test" >&2
+  exit 1
+fi
+trap 'rm -f "$candidate_test"' EXIT
+cp docs/db-review/last-active-administrator-guard.test.sql "$candidate_test"
+
 echo "Resetting disposable LOCAL database once to remove browser-test fixtures..."
 pnpm db:reset
 
@@ -39,12 +49,8 @@ echo "Installing candidate guard in LOCAL database (not a migration)..."
 psql "$DB_URL" -X -v ON_ERROR_STOP=1 \
   -f docs/db-review/last-active-administrator-guard.sql
 
-echo "Checking all local database tests on clean seed..."
+echo "Checking all local database tests INCLUDING 18 Administrator guard assertions..."
 pnpm exec supabase test db --local
-
-echo "Checking Administrator guard, atomic deletion and RPC privileges..."
-pnpm exec supabase test db --local \
-  docs/db-review/last-active-administrator-guard.test.sql
 
 echo "Checking concurrent deactivations in two database sessions..."
 bash scripts/test-last-administrator-race.sh
