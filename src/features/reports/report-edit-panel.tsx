@@ -21,7 +21,7 @@ export function ReportEditPanel({
 
   useEffect(() => {
     const syncFromHash = () => {
-      const hash = decodeURIComponent(window.location.hash.slice(1));
+      const hash = window.location.hash.slice(1);
       setOpen(hash === id || (openOnArrival && hash === ''));
     };
 
