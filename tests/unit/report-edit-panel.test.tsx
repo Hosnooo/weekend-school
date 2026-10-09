@@ -45,6 +45,21 @@ describe('ReportEditPanel', () => {
     expect(panel).toHaveAttribute('hidden');
   });
 
+  it('recovers from a stale closed hash after a guarded reopen', () => {
+    window.location.hash = 'report-edit-closed';
+    const {container} = render(
+      <ReportEditPanel id={editorId} openOnArrival>
+        <p>Report form</p>
+      </ReportEditPanel>
+    );
+    const panel = container.querySelector('.report-source-editor');
+
+    expect(panel).not.toHaveAttribute('hidden');
+    expect(window.location.hash).toBe(`#${editorId}`);
+    goToHash('report-edit-closed');
+    expect(panel).toHaveAttribute('hidden');
+  });
+
   it('keeps unrelated editors closed when a different editor is selected', () => {
     const {container} = render(
       <>
