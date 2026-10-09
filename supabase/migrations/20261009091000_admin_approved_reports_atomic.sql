@@ -134,6 +134,8 @@ begin
       performance_overridden boolean,
       comment_en text,
       comment_ar text,
+      comment_en_overridden boolean,
+      comment_ar_overridden boolean,
       attendance_attended integer,
       attendance_total integer
     )
@@ -182,16 +184,30 @@ begin
         performance_overridden = case
           when p_include_performance then coalesce(v_student.performance_overridden, false)
           else v_existing.performance_overridden end,
-        comment_en = case when p_include_student_comments
-          then nullif(trim(coalesce(v_student.comment_en, '')), '')
+        -- A visible Teacher comment must NOT become an Administrator override
+        -- merely because the Admin saved an attendance-only edit.
+        comment_en = case
+          when p_include_student_comments and
+               coalesce(v_student.comment_en_overridden, false)
+            then nullif(trim(coalesce(v_student.comment_en, '')), '')
+          when p_include_student_comments then null
           else v_existing.comment_en end,
-        comment_ar = case when p_include_student_comments
-          then nullif(trim(coalesce(v_student.comment_ar, '')), '')
+        comment_ar = case
+          when p_include_student_comments and
+               coalesce(v_student.comment_ar_overridden, false)
+            then nullif(trim(coalesce(v_student.comment_ar, '')), '')
+          when p_include_student_comments then null
           else v_existing.comment_ar end,
-        comment_en_overridden = v_existing.comment_en_overridden
-          or coalesce(p_include_student_comments, false),
-        comment_ar_overridden = v_existing.comment_ar_overridden
-          or coalesce(p_include_student_comments, false),
+        comment_en_overridden = case
+          when p_include_student_comments
+            then v_existing.comment_en_overridden
+              or coalesce(v_student.comment_en_overridden, false)
+          else v_existing.comment_en_overridden end,
+        comment_ar_overridden = case
+          when p_include_student_comments
+            then v_existing.comment_ar_overridden
+              or coalesce(v_student.comment_ar_overridden, false)
+          else v_existing.comment_ar_overridden end,
         attendance_attended = v_student.attendance_attended,
         attendance_total = v_student.attendance_total
       where school_id = v_school_id and id = v_existing.id;
@@ -214,11 +230,15 @@ begin
         coalesce(p_include_performance, false)
           and coalesce(v_student.performance_overridden, false),
         case when p_include_student_comments
+               and coalesce(v_student.comment_en_overridden, false)
           then nullif(trim(coalesce(v_student.comment_en, '')), '') else null end,
         case when p_include_student_comments
+               and coalesce(v_student.comment_ar_overridden, false)
           then nullif(trim(coalesce(v_student.comment_ar, '')), '') else null end,
-        coalesce(p_include_student_comments, false),
-        coalesce(p_include_student_comments, false),
+        coalesce(p_include_student_comments, false)
+          and coalesce(v_student.comment_en_overridden, false),
+        coalesce(p_include_student_comments, false)
+          and coalesce(v_student.comment_ar_overridden, false),
         v_student.attendance_attended,
         v_student.attendance_total
       );
