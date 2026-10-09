@@ -236,3 +236,37 @@ echo "PASS: 3 cycles, 21 reports, 87 attendance corrections, 13 comments, 10 app
 echo "PASS: Existing records/Teacher observations/old report snapshots unchanged during upgrade."
 echo "PASS: Stored Administrator approvals retain authority after migration."
 echo "LIMIT: Public-data restore only; Auth/Storage and live end-to-end email preview not yet verified."
+
+if [[ "${REPORT_OUTPUT_PARITY:-0}" == 1 ]]; then
+  echo "Starting application report-output parity against ONLY the disposable restore..."
+  # Obtain the key from the locally running disposable Supabase stack. Never
+  # echo keys, use .env.local (may point to production), or source untrusted text.
+  local_status="$(cd "$tmp" && "$cli" status -o env)" || {
+    echo "ERROR: Cannot retrieve disposable local Supabase configuration." >&2
+    exit 1
+  }
+  api_url="$(printf '%s\\n' "$local_status" | sed -n 's/^API_URL=//p' | head -n 1)"
+  service_key="$(printf '%s\\n' "$local_status" | sed -n 's/^SERVICE_ROLE_KEY=//p' | head -n 1)"
+  api_url="${api_url#\\\"}"
+  api_url="${api_url%\\\"}"
+  service_key="${service_key#\\\"}"
+  service_key="${service_key%\\\"}"
+  unset local_status
+  if [[ "$api_url" != "http://127.0.0.1:56421" || -z "$service_key" ]]; then
+    echo "ERROR: Could not validate local-only API URL and service key; no parity test run." >&2
+    exit 1
+  fi
+  if ! (cd "$root" &&
+    REPORT_PARITY_URL="$api_url" REPORT_PARITY_SERVICE_ROLE_KEY="$service_key" \\
+      pnpm exec vitest run --configLoader runner \\
+      tests/integration/report-production-parity.local.test.ts >>"$log" 2>&1); then
+    unset api_url service_key
+    echo "FAIL: Restored-production report-output parity. Production unchanged." >&2
+    echo "Review the PRIVATE local log only; do not upload logs containing school data." >&2
+    exit 1
+  fi
+  unset api_url service_key
+  grep '^PASS: 3 cycles;' "$log" | tail -n 1 || true
+  echo "PASS: Application finalization payload, live preview and guardian email parity against restored production PUBLIC data."
+  echo "LIMIT: The actual finalization RPC is intentionally intercepted; no database reports or emails were created."
+fi
