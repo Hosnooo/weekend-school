@@ -130,32 +130,42 @@ export function renderReportEmailSubject(
 
 function EmailCopy({
   snapshot,
-  language
+  language,
+  placement
 }: {
   snapshot: EmailReportSnapshot;
   language: CopyLanguage;
+  placement: 'opening' | 'signoff';
 }) {
   const suffix = language === 'ar' ? 'Ar' : 'En';
-  const greeting = renderedValue(
-    snapshot,
-    `emailGreeting${suffix}` as EmailTemplateKey,
-    language
-  );
-  const message = renderedValue(
-    snapshot,
-    `emailMessage${suffix}` as EmailTemplateKey,
-    language
-  );
-  const closing = renderedValue(
-    snapshot,
-    `emailClosing${suffix}` as EmailTemplateKey,
-    language
-  );
-  const signoff = renderedValue(
-    snapshot,
-    `emailSignoff${suffix}` as EmailTemplateKey,
-    language
-  );
+  const greeting = placement === 'opening'
+    ? renderedValue(
+        snapshot,
+        `emailGreeting${suffix}` as EmailTemplateKey,
+        language
+      )
+    : '';
+  const message = placement === 'opening'
+    ? renderedValue(
+        snapshot,
+        `emailMessage${suffix}` as EmailTemplateKey,
+        language
+      )
+    : '';
+  const closing = placement === 'signoff'
+    ? renderedValue(
+        snapshot,
+        `emailClosing${suffix}` as EmailTemplateKey,
+        language
+      )
+    : '';
+  const signoff = placement === 'signoff'
+    ? renderedValue(
+        snapshot,
+        `emailSignoff${suffix}` as EmailTemplateKey,
+        language
+      )
+    : '';
 
   if (!greeting && !message && !closing && !signoff) return null;
 
@@ -169,9 +179,9 @@ function EmailCopy({
     <Section
       dir={language === 'ar' ? 'rtl' : 'ltr'}
       style={{
-        borderBottom: '1px solid #e5e7eb',
-        marginBottom: '24px',
-        paddingBottom: '20px',
+        ...(placement === 'opening'
+          ? {marginBottom: '20px'}
+          : {marginTop: '20px'}),
         textAlign: language === 'ar' ? 'right' : 'left'
       }}
     >
@@ -209,7 +219,9 @@ function ReportEmail({
 }) {
   const document =
     snapshot.version === 2
-      ? renderStudentReportV2(snapshot, snapshot.language)
+      ? renderStudentReportV2(snapshot, snapshot.language, {
+          includeSource: false
+        })
       : renderStudentReport(snapshot, snapshot.language);
 
   const body =
@@ -249,13 +261,13 @@ function ReportEmail({
           {contentDriven ||
           snapshot.language === 'en' ||
           snapshot.language === 'both' ? (
-            <EmailCopy snapshot={snapshot} language="en" />
+            <EmailCopy snapshot={snapshot} language="en" placement="opening" />
           ) : null}
 
           {contentDriven ||
           snapshot.language === 'ar' ||
           snapshot.language === 'both' ? (
-            <EmailCopy snapshot={snapshot} language="ar" />
+            <EmailCopy snapshot={snapshot} language="ar" placement="opening" />
           ) : null}
 
           <Section>
@@ -265,6 +277,18 @@ function ReportEmail({
               }}
             />
           </Section>
+
+          {contentDriven ||
+          snapshot.language === 'en' ||
+          snapshot.language === 'both' ? (
+            <EmailCopy snapshot={snapshot} language="en" placement="signoff" />
+          ) : null}
+
+          {contentDriven ||
+          snapshot.language === 'ar' ||
+          snapshot.language === 'both' ? (
+            <EmailCopy snapshot={snapshot} language="ar" placement="signoff" />
+          ) : null}
         </Container>
       </Body>
     </Html>
