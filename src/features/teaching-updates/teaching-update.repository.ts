@@ -11,7 +11,7 @@ import type {
   TeachingUpdateStorageStatus
 } from './teaching-update.types';
 import type {TeachingUpdateDraftInput} from './teaching-update.schemas';
-import {toDatabasePayload, toSparseExceptions} from '@/features/weekly-updates/weekly-update.model';
+import {toSparseExceptions} from '@/features/weekly-updates/weekly-update.model';
 
 function applicationStatus(
   status: TeachingUpdateStorageStatus
@@ -61,7 +61,19 @@ export async function saveTeachingUpdateDraft(
   input: TeachingUpdateDraftInput
 ) {
   const db = await createServerSupabaseClient();
-  const payload = toDatabasePayload(input.attendance, toSparseExceptions(input.exceptions));
+  const payload = {
+    attendance: input.attendance.map(({studentId, attended, total}) => ({
+      student_id: studentId,
+      attended,
+      total
+    })),
+    exceptions: toSparseExceptions(input.exceptions).map((item) => ({
+      student_id: item.studentId,
+      performance_override: item.performanceOverride,
+      comment_en: item.commentEn,
+      comment_ar: item.commentAr
+    }))
+  };
   const {data, error} = await db.rpc(
     'save_teaching_update_draft',
     {
@@ -353,7 +365,7 @@ export async function getTeachingUpdate(
     db
       .from('weekly_submission_students')
       .select(
-        'student_id,attendance_status,performance_override,comment_en,comment_ar'
+        'student_id,attendance_status,attendance_attended,attendance_total,performance_override,comment_en,comment_ar'
       )
       .eq('school_id', schoolId)
       .eq('submission_id', submissionId),
@@ -379,7 +391,9 @@ export async function getTeachingUpdate(
   const observations =
     studentsResult.data as Array<{
       student_id: string;
-      attendance_status: 'PRESENT' | 'ABSENT';
+      attendance_status: 'PRESENT' | 'ABSENT' | null;
+      attendance_attended: number | null;
+      attendance_total: number | null;
       performance_override:
         | 'EXCELLENT'
         | 'GOOD'
@@ -449,7 +463,9 @@ export async function getTeachingUpdate(
     })),
     attendance: observations.map((row) => ({
       studentId: row.student_id,
-      status: row.attendance_status
+      attended: row.attendance_attended,
+      total: row.attendance_total,
+      legacyStatus: row.attendance_status
     })),
     exceptions: observations.flatMap((row) =>
       row.performance_override ||
