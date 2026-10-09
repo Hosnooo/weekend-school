@@ -129,7 +129,9 @@ function classReviewPayloadFrom(formData: FormData) {
     ).trim();
     let performance: ReportPerformance | null = null;
 
-    if (includePerformance && rawPerformance) {
+    // __OMIT__ means intentionally hide an existing Teacher rating.
+    // Empty string means inherit the original Teacher value instead.
+    if (includePerformance && rawPerformance && rawPerformance !== '__OMIT__') {
       const parsedPerformance = performanceSchema.safeParse(rawPerformance);
       if (!parsedPerformance.success) return null;
       performance = parsedPerformance.data;
