@@ -272,14 +272,11 @@ if [[ "${REPORT_OUTPUT_PARITY:-0}" == 1 ]]; then
     exit 1
   fi
   parity_summary="$(cat "$parity_result")"
-  if ! printf '%s\\n' "$parity_summary" | grep -Eq '^PASS: 3 cycles; reports=[0-9]+; report sections=[0-9]+; eligible attendance pairs=[0-9]+; out-of-eligibility historical pairs=[0-9]+; checked explicit Admin fields=[0-9]+
-  echo "LIMIT: The actual finalization RPC is intentionally intercepted; no database reports or emails were created."
-fi
-; then
+  if ! printf '%s\n' "$parity_summary" | grep -Eq '^PASS: 3 cycles; reports=[0-9]+; report sections=[0-9]+; eligible attendance pairs=[0-9]+; out-of-eligibility historical pairs=[0-9]+; checked explicit Admin fields=[0-9]+$'; then
     echo "FAIL: Parity execution marker is malformed; no release pass established." >&2
     exit 1
   fi
-  printf '%s\\n' "$parity_summary"
+  printf '%s\n' "$parity_summary"
   echo "PASS: Application finalization payload, live preview and guardian email parity against restored production PUBLIC data."
   echo "LIMIT: The actual finalization RPC is intentionally intercepted; no database reports or emails were created."
 fi
