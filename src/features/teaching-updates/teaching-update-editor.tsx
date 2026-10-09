@@ -13,11 +13,7 @@ import {Button} from '@/components/ui/button';
 import {formatValidationIssue} from '@/lib/validation/error-guidance';
 import {Alert} from '@/components/ui/alert';
 import type {ReportTemplateConfig} from '@/features/reports/report-template.types';
-import {
-  markAllPresent
-} from '@/features/weekly-updates/weekly-update.model';
 import type {
-  AttendanceStatus,
   Performance,
   StudentException
 } from '@/features/weekly-updates/weekly-update.model';
@@ -76,16 +72,19 @@ export function TeachingUpdateEditor({
     useState(update.progressAr ?? '');
 
   const [attendance, setAttendance] = useState(() =>
-    update.roster.map(
-      (student) =>
-        update.attendance.find(
-          ({studentId}) => studentId === student.id
-        ) ?? {
-          studentId: student.id,
-          status: '' as AttendanceStatus | ''
-        }
-    )
+    update.roster.map((student) => {
+      const previous = update.attendance.find(
+        ({studentId}) => studentId === student.id
+      );
+      return {
+        studentId: student.id,
+        attended: previous?.attended ?? null,
+        total: previous?.total ?? null,
+        legacyStatus: previous?.legacyStatus ?? null
+      };
+    })
   );
+  const [sessionTotal, setSessionTotal] = useState('');
 
   const [exceptions, setExceptions] =
     useState<StudentException[]>(() =>
@@ -135,6 +134,16 @@ export function TeachingUpdateEditor({
   const canSubmit =
     update.status === 'OPEN' &&
     !dirty &&
+    attendance.length === update.roster.length &&
+    attendance.every(({attended, total}) =>
+      attended !== null &&
+      total !== null &&
+      Number.isInteger(attended) &&
+      Number.isInteger(total) &&
+      total > 0 &&
+      attended >= 0 &&
+      attended <= total
+    ) &&
     effectivePeriodEnd <= today &&
     (
       coverageKind !== 'DATES' ||
@@ -160,14 +169,16 @@ export function TeachingUpdateEditor({
     );
   };
 
-  const setAttendanceStatus = (
+  const setAttendanceCount = (
     studentId: string,
-    status: AttendanceStatus
+    key: 'attended' | 'total',
+    raw: string
   ) => {
+    const value = raw.trim() === '' ? null : Number(raw);
     setAttendance((items) =>
       items.map((item) =>
         item.studentId === studentId
-          ? {...item, status}
+          ? {...item, [key]: value, legacyStatus: null}
           : item
       )
     );
@@ -271,7 +282,11 @@ export function TeachingUpdateEditor({
           name="attendance"
           type="hidden"
           value={JSON.stringify(
-            attendance.filter(({status}) => status)
+            attendance.filter(({attended, total}) =>
+              attended !== null || total !== null
+            ).map(({studentId, attended, total}) => ({
+              studentId, attended, total
+            }))
           )}
         />
         <input
@@ -515,20 +530,33 @@ export function TeachingUpdateEditor({
             </div>
 
             {!readOnly && update.roster.length > 0 ? (
-              <Button
-                onClick={() => {
-                  setAttendance(
-                    markAllPresent(
-                      update.roster.map(({id}) => id)
-                    )
-                  );
-                  setDirty(true);
-                }}
-                type="button"
-                variant="secondary"
-              >
-                {weekly('markAllPresent')}
-              </Button>
+              <div className="row-actions">
+                <label>
+                  {t('sessionsHeld')}
+                  <input
+                    min={1}
+                    onChange={(event) => setSessionTotal(event.target.value)}
+                    placeholder="6"
+                    type="number"
+                    value={sessionTotal}
+                  />
+                </label>
+                <Button
+                  disabled={!Number.isInteger(Number(sessionTotal)) ||
+                    Number(sessionTotal) < 1}
+                  onClick={() => {
+                    const total = Number(sessionTotal);
+                    setAttendance((items) => items.map((item) => ({
+                      ...item, attended: total, total, legacyStatus: null
+                    })));
+                    setDirty(true);
+                  }}
+                  type="button"
+                  variant="secondary"
+                >
+                  {t('markAllAttended')}
+                </Button>
+              </div>
             ) : null}
           </div>
 
@@ -595,31 +623,41 @@ export function TeachingUpdateEditor({
                         </td>
 
                         <td data-label={weekly('attendance')}>
-                          <select
-                            aria-label={`${weekly('attendance')} — ${name}`}
-                            disabled={readOnly}
-                            onChange={(event) =>
-                              setAttendanceStatus(
-                                student.id,
-                                (event.target.value as AttendanceStatus)
-                              )
-                            }
-                            value={
-                              attendanceItem.status
-                            }
-                          >
-                            <option value="">—</option>
-                            <option value="PRESENT">
-                              {weekly(
-                                'attendanceStatus.PRESENT'
-                              )}
-                            </option>
-                            <option value="ABSENT">
-                              {weekly(
-                                'attendanceStatus.ABSENT'
-                              )}
-                            </option>
-                          </select>
+                          <div className="row-actions">
+                            <label>
+                              {t('sessionsAttended')}
+                              <input
+                                aria-label={`${t('sessionsAttended')} — ${name}`}
+                                disabled={readOnly}
+                                min={0}
+                                max={attendanceItem.total ?? undefined}
+                                onChange={(event) =>
+                                  setAttendanceCount(student.id, 'attended', event.target.value)
+                                }
+                                type="number"
+                                value={attendanceItem.attended ?? ''}
+                              />
+                            </label>
+                            <span aria-hidden="true">/</span>
+                            <label>
+                              {t('sessionsHeld')}
+                              <input
+                                aria-label={`${t('sessionsHeld')} — ${name}`}
+                                disabled={readOnly}
+                                min={1}
+                                onChange={(event) =>
+                                  setAttendanceCount(student.id, 'total', event.target.value)
+                                }
+                                type="number"
+                                value={attendanceItem.total ?? ''}
+                              />
+                            </label>
+                          </div>
+                          {attendanceItem.legacyStatus ? (
+                            <small className="field-help">
+                              {t('historicalAttendanceUncounted')}
+                            </small>
+                          ) : null}
                         </td>
 
                         <td
@@ -889,7 +927,7 @@ export function TeachingUpdateEditor({
                   : coverageKind === 'DATES' &&
                       sortedDates.length === 0
                     ? t('datesRequired')
-                    : t('submitUnavailable')}
+                    : t('numericAttendanceRequired')}
             </p>
           ) : null}
         </section>
