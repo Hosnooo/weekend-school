@@ -121,9 +121,10 @@ test.describe('Student, enrollment, and Guardian management', () => {
     await addGuardianDetails
       .getByLabel('Phone')
       .fill('+1 780 555 0300');
-    await addGuardianDetails
-      .getByLabel('Report language')
-      .selectOption('both');
+    // Reports are always generated bilingually. The hidden field retains
+    // the schema compatibility value without a selectable language control.
+    await expect(addGuardianDetails.locator('input[name="reportLanguage"]'))
+      .toHaveValue('both');
 
     await addGuardianDetails
       .getByRole('button', {name: 'Add new guardian'})
