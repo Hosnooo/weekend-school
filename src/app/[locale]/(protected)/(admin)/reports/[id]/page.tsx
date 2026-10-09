@@ -2,6 +2,7 @@ import {getTranslations} from 'next-intl/server';
 import {notFound} from 'next/navigation';
 
 import {Card} from '@/components/ui/card';
+import {Alert} from '@/components/ui/alert';
 import {DataTable} from '@/components/ui/data-table';
 import {EmptyState} from '@/components/ui/empty-state';
 import {PageHeader} from '@/components/ui/page-header';
@@ -42,6 +43,7 @@ export default async function ReportPreviewPage({
   // Unsent stored snapshots may predate Administrator corrections.
   // The live approval resolver is authoritative until the cycle is finalized.
   let effectiveSnapshot = report.snapshot;
+  let approvedPreviewUnavailable = false;
   const db = await createServerSupabaseClient();
   const {data: source, error: sourceError} = await db.from('reports')
     .select('batch_id,report_batches(status,scope_type)')
@@ -53,12 +55,21 @@ export default async function ReportPreviewPage({
     | {status: string; scope_type: string}
     | null;
   if (batch?.status !== 'FINALIZED' && batch?.scope_type === 'CLASS' && source?.batch_id) {
-    const live = await getClassReportCycleLivePreview(
-      profile.schoolId,
-      source.batch_id,
-      report.studentId
-    );
-    if (live?.snapshot) effectiveSnapshot = live.snapshot;
+    try {
+      const live = await getClassReportCycleLivePreview(
+        profile.schoolId,
+        source.batch_id,
+        report.studentId
+      );
+      if (live?.snapshot) {
+        effectiveSnapshot = live.snapshot;
+      } else {
+        approvedPreviewUnavailable = true;
+      }
+    } catch (error) {
+      console.error('Unsent report approval preview needs review', {error});
+      approvedPreviewUnavailable = true;
+    }
   }
 
   const html =
@@ -103,10 +114,14 @@ export default async function ReportPreviewPage({
       />
 
       <Card className="content-section">
-        <ReportPreviewFrame
-          html={html}
-          title={t('previewTitle')}
-        />
+        {approvedPreviewUnavailable ? (
+          <Alert variant="warning">{t('approvalPreviewUnavailable')}</Alert>
+        ) : (
+          <ReportPreviewFrame
+            html={html}
+            title={t('previewTitle')}
+          />
+        )}
       </Card>
 
       <Card className="content-section">
