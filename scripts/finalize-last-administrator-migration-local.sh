@@ -60,10 +60,13 @@ echo 'Replaying ALL migrations into disposable local database (one reset)...'
 pnpm db:reset
 
 version="$(basename "$migration" | cut -d_ -f1)"
+if [[ ! "$version" =~ ^[0-9]{14}$ ]]; then
+  echo "FAIL: Supabase CLI produced an unexpected migration version." >&2
+  exit 1
+fi
 registered="$(psql "$DB_URL" -X -At -v ON_ERROR_STOP=1 \
-  -v migration_version="$version" \
   -c "select count(*) from supabase_migrations.schema_migrations
-      where version = :'migration_version';")"
+      where version = '$version';")"
 if [[ "$registered" != '1' ]]; then
   echo "FAIL: generated migration $version missing from local migration history." >&2
   exit 1
