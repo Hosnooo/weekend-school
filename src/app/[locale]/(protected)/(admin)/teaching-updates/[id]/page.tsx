@@ -2,6 +2,8 @@ import {getTranslations} from 'next-intl/server';
 import {notFound} from 'next/navigation';
 
 import {Badge} from '@/components/ui/badge';
+import {openClassReportEditorAction} from '@/features/reports/class-report-review.actions';
+import {canReopenClassReportCycle} from '@/features/reports/class-report-preview.repository';
 import {PageHeader} from '@/components/ui/page-header';
 import {listAdminTeachingUpdates} from '@/features/teaching-updates/admin-teaching-update.repository';
 import {formatTeachingUpdateRange} from '@/features/teaching-updates/teaching-update-date';
@@ -82,6 +84,23 @@ export default async function AdminSubmittedTeachingUpdatePage({
   if (overrideError) throw overrideError;
 
   const studentIds = [...new Set((overrides ?? []).map(({student_id}) => student_id))];
+  const {data: reportRows, error: reportsError} = batchIds.length
+    ? await db.from('reports')
+        .select('id,batch_id,student_id,language,revision,status')
+        .eq('school_id', profile.schoolId)
+        .in('batch_id', batchIds)
+        .order('revision', {ascending: false})
+    : {data: [], error: null};
+  if (reportsError) throw reportsError;
+
+  const editableFinalized = new Set<string>(
+    (await Promise.all((cycles ?? [])
+      .filter(({status}) => status === 'FINALIZED')
+      .map(async ({id}) => (await canReopenClassReportCycle(profile.schoolId, id))
+        ? id : null)
+    )).filter((id): id is string => id !== null)
+  );
+
   const {data: students, error: studentError} = studentIds.length
     ? await db.from('students')
         .select('id,first_name_en,last_name_en,first_name_ar,last_name_ar')
@@ -154,15 +173,32 @@ export default async function AdminSubmittedTeachingUpdatePage({
                 ) : null}
 
                 <div className="row-actions">
+                  {(() => {
+                    const direct = (reportRows ?? []).find((report) =>
+                      report.batch_id === cycle.id
+                    );
+                    return direct ? (
+                      <Link className="button button-secondary action-link"
+                        href={`/reports/${direct.id}`}>
+                        {t('viewDirectReport')}
+                      </Link>
+                    ) : null;
+                  })()}
                   <Link className="button button-secondary action-link"
                     href={`/reports/workspace/${cycle.id}`}>
                     {t('viewCycleReport')}
                   </Link>
-                  {cycle.status !== 'FINALIZED' && included ? (
-                    <Link className="button button-secondary action-link"
-                      href={`/reports/workspace/${cycle.id}?editor=report-edit-${approval.class_subject_id}-${approval.subject_group_id ?? 'whole'}`}>
-                      {t('editCycleReport')}
-                    </Link>
+                  {included && (cycle.status !== 'FINALIZED' ||
+                    editableFinalized.has(cycle.id)) ? (
+                    <form action={openClassReportEditorAction}>
+                      <input type="hidden" name="locale" value={locale}/>
+                      <input type="hidden" name="batchId" value={cycle.id}/>
+                      <input type="hidden" name="classSubjectId" value={approval.class_subject_id}/>
+                      <input type="hidden" name="subjectGroupId" value={approval.subject_group_id ?? ''}/>
+                      <button type="submit" className="button button-secondary">
+                        {t('editCycleReport')}
+                      </button>
+                    </form>
                   ) : null}
                 </div>
               </article>
