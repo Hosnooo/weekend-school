@@ -1,8 +1,13 @@
 import {defineConfig} from '@playwright/test';
 
-if (process.env.NEXT_PUBLIC_SUPABASE_URL !== 'http://127.0.0.1:56421' ||
-    !process.env.REPORT_RECOVERY_CREDENTIAL_FILE) {
-  throw new Error('Refusing report-recovery browser test outside isolated Supabase');
+const localSupabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
+const localAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '';
+const localServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
+const privateCredentialFile = process.env.REPORT_RECOVERY_CREDENTIAL_FILE ?? '';
+
+if (localSupabaseUrl !== 'http://127.0.0.1:56421' ||
+    !localAnonKey || !localServiceRoleKey || !privateCredentialFile) {
+  throw new Error('Refusing report-recovery browser test without isolated local Supabase and credentials');
 }
 export default defineConfig({
   testDir: './tests/e2e',
@@ -26,9 +31,9 @@ export default defineConfig({
     reuseExistingServer: false,
     timeout: 180_000,
     env: {
-      NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-      SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+      NEXT_PUBLIC_SUPABASE_URL: localSupabaseUrl,
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: localAnonKey,
+      SUPABASE_SERVICE_ROLE_KEY: localServiceRoleKey,
       BREVO_API_KEY: '',
       EMAIL_FROM: '',
       NEXT_TELEMETRY_DISABLED: '1'
