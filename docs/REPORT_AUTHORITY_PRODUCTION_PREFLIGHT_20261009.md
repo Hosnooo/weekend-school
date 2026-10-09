@@ -14,6 +14,19 @@
 - pgTAP: **34 files, 450 tests, PASS**.
 - **Coverage gap:** These are primarily unit, schema-contract and disposable-seed regression tests. They do **not** constitute a proof of correct re-finalization against a restored production copy or complete end-to-end Admin/Teacher/browser behavior.
 
+## Verified restoration of production PUBLIC application data (October 9)
+
+The operator exported the production database to a **private local folder outside Git**, with `roles.sql`, `schema.sql`, `data.sql`, and `SHA256SUMS`. Those exported files were not shared with the assistant. The isolated local restore runner verified all saved SHA256 checksums, then:
+
+- Started a unique temporary Supabase PostgreSQL environment (review-only ports `5642x`).
+- Imported the **actual production application schema** and 38 public-table COPY blocks from the original data export. The 33 Supabase-managed/non-public blocks were excluded from this **test copy only** because the local Auth schema differs.
+- Validated **3 draft cycles, 21 draft V2 reports, 87 numeric Administrator corrections, 13 existing comment rows, 10 approval contexts and zero deliveries**.
+- Applied both pending report-authority migrations to the real-data public-table clone.
+- Compared pre-existing row counts and content hashes for report batches, approvals, report sources, Student overrides, reports, Teacher submissions and observations, dates, Students and groups, excluding only new columns; **PASS**, with original timestamps retained.
+- Checked that saved Administrator approvals and existing nonempty Student text/comments remain authoritative after the upgrade; **PASS**.
+
+**Scope limitation:** This verified PUBLIC application data restoration and additive migration value preservation. It is **not** a complete platform/Auth/Storage restore, a production deploy, or end-to-end finalization and guardian-email rendering. The full export remains private and unchanged. The timestamp-preservation migration change has passed the production-clone check but the standalone pgTAP run predates that tiny SQL change.
+
 ## Read-only production snapshot (queried October 9)
 
 | Check | Count |
@@ -57,6 +70,6 @@ Read-only comparison of each of the 62 saved V2 snapshot sections against an app
 
 ## Release decision
 
-**HOLD / DRAFT.** Code/build/database test suites passed. Backup and verified restore not yet performed; production-like end-to-end parity not verified. No production database migration, data repair, merge, deployment, finalization or delivery has been performed as part of this work.
+**HOLD / DRAFT.** Code/build/database test suites passed. A private backup and production **public-data** restore / migration-preservation check passed. Full managed Auth/Storage restoration and production-like finalized-report / guardian-email parity remain unverified. No production database migration, data repair, merge, deployment, finalization or delivery has been performed as part of this work.
 
 See [the full release contract](./REPORT_AUTHORITY_AND_NUMERIC_ATTENDANCE_RELEASE.md).
