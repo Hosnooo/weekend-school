@@ -115,6 +115,8 @@ function classReviewPayloadFrom(formData: FormData) {
     performanceOverridden: boolean;
     commentEn: string | null;
     commentAr: string | null;
+    initialCommentEn: string | null;
+    initialCommentAr: string | null;
     attendanceAttended: number | null;
     attendanceTotal: number | null;
   }> = [];
@@ -146,6 +148,8 @@ function classReviewPayloadFrom(formData: FormData) {
         includePerformance && Boolean(rawPerformance),
       commentEn: cleanText(formData.get(`commentEn:${studentId}`)),
       commentAr: cleanText(formData.get(`commentAr:${studentId}`)),
+      initialCommentEn: cleanText(formData.get(`initialCommentEn:${studentId}`)),
+      initialCommentAr: cleanText(formData.get(`initialCommentAr:${studentId}`)),
       ...attendance.data
     });
   }
@@ -228,6 +232,9 @@ async function persistClassReportReview(
       const attendance = attendanceOverrides.find(
         (item) => item.studentId === student.studentId
       )!;
+      const current = context.students.find(
+        (item) => item.studentId === student.studentId
+      )!;
       return {
         student_id: student.studentId,
         progress_en: student.progressEn,
@@ -238,22 +245,14 @@ async function persistClassReportReview(
         comment_ar: student.commentAr,
         comment_en_overridden: resolveReportCommentOverride({
           visible: payload.includeStudentComments,
-          wasOverridden: context.students.find((item) =>
-            item.studentId === student.studentId
-          )!.commentEnOverridden,
-          currentComment: context.students.find((item) =>
-            item.studentId === student.studentId
-          )!.commentEn,
+          wasOverridden: current.commentEnOverridden,
+          currentComment: student.initialCommentEn,
           submittedComment: student.commentEn
         }),
         comment_ar_overridden: resolveReportCommentOverride({
           visible: payload.includeStudentComments,
-          wasOverridden: context.students.find((item) =>
-            item.studentId === student.studentId
-          )!.commentArOverridden,
-          currentComment: context.students.find((item) =>
-            item.studentId === student.studentId
-          )!.commentAr,
+          wasOverridden: current.commentArOverridden,
+          currentComment: student.initialCommentAr,
           submittedComment: student.commentAr
         }),
         attendance_attended: attendance.attendanceAttended,
