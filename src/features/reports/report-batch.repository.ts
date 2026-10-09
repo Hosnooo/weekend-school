@@ -671,17 +671,9 @@ export async function approveAllSubmittedSources(schoolId: string, batchId: stri
         .eq('id', existing.id)
         .single();
       if (approvedFlagsError) throw approvedFlagsError;
-      const safePayload = {
-        performance: payload.performance,
-        comment_en: payload.comment_en,
-        comment_ar: payload.comment_ar,
-        ...(approvedFlags.progress_en_approved ? {} : {
-          approved_progress_en: payload.approved_progress_en
-        }),
-        ...(approvedFlags.progress_ar_approved ? {} : {
-          approved_progress_ar: payload.approved_progress_ar
-        })
-      };
+      const contextAlreadyApproved =
+        approvedFlags.progress_en_approved || approvedFlags.progress_ar_approved;
+      const safePayload = contextAlreadyApproved ? {} : payload;
       const {error} = await db.from('report_section_approvals')
         .update(safePayload)
         .eq('school_id', schoolId).eq('id', existing.id);
