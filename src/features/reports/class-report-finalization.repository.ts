@@ -315,12 +315,16 @@ async function buildClassReportCycleSnapshots(
         // Admin-approved text with raw Teacher text in final reports.
         approvedProgressEn:
           clean(explicitOverride?.progress_en) ??
-          approval.approvedProgressEn ??
-          joinUnique(selectedSources.map(({progressEn}) => progressEn)),
+          (approval.progressEnApproved
+            ? approval.approvedProgressEn
+            : approval.approvedProgressEn ??
+              joinUnique(selectedSources.map(({progressEn}) => progressEn))),
         approvedProgressAr:
           clean(explicitOverride?.progress_ar) ??
-          approval.approvedProgressAr ??
-          joinUnique(selectedSources.map(({progressAr}) => progressAr)),
+          (approval.progressArApproved
+            ? approval.approvedProgressAr
+            : approval.approvedProgressAr ??
+              joinUnique(selectedSources.map(({progressAr}) => progressAr))),
         performance: explicitOverride?.performance_overridden
           ? explicitOverride.performance
           : sourcePerformance ?? (partialCoverage
