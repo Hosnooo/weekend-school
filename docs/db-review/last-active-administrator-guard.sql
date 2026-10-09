@@ -21,6 +21,13 @@ declare
   other_active_exists boolean;
 begin
   if tg_op = 'UPDATE' then
+    -- A school transfer could otherwise remove its last active Admin without
+    -- changing is_active. Administrator identity is school-scoped and cannot
+    -- be reassigned to a different school through direct table updates.
+    if new.school_id is distinct from old.school_id then
+      raise exception 'Administrator school cannot be changed'
+        using errcode = '23514';
+    end if;
     if not old.is_active or new.is_active then
       return new;
     end if;
@@ -71,7 +78,7 @@ revoke execute on function public.prevent_last_active_administrator() from anon,
 
 drop trigger if exists administrators_preserve_last_active on public.administrators;
 create trigger administrators_preserve_last_active
-before update of is_active or delete on public.administrators
+before update of is_active, school_id or delete on public.administrators
 for each row
 execute function public.prevent_last_active_administrator();
 
