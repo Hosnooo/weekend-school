@@ -30,9 +30,8 @@ describe('Class Report Cycle finalized attendance', () => {
     expect(source).toContain('approval.progressArApproved');
     expect(source).toContain('? approval.approvedProgressEn');
     expect(source).toContain('? approval.approvedProgressAr');
-    expect(source).not.toMatch(
-      /partialCoverage\\s*\\?\\s*joinUnique\\(selectedSources\\.map\\(\\(\\{progress(En|Ar)\\}/
-    );
+    // Partial coverage must not replace explicit Admin approval with Teacher text.
+    expect(source).not.toMatch(/partialCoverage\s*\?\s*joinUnique\(/);
   });
 
   it('renders one attended-out-of-total metric for each V2 subject', () => {
