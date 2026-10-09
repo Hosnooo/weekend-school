@@ -9,9 +9,18 @@ alter table public.report_section_approvals
 -- All existing cycle approvals (including manual edits) are authoritative
 -- for their current stored value. Do not try to reconstruct editing history
 -- or silently overwrite a blank/null value on source refresh.
+-- Migration backfill must not make existing Administrator reviews appear
+-- newly edited. Keep original updated_at values and re-enable the trigger
+-- before this transaction completes.
+alter table public.report_section_approvals
+  disable trigger report_section_approvals_set_updated_at;
+
 update public.report_section_approvals
 set progress_en_approved = true, progress_ar_approved = true
 where not progress_en_approved or not progress_ar_approved;
+
+alter table public.report_section_approvals
+  enable trigger report_section_approvals_set_updated_at;
 
 -- Explicitly distinguish "Admin cleared this field" from "inherit Teacher".
 -- Preserve prior non-empty Student overrides as authoritative by default.
@@ -21,11 +30,17 @@ alter table public.report_student_overrides
   add column if not exists comment_en_overridden boolean not null default false,
   add column if not exists comment_ar_overridden boolean not null default false;
 
+alter table public.report_student_overrides
+  disable trigger report_student_overrides_set_updated_at;
+
 update public.report_student_overrides
 set progress_en_overridden = (progress_en is not null),
     progress_ar_overridden = (progress_ar is not null),
     comment_en_overridden = (comment_en is not null),
     comment_ar_overridden = (comment_ar is not null);
+
+alter table public.report_student_overrides
+  enable trigger report_student_overrides_set_updated_at;
 
 create or replace function public.save_class_report_review_atomic(
   p_batch_id uuid,
