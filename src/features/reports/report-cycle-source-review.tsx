@@ -440,7 +440,7 @@ export async function ReportCycleSourceReview({
                                       name={`performance:${student.studentId}`}
                                     >
                                       <option value="">
-                                        {weekly('useDefault')}
+                                        {t('useTeacherPerformance')}
                                       </option>
                                        <option value="__OMIT__">
                                          {t('omitPerformance')}
