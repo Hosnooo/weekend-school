@@ -19,6 +19,22 @@ describe('Class Report Cycle finalized attendance', () => {
     expect(source).toContain('onlyStudentId');
   });
 
+  it('never substitutes raw Teacher text for approved text on partial coverage', () => {
+    const source = readFileSync(
+      'src/features/reports/class-report-finalization.repository.ts',
+      'utf8'
+    );
+    expect(source).toMatch(
+      /approvedProgressEn:\\s*clean\\(explicitOverride\\?\\.progress_en\\)\\s*\\?\\?\\s*approval\\.approvedProgressEn\\s*\\?\\?/
+    );
+    expect(source).toMatch(
+      /approvedProgressAr:\\s*clean\\(explicitOverride\\?\\.progress_ar\\)\\s*\\?\\?\\s*approval\\.approvedProgressAr\\s*\\?\\?/
+    );
+    expect(source).not.toMatch(
+      /partialCoverage\\s*\\?\\s*joinUnique\\(selectedSources\\.map\\(\\(\\{progress(En|Ar)\\}/
+    );
+  });
+
   it('renders one attended-out-of-total metric for each V2 subject', () => {
     const snapshot: ReportSnapshotV2 = {
       version: 2,
