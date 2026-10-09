@@ -591,6 +591,8 @@
     "both": "English and Arabic"
   },
   "reports": {
+    "omitPerformance": "Omit performance from this student's report",
+    "useTeacherPerformance": "Use Teacher rating (if available)",
     "title": "Reports",
     "description": "Review teaching-context reports, make corrections, and send finalized student reports.",
     "periodStart": "Period start",
@@ -780,6 +782,7 @@
     "errorRule": "The selected report dates or records conflict with the current cycle. Review its period and selected sources before trying again."
   },
   "weekly": {
+    "performanceOptionalHelp": "Optional: leave blank if no performance rating is needed.",
     "thisWeek": "This week",
     "noTeachingHelp": "If you expected teaching work here, ask an administrator to check your current teaching assignment and Teacher login access.",
     "startUpdate": "Start update",
