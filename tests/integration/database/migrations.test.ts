@@ -61,15 +61,15 @@ describe('migration contract', () => {
 
   it('keeps migrations in dependency order', async () => {
     const {filenames} = await readMigrations();
-    // A local CLI-generated guard migration is staged only after the
-    // standalone concurrency verification. Permit exactly one such
-    // forward migration without weakening the historical migration order.
+    // Preserve the exact historical migrations and verified Administrator
+    // guard, while allowing only the two reviewed additive attendance/report
+    // authority migrations after it.
     const guardFiles = filenames.filter((name) =>
       /^\d{14}_prevent_last_active_administrator_race\.sql$/.test(name)
     );
     expect(guardFiles.length).toBeLessThanOrEqual(1);
     if (guardFiles.length === 1) {
-      expect(guardFiles[0]!).toBe(filenames[filenames.length - 1]);
+      expect(filenames.indexOf(guardFiles[0]!)).toBeGreaterThanOrEqual(0);
       expect(Number(guardFiles[0]!.slice(0, 14))).toBeGreaterThan(20261008090000);
       const guardSql = await readFile(join(migrationDirectory, guardFiles[0]!), 'utf8');
       expect(guardSql).toContain('administrators_preserve_last_active');
@@ -77,7 +77,19 @@ describe('migration contract', () => {
       expect(guardSql).toContain('update of is_active, school_id');
     }
 
-    expect(filenames.filter((name) => !guardFiles.includes(name))).toEqual([
+    const forwardFiles = [
+      '20261009090000_numeric_teacher_attendance.sql',
+      '20261009091000_admin_approved_reports_atomic.sql'
+    ];
+    expect(filenames.slice(-forwardFiles.length)).toEqual(forwardFiles);
+    if (guardFiles.length > 0) {
+      expect(filenames.indexOf(guardFiles[0]!)).toBeLessThan(
+        filenames.indexOf(forwardFiles[0]!)
+      );
+    }
+    expect(filenames.filter((name) =>
+      !guardFiles.includes(name) && !forwardFiles.includes(name)
+    )).toEqual([
       '202609200001_extensions_and_enums.sql',
       '202609200002_identity_and_school.sql',
       '202609200003_administration.sql',
