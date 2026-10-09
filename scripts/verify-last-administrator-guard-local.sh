@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# This script intentionally does not create/apply a project migration,
-# contact a hosted Supabase project, reset data, or deploy anything.
-# It installs the candidate only in the already-running disposable local DB.
+# Tests are designed for a CLEAN disposable local database: browser E2E
+# fixtures contaminate pgTAP assumptions. This script resets LOCAL data once,
+# then installs the candidate guard (without writing migration history).
+# It never contacts hosted Supabase or deploys anything.
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_root"
@@ -31,11 +32,14 @@ if (!local.has(db.hostname) || db.port !== '55322' ||
 }
 NODE
 
+echo "Resetting disposable LOCAL database once to remove browser-test fixtures..."
+pnpm db:reset
+
 echo "Installing candidate guard in LOCAL database (not a migration)..."
 psql "$DB_URL" -X -v ON_ERROR_STOP=1 \
   -f docs/db-review/last-active-administrator-guard.sql
 
-echo "Checking all local database tests..."
+echo "Checking all local database tests on clean seed..."
 pnpm exec supabase test db --local
 
 echo "Checking Administrator guard, atomic deletion and RPC privileges..."
@@ -45,4 +49,4 @@ pnpm exec supabase test db --local \
 echo "Checking concurrent deactivations in two database sessions..."
 bash scripts/test-last-administrator-race.sh
 
-echo "PASS: local Administrator guard verified. No hosted database was modified."
+echo "PASS: Administrator guard and existing database suite verified on fresh local seed. No hosted database was modified."
