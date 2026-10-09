@@ -1,10 +1,3 @@
--- Allow roster CSV imports to create Classes that do not yet exist.
---
--- The wrapper resolves every missing Class before delegating to the existing
--- import_student_roster function. Because the nested function call runs in
--- the same PostgreSQL transaction, newly created Classes are rolled back if
--- any later Student, Guardian, enrollment, or Group operation fails.
-
 create or replace function public.import_student_roster_with_classes(
   p_import_hash text,
   p_rows jsonb
@@ -71,8 +64,6 @@ begin
 
       normalized_class_name := lower(class_name);
 
-      -- Serialize missing-Class resolution by school/name. Multiple rows in one
-      -- import and concurrent roster imports therefore converge on one Class.
       perform pg_catalog.pg_advisory_xact_lock(
         pg_catalog.hashtextextended(
           target_school_id::text || ':class:' || normalized_class_name,
@@ -80,7 +71,6 @@ begin
         )
       );
 
-      -- Lock any matching rows before resolving active/inactive state.
       perform 1
       from public.classes class_row
       where class_row.school_id = target_school_id
@@ -134,9 +124,6 @@ begin
       resolved_rows || jsonb_build_array(row_item);
   end loop;
 
-  -- Existing roster behavior remains the single source of truth for
-  -- Guardians, Students, enrollments, Groups, duplicate-import protection,
-  -- and the final summary.
   return public.import_student_roster(
     p_import_hash,
     resolved_rows

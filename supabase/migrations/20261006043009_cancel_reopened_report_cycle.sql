@@ -1,3 +1,4 @@
+
 create or replace function public.cancel_class_report_cycle(
   p_batch_id uuid
 )
