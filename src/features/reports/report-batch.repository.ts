@@ -45,6 +45,8 @@ type ApprovalRow = {
   subject_group_id: string | null;
   approved_progress_en: string | null;
   approved_progress_ar: string | null;
+  progress_en_approved: boolean;
+  progress_ar_approved: boolean;
   performance: ReportPerformance | null;
   comment_en: string | null;
   comment_ar: string | null;
@@ -91,6 +93,8 @@ export type ReportBatchApproval = {
   subjectGroupId: string | null;
   approvedProgressEn: string | null;
   approvedProgressAr: string | null;
+  progressEnApproved: boolean;
+  progressArApproved: boolean;
   performance: ReportPerformance | null;
   commentEn: string | null;
   commentAr: string | null;
@@ -290,7 +294,7 @@ export async function getReportBatchWorkspace(
   requireNoError(teachersResult.error);
 
   const approvalResult = await db.from('report_section_approvals')
-    .select('id,class_subject_id,subject_group_id,approved_progress_en,approved_progress_ar,performance,comment_en,comment_ar')
+    .select('id,class_subject_id,subject_group_id,approved_progress_en,approved_progress_ar,progress_en_approved,progress_ar_approved,performance,comment_en,comment_ar')
     .eq('school_id', schoolId).eq('batch_id', batch.id);
   if (approvalResult.error) throw approvalResult.error;
   const approvalRows = (approvalResult.data ?? []) as ApprovalRow[];
@@ -459,6 +463,8 @@ export async function getReportBatchWorkspace(
     subjectGroupId: row.subject_group_id,
     approvedProgressEn: row.approved_progress_en,
     approvedProgressAr: row.approved_progress_ar,
+    progressEnApproved: row.progress_en_approved,
+    progressArApproved: row.progress_ar_approved,
     performance: row.performance,
     commentEn: row.comment_en,
     commentAr: row.comment_ar,
@@ -658,7 +664,26 @@ export async function approveAllSubmittedSources(schoolId: string, batchId: stri
 
     let approvalId: string;
     if (existing) {
-      const {error} = await db.from('report_section_approvals').update(payload)
+      const {data: approvedFlags, error: approvedFlagsError} = await db
+        .from('report_section_approvals')
+        .select('progress_en_approved,progress_ar_approved')
+        .eq('school_id', schoolId)
+        .eq('id', existing.id)
+        .single();
+      if (approvedFlagsError) throw approvedFlagsError;
+      const safePayload = {
+        performance: payload.performance,
+        comment_en: payload.comment_en,
+        comment_ar: payload.comment_ar,
+        ...(approvedFlags.progress_en_approved ? {} : {
+          approved_progress_en: payload.approved_progress_en
+        }),
+        ...(approvedFlags.progress_ar_approved ? {} : {
+          approved_progress_ar: payload.approved_progress_ar
+        })
+      };
+      const {error} = await db.from('report_section_approvals')
+        .update(safePayload)
         .eq('school_id', schoolId).eq('id', existing.id);
       if (error) throw error;
       approvalId = existing.id;
@@ -901,8 +926,12 @@ export async function finalizeReportBatch(schoolId: string, batchId: string) {
         subjectNameAr: source.subjectNameAr,
         groupNameEn: source.groupNameEn,
         groupNameAr: source.groupNameAr,
-        approvedProgressEn: clean(explicitOverride?.progress_en) ?? approval.approvedProgressEn,
-        approvedProgressAr: clean(explicitOverride?.progress_ar) ?? approval.approvedProgressAr,
+        approvedProgressEn: clean(explicitOverride?.progress_en) ??
+          (approval.progressEnApproved ? approval.approvedProgressEn :
+            approval.approvedProgressEn ?? joinUnique(selectedSources.map(({progressEn}) => progressEn))),
+        approvedProgressAr: clean(explicitOverride?.progress_ar) ??
+          (approval.progressArApproved ? approval.approvedProgressAr :
+            approval.approvedProgressAr ?? joinUnique(selectedSources.map(({progressAr}) => progressAr))),
         performance: explicitOverride?.performance_overridden
           ? (explicitOverride.performance as ReportPerformance | null)
           : sourcePerformance ?? approval.performance,
