@@ -44,6 +44,10 @@ type OverrideRow = {
   progress_ar: string | null;
   performance: ReportPerformance | null;
   performance_overridden: boolean;
+  progress_en_overridden: boolean;
+  progress_ar_overridden: boolean;
+  comment_en_overridden: boolean;
+  comment_ar_overridden: boolean;
   comment_en: string | null;
   comment_ar: string | null;
 };
@@ -125,7 +129,7 @@ export async function getClassReportReviewWorkspace(
         ? db
             .from('report_student_overrides')
             .select(
-              'approval_id,student_id,progress_en,progress_ar,performance,performance_overridden,comment_en,comment_ar'
+              'approval_id,student_id,progress_en,progress_ar,progress_en_overridden,progress_ar_overridden,performance,performance_overridden,comment_en,comment_ar,comment_en_overridden,comment_ar_overridden'
             )
             .eq('school_id', schoolId)
             .in('approval_id', approvalIds)
@@ -253,8 +257,10 @@ export async function getClassReportReviewWorkspace(
           : sourcePerformance,
         performanceOverridden:
           override?.performance_overridden ?? false,
-        commentEn: override?.comment_en ?? sourceCommentEn,
-        commentAr: override?.comment_ar ?? sourceCommentAr
+        commentEn: override?.comment_en_overridden
+          ? override.comment_en : sourceCommentEn,
+        commentAr: override?.comment_ar_overridden
+          ? override.comment_ar : sourceCommentAr
       }];
     });
 
