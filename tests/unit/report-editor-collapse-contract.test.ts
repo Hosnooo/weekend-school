@@ -15,6 +15,11 @@ describe('Class Report Cycle editor disclosure', () => {
       'src/features/reports/report-cycle-source-review.tsx'
     );
     const form = read('src/features/reports/report-edit-form.tsx');
+    const panel = read('src/features/reports/report-edit-panel.tsx');
+    const workspace = read(
+      'src/app/[locale]/(protected)/(admin)/reports/workspace/[batchId]/page.tsx'
+    );
+    const cycle = read('src/features/reports/class-report-cycle-review.tsx');
 
     expect(sourceReview).toContain('const editorId =');
     // Opening a prepared/finalized editor must pass the server-side reopen guard.
@@ -22,9 +27,17 @@ describe('Class Report Cycle editor disclosure', () => {
     expect(sourceReview).toContain('id={editorId}');
     const actions = read('src/features/reports/class-report-review.actions.ts');
     expect(actions).toContain('await reopenAdminReportWorkspace(');
-    expect(actions).toContain('`${workspacePath}#report-edit-');
+    expect(actions).toContain(
+      'redirect(`${workspacePath}?editor=${encodeURIComponent(editorId)}#${editorId}`)'
+    );
+    expect(workspace).toContain('openedEditorId={query.editor}');
+    expect(cycle).toContain('openedEditorId={openedEditorId}');
     expect(sourceReview).toContain('report-source-editable');
-    expect(sourceReview).toContain('report-edit-panel report-source-editor');
+    expect(sourceReview).toContain('<ReportEditPanel');
+    expect(sourceReview).toContain('openOnArrival={openedEditorId === editorId}');
+    expect(panel).toContain('report-edit-panel report-source-editor');
+    expect(panel).toContain('hidden={!open}');
+    expect(panel).toContain("window.addEventListener('hashchange', syncFromHash)");
     expect(sourceReview).toContain('Save & close');
     expect(sourceReview).toContain('Cancel');
 
