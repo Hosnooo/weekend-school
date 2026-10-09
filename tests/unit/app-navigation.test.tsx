@@ -39,7 +39,8 @@ describe('AppNavigation', () => {
       'School',
       'Reports',
       'Data',
-      'Settings'
+      'Settings',
+      'Account'
     ]);
     expect(screen.getAllByRole('link').map((link) => link.textContent)).toEqual([
       'Dashboard',
@@ -53,7 +54,8 @@ describe('AppNavigation', () => {
       'Delivery status',
       'Export Data',
       'Archives',
-      'School settings'
+      'School settings',
+      'My account'
     ]);
     expect(screen.getByRole('link', {name: 'Classes & Subjects'})).toHaveAttribute('aria-current', 'page');
     expect(screen.queryByRole('heading', {name: 'My Teaching'})).not.toBeInTheDocument();
@@ -63,10 +65,11 @@ describe('AppNavigation', () => {
     navigationState.pathname = '/en/my-teaching';
     renderNavigation('en', {isAdmin: false, teacherIds: ['teacher-1']});
 
-    expect(screen.getAllByRole('heading').map((heading) => heading.textContent)).toEqual(['My Teaching']);
+    expect(screen.getAllByRole('heading').map((heading) => heading.textContent)).toEqual(['My Teaching', 'Account']);
     expect(screen.getByRole('link', {name: 'Updates'})).toHaveAttribute('aria-current', 'page');
     expect(screen.getByRole('link', {name: 'History'})).toBeInTheDocument();
-    expect(screen.getByRole('link', {name: 'My Profile'})).toBeInTheDocument();
+    expect(screen.getByRole('link', {name: 'My account'})).toHaveAttribute('href', '/en/account');
+    expect(screen.queryByRole('link', {name: 'My Profile'})).not.toBeInTheDocument();
     expect(screen.queryByRole('link', {name: 'Students'})).not.toBeInTheDocument();
   });
 
@@ -77,6 +80,7 @@ describe('AppNavigation', () => {
     expect(screen.getByRole('heading', {name: 'Overview'})).toBeInTheDocument();
     expect(screen.getByRole('heading', {name: 'People'})).toBeInTheDocument();
     expect(screen.getByRole('heading', {name: 'My Teaching'})).toBeInTheDocument();
+    expect(screen.getAllByRole('link', {name: 'My account'})).toHaveLength(1);
     expect(screen.getByRole('link', {name: 'History'})).toHaveAttribute('aria-current', 'page');
   });
 
@@ -90,6 +94,7 @@ describe('AppNavigation', () => {
     expect(screen.getByRole('heading', {name: 'المدرسة'})).toBeInTheDocument();
     expect(screen.getByRole('heading', {name: 'البيانات'})).toBeInTheDocument();
     expect(screen.getByRole('heading', {name: 'تدريسي'})).toBeInTheDocument();
+    expect(screen.getByRole('link', {name: 'حسابي'})).toHaveAttribute('href', '/ar/account');
     expect(screen.getByRole('link', {name: 'الطلاب'})).toHaveAttribute('aria-current', 'page');
   });
 

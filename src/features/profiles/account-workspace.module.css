@@ -1,0 +1,18 @@
+.stack { display: grid; gap: var(--space-4); min-inline-size: 0; }
+.panel { display: grid; gap: var(--space-4); min-inline-size: 0; }
+.panel h2, .panel h3 { margin: 0; }
+.help { color: var(--muted); }
+.form { display: grid; gap: var(--space-3); max-inline-size: 38rem; min-inline-size: 0; }
+.field { position: relative; min-inline-size: 0; }
+.field input { padding-inline-end: 3.2rem; }
+.eye {
+  position: absolute; inset-block: 0; inset-inline-end: 0;
+  inline-size: 3rem; display: grid; place-items: center;
+  border: 0; border-radius: var(--radius-sm);
+  background: transparent; color: var(--muted); cursor: pointer;
+}
+.eye:hover { background: var(--surface-subtle); color: var(--text); }
+.eye:focus-visible { outline: 2px solid currentColor; outline-offset: -3px; }
+.eye:disabled { opacity: .5; cursor: not-allowed; }
+.eye svg { width: 1.25rem; height: 1.25rem; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.status { margin: 0; }

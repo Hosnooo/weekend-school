@@ -25,7 +25,8 @@ const sectionMessageKeys: Record<NavigationSectionId, string> = {
   reports: 'reportsSection',
   data: 'data',
   settings: 'settingsSection',
-  myTeaching: 'myTeaching'
+  myTeaching: 'myTeaching',
+  account: 'accountSection'
 };
 
 function NavigationContent({sections, className}: {sections: readonly NavigationSection[]; className?: string}) {

@@ -14,7 +14,7 @@ Authentication email links are single-use. The guarded recovery/invitation flow 
 
 ## Main workflows
 
-- **Access:** Administrators invite or link accounts. Users set or recover passwords through Supabase Auth. Public signup is disabled for the invite-only deployment.
+- **Access:** Administrators invite or link accounts. Each signed-in Administrator or Teacher has one **My account** page for their own display name, sign-in email (confirmation required), and password (requires current password). An eye icon can reveal only the password typed into the form, never the stored password. Users can also recover passwords through Supabase Auth. Public signup is disabled for the invite-only deployment.
 - **Administration:** The dashboard surfaces work needing attention. Administrators manage Administrator and Teacher records, Classes, Subjects, optional Groups, assignments, Students, Guardians, enrollment, archives, and school settings.
 - **Roster CSV:** Administrators download a school-specific template, preview row errors and Guardian/Class resolution, then confirm one transactional import. A missing Class can be created as part of that transaction. Current school or single-Class rosters can be exported as CSV.
 - **Teaching Updates:** Teachers create updates for a Class Subject and optional Group using a date range or selected dates. Administrators can request linked updates, review completion, and reopen or dismiss eligible work. Submitted source history stays attributable to its Teacher.
