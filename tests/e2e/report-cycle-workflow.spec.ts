@@ -254,9 +254,15 @@ test(
     // the administrator must not have to refresh the page manually.
     await reportContext.getByRole('button', {name: 'Edit update'}).click();
     await expect(page).toHaveURL(/\?editor=report-edit-/);
-    await expect(page.locator('.report-source-context')
+    const reopenedPanel = page.locator('.report-source-context')
       .filter({hasText: 'Faith & Character'}).first()
-      .locator('.report-source-editor')).toBeVisible();
+      .locator('.report-source-editor');
+    await expect(reopenedPanel).toBeVisible();
+    await reopenedPanel.getByRole('button', {name: 'Cancel'}).click();
+    await expect(reopenedPanel).toBeHidden();
+    // The editor can immediately be reopened locally; no refresh required.
+    await reportContext.getByRole('link', {name: 'Edit update'}).click();
+    await expect(reopenedPanel).toBeVisible();
     await expect(page.getByRole('button', {
       name: 'Finalize and prepare to send'
     })).toBeVisible();
