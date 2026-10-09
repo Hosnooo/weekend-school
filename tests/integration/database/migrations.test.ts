@@ -61,8 +61,23 @@ describe('migration contract', () => {
 
   it('keeps migrations in dependency order', async () => {
     const {filenames} = await readMigrations();
+    // A local CLI-generated guard migration is staged only after the
+    // standalone concurrency verification. Permit exactly one such
+    // forward migration without weakening the historical migration order.
+    const guardFiles = filenames.filter((name) =>
+      /^\\d{14}_prevent_last_active_administrator_race\\.sql$/.test(name)
+    );
+    expect(guardFiles.length).toBeLessThanOrEqual(1);
+    if (guardFiles.length === 1) {
+      expect(guardFiles[0]!).toBe(filenames[filenames.length - 1]);
+      expect(guardFiles[0]!.slice(0, 14)).toBeGreaterThan('20261008090000');
+      const guardSql = await readFile(join(migrationDirectory, guardFiles[0]!), 'utf8');
+      expect(guardSql).toContain('administrators_preserve_last_active');
+      expect(guardSql).toContain('delete_administrator_with_accounts');
+      expect(guardSql).toContain('update of is_active, school_id');
+    }
 
-    expect(filenames).toEqual([
+    expect(filenames.filter((name) => !guardFiles.includes(name))).toEqual([
       '202609200001_extensions_and_enums.sql',
       '202609200002_identity_and_school.sql',
       '202609200003_administration.sql',
