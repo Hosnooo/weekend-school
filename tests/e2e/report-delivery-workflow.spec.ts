@@ -245,7 +245,12 @@ test.describe('Reports and Delivery Status', () => {
       await expect(englishHistory.getByRole('button', {name: 'Apply'})).toBeHidden();
       await englishHistory.locator('summary').click();
       await expect(englishHistory.getByRole('button', {name: 'Apply'})).toBeVisible();
-      await expect(englishHistory.getByRole('button', {name: 'Open report'}).first()).toBeVisible();
+      // These fixtures create historical student reports/deliveries, not
+      // Subject/Group report contexts. An empty context list is correct;
+      // the historical report remains accessible in Delivery Status.
+      await expect(englishHistory.getByText(
+        'No teaching contexts are available for this reporting period.'
+      )).toBeVisible();
 
       await expect(
         page.getByRole('link', {
@@ -418,7 +423,9 @@ test.describe('Reports and Delivery Status', () => {
       await expect(arabicHistory.locator('summary')).toHaveText('تقارير المواد والمجموعات السابقة');
       await arabicHistory.locator('summary').click();
       await expect(arabicHistory.getByRole('button', {name: 'تطبيق'})).toBeVisible();
-      await expect(arabicHistory.getByRole('button', {name: 'فتح التقرير'}).first()).toBeVisible();
+      await expect(arabicHistory.getByText(
+        'لا توجد سياقات تدريس متاحة لفترة التقرير هذه.'
+      )).toBeVisible();
 
       await assertNoHorizontalOverflow(page);
 
