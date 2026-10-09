@@ -4,7 +4,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 
-select plan(13);
+select plan(18);
 
 insert into public.schools (id, name_en, name_ar)
 values ('6a000000-0000-4000-8000-000000000001','Race Guard Fixture','مدرسة اختبار');
@@ -24,6 +24,44 @@ select has_trigger(
 select has_function(
   'public','delete_administrator_with_accounts',array['uuid','uuid'],
   'Atomic account-unlink + Administrator deletion RPC exists'
+);
+
+select ok(
+  not has_function_privilege(
+    'anon', 'public.delete_administrator_with_accounts(uuid,uuid)', 'EXECUTE'
+  ),
+  'Anonymous clients cannot call the privileged delete RPC'
+);
+
+select ok(
+  not has_function_privilege(
+    'authenticated', 'public.delete_administrator_with_accounts(uuid,uuid)', 'EXECUTE'
+  ),
+  'Authenticated clients cannot call the privileged delete RPC directly'
+);
+
+select ok(
+  has_function_privilege(
+    'service_role', 'public.delete_administrator_with_accounts(uuid,uuid)', 'EXECUTE'
+  ),
+  'Server-side service role may call the atomic delete RPC'
+);
+
+select ok(
+  not (
+    select p.prosecdef
+    from pg_catalog.pg_proc p
+    where p.oid = 'public.delete_administrator_with_accounts(uuid,uuid)'::regprocedure
+  ),
+  'Delete RPC uses caller privileges rather than SECURITY DEFINER'
+);
+
+select throws_ok(
+  $update public.administrators
+      set school_id='00000000-0000-0000-0000-000000000099'
+      where id='6b000000-0000-4000-8000-000000000001'$,
+  '23514', null,
+  'Administrator school ownership cannot be reassigned by direct updates'
 );
 
 select lives_ok(
