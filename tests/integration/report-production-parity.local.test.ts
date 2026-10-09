@@ -36,6 +36,7 @@ import {
 } from '@/features/reports/class-report-finalization.repository';
 import {getClassReportCycleEmailPreviewAction} from '@/features/reports/class-report-preview.actions';
 import {getReportBatchWorkspace} from '@/features/reports/report-batch.repository';
+import {eligibleReportSourcesForStudent} from '@/features/reports/report-source-roster';
 import {renderReportEmail, renderReportEmailSubject} from '@/features/email/report-email';
 import {renderStudentReportV2} from '@/features/reports/report.renderer';
 import type {ReportSnapshotV2} from '@/features/reports/report.types';
@@ -119,6 +120,7 @@ describe.skipIf(!enabled)('private restored-production report and email parity',
     let reportsChecked = 0;
     let sectionsChecked = 0;
     let attendanceChecked = 0;
+    let excludedAttendance = 0;
     let explicitFieldsChecked = 0;
     let studentOverrides = 0;
 
@@ -136,6 +138,29 @@ describe.skipIf(!enabled)('private restored-production report and email parity',
         .eq('school_id', cycle.school_id)
         .in('approval_id', approvalIds);
       if (overrideError) throw new Error('Unable to load restored Admin override records');
+
+      const subjectIds = [...new Set(approvals.map((a) => a.classSubjectId))];
+      const [enrollmentResult, membershipResult, exclusionResult, studentResult] = await Promise.all([
+        db.from('class_enrollments')
+          .select('student_id,starts_on,ends_on')
+          .eq('school_id', cycle.school_id).eq('class_id', workspace!.batch.classId),
+        db.from('subject_group_memberships')
+          .select('student_id,class_subject_id,subject_group_id,starts_on,ends_on')
+          .eq('school_id', cycle.school_id).in('class_subject_id', subjectIds),
+        db.from('subject_exclusions')
+          .select('student_id,class_subject_id,starts_on,ends_on')
+          .eq('school_id', cycle.school_id).in('class_subject_id', subjectIds),
+        db.from('students').select('id')
+          .eq('school_id', cycle.school_id).eq('is_active', true)
+      ]);
+      if ([enrollmentResult, membershipResult, exclusionResult, studentResult]
+        .some((result) => result.error)) {
+        throw new Error('Unable to load restored eligibility context');
+      }
+      const enrollments = enrollmentResult.data ?? [];
+      const memberships = membershipResult.data ?? [];
+      const exclusions = exclusionResult.data ?? [];
+      const activeStudentIds = new Set((studentResult.data ?? []).map((row) => row.id));
 
       state.finalized.length = 0;
       const count = await finalizeClassReportCycleReports(cycle.school_id, cycle.id);
@@ -194,9 +219,24 @@ describe.skipIf(!enabled)('private restored-production report and email parity',
           s.classSubjectId === approval!.classSubjectId &&
           s.subjectGroupId === approval!.subjectGroupId
         );
+        const eligible = activeStudentIds.has(override.student_id) &&
+          eligibleReportSourcesForStudent({
+            studentId: override.student_id,
+            classSubjectId: approval!.classSubjectId,
+            subjectGroupId: approval!.subjectGroupId,
+            reportStart: workspace!.batch.periodStart,
+            reportEnd: workspace!.batch.periodEnd,
+            sources,
+            enrollments,
+            memberships,
+            exclusions
+          }).length > 0;
+        if (!eligible) {
+          if (override.attendance_attended !== null &&
+              override.attendance_total !== null) excludedAttendance++;
+          continue;
+        }
         const snapshot = byStudent.get(override.student_id);
-        // Overrides for a legitimately ineligible student have no report;
-        // count them as a release-gate failure rather than silently discarding.
         expect(snapshot).toBeDefined();
         const sections = snapshot!.sections.filter((section) =>
           section.classSubjectId === approval!.classSubjectId &&
@@ -238,12 +278,13 @@ describe.skipIf(!enabled)('private restored-production report and email parity',
       }
     }
 
-    expect(attendanceChecked).toBe(87);
+    expect(attendanceChecked + excludedAttendance).toBe(87);
     expect(studentOverrides).toBeGreaterThanOrEqual(87);
     // Only aggregate statistics go to the terminal; never print school data.
     console.log('PASS: 3 cycles; reports=' + reportsChecked +
       '; report sections=' + sectionsChecked +
-      '; saved attendance pairs=' + attendanceChecked +
+      '; eligible attendance pairs=' + attendanceChecked +
+      '; out-of-eligibility historical pairs=' + excludedAttendance +
       '; checked explicit Admin fields=' + explicitFieldsChecked);
   });
 });
