@@ -35,7 +35,7 @@ describe('roster CSV repository contract', () => {
   it('creates missing Classes inside the roster import transaction', () => {
     const migrationPath = join(
       process.cwd(),
-      'supabase/migrations/20260930053000_roster_import_create_classes.sql'
+      'supabase/migrations/20260930054051_roster_import_create_classes.sql'
     );
 
     expect(existsSync(migrationPath)).toBe(true);

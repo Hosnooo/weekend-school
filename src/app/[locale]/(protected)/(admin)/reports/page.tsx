@@ -15,6 +15,7 @@ import {sendAdminReportBatchAction} from '@/features/reports/admin-report-delive
 import {
   cancelClassReportCycleAction,
   createClassReportCycleAction,
+  requestAllReportCycleMissingUpdatesAction,
   openAdminReportContextAction
 } from '@/features/reports/admin-report-workflow.actions';
 import {listClassReportCycles} from '@/features/reports/report-batch.repository';
@@ -79,6 +80,7 @@ export default async function ReportsPage({
     periodEnd?: string;
     error?: string;
     cancelled?: string;
+    requested?: string;
   }>;
 }) {
   const {locale} = await params;
@@ -127,6 +129,12 @@ export default async function ReportsPage({
   const activeClasses = classes.filter(
     ({isActive}) => isActive
   );
+  const pendingPeriods = [...new Map(
+    cycles.filter((cycle) => cycle.status !== 'FINALIZED').map((cycle) => [
+      `${cycle.periodStart}:${cycle.periodEnd}`,
+      {start: cycle.periodStart, end: cycle.periodEnd}
+    ])
+  ).values()];
 
   const historicalContexts = contexts.filter(
     ({batchId}) => Boolean(batchId)
@@ -178,6 +186,11 @@ export default async function ReportsPage({
         {query.cancelled ? (
           <p className="form-success">{t('cycleDismissed')}</p>
         ) : null}
+        {query.requested !== undefined ? (
+          <p className="form-success">
+            {t('bulkRequestResult', {count: Number(query.requested) || 0})}
+          </p>
+        ) : null}
         {query.error ? (
           <p className="form-error">
             {userReportError(t, query.error)}
@@ -190,6 +203,29 @@ export default async function ReportsPage({
           </div>
         </div>
 
+        {pendingPeriods.length > 0 ? (
+          <div className="stack">
+            {pendingPeriods.map((period) => (
+              <div className="report-cycle-row" key={`${period.start}:${period.end}`}>
+                <span className="record-meta">
+                  {formatTeachingUpdateRange(period.start, period.end, locale)}
+                </span>
+                <form action={requestAllReportCycleMissingUpdatesAction}>
+                  <input name="locale" type="hidden" value={locale} />
+                  <input name="periodStart" type="hidden" value={period.start} />
+                  <input name="periodEnd" type="hidden" value={period.end} />
+                  <ConfirmSubmitButton
+                    className="button button-secondary"
+                    confirmMessage={t('requestAllMissingConfirm')}
+                    type="submit"
+                  >
+                    {t('requestAllMissing')}
+                  </ConfirmSubmitButton>
+                </form>
+              </div>
+            ))}
+          </div>
+        ) : null}
         {cycles.length === 0 ? (
           <EmptyState title={t('noReportCycles')} />
         ) : (

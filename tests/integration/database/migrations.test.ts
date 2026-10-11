@@ -62,8 +62,8 @@ describe('migration contract', () => {
   it('keeps migrations in dependency order', async () => {
     const {filenames} = await readMigrations();
     // Preserve the exact historical migrations and verified Administrator
-    // guard, while allowing only the two reviewed additive attendance/report
-    // authority migrations after it.
+    // guard, while allowing the reviewed additive attendance, report
+    // authority, and Class request coordination migrations after it.
     const guardFiles = filenames.filter((name) =>
       /^\d{14}_prevent_last_active_administrator_race\.sql$/.test(name)
     );
@@ -79,7 +79,8 @@ describe('migration contract', () => {
 
     const forwardFiles = [
       '20261009090000_numeric_teacher_attendance.sql',
-      '20261009091000_admin_approved_reports_atomic.sql'
+      '20261009091000_admin_approved_reports_atomic.sql',
+      '20261011230044_class_report_request_idempotency.sql'
     ];
     expect(filenames.slice(-forwardFiles.length)).toEqual(forwardFiles);
     if (guardFiles.length > 0) {

@@ -728,57 +728,46 @@ export async function requestReportCycleMissingUpdateAction(
 ) {
   const locale = localeFrom(formData);
   await requireProfile(locale, 'ADMIN');
-
   const batchId = batchIdFrom(formData);
-  const classSubjectId = databaseUuid.safeParse(
-    formData.get('classSubjectId')
-  );
+  if (!batchId.success) redirect(`/${locale}/reports?error=validation`);
 
-  const period = periodFrom(formData);
-
-  if (
-    !batchId.success ||
-    !classSubjectId.success ||
-    !period.success
-  ) {
-    redirect(`/${locale}/reports?error=validation`);
-  }
-
-  const db =
-    (await createServerSupabaseClient()) as unknown as SupabaseClient;
-
-  const {error} = await db.rpc(
-    'request_teaching_update',
-    {
-      p_class_subject_id: classSubjectId.data,
-      p_coverage_kind: 'RANGE',
-      p_period_start: period.data.periodStart,
-      p_period_end: period.data.periodEnd,
-      p_dates: [],
-      p_admin_note: null
-    }
-  );
-
+  const db = (await createServerSupabaseClient()) as unknown as SupabaseClient;
+  const {data, error} = await db.rpc('request_missing_class_report_updates', {
+    p_batch_id: batchId.data,
+    p_include_dismissed: formData.get('includeDismissed') === '1'
+  });
   if (error) {
-    console.error(
-      'Unable to request missing Report Cycle update',
-      {error}
-    );
-
-    redirect(
-      `/${locale}/reports/workspace/${batchId.data}?error=${reportWorkflowErrorCode(error)}`
-    );
+    console.error('Unable to request missing Class updates', {error});
+    redirect(`/${locale}/reports/workspace/${batchId.data}?error=${reportWorkflowErrorCode(error)}`);
   }
-
-  revalidatePath(
-    `/${locale}/reports/workspace/${batchId.data}`
-  );
+  revalidatePath(`/${locale}/reports`);
+  revalidatePath(`/${locale}/reports/workspace/${batchId.data}`);
   revalidatePath(`/${locale}/teaching-updates`);
   revalidatePath(`/${locale}/my-teaching`);
+  redirect(`/${locale}/reports/workspace/${batchId.data}?requested=${Number(data) || 0}`);
+}
 
-  redirect(
-    `/${locale}/reports/workspace/${batchId.data}?requested=1`
-  );
+export async function requestAllReportCycleMissingUpdatesAction(
+  formData: FormData
+) {
+  const locale = localeFrom(formData);
+  await requireProfile(locale, 'ADMIN');
+  const period = periodFrom(formData);
+  if (!period.success) redirect(`/${locale}/reports?error=validation`);
+
+  const db = (await createServerSupabaseClient()) as unknown as SupabaseClient;
+  const {data, error} = await db.rpc('request_all_missing_report_cycle_updates', {
+    p_period_start: period.data.periodStart,
+    p_period_end: period.data.periodEnd
+  });
+  if (error) {
+    console.error('Unable to request all missing Class updates', {error});
+    redirect(`/${locale}/reports?error=${reportWorkflowErrorCode(error)}`);
+  }
+  revalidatePath(`/${locale}/reports`);
+  revalidatePath(`/${locale}/teaching-updates`);
+  revalidatePath(`/${locale}/my-teaching`);
+  redirect(`/${locale}/reports?requested=${Number(data) || 0}`);
 }
 
 export async function finalizeClassReportCycleAction(
