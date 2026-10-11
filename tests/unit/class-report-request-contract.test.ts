@@ -3,7 +3,7 @@ import {resolve} from 'node:path';
 import {describe, expect, it} from 'vitest';
 
 const read = (path: string) => readFileSync(resolve(process.cwd(), path), 'utf8');
-const migration = read('supabase/migrations/20261011220100_class_report_request_idempotency.sql');
+const migration = read('supabase/migrations/20261011230044_class_report_request_idempotency.sql');
 const repository = read('src/features/reports/report-batch.repository.ts');
 const actions = read('src/features/reports/admin-report-workflow.actions.ts');
 const review = read('src/features/reports/report-cycle-source-review.tsx');

@@ -80,7 +80,7 @@ describe('migration contract', () => {
     const forwardFiles = [
       '20261009090000_numeric_teacher_attendance.sql',
       '20261009091000_admin_approved_reports_atomic.sql',
-      '20261011220100_class_report_request_idempotency.sql'
+      '20261011230044_class_report_request_idempotency.sql'
     ];
     expect(filenames.slice(-forwardFiles.length)).toEqual(forwardFiles);
     if (guardFiles.length > 0) {
