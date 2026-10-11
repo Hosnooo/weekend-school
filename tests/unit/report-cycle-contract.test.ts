@@ -125,6 +125,8 @@ describe('Class Report Cycle contract', () => {
     expect(component).toContain(
       'requestReportCycleMissingUpdateAction'
     );
+    expect(component).toContain('classCycle.requestContexts');
+    expect(component).toContain('includeDismissed');
     expect(component).toContain('report-source-row');
     expect(component).toContain('formatTeachingUpdateDate');
   });

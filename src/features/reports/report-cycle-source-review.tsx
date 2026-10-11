@@ -52,7 +52,14 @@ const copy = {
     sentReadOnly: 'Already sent — corrections require a new report revision.',
     lockedSaveError: 'This report has entered delivery and cannot be edited here.',
     saveAndClose: 'Save & close',
-    cancel: 'Cancel'
+    cancel: 'Cancel',
+    requestMissingClass: 'Request missing updates for this class',
+    requestDismissed: 'Request again for dismissed updates',
+    stateReceived: 'Received',
+    statePending: 'Awaiting teacher',
+    stateDismissed: 'Dismissed by teacher',
+    stateMissing: 'Not requested',
+    dismissalReason: 'Reason'
   },
   ar: {
     validationError: 'راجع فترة التقرير وبيانات الطلاب ثم أعد المحاولة.',
@@ -73,7 +80,14 @@ const copy = {
     sentReadOnly: 'تم إرسال التقرير — تتطلب التصحيحات إصدار نسخة معدلة.',
     lockedSaveError: 'بدأ إرسال هذا التقرير ولا يمكن تعديله من هنا.',
     saveAndClose: 'حفظ وإغلاق',
-    cancel: 'إلغاء'
+    cancel: 'إلغاء',
+    requestMissingClass: 'طلب التحديثات الناقصة لهذا الصف',
+    requestDismissed: 'إعادة طلب التحديثات المستبعدة',
+    stateReceived: 'تم الاستلام',
+    statePending: 'بانتظار المعلم',
+    stateDismissed: 'استبعده المعلم',
+    stateMissing: 'لم يُطلب',
+    dismissalReason: 'السبب'
   }
 } as const;
 
@@ -531,71 +545,65 @@ export async function ReportCycleSourceReview({
 
       <span id="report-edit-closed" />
 
-      {classCycle.missingContexts.length > 0 ? (
+      {classCycle.requestContexts.length > 0 ? (
         <section className="stack report-missing-updates">
           <div>
             <h3>{t('missingUpdates')}</h3>
             <p>{t('missingUpdatesHelp')}</p>
           </div>
-
           <div className="report-source-list">
-            {classCycle.missingContexts.map((context) => (
+            {classCycle.requestContexts.map((context) => (
               <article
                 className="report-source-row"
-                key={contextKey(
-                  context.classSubjectId,
-                  context.subjectGroupId
-                )}
+                key={contextKey(context.classSubjectId, context.subjectGroupId)}
               >
                 <div className="report-source-main">
                   <strong className="record-name">
-                    {localize(
-                      context.subjectNameEn,
-                      context.subjectNameAr
-                    )}
+                    {localize(context.subjectNameEn, context.subjectNameAr)}
                     {context.subjectGroupId
-                      ? ` · ${localize(
-                          context.groupNameEn,
-                          context.groupNameAr
-                        )}`
+                      ? ` · ${localize(context.groupNameEn, context.groupNameAr)}`
                       : ''}
                   </strong>
+                  {context.requestState === 'DISMISSED' && context.dismissalReason ? (
+                    <p className="record-meta">
+                      {ui.dismissalReason}: {context.dismissalReason}
+                    </p>
+                  ) : null}
                 </div>
-
-                {classCycle.batch.status !== 'FINALIZED' ? (
-                  <form action={requestReportCycleMissingUpdateAction}>
-                    <input name="locale" type="hidden" value={locale} />
-                    <input
-                      name="batchId"
-                      type="hidden"
-                      value={classCycle.batch.id}
-                    />
-                    <input
-                      name="classSubjectId"
-                      type="hidden"
-                      value={context.classSubjectId}
-                    />
-                    <input
-                      name="periodStart"
-                      type="hidden"
-                      value={classCycle.batch.periodStart}
-                    />
-                    <input
-                      name="periodEnd"
-                      type="hidden"
-                      value={classCycle.batch.periodEnd}
-                    />
-                    <button
-                      className="button button-secondary"
-                      type="submit"
-                    >
-                      {t('requestMissingUpdate')}
-                    </button>
-                  </form>
-                ) : null}
+                <Badge variant={
+                  context.requestState === 'RECEIVED' ? 'success' :
+                  context.requestState === 'PENDING' ? 'warning' : 'neutral'
+                }>
+                  {context.requestState === 'RECEIVED' ? ui.stateReceived :
+                    context.requestState === 'PENDING' ? ui.statePending :
+                    context.requestState === 'DISMISSED' ? ui.stateDismissed : ui.stateMissing}
+                </Badge>
               </article>
             ))}
           </div>
+          {classCycle.batch.status !== 'FINALIZED' ? (
+            <div className="row-actions">
+              {classCycle.requestContexts.some((context) => context.requestState === 'MISSING') ? (
+                <form action={requestReportCycleMissingUpdateAction}>
+                  <input name="locale" type="hidden" value={locale} />
+                  <input name="batchId" type="hidden" value={classCycle.batch.id} />
+                  <button className="button button-primary" type="submit">
+                    {ui.requestMissingClass}
+                  </button>
+                </form>
+              ) : null}
+              {classCycle.requestContexts.some((context) => context.requestState === 'DISMISSED') ? (
+                <form action={requestReportCycleMissingUpdateAction}>
+                  <input name="locale" type="hidden" value={locale} />
+                  <input name="batchId" type="hidden" value={classCycle.batch.id} />
+                  <input name="includeDismissed" type="hidden" value="1" />
+                  <button className="button button-secondary" type="submit">
+                    {ui.requestDismissed}
+                  </button>
+                </form>
+              ) : null}
+            </div>
+          ) : null}
         </section>
       ) : null}
     </section>

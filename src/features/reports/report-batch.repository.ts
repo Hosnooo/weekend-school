@@ -1025,7 +1025,11 @@ export type ClassReportCycleListItem = {
   canDismiss: boolean;
 };
 
+export type ClassReportCycleRequestState = 'RECEIVED' | 'PENDING' | 'DISMISSED' | 'MISSING';
+
 export type ClassReportCycleMissingContext = {
+  requestState?: ClassReportCycleRequestState;
+  dismissalReason?: string | null;
   classSubjectId: string;
   subjectGroupId: string | null;
   subjectNameEn: string;
@@ -1037,6 +1041,7 @@ export type ClassReportCycleMissingContext = {
 export type ClassReportCycleWorkspace =
   ReportBatchWorkspace & {
     missingContexts: ClassReportCycleMissingContext[];
+    requestContexts: ClassReportCycleMissingContext[];
     canDismiss: boolean;
     reports: Array<{
       id: string;
@@ -1359,6 +1364,49 @@ export async function getClassReportCycleWorkspace(
       )
   );
 
+  const queueResult = classSubjectIds.length > 0
+    ? await db.from('weekly_submissions')
+        .select('id,class_subject_id,subject_group_id,status,coverage_kind,period_start,period_end,request_set_id,dismissal_reason,created_at')
+        .eq('school_id', schoolId)
+        .in('class_subject_id', classSubjectIds)
+        .lte('period_start', workspace.batch.periodEnd)
+        .gte('period_end', workspace.batch.periodStart)
+        .order('created_at', {ascending: false})
+    : {data: [], error: null};
+  if (queueResult.error) throw queueResult.error;
+
+  const queued = queueResult.data ?? [];
+  const requestContexts = expectedContexts.map((context) => {
+    const key = contextKey(context.classSubjectId, context.subjectGroupId);
+    if (eligibleContextKeys.has(key)) {
+      return {...context, requestState: 'RECEIVED' as const, dismissalReason: null};
+    }
+    const matching = queued.filter((item) =>
+      item.class_subject_id === context.classSubjectId &&
+      item.subject_group_id === context.subjectGroupId
+    );
+    if (matching.some((item) =>
+      item.status === 'DRAFT' &&
+      item.coverage_kind === 'RANGE' &&
+      item.period_start <= workspace.batch.periodStart &&
+      item.period_end >= workspace.batch.periodEnd
+    )) {
+      return {...context, requestState: 'PENDING' as const, dismissalReason: null};
+    }
+    const dismissed = matching.find((item) =>
+      item.status === 'DISMISSED' &&
+      item.request_set_id !== null &&
+      item.coverage_kind === 'RANGE' &&
+      item.period_start === workspace.batch.periodStart &&
+      item.period_end === workspace.batch.periodEnd
+    );
+    return {
+      ...context,
+      requestState: dismissed ? 'DISMISSED' as const : 'MISSING' as const,
+      dismissalReason: dismissed?.dismissal_reason ?? null
+    };
+  });
+
   const reports = (
     reportsResult.data ?? []
   ) as unknown as Array<{
@@ -1378,6 +1426,7 @@ export async function getClassReportCycleWorkspace(
   return {
     ...workspace,
     missingContexts,
+    requestContexts,
     canDismiss: dismissibleIds.has(batchId),
     // Preserve past snapshots in the database, but expose only the latest
     // revision of each student's report to the active preview and selector.
