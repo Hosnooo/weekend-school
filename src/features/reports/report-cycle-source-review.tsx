@@ -7,6 +7,7 @@ import {formatTeachingUpdateDate, formatTeachingUpdateRange} from '@/features/te
 import type {Locale} from '@/i18n/config';
 
 import {
+  requestReportCycleContextUpdateAction,
   requestReportCycleMissingUpdateAction
 } from './admin-report-workflow.actions';
 import type {ClassReportReviewWorkspaceWithAttendance} from './class-report-attendance.repository';
@@ -54,6 +55,8 @@ const copy = {
     saveAndClose: 'Save & close',
     cancel: 'Cancel',
     requestMissingClass: 'Request missing updates for this class',
+    requestOneUpdate: 'Request update',
+    requestOneAgain: 'Request again',
     requestDismissed: 'Request again for dismissed updates',
     stateReceived: 'Received',
     statePending: 'Awaiting teacher',
@@ -82,6 +85,8 @@ const copy = {
     saveAndClose: 'حفظ وإغلاق',
     cancel: 'إلغاء',
     requestMissingClass: 'طلب التحديثات الناقصة لهذا الصف',
+    requestOneUpdate: 'طلب تحديث',
+    requestOneAgain: 'إعادة الطلب',
     requestDismissed: 'إعادة طلب التحديثات المستبعدة',
     stateReceived: 'تم الاستلام',
     statePending: 'بانتظار المعلم',
@@ -578,6 +583,21 @@ export async function ReportCycleSourceReview({
                     context.requestState === 'PENDING' ? ui.statePending :
                     context.requestState === 'DISMISSED' ? ui.stateDismissed : ui.stateMissing}
                 </Badge>
+                {classCycle.batch.status !== 'FINALIZED' &&
+                  (context.requestState === 'MISSING' || context.requestState === 'DISMISSED') ? (
+                    <form action={requestReportCycleContextUpdateAction}>
+                      <input name="locale" type="hidden" value={locale} />
+                      <input name="batchId" type="hidden" value={classCycle.batch.id} />
+                      <input name="classSubjectId" type="hidden" value={context.classSubjectId} />
+                      <input name="subjectGroupId" type="hidden" value={context.subjectGroupId ?? ''} />
+                      {context.requestState === 'DISMISSED' ? (
+                        <input name="includeDismissed" type="hidden" value="1" />
+                      ) : null}
+                      <button className="button button-secondary" type="submit">
+                        {context.requestState === 'DISMISSED' ? ui.requestOneAgain : ui.requestOneUpdate}
+                      </button>
+                    </form>
+                  ) : null}
               </article>
             ))}
           </div>

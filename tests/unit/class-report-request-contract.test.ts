@@ -37,7 +37,9 @@ describe('Idempotent Class Report Cycle request coordination', () => {
       expect(review).toContain(state);
     }
     expect(review).toContain('dismissalReason');
-    expect(review).not.toContain('name="classSubjectId"\n                      type="hidden"\n                      value={context.classSubjectId}\n                    />');
+    expect(review).toContain('requestReportCycleContextUpdateAction');
+    expect(review).toContain("context.requestState === 'MISSING'");
+    expect(review).toContain("context.requestState === 'DISMISSED'");
   });
   it('keeps class and bulk requests separate and bilingual', () => {
     expect(actions).toContain("'request_missing_class_report_updates'");
