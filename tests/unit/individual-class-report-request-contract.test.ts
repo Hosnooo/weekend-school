@@ -3,7 +3,7 @@ import {resolve} from 'node:path';
 import {describe, expect, it} from 'vitest';
 
 const read = (path: string) => readFileSync(resolve(process.cwd(), path), 'utf8');
-const sql = read('supabase/migrations/20261011235500_restore_individual_report_requests.sql');
+const sql = read('supabase/migrations/20261011231340_restore_individual_report_requests.sql');
 const view = read('src/features/reports/report-cycle-source-review.tsx');
 const actions = read('src/features/reports/admin-report-workflow.actions.ts');
 
