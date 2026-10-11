@@ -747,6 +747,37 @@ export async function requestReportCycleMissingUpdateAction(
   redirect(`/${locale}/reports/workspace/${batchId.data}?requested=${Number(data) || 0}`);
 }
 
+export async function requestReportCycleContextUpdateAction(
+  formData: FormData
+) {
+  const locale = localeFrom(formData);
+  await requireProfile(locale, 'ADMIN');
+  const batchId = batchIdFrom(formData);
+  const classSubjectId = databaseUuid.safeParse(formData.get('classSubjectId'));
+  const subjectGroupId = optionalGroupIdFrom(formData);
+
+  if (!batchId.success || !classSubjectId.success || !subjectGroupId.success) {
+    redirect(`/${locale}/reports?error=validation`);
+  }
+
+  const db = (await createServerSupabaseClient()) as unknown as SupabaseClient;
+  const {data, error} = await db.rpc('request_class_report_context_update', {
+    p_batch_id: batchId.data,
+    p_class_subject_id: classSubjectId.data,
+    p_subject_group_id: subjectGroupId.data,
+    p_include_dismissed: formData.get('includeDismissed') === '1'
+  });
+  if (error) {
+    console.error('Unable to request individual Teaching Update', {error});
+    redirect(`/${locale}/reports/workspace/${batchId.data}?error=${reportWorkflowErrorCode(error)}`);
+  }
+  revalidatePath(`/${locale}/reports`);
+  revalidatePath(`/${locale}/reports/workspace/${batchId.data}`);
+  revalidatePath(`/${locale}/teaching-updates`);
+  revalidatePath(`/${locale}/my-teaching`);
+  redirect(`/${locale}/reports/workspace/${batchId.data}?requested=${Number(data) || 0}`);
+}
+
 export async function requestAllReportCycleMissingUpdatesAction(
   formData: FormData
 ) {
