@@ -20,12 +20,16 @@ select set_config('request.jwt.claim.role','authenticated',true);
 select set_config('request.jwt.claim.sub','b0000000-0000-0000-0000-000000000001',true);
 
 create temporary table pg_temp.shared_save_fixture(id uuid primary key);
+with request as materialized (
+  select public.request_teaching_update(
+    '8a300000-0000-0000-0000-000000000001','RANGE',
+    date '2026-09-01',date '2026-09-02',
+    null::date[],'Shared draft save regression'
+  ) as request_set_id
+)
 insert into pg_temp.shared_save_fixture(id)
-select ws.id
-from public.weekly_submissions ws
-where ws.request_set_id = public.request_teaching_update(
-'8a300000-0000-0000-0000-000000000001','RANGE',date '2026-09-01',date '2026-09-02',
-null::date[],'Shared draft save regression');
+select ws.id from public.weekly_submissions ws
+join request on ws.request_set_id = request.request_set_id;
 
 select set_config('request.jwt.claim.sub','b0000000-0000-0000-0000-000000000002',true);
 select lives_ok($probe$
