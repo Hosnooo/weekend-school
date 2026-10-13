@@ -11,7 +11,8 @@ import {PageHeader} from '@/components/ui/page-header';
 import {listClasses} from '@/features/classes/class.repository';
 import {listAdminReportContexts} from '@/features/reports/admin-report-contexts.repository';
 import type {AdminReportContextStatus} from '@/features/reports/admin-report-contexts';
-import {sendAdminReportBatchAction} from '@/features/reports/admin-report-delivery.actions';
+import {GuardianDeliveryPanel} from '@/features/reports/guardian-delivery-panel';
+import {GuardianDeliveryOutcome} from '@/features/reports/guardian-delivery-outcome';
 import {
   cancelClassReportCycleAction,
   createClassReportCycleAction,
@@ -81,6 +82,12 @@ export default async function ReportsPage({
     error?: string;
     cancelled?: string;
     requested?: string;
+    sent?: string;
+    failed?: string;
+    skipped?: string;
+    missing?: string;
+    already?: string;
+    pending?: string;
   }>;
 }) {
   const {locale} = await params;
@@ -181,6 +188,7 @@ export default async function ReportsPage({
         description={t('description')}
         title={t('title')}
       />
+      <GuardianDeliveryOutcome locale={locale} result={query}/>
 
       <section className="report-cycle-active detail-section">
         {query.cancelled ? (
@@ -471,35 +479,15 @@ export default async function ReportsPage({
                         <div className="row-actions">
                           {(context.status === 'READY_TO_SEND' ||
                             context.status === 'DELIVERY_ISSUE') &&
-                          context.batchId ? (
-                            <form action={sendAdminReportBatchAction}>
-                              {hiddenPeriod}
-
-                              <input
-                                name="batchId"
-                                type="hidden"
-                                value={context.batchId}
-                              />
-                              <input
-                                name="returnTo"
-                                type="hidden"
-                                value="queue"
-                              />
-
-                              <ConfirmSubmitButton
-                                className="button button-primary"
-                                confirmMessage={`${
-                                  context.status === 'DELIVERY_ISSUE'
-                                    ? t('retryContextDelivery')
-                                    : t('sendContextReports')
-                                }?`}
-                                type="submit"
-                              >
-                                {context.status === 'DELIVERY_ISSUE'
-                                  ? t('retryContextDelivery')
-                                  : t('sendContextReports')}
-                              </ConfirmSubmitButton>
-                            </form>
+                            context.batchId ? (
+                            <GuardianDeliveryPanel
+                              schoolId={profile.schoolId}
+                              batchId={context.batchId}
+                              periodStart={periodStart}
+                              periodEnd={periodEnd}
+                              locale={locale}
+                              returnTo="queue"
+                            />
                           ) : null}
 
                           <form action={openAdminReportContextAction}>

@@ -70,12 +70,14 @@ export async function reserveDelivery(
     delivery_id: string;
     should_send: boolean;
     recipient_email: string;
+    requires_reconciliation?: boolean;
   };
 
   return {
     deliveryId: value.delivery_id,
     shouldSend: value.should_send,
-    recipientEmail: value.recipient_email
+    recipientEmail: value.recipient_email,
+    requiresReconciliation: value.requires_reconciliation ?? false
   };
 }
 

@@ -1,6 +1,8 @@
 import {getTranslations} from 'next-intl/server';
 import {notFound} from 'next/navigation';
 
+import {GuardianDeliveryOutcome} from '@/features/reports/guardian-delivery-outcome';
+import {DeliveryAttentionPanel} from '@/features/reports/delivery-attention-panel';
 import {Badge} from '@/components/ui/badge';
 import {DataTable} from '@/components/ui/data-table';
 import {EmptyState} from '@/components/ui/empty-state';
@@ -20,7 +22,7 @@ export default async function DeliveryStatusPage({
   searchParams
 }: {
   params: Promise<{locale: string}>;
-  searchParams: Promise<{status?: string}>;
+  searchParams: Promise<{status?: string;sent?:string;failed?:string;already?:string;pending?:string;error?:string}>;
 }) {
   const {locale} = await params;
   if (!isLocale(locale)) notFound();
@@ -67,6 +69,9 @@ export default async function DeliveryStatusPage({
         description={t('deliveryStatusDescription')}
         title={t('deliveryStatusTitle')}
       />
+
+      <GuardianDeliveryOutcome locale={locale} result={query}/>
+      <DeliveryAttentionPanel schoolId={profile.schoolId} locale={locale}/>
 
       <nav
         aria-label={t('deliveryStatusTitle')}

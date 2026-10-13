@@ -31,7 +31,7 @@ describe('Admin Reports navigation', () => {
     expect(workspace).toContain('saveAdminReportWorkspaceAction');
     expect(workspace).toContain('finalizeAdminReportWorkspaceAction');
     expect(workspace).toContain('reopenAdminReportWorkspaceAction');
-    expect(workspace).toContain('sendAdminReportBatchAction');
+    expect(workspace).toContain('GuardianDeliveryPanel');
     expect(workspace).toContain('href={backHref}');
   });
 
@@ -56,7 +56,7 @@ describe('Admin Reports navigation', () => {
   it('offers delivery actions directly from the report queue', () => {
     const page = readFileSync(listPath, 'utf8');
 
-    expect(page).toContain('sendAdminReportBatchAction');
+    expect(page).toContain('GuardianDeliveryPanel');
     expect(page).toContain("'READY_TO_SEND'");
     expect(page).toContain("'DELIVERY_ISSUE'");
     expect(page).toContain('ConfirmSubmitButton');
