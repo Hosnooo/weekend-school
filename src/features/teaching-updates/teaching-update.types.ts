@@ -84,6 +84,7 @@ export type TeachingUpdateActionState = {
     | 'context'
     | null;
   submissionId: string | null;
+  savedVersion?: number;
   overlaps: TeachingUpdateOverlap[];
   issues?: ValidationIssue[];
 };

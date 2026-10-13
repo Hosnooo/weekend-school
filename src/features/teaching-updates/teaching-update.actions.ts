@@ -211,6 +211,7 @@ export async function saveTeachingUpdateDraftAction(
       status: 'saved',
       error: null,
       submissionId,
+      savedVersion: (parsed.data.expectedVersion ?? 0) + 1,
       overlaps
     };
   } catch (error) {

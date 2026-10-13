@@ -42,17 +42,22 @@ export function getTeachingUpdateSubmitIssues(input: SubmitReadinessInput): Subm
     const total = row?.total ?? null;
     if (attended === null && total === null) {
       issues.push({code: 'missingBoth', studentId: student.id});
-    } else if (attended === null) {
+      continue;
+    }
+    if (attended === null) {
       issues.push({code: 'missingAttended', studentId: student.id});
-    } else if (total === null) {
+    } else if (!Number.isInteger(attended) || attended < 0) {
+      issues.push({code: 'invalidAttended', studentId: student.id});
+    }
+    if (total === null) {
       issues.push({code: 'missingTotal', studentId: student.id});
-    } else {
-      if (!Number.isInteger(attended) || attended < 0)
-        issues.push({code: 'invalidAttended', studentId: student.id});
-      if (!Number.isInteger(total) || total <= 0)
-        issues.push({code: 'invalidTotal', studentId: student.id});
-      if (Number.isInteger(attended) && Number.isInteger(total) && attended > total)
-        issues.push({code: 'attendedExceedsTotal', studentId: student.id});
+    } else if (!Number.isInteger(total) || total <= 0) {
+      issues.push({code: 'invalidTotal', studentId: student.id});
+    }
+    if (attended !== null && total !== null &&
+        Number.isInteger(attended) && Number.isInteger(total) &&
+        attended >= 0 && total > 0 && attended > total) {
+      issues.push({code: 'attendedExceedsTotal', studentId: student.id});
     }
   }
   return issues;

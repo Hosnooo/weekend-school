@@ -34,6 +34,16 @@ describe('Teaching Update submission requirements', () => {
       {code: 'attendedExceedsTotal', studentId: b}
     ]);
   });
+  it('reports an invalid total even when attended count is blank', () => {
+    expect(getTeachingUpdateSubmitIssues({
+      ...base, roster: [{id: a}],
+      attendance: [{studentId: a, attended: null, total: 0}]
+    })).toEqual([
+      {code: 'missingAttended', studentId: a},
+      {code: 'invalidTotal', studentId: a}
+    ]);
+  });
+
   it('explains missing and future coverage', () => {
     expect(getTeachingUpdateSubmitIssues({
       ...base, coverageKind: 'DATES', dates: [], roster: [],

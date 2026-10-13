@@ -54,6 +54,9 @@ describe('Teaching Update draft and submission usability', () => {
   it('keeps accurate save feedback after failures and clears old submit errors after saving', () => {
     expect(editor).toContain("state.status === 'error'");
     expect(editor).toContain("t('notSaved')");
+    expect(editor).toContain('const effectiveVersion');
+    expect(editor).toContain('value={effectiveVersion}');
+    expect(actions).toContain('savedVersion: (parsed.data.expectedVersion ?? 0) + 1');
     expect(editor).toContain("submissionError && state.status !== 'saved'");
     for (const key of ['validation','save','conflict','permission','locked','context']) {
       expect(en.saveIssue[key]).toBeTruthy();

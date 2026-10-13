@@ -145,6 +145,11 @@ export function TeachingUpdateEditor({
     unsaved: dirty || pending || state.status === 'error'
   });
   const canSubmit = update.status === 'OPEN' && submitIssues.length === 0;
+  // The saved action returns the committed version immediately. A router refresh
+  // may not have delivered the new server props when Submit is pressed.
+  const effectiveVersion = state.status === 'saved'
+    ? Math.max(update.version, state.savedVersion ?? update.version)
+    : update.version;
 
   const localName = (
     english: string,
@@ -267,7 +272,7 @@ export function TeachingUpdateEditor({
         <input
           name="expectedVersion"
           type="hidden"
-          value={update.version}
+          value={effectiveVersion}
         />
         <input
           name="dates"
@@ -896,7 +901,7 @@ export function TeachingUpdateEditor({
               <input
                 name="expectedVersion"
                 type="hidden"
-                value={update.version}
+                value={effectiveVersion}
               />
 
               <Button
@@ -926,7 +931,7 @@ export function TeachingUpdateEditor({
               <input
                 name="expectedVersion"
                 type="hidden"
-                value={update.version}
+                value={effectiveVersion}
               />
 
               {update.requestedByProfileId ? (
