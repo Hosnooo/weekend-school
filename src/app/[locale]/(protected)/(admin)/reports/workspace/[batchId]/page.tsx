@@ -12,7 +12,8 @@ import {ConfirmSubmitButton} from '@/components/ui/confirm-submit-button';
 import {EmptyState} from '@/components/ui/empty-state';
 import {PageHeader} from '@/components/ui/page-header';
 import type {AdminReportContextStatus} from '@/features/reports/admin-report-contexts';
-import {sendAdminReportBatchAction} from '@/features/reports/admin-report-delivery.actions';
+import {GuardianDeliveryPanel} from '@/features/reports/guardian-delivery-panel';
+import {GuardianDeliveryOutcome} from '@/features/reports/guardian-delivery-outcome';
 import {
   cancelClassReportCycleAction,
   finalizeAdminReportWorkspaceAction,
@@ -86,6 +87,9 @@ export default async function AdminReportWorkspacePage({
     sent?: string;
     failed?: string;
     skipped?: string;
+    missing?: string;
+    already?: string;
+    pending?: string;
     requested?: string;
     student?: string;
     editor?: string;
@@ -210,6 +214,7 @@ export default async function AdminReportWorkspacePage({
           </Alert>
         ) : null}
 
+        <GuardianDeliveryOutcome locale={locale} result={query}/>
         <ClassReportCycleReview
           classCycle={classCycle}
           locale={locale}
@@ -372,15 +377,7 @@ export default async function AdminReportWorkspacePage({
         </Alert>
       ) : null}
 
-      {query.sent !== undefined ? (
-        <Alert variant="success">
-          {t('sendResult', {
-            sent: Number(query.sent) || 0,
-            failed: Number(query.failed) || 0,
-            skipped: Number(query.skipped) || 0
-          })}
-        </Alert>
-      ) : null}
+      <GuardianDeliveryOutcome locale={locale} result={query}/>
 
       <Card className="content-section report-workspace">
         {workspace.context.status === 'WAITING' ? (
@@ -704,29 +701,15 @@ export default async function AdminReportWorkspacePage({
                 </form>
               ) : null}
 
-              {workspace.context.status ===
-                'READY_TO_SEND' ||
-              workspace.context.status ===
-                'DELIVERY_ISSUE' ? (
-                <form action={sendAdminReportBatchAction}>
-                  {hiddenPeriod}
-
-                  <input
-                    name="batchId"
-                    type="hidden"
-                    value={workspace.batchId}
-                  />
-
-                  <button
-                    className="button button-primary"
-                    type="submit"
-                  >
-                    {workspace.context.status ===
-                    'DELIVERY_ISSUE'
-                      ? t('retryContextDelivery')
-                      : t('sendContextReports')}
-                  </button>
-                </form>
+              {(workspace.context.status === 'READY_TO_SEND' ||
+                workspace.context.status === 'DELIVERY_ISSUE') ? (
+                <GuardianDeliveryPanel
+                  schoolId={profile.schoolId}
+                  batchId={workspace.batchId}
+                  periodStart={workspace.periodStart}
+                  periodEnd={workspace.periodEnd}
+                  locale={locale}
+                />
               ) : null}
             </div>
 

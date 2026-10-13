@@ -30,7 +30,7 @@ describe('Reports workflow UX contract', () => {
     expect(page).toContain('report-cycle-history');
     expect(page).toContain('listAdminReportContexts');
     expect(page).toContain('openAdminReportContextAction');
-    expect(page).toContain('sendAdminReportBatchAction');
+    expect(page).toContain('GuardianDeliveryPanel');
 
     expect(workspacePage).toContain('Alert');
     expect(workspacePage).toContain('getAdminReportWorkspace');
@@ -72,7 +72,7 @@ describe('Reports workflow UX contract', () => {
     expect(review).not.toContain('studentOptions[0]');
     expect(review).not.toContain('Reopen & edit');
     expect(review).toContain('finalizeClassReportCycleAction');
-    expect(review).toContain('sendAdminReportBatchAction');
+    expect(review).toContain('GuardianDeliveryPanel');
     expect(review).toContain('reopenAdminReportWorkspaceAction');
     expect(review).toContain('canReopen ? (');
     expect(review).toContain("t('reopenCycleForAdmin')");

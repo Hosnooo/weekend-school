@@ -2,7 +2,7 @@ import {getTranslations} from 'next-intl/server';
 
 import {ConfirmSubmitButton} from '@/components/ui/confirm-submit-button';
 import {EmptyState} from '@/components/ui/empty-state';
-import {sendAdminReportBatchAction} from '@/features/reports/admin-report-delivery.actions';
+import {GuardianDeliveryPanel} from '@/features/reports/guardian-delivery-panel';
 import type {Locale} from '@/i18n/config';
 import {Link} from '@/i18n/navigation';
 
@@ -246,17 +246,13 @@ export async function ClassReportCycleReview({
           </form>
         ) : (
           <div className="row-actions">
-            {classCycle.reports.length > 0 ? (
-              <form action={sendAdminReportBatchAction}>
-                {sharedHidden}
-                <button
-                  className="button button-primary"
-                  type="submit"
-                >
-                  {t('sendContextReports')}
-                </button>
-              </form>
-            ) : null}
+            <GuardianDeliveryPanel
+              schoolId={schoolId}
+              batchId={classCycle.batch.id}
+              periodStart={classCycle.batch.periodStart}
+              periodEnd={classCycle.batch.periodEnd}
+              locale={locale}
+            />
 
             {canReopen ? (
               <form action={reopenAdminReportWorkspaceAction}>
