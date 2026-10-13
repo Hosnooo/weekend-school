@@ -46,7 +46,7 @@ describe('Teaching Update draft and submission usability', () => {
     expect(actions).toContain('const saved = await getTeachingUpdate(');
     expect(actions).toContain('getTeachingUpdateSubmitIssues({');
     expect(actions).toContain("failure = 'conflict'");
-    expect(actions).toContain("failure = 'incomplete'");
+    expect(actions).toContain("'future' : 'incomplete'");
     expect(page).toContain('submissionErrorKeys');
     expect(en.submitError.incomplete).toContain('missing fields');
   });

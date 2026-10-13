@@ -81,7 +81,9 @@ describe('migration contract', () => {
       '20261009090000_numeric_teacher_attendance.sql',
       '20261009091000_admin_approved_reports_atomic.sql',
       '20261011230044_class_report_request_idempotency.sql',
-      '20261011231340_restore_individual_report_requests.sql'
+      '20261011231340_restore_individual_report_requests.sql',
+      '20261012025832_shared_admin_request_draft_saves.sql',
+      '20261013190000_teaching_update_partial_draft_persistence.sql'
     ];
     expect(filenames.slice(-forwardFiles.length)).toEqual(forwardFiles);
     if (guardFiles.length > 0) {
