@@ -164,6 +164,50 @@
 .teacher-student-table td select,
 .teacher-student-table td textarea { min-inline-size: 0; }
 .teacher-student-table td:last-child { inline-size: auto; white-space: normal; }
+
+/* Numeric attendance should look and behave like the adjacent comment editors. */
+.teacher-attendance-fields {
+  display: grid;
+  grid-template-columns: minmax(5.5rem, 1fr) auto minmax(5.5rem, 1fr);
+  align-items: end;
+  gap: var(--space-2);
+  inline-size: 100%;
+  min-inline-size: 0;
+}
+.teacher-attendance-fields > label { min-inline-size: 0; font-size: 0.875rem; }
+.teacher-attendance-fields .teacher-attendance-input {
+  inline-size: 100%;
+  min-inline-size: 0;
+  min-block-size: 2.75rem;
+  padding: 0.65rem 0.75rem;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+}
+.teacher-attendance-fields .teacher-attendance-input:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.teacher-attendance-fields .teacher-attendance-input[aria-invalid="true"] {
+  border-color: var(--danger);
+  background: var(--danger-surface);
+}
+.teacher-attendance-fields > span[aria-hidden="true"] {
+  padding-block-end: 0.8rem;
+}
+.teacher-required-star { color: var(--danger); font-weight: 800; }
+.teacher-required-hint { margin: 0; font-size: 0.875rem; }
+.teacher-submit-issues {
+  padding: var(--space-3);
+  background: var(--surface-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.teacher-submit-issues p { margin: 0; }
+.teacher-submit-issues ul { margin-block: var(--space-2) 0; padding-inline-start: 1.5rem; }
+.teacher-submit-issues li + li { margin-block-start: var(--space-1); }
+
 .history-detail-content { margin-block-start: var(--space-5); }
 .teacher-profile-list { border-block-start: 1px solid var(--border-subtle); }
 .teacher-profile-row { padding-block: var(--space-3); border-block-end: 1px solid var(--border-subtle); }

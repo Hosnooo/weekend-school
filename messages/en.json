@@ -1029,6 +1029,40 @@
     "emailLivePreviewHelp": "This preview updates as you type. Sample names and dates are shown only for preview."
   },
   "teachingUpdates": {
+    "requiredFieldsHint": "* Required for submission only. You can save drafts with these fields incomplete.",
+    "requiredForSubmission": "required for submission",
+    "notSaved": "Not saved — your edits are still on this page.",
+    "submitRequirementsCount": "{count, plural, one {1 issue needs attention before submission.} other {# issues need attention before submission.}}",
+    "submitCheckHint": "Select Submit update to see exactly what is missing.",
+    "submitIssue": {
+      "unsaved": "Save your latest changes before submitting.",
+      "noStudents": "No students are on this report roster. Contact an administrator.",
+      "invalidCoverage": "Choose valid coverage start and end dates.",
+      "noDates": "Add at least one teaching date.",
+      "futureCoverage": "The coverage includes a future date. Submit after the final covered date.",
+      "missingBoth": "{student}: Enter sessions attended and total sessions held.",
+      "missingAttended": "{student}: Enter sessions attended.",
+      "missingTotal": "{student}: Enter total sessions held.",
+      "invalidAttended": "{student}: Sessions attended must be a non-negative whole number.",
+      "invalidTotal": "{student}: Total sessions held must be greater than zero.",
+      "attendedExceedsTotal": "{student}: Sessions attended cannot exceed total sessions held."
+    },
+    "saveIssue": {
+      "validation": "Draft not saved. Check the dates and any highlighted numbers. Partial attendance is allowed.",
+      "conflict": "Someone saved a newer version of this report. Copy your unsaved edits before reloading, then apply them to the latest version.",
+      "permission": "Draft not saved: you are no longer authorized to edit this report. Ask an administrator to check your assignment.",
+      "locked": "Draft not saved: this report has already been submitted or dismissed.",
+      "context": "Draft not saved: the class, group, dates, or student roster may have changed. Preserve your text before reloading.",
+      "save": "The server could not save this draft. Your edits remain here. Retry, or contact an administrator if it continues."
+    },
+    "submitError": {
+      "conflict": "This report changed elsewhere. Preserve your edits and reopen the latest version before submitting.",
+      "submit": "The server could not submit this report. Your draft remains open; check the requirements and try again.",
+      "incomplete": "Submission was blocked because required student attendance is incomplete. See the missing fields below.",
+      "future": "Submission was blocked because the teaching period has not ended.",
+      "locked": "This report has already been submitted or dismissed.",
+      "permission": "You no longer have permission to submit this report. Contact an administrator."
+    },
     "sessionsAttended": "Sessions attended",
     "sessionsHeld": "Total sessions held",
     "markAllAttended": "Mark all students as attending all sessions",

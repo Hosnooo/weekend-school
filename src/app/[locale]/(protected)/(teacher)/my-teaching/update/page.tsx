@@ -19,6 +19,7 @@ import {
 import {isLocale} from '@/i18n/config';
 import {requireTeachingAccount} from '@/lib/auth/require-profile';
 import {databaseUuid} from '@/lib/validation/fields';
+import type {TeachingUpdateSubmitError} from '@/features/teaching-updates/teaching-update.types';
 
 export default async function TeachingUpdatePage({
   params,
@@ -99,6 +100,13 @@ export default async function TeachingUpdatePage({
       ? `${t('dateCount', {count: update.dates.length})} · ${formatTeachingUpdateRange(update.periodStart, update.periodEnd, locale)}`
       : formatTeachingUpdateRange(update.periodStart, update.periodEnd, locale);
 
+  const submissionErrorKeys: TeachingUpdateSubmitError[] = [
+    'conflict', 'submit', 'incomplete', 'future', 'locked', 'permission'
+  ];
+  const submissionError = submissionErrorKeys.find(
+    key => query.error === key
+  ) ?? null;
+
   return (
     <section className="admin-page">
       <PageHeader
@@ -112,7 +120,7 @@ export default async function TeachingUpdatePage({
         template={template}
         today={today}
         update={update}
-        submissionError={query.error === 'conflict' || query.error === 'submit' ? query.error : null}
+        submissionError={submissionError}
       />
     </section>
   );
