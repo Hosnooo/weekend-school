@@ -840,7 +840,7 @@ export function TeachingUpdateEditor({
 
       {update.status === 'OPEN' ? (
         <section className="teacher-update-submit">
-          {submissionError ? (
+          {submissionError && state.status !== 'saved' ? (
             <p className="form-error" role="alert">
               {t(`submitError.${submissionError}`)}
             </p>
