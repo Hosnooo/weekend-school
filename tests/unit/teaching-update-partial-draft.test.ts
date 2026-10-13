@@ -58,7 +58,7 @@ describe('Teaching Update draft resilience', () => {
     }).success).toBe(true);
 
     const migration = readFileSync(
-      join(process.cwd(), 'supabase/migrations/20261013190000_teaching_update_partial_draft_persistence.sql'),
+      join(process.cwd(), 'supabase/migrations/20261013195247_teaching_update_partial_draft_persistence.sql'),
       'utf8'
     );
     expect(migration).toContain('full outer join exception_items');
