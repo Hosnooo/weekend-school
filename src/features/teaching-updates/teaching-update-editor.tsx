@@ -25,8 +25,10 @@ import {
 import {
   initialTeachingUpdateActionState,
   type TeachingUpdate,
-  type TeachingUpdateCoverageKind
+  type TeachingUpdateCoverageKind,
+  type TeachingUpdateSubmitError
 } from './teaching-update.types';
+import {getTeachingUpdateSubmitIssues} from './teaching-update-submit-validation';
 import {formatTeachingUpdateDate} from './teaching-update-date';
 
 export function TeachingUpdateEditor({
@@ -42,7 +44,7 @@ export function TeachingUpdateEditor({
   today: string;
   update: TeachingUpdate;
   template: ReportTemplateConfig;
-  submissionError?: 'conflict' | 'submit' | null;
+  submissionError?: TeachingUpdateSubmitError | null;
 }) {
   const router = useRouter();
   const t = useTranslations('teachingUpdates');
@@ -66,6 +68,7 @@ export function TeachingUpdateEditor({
     useState<string[]>(update.dates);
   const [dateDraft, setDateDraft] = useState('');
   const [dirty, setDirty] = useState(false);
+  const [showSubmitIssues, setShowSubmitIssues] = useState(false);
   const [progressEn, setProgressEn] =
     useState(update.progressEn ?? '');
   const [progressAr, setProgressAr] =
@@ -110,7 +113,7 @@ export function TeachingUpdateEditor({
     }, 0);
 
     return () => clearTimeout(timer);
-  }, [state.status, state.submissionId, router]);
+  }, [state, router]);
 
   const sortedDates = useMemo(
     () => [...new Set(dates)].sort(),
@@ -131,28 +134,22 @@ export function TeachingUpdateEditor({
     update.status === 'SUBMITTED' ||
     update.status === 'DISMISSED';
 
-  const canSubmit =
-    update.status === 'OPEN' &&
-    !dirty &&
-    update.roster.length > 0 &&
-    attendance.length === update.roster.length &&
-    attendance.every(({attended, total}) =>
-      attended !== null &&
-      total !== null &&
-      Number.isInteger(attended) &&
-      Number.isInteger(total) &&
-      total > 0 &&
-      attended >= 0 &&
-      attended <= total
-    ) &&
-    effectivePeriodEnd <= today &&
-    (
-      coverageKind !== 'DATES' ||
-      (
-        sortedDates.length > 0 &&
-        sortedDates.every((date) => date <= today)
-      )
-    );
+  const submitIssues = getTeachingUpdateSubmitIssues({
+    coverageKind,
+    periodStart: effectivePeriodStart,
+    periodEnd: effectivePeriodEnd,
+    dates: sortedDates,
+    today,
+    roster: update.roster,
+    attendance,
+    unsaved: dirty || pending || state.status === 'error'
+  });
+  const canSubmit = update.status === 'OPEN' && submitIssues.length === 0;
+  // The saved action returns the committed version immediately. A router refresh
+  // may not have delivered the new server props when Submit is pressed.
+  const effectiveVersion = state.status === 'saved'
+    ? Math.max(update.version, state.savedVersion ?? update.version)
+    : update.version;
 
   const localName = (
     english: string,
@@ -239,9 +236,12 @@ export function TeachingUpdateEditor({
         </Alert>
       ) : null}
 
+      <p className="field-help teacher-required-hint">{t('requiredFieldsHint')}</p>
+
       <form
         action={saveAction}
         className="weekly-form teaching-update-form"
+        noValidate
         onChange={() => setDirty(true)}
       >
         <input
@@ -272,7 +272,7 @@ export function TeachingUpdateEditor({
         <input
           name="expectedVersion"
           type="hidden"
-          value={update.version}
+          value={effectiveVersion}
         />
         <input
           name="dates"
@@ -352,7 +352,7 @@ export function TeachingUpdateEditor({
           {coverageKind === 'RANGE' ? (
             <div className="form-grid">
               <label>
-                {t('periodStart')}
+                {t('periodStart')} <span className="teacher-required-star" aria-hidden="true">*</span>
                 <input
                   disabled={readOnly}
                   name="periodStart"
@@ -366,7 +366,7 @@ export function TeachingUpdateEditor({
               </label>
 
               <label>
-                {t('periodEnd')}
+                {t('periodEnd')} <span className="teacher-required-star" aria-hidden="true">*</span>
                 <input
                   disabled={readOnly}
                   name="periodEnd"
@@ -384,7 +384,7 @@ export function TeachingUpdateEditor({
               {!readOnly ? (
                 <div className="compact-form">
                   <label>
-                    {t('exactDate')}
+                    {t('exactDate')} <span className="teacher-required-star" aria-hidden="true">*</span>
                     <input
                       onChange={(event) =>
                         setDateDraft(event.target.value)
@@ -624,14 +624,19 @@ export function TeachingUpdateEditor({
                         </td>
 
                         <td data-label={weekly('attendance')}>
-                          <div className="row-actions">
+                          <div className="row-actions teacher-attendance-fields">
                             <label>
-                              {t('sessionsAttended')}
+                              {t('sessionsAttended')} <span className="teacher-required-star" aria-hidden="true">*</span>
                               <input
-                                aria-label={`${t('sessionsAttended')} — ${name}`}
+                                aria-label={`${t('sessionsAttended')} — ${name} (${t('requiredForSubmission')})`}
+                                aria-invalid={showSubmitIssues && submitIssues.some(
+                                  issue => issue.studentId === student.id &&
+                                    ['missingBoth', 'missingAttended', 'invalidAttended',
+                                     'attendedExceedsTotal'].includes(issue.code)
+                                )}
+                                className="teacher-attendance-input"
                                 disabled={readOnly}
                                 min={0}
-                                max={attendanceItem.total ?? undefined}
                                 onChange={(event) =>
                                   setAttendanceCount(student.id, 'attended', event.target.value)
                                 }
@@ -641,11 +646,17 @@ export function TeachingUpdateEditor({
                             </label>
                             <span aria-hidden="true">/</span>
                             <label>
-                              {t('sessionsHeld')}
+                              {t('sessionsHeld')} <span className="teacher-required-star" aria-hidden="true">*</span>
                               <input
-                                aria-label={`${t('sessionsHeld')} — ${name}`}
+                                aria-label={`${t('sessionsHeld')} — ${name} (${t('requiredForSubmission')})`}
+                                aria-invalid={showSubmitIssues && submitIssues.some(
+                                  issue => issue.studentId === student.id &&
+                                    ['missingBoth', 'missingTotal', 'invalidTotal',
+                                     'attendedExceedsTotal'].includes(issue.code)
+                                )}
+                                className="teacher-attendance-input"
                                 disabled={readOnly}
-                                min={1}
+                                min={0}
                                 onChange={(event) =>
                                   setAttendanceCount(student.id, 'total', event.target.value)
                                 }
@@ -794,7 +805,7 @@ export function TeachingUpdateEditor({
 
         {state.error ? (
           <div className="form-error" role="alert" aria-live="polite">
-            <p>{t(state.error === 'validation' ? 'validation' : state.error === 'conflict' ? 'conflict' : 'saveError')}</p>
+            <p>{t(`saveIssue.${state.error}`)}</p>
             {state.issues?.length ? (
               <ul>
                 {state.issues.map((issue, index) => (
@@ -815,9 +826,11 @@ export function TeachingUpdateEditor({
             >
               {pending
                 ? t('saving')
-                : dirty
-                  ? t('unsaved')
-                  : t('saved')}
+                : state.status === 'error'
+                  ? t('notSaved')
+                  : dirty
+                    ? t('unsaved')
+                    : t('saved')}
             </span>
 
             <Button
@@ -832,17 +845,44 @@ export function TeachingUpdateEditor({
 
       {update.status === 'OPEN' ? (
         <section className="teacher-update-submit">
-          {submissionError ? (
+          {submissionError && state.status !== 'saved' ? (
             <p className="form-error" role="alert">
-              {submissionError === 'conflict'
-                ? t('conflict')
-                : locale === 'ar'
-                  ? 'تعذر إرسال التحديث. راجع تواريخ التغطية وتأكد من تسجيل حضور كل طالب، ثم احفظ البيانات وحاول الإرسال مجددًا. إذا استمرت المشكلة، تواصل مع الإدارة.'
-                  : 'The update could not be submitted. Check the coverage dates and attendance for every student, save your changes, and try submitting again. If it persists, contact an administrator.'}
+              {t(`submitError.${submissionError}`)}
             </p>
           ) : null}
+          {submitIssues.length > 0 ? (
+            <div
+              className="teacher-submit-issues"
+              role={showSubmitIssues ? 'alert' : 'status'}
+            >
+              <p>{t('submitRequirementsCount', {count: submitIssues.length})}</p>
+              {showSubmitIssues || submissionError ? (
+                <ul>
+                  {submitIssues.map((issue, index) => (
+                    <li key={`${issue.studentId ?? 'coverage'}-${issue.code}-${index}`}>
+                      {issue.studentId
+                        ? t(`submitIssue.${issue.code}`, {
+                            student: studentName(issue.studentId)
+                          })
+                        : t(`submitIssue.${issue.code}`)}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="field-help">{t('submitCheckHint')}</p>
+              )}
+            </div>
+          ) : null}
           <div className="form-actions">
-            <form action={submitTeachingUpdateAction}>
+            <form
+              action={submitTeachingUpdateAction}
+              onSubmit={(event) => {
+                if (!canSubmit) {
+                  event.preventDefault();
+                  setShowSubmitIssues(true);
+                }
+              }}
+            >
               <input
                 name="locale"
                 type="hidden"
@@ -861,11 +901,11 @@ export function TeachingUpdateEditor({
               <input
                 name="expectedVersion"
                 type="hidden"
-                value={update.version}
+                value={effectiveVersion}
               />
 
               <Button
-                disabled={!canSubmit}
+                disabled={pending}
                 type="submit"
               >
                 {t('submit')}
@@ -891,7 +931,7 @@ export function TeachingUpdateEditor({
               <input
                 name="expectedVersion"
                 type="hidden"
-                value={update.version}
+                value={effectiveVersion}
               />
 
               {update.requestedByProfileId ? (
@@ -919,18 +959,6 @@ export function TeachingUpdateEditor({
             </form>
           </div>
 
-          {!canSubmit ? (
-            <p className="field-help">
-              {dirty
-                ? t('saveBeforeSubmit')
-                : effectivePeriodEnd > today
-                  ? t('futureSubmit')
-                  : coverageKind === 'DATES' &&
-                      sortedDates.length === 0
-                    ? t('datesRequired')
-                    : t('numericAttendanceRequired')}
-            </p>
-          ) : null}
         </section>
       ) : (
         <p className="status-badge status-active">

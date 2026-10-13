@@ -69,14 +69,22 @@ export type TeachingUpdateOverlap = {
   status: TeachingUpdateStatus;
 };
 
+export type TeachingUpdateSubmitError =
+  | 'conflict' | 'submit' | 'incomplete' | 'future'
+  | 'locked' | 'permission';
+
 export type TeachingUpdateActionState = {
   status: 'idle' | 'saved' | 'error';
   error:
     | 'validation'
     | 'save'
     | 'conflict'
+    | 'permission'
+    | 'locked'
+    | 'context'
     | null;
   submissionId: string | null;
+  savedVersion?: number;
   overlaps: TeachingUpdateOverlap[];
   issues?: ValidationIssue[];
 };

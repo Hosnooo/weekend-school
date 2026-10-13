@@ -27,8 +27,13 @@ describe('numeric Teacher Teaching Update attendance', () => {
     expect(schema).toContain('attended: z.number().int().min(0)');
     expect(schema).toContain('total: z.number().int().min(0)');
     expect(schema).toContain('value.attended <= value.total');
-    expect(editor).toContain('total > 0');
-    expect(editor).toContain('attended <= total');
+    const validation = readFileSync(
+      'src/features/teaching-updates/teaching-update-submit-validation.ts',
+      'utf8'
+    );
+    expect(editor).toContain('getTeachingUpdateSubmitIssues({');
+    expect(validation).toContain('total <= 0');
+    expect(validation).toContain('attended > total');
   });
 
   it('stores attended/total in Teacher RPC without rewriting historical status', () => {
