@@ -1029,7 +1029,7 @@
     "emailLivePreviewHelp": "This preview updates as you type. Sample names and dates are shown only for preview."
   },
   "teachingUpdates": {
-    "requiredFieldsHint": "* Required for submission only. You can save drafts with these fields incomplete.",
+    "requiredFieldsHint": "* Required for submission. You can save a draft with incomplete attendance, but valid coverage dates are needed.",
     "requiredForSubmission": "required for submission",
     "notSaved": "Not saved — your edits are still on this page.",
     "submitRequirementsCount": "{count, plural, one {1 issue needs attention before submission.} other {# issues need attention before submission.}}",
