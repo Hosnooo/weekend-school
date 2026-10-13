@@ -110,7 +110,7 @@ export function TeachingUpdateEditor({
     }, 0);
 
     return () => clearTimeout(timer);
-  }, [state.status, state.submissionId, router]);
+  }, [state, router]);
 
   const sortedDates = useMemo(
     () => [...new Set(dates)].sort(),

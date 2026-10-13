@@ -35,9 +35,12 @@ export const teachingUpdateDraftSchema = z.object({
   attendance: z.array(
     z.object({
       studentId: databaseUuid,
-      attended: z.number().int().min(0),
-      total: z.number().int().min(0)
-    }).refine((value) => value.attended <= value.total, {
+      attended: z.number().int().min(0).nullable(),
+      total: z.number().int().min(0).nullable()
+    }).refine((value) =>
+      value.attended === null ||
+      value.total === null ||
+      value.attended <= value.total, {
       message: 'Attended sessions cannot exceed total sessions',
       path: ['attended']
     })
