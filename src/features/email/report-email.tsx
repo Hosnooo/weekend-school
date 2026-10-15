@@ -170,8 +170,10 @@ function EmailCopy({
   if (!greeting && !message && !closing && !signoff) return null;
 
   const paragraphStyle = {
+    color: '#334155',
     fontSize: '15px',
-    lineHeight: '1.65',
+    lineHeight: '1.7',
+    overflowWrap: 'break-word',
     margin: '0 0 12px'
   } as const;
 
@@ -220,7 +222,8 @@ function ReportEmail({
   const document =
     snapshot.version === 2
       ? renderStudentReportV2(snapshot, snapshot.language, {
-          includeSource: false
+          includeSource: false,
+          emailFriendly: true
         })
       : renderStudentReport(snapshot, snapshot.language);
 
@@ -237,25 +240,41 @@ function ReportEmail({
       dir={snapshot.language === 'ar' ? 'rtl' : 'ltr'}
       lang={snapshot.language === 'ar' ? 'ar' : 'en'}
     >
-      <Head />
+      <Head>
+        <meta name="viewport" content="width=device-width,initial-scale=1" />
+        <style>{`
+          @media screen and (min-width: 600px) {
+            .guardian-email-outer { padding: 22px !important; }
+            .guardian-email-card { padding: 28px 32px !important; }
+          }
+        `}</style>
+      </Head>
       <Preview>{preview}</Preview>
 
       <Body
+        className="guardian-email-outer"
         style={{
-          backgroundColor: '#f7f8fa',
-          fontFamily: 'Arial, sans-serif',
+          backgroundColor: '#f6f8fa',
+          color: '#253645',
+          fontFamily: 'Arial, Tahoma, sans-serif',
+          fontSize: '15px',
+          lineHeight: '1.7',
           margin: 0,
-          padding: '24px'
+          padding: '10px'
         }}
       >
         <Container
+          className="guardian-email-card"
           style={{
             backgroundColor: '#ffffff',
-            border: '1px solid #e5e7eb',
-            borderRadius: '10px',
+            border: '1px solid #e5eaf0',
+            borderRadius: '9px',
+            boxSizing: 'border-box',
             margin: '0 auto',
-            maxWidth: '720px',
-            padding: '32px'
+            maxWidth: '640px',
+            overflowWrap: 'break-word',
+            padding: '18px 16px',
+            width: '100%'
           }}
         >
           {contentDriven ||
