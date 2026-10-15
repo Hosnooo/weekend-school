@@ -8,6 +8,7 @@ import {buildReportSnapshotV2} from './report.service';
 import {deriveReportAttendance, effectiveReportAttendance} from './report-attendance';
 import {getActiveReportTemplate} from './report-template.repository';
 import {selectLatestReportRevisionsByStudent} from './select-latest-report-revisions';
+import {deriveClassReportCycleDisplayStatus, type ClassReportCycleDisplayStatus} from './class-report-cycle-status';
 import type {ReportLanguage, ReportPerformance} from './report.types';
 
 export type ReportBatchScope = 'CLASS' | 'SUBJECT' | 'GROUP';
@@ -1021,6 +1022,11 @@ export type ClassReportCycleListItem = {
   periodStart: string;
   periodEnd: string;
   status: ReportBatchStatus;
+  displayStatus: ClassReportCycleDisplayStatus;
+  sentReportCount: number;
+  readyReportCount: number;
+  failedReportCount: number;
+  latestSentAt: string | null;
   createdAt: string;
   canDismiss: boolean;
 };
@@ -1043,6 +1049,7 @@ export type ClassReportCycleWorkspace =
     missingContexts: ClassReportCycleMissingContext[];
     requestContexts: ClassReportCycleMissingContext[];
     canDismiss: boolean;
+    displayStatus: ClassReportCycleDisplayStatus;
     reports: Array<{
       id: string;
       studentId: string;
@@ -1174,20 +1181,37 @@ export async function listClassReportCycles(
     ...new Set((batches ?? []).map(({class_id}) => class_id))
   ];
 
-  const [classResult, dismissibleIds] = await Promise.all([
+  const batchIds = (batches ?? []).map(({id}) => id);
+  const [classResult, dismissibleIds, reportResult] = await Promise.all([
     classIds.length > 0
       ? db.from('classes')
           .select('id,name_en,name_ar')
           .eq('school_id', schoolId)
           .in('id', classIds)
       : Promise.resolve({data: [], error: null}),
-    getDismissibleClassReportBatchIds(
-      schoolId,
-      (batches ?? []).map(({id}) => id)
-    )
+    getDismissibleClassReportBatchIds(schoolId, batchIds),
+    batchIds.length > 0
+      ? db.from('reports')
+          .select('batch_id,student_id,revision,status,sent_at')
+          .eq('school_id', schoolId)
+          .in('batch_id', batchIds)
+      : Promise.resolve({data: [], error: null})
   ]);
 
   if (classResult.error) throw classResult.error;
+  if (reportResult.error) throw reportResult.error;
+
+  const reportsByBatch = new Map<string, Array<{
+    student_id: string;
+    revision: number;
+    status: 'DRAFT' | 'READY' | 'SENT' | 'FAILED';
+    sent_at: string | null;
+  }>>();
+  for (const report of reportResult.data ?? []) {
+    const inBatch = reportsByBatch.get(report.batch_id) ?? [];
+    inBatch.push(report);
+    reportsByBatch.set(report.batch_id, inBatch);
+  }
 
   const classes = new Map(
     (classResult.data ?? []).map((row) => [row.id, row])
@@ -1195,6 +1219,14 @@ export async function listClassReportCycles(
 
   return (batches ?? []).map((row) => {
     const classInfo = classes.get(row.class_id);
+    const reportHistory = reportsByBatch.get(row.id) ?? [];
+    const currentReports = selectLatestReportRevisionsByStudent(reportHistory);
+    const status = row.status as ReportBatchStatus;
+    const sentAt = reportHistory
+      .filter((report) => report.status === 'SENT' && report.sent_at)
+      .map((report) => report.sent_at!)
+      .sort()
+      .at(-1) ?? null;
 
     return {
       id: row.id,
@@ -1203,7 +1235,12 @@ export async function listClassReportCycles(
       classNameAr: classInfo?.name_ar ?? null,
       periodStart: row.period_start,
       periodEnd: row.period_end,
-      status: row.status as ReportBatchStatus,
+      status,
+      displayStatus: deriveClassReportCycleDisplayStatus(status, currentReports),
+      sentReportCount: currentReports.filter(({status}) => status === 'SENT').length,
+      readyReportCount: currentReports.filter(({status}) => status === 'READY').length,
+      failedReportCount: currentReports.filter(({status}) => status === 'FAILED').length,
+      latestSentAt: sentAt,
       createdAt: row.created_at,
       canDismiss: dismissibleIds.has(row.id)
     };
@@ -1423,14 +1460,16 @@ export async function getClassReportCycleWorkspace(
     } | null;
   }>;
 
+  const currentReports = selectLatestReportRevisionsByStudent(reports);
   return {
     ...workspace,
     missingContexts,
     requestContexts,
     canDismiss: dismissibleIds.has(batchId),
+    displayStatus: deriveClassReportCycleDisplayStatus(workspace.batch.status, currentReports),
     // Preserve past snapshots in the database, but expose only the latest
     // revision of each student's report to the active preview and selector.
-    reports: selectLatestReportRevisionsByStudent(reports).flatMap((report) => {
+    reports: currentReports.flatMap((report) => {
       if (!report.students) return [];
 
       return [{
