@@ -27,7 +27,7 @@ const base: ReportSnapshotV2 = {
     }
   ],
   template: {introEn: null, introAr: null, closingEn: null, closingAr: null},
-  author: 'Weekend School',
+  author: 'MCE Weekend School',
   generatedAt: '2026-10-14T18:00:00Z'
 };
 
