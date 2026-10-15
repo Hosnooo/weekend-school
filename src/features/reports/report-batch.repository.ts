@@ -1208,6 +1208,8 @@ export async function listClassReportCycles(
     sent_at: string | null;
   }>>();
   for (const report of reportResult.data ?? []) {
+    // Older legacy report rows may not belong to a Class Report Cycle.
+    if (!report.batch_id) continue;
     const inBatch = reportsByBatch.get(report.batch_id) ?? [];
     inBatch.push(report);
     reportsByBatch.set(report.batch_id, inBatch);
