@@ -19,7 +19,9 @@ import {
   requestAllReportCycleMissingUpdatesAction,
   openAdminReportContextAction
 } from '@/features/reports/admin-report-workflow.actions';
-import {listClassReportCycles} from '@/features/reports/report-batch.repository';
+import {listClassReportCycles, type ClassReportCycleListItem} from '@/features/reports/report-batch.repository';
+import {ReportCyclesAutoRefresh} from '@/features/reports/report-cycles-auto-refresh';
+import type {ClassReportCycleDisplayStatus} from '@/features/reports/class-report-cycle-status';
 import {getReportingTimezone} from '@/features/reports/report.repository';
 import {monthPeriod} from '@/features/reports/report.service';
 import {formatTeachingUpdateRange} from '@/features/teaching-updates/teaching-update-date';
@@ -64,10 +66,11 @@ function statusVariant(
 }
 
 function cycleStatusVariant(
-  status: 'DRAFT' | 'REVIEW' | 'FINALIZED'
+  status: ClassReportCycleDisplayStatus
 ): BadgeVariant {
-  if (status === 'FINALIZED') return 'success';
-  if (status === 'REVIEW') return 'info';
+  if (status === 'SENT') return 'success';
+  if (status === 'DELIVERY_ISSUE') return 'danger';
+  if (status === 'REVIEW' || status === 'READY_TO_SEND') return 'info';
   return 'warning';
 }
 
@@ -146,6 +149,14 @@ export default async function ReportsPage({
   const historicalContexts = contexts.filter(
     ({batchId}) => Boolean(batchId)
   );
+  const openCycles = cycles.filter(({displayStatus}) => displayStatus !== 'SENT');
+  const sentCycles = cycles
+    .filter(({displayStatus}) => displayStatus === 'SENT')
+    .sort((left, right) =>
+      (right.latestSentAt ?? right.createdAt).localeCompare(
+        left.latestSentAt ?? left.createdAt
+      )
+    );
 
   const localize = (
     en: string | null | undefined,
@@ -174,8 +185,71 @@ export default async function ReportsPage({
     </>
   );
 
+  const renderCycle = (cycle: ClassReportCycleListItem) => (
+    <article className="report-cycle-row" key={cycle.id}>
+      <div>
+        <div className="row-actions">
+          <strong className="record-name">
+            {localize(cycle.classNameEn, cycle.classNameAr)}
+          </strong>
+          <Badge variant={cycleStatusVariant(cycle.displayStatus)}>
+            {t(`cycleStatus.${cycle.displayStatus}`)}
+          </Badge>
+        </div>
+        <p className="record-meta">
+          {formatTeachingUpdateRange(cycle.periodStart, cycle.periodEnd, locale)}
+        </p>
+        {cycle.status === 'FINALIZED' ? (
+          <p className="record-meta">
+            {t('cycleDeliveryCounts', {
+              sent: cycle.sentReportCount,
+              ready: cycle.readyReportCount,
+              failed: cycle.failedReportCount
+            })}
+          </p>
+        ) : null}
+        {cycle.latestSentAt ? (
+          <p className="record-meta">
+            {t('cycleLastSent', {
+              date: new Intl.DateTimeFormat(locale === 'ar' ? 'ar-CA' : 'en-CA', {
+                timeZone: timezone,
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit'
+              }).format(new Date(cycle.latestSentAt))
+            })}
+          </p>
+        ) : null}
+      </div>
+      <div className="row-actions">
+        <Link
+          className="button button-secondary action-link"
+          href={`/reports/workspace/${cycle.id}`}
+        >
+          {t('openCycle')}
+        </Link>
+        {cycle.canDismiss ? (
+          <form action={cancelClassReportCycleAction}>
+            <input name="locale" type="hidden" value={locale} />
+            <input name="batchId" type="hidden" value={cycle.id} />
+            <ConfirmSubmitButton
+              className="button button-danger"
+              confirmMessage={t('dismissCycleConfirm')}
+              type="submit"
+            >
+              {t('dismissCycle')}
+            </ConfirmSubmitButton>
+          </form>
+        ) : null}
+      </div>
+    </article>
+  );
+
   return (
     <section className="admin-page">
+      <ReportCyclesAutoRefresh />
       <PageHeader
         actions={
           <Link
@@ -206,8 +280,8 @@ export default async function ReportsPage({
         ) : null}
         <div className="section-heading">
           <div>
-            <h2>{t('reportCyclesTitle')}</h2>
-            <p>{t('reportCyclesHelp')}</p>
+            <h2>{t('openReportCyclesTitle')}</h2>
+            <p>{t('openReportCyclesHelp')}</p>
           </div>
         </div>
 
@@ -234,62 +308,38 @@ export default async function ReportsPage({
             ))}
           </div>
         ) : null}
-        {cycles.length === 0 ? (
-          <EmptyState title={t('noReportCycles')} />
+        {openCycles.length === 0 ? (
+          <EmptyState title={t('noOpenReportCycles')} />
         ) : (
           <div className="stack-list">
-            {cycles.map((cycle) => (
-              <article
-                className="report-cycle-row"
-                key={cycle.id}
-              >
-                <div>
-                  <div className="row-actions">
-                    <strong className="record-name">
-                      {localize(
-                        cycle.classNameEn,
-                        cycle.classNameAr
-                      )}
-                    </strong>
-
-                    <Badge
-                      variant={cycleStatusVariant(
-                        cycle.status
-                      )}
-                    >
-                      {t(
-                        `cycleStatus.${cycle.status}`
-                      )}
-                    </Badge>
-                  </div>
-
-                  <p className="record-meta">{formatTeachingUpdateRange(cycle.periodStart, cycle.periodEnd, locale)}</p>
-                </div>
-
-                <div className="row-actions">
-                  <Link
-                    className="button button-secondary action-link"
-                    href={`/reports/workspace/${cycle.id}`}
-                  >
-                    {t('openCycle')}
-                  </Link>
-                  {cycle.canDismiss ? (
-                    <form action={cancelClassReportCycleAction}>
-                      <input name="locale" type="hidden" value={locale} />
-                      <input name="batchId" type="hidden" value={cycle.id} />
-                      <ConfirmSubmitButton
-                        className="button button-danger"
-                        confirmMessage={t('dismissCycleConfirm')}
-                        type="submit"
-                      >
-                        {t('dismissCycle')}
-                      </ConfirmSubmitButton>
-                    </form>
-                  ) : null}
-                </div>
-              </article>
-            ))}
+            {openCycles.map(renderCycle)}
           </div>
+        )}
+      </section>
+
+      <section className="report-cycle-recent detail-section">
+        <div className="section-heading">
+          <div>
+            <h2>{t('recentlySentCyclesTitle')}</h2>
+            <p>{t('recentlySentCyclesHelp')}</p>
+          </div>
+        </div>
+        {sentCycles.length === 0 ? (
+          <EmptyState title={t('noSentReportCycles')} />
+        ) : (
+          <>
+            <div className="stack-list">
+              {sentCycles.slice(0, 5).map(renderCycle)}
+            </div>
+            {sentCycles.length > 5 ? (
+              <details className="report-cycle-history">
+                <summary>{t('olderSentCycles', {count: sentCycles.length - 5})}</summary>
+                <div className="stack-list">
+                  {sentCycles.slice(5).map(renderCycle)}
+                </div>
+              </details>
+            ) : null}
+          </>
         )}
       </section>
 

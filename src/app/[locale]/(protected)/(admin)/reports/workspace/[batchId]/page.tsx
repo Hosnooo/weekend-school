@@ -167,15 +167,18 @@ export default async function AdminReportWorkspacePage({
         <div className="page-actions">
           <Badge
             variant={
-              classCycle.batch.status === 'FINALIZED'
+              classCycle.displayStatus === 'SENT'
                 ? 'success'
-                : classCycle.batch.status === 'REVIEW'
-                  ? 'info'
-                  : 'warning'
+                : classCycle.displayStatus === 'DELIVERY_ISSUE'
+                  ? 'danger'
+                  : classCycle.displayStatus === 'READY_TO_SEND' ||
+                      classCycle.displayStatus === 'REVIEW'
+                    ? 'info'
+                    : 'warning'
             }
           >
             {t(
-              `cycleStatus.${classCycle.batch.status}`
+              `cycleStatus.${classCycle.displayStatus}`
             )}
           </Badge>
         </div>
