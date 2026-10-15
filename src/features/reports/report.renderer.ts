@@ -105,12 +105,16 @@ function pairedBlocks(
   const arabic = cleanText(ar);
   const render = multiline ? escapeMultiline : escapeHtml;
 
+  // Keep bilingual content legible even when mail clients discard <head> CSS.
+  const inlineStyle =
+    'font-family:Arial,Tahoma,sans-serif;font-size:15px;line-height:1.75;' +
+    'margin:0 0 10px 0;overflow-wrap:break-word';
   return [
     english
-      ? `<div class="localized-block" lang="en" dir="ltr">${render(english)}</div>`
+      ? `<div class="localized-block" lang="en" dir="ltr" style="${inlineStyle};text-align:left">${render(english)}</div>`
       : '',
     arabic
-      ? `<div class="localized-block" lang="ar" dir="rtl">${render(arabic)}</div>`
+      ? `<div class="localized-block" lang="ar" dir="rtl" style="${inlineStyle};text-align:right">${render(arabic)}</div>`
       : ''
   ].join('');
 }
@@ -177,7 +181,10 @@ export function renderStudentReport(
 export function renderStudentReportV2(
   snapshot: ReportSnapshotV2,
   language: ReportLanguage = snapshot.language,
-  {includeSource = true}: {includeSource?: boolean} = {}
+  {includeSource = true, emailFriendly = false}: {
+    includeSource?: boolean;
+    emailFriendly?: boolean;
+  } = {}
 ) {
   const ui = uiLabels(language);
   const contentDriven = language === 'both';
@@ -291,12 +298,40 @@ export function renderStudentReportV2(
         section.attendance.unverified
       );
 
-      // Inline styling is essential: the email embeds only the report body,
-      // so styles from the standalone report <head> are not available.
+      if (emailFriendly) {
+        // Email clients commonly lose borders on semantic <section> elements.
+        // A presentation table retains the divider in Outlook, Gmail and mobile.
+        const divider = index > 0
+          ? '<table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:20px 0">' +
+            '<tbody><tr><td style="border-top:1px solid #d6e0e5;font-size:0;line-height:0;height:1px">&nbsp;</td></tr></tbody></table>'
+          : '';
+        const heading = ' style="font-family:Arial,Tahoma,sans-serif;font-size:18px;line-height:1.45;' +
+          'font-weight:700;color:#214f61;background-color:#f1f5f8;border-radius:6px;' +
+          'padding:12px 14px;margin:0 0 14px;overflow-wrap:break-word"';
+        const subheading = (text: string) =>
+          `<h3 style="font-family:Arial,Tahoma,sans-serif;font-size:14px;line-height:1.55;font-weight:700;color:#496272;margin:16px 0 7px">${text}</h3>`;
+        const copy = (text: string) =>
+          `<div class="report-copy" style="font-family:Arial,Tahoma,sans-serif;font-size:15px;line-height:1.7;color:#253645;overflow-wrap:break-word">${text}</div>`;
+        const attendanceStyle = 'background-color:#f5f8fa;border-radius:6px;padding:10px 12px;' +
+          'font-family:Arial,Tahoma,sans-serif;font-size:14px;line-height:1.6;color:#334155';
+        return `${divider}<div class="report-subject-section" style="margin:0 0 24px">
+          <h2${heading}>${subject}${group ? ` — ${group}` : ''}</h2>
+          <div class="attendance-metric" style="${attendanceStyle}">${attendance}</div>
+          ${subheading(mainReportLabel || escapeHtml(ui.progress))}
+          ${copy(progress || '—')}
+          ${showPerformance && section.performance
+            ? subheading(performanceLabel || escapeHtml(ui.performance)) + copy(performanceValue)
+            : ''}
+          ${showStudentComments && comment
+            ? subheading(studentCommentLabel || escapeHtml(ui.comments)) + copy(comment)
+            : ''}
+        </div>`;
+      }
+
+      // The standalone browser report retains its existing semantic sections.
       const divider = index > 0
         ? ' style="border-top:1px dashed #cbd5e1;padding-top:20px;margin-top:24px"'
         : '';
-
       return `<section${divider}><h2>${subject}${group ? ` — ${group}` : ''}</h2><div class="attendance-metric">${attendance}</div><h3>${mainReportLabel || escapeHtml(ui.progress)}</h3><div class="report-copy">${progress || '—'}</div>${showPerformance && section.performance ? `<h3>${performanceLabel || escapeHtml(ui.performance)}</h3><div class="report-copy">${performanceValue}</div>` : ''}${showStudentComments && comment ? `<h3>${studentCommentLabel || escapeHtml(ui.comments)}</h3><div class="report-copy">${comment}</div>` : ''}</section>`;
     })
     .join('');
@@ -305,5 +340,21 @@ export function renderStudentReportV2(
     ? `<p><strong>${escapeHtml(ui.author)}:</strong> ${escapeHtml(snapshot.author)}</p>`
     : '';
 
-  return `<!doctype html><html lang="${language === 'both' ? 'en' : language}" dir="${dir}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(ui.report)}</title><style>body{font-family:Arial,sans-serif;max-width:48rem;margin:auto;padding:1.5rem;color:#172033}section{margin-block:1.5rem}h1,h2,h3{color:#155e75}.localized-block{margin-block:.35rem}.report-copy .localized-block,.attendance-metric .localized-block{margin-block:.6rem}.attendance-metric{padding:.5rem;background:#f3f4f6;border-radius:.35rem}</style></head><body><header><p>${school}</p><h1>${escapeHtml(ui.report)} — ${student}</h1><p><strong>${escapeHtml(ui.class)}:</strong> ${className}</p><p><strong>${escapeHtml(ui.period)}:</strong> <span dir="ltr" style="display:inline-block;white-space:nowrap">${escapeHtml(snapshot.period.start)} – ${escapeHtml(snapshot.period.end)}</span></p>${intro ? `<div class="report-copy">${intro}</div>` : ''}</header>${sections}${closing || sourceLine ? `<footer>${closing ? `<div class="report-copy">${closing}</div>` : ''}${sourceLine}</footer>` : ''}</body></html>`;
+  const headerStyle = emailFriendly
+    ? ' style="font-family:Arial,Tahoma,sans-serif;font-size:14px;line-height:1.65;' +
+      'color:#475569;margin:0 0 22px;padding:0 0 18px;border-bottom:1px solid #edf1f3"'
+    : '';
+  const headingStyle = emailFriendly
+    ? ' style="font-family:Arial,Tahoma,sans-serif;font-size:21px;line-height:1.45;' +
+      'font-weight:700;color:#214356;margin:0 0 12px;overflow-wrap:break-word"'
+    : '';
+  const metaStyle = emailFriendly
+    ? ' style="font-family:Arial,Tahoma,sans-serif;font-size:14px;line-height:1.6;' +
+      'color:#475569;margin:0 0 8px;overflow-wrap:break-word"'
+    : '';
+  const footerStyle = emailFriendly
+    ? ' style="margin:18px 0 0;padding-top:12px;border-top:1px solid #edf1f3"'
+    : '';
+
+  return `<!doctype html><html lang="${language === 'both' ? 'en' : language}" dir="${dir}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(ui.report)}</title><style>body{font-family:Arial,sans-serif;max-width:48rem;margin:auto;padding:1.5rem;color:#172033}section{margin-block:1.5rem}h1,h2,h3{color:#155e75}.localized-block{margin-block:.35rem}.report-copy .localized-block,.attendance-metric .localized-block{margin-block:.6rem}.attendance-metric{padding:.5rem;background:#f3f4f6;border-radius:.35rem}</style></head><body><header${headerStyle}><p${metaStyle}>${school}</p><h1${headingStyle}>${escapeHtml(ui.report)} — ${student}</h1><p${metaStyle}><strong>${escapeHtml(ui.class)}:</strong> ${className}</p><p${metaStyle}><strong>${escapeHtml(ui.period)}:</strong> <span dir="ltr" style="display:inline-block;white-space:nowrap">${escapeHtml(snapshot.period.start)} – ${escapeHtml(snapshot.period.end)}</span></p>${intro ? `<div class="report-copy">${intro}</div>` : ''}</header>${sections}${closing || sourceLine ? `<footer${footerStyle}>${closing ? `<div class="report-copy">${closing}</div>` : ''}${sourceLine}</footer>` : ''}</body></html>`;
 }

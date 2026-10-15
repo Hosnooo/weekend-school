@@ -98,7 +98,7 @@ describe('report email', () => {
     expect(guardianEmail).not.toContain('Source / المصدر');
   });
 
-  it('adds one dashed subject divider between two sections, not before the first', () => {
+  it('uses an email-safe table divider between subjects, not before the first', () => {
     const multiSubject: ReportSnapshotV2 = {
       ...snapshotV2,
       sections: [
@@ -116,9 +116,11 @@ describe('report email', () => {
       ]
     };
     const html = renderReportEmail(multiSubject);
-    const divider = 'border-top:1px dashed #cbd5e1';
+    const divider = 'border-top:1px solid #d6e0e5';
 
     expect(html.split(divider)).toHaveLength(2);
+    expect(html).toContain('<table role="presentation" width="100%"');
+    expect(html).toContain('class="report-subject-section"');
     expect(html.indexOf('Surah Al-Fatiha')).toBeLessThan(html.indexOf(divider));
     expect(html.indexOf(divider)).toBeLessThan(html.indexOf('Learned respect and kindness'));
     expect(html.lastIndexOf('Regards,')).toBeGreaterThan(
