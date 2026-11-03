@@ -122,6 +122,8 @@ jobs:
           EOF
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium
+      - name: Verify multi-Class enrollment browser workflow
+        run: pnpm test:e2e tests/e2e/multi-class-enrollment.spec.ts
       - name: Run browser workflows
         run: pnpm test:e2e
       - name: Stop local Supabase
