@@ -1,6 +1,6 @@
 'use client';
 
-import {useActionState, useState} from 'react';
+import {useActionState, useEffect, useState} from 'react';
 import {useTranslations} from 'next-intl';
 
 import {Button} from '@/components/ui/button';
@@ -40,6 +40,18 @@ export function ClassStudentRoster({
       localName(student).toLocaleLowerCase().includes(query) ||
       `${student.firstNameEn} ${student.lastNameEn}`.toLocaleLowerCase().includes(query);
   });
+  // Enrolled students are no longer selectable. Clear successful submissions
+  // even when their enrollment starts in the future and today's roster is unchanged.
+  useEffect(() => {
+    if (state.status === 'idle') setSelected([]);
+  }, [state]);
+  useEffect(() => {
+    const candidateIds = new Set(candidates.map((student) => student.id));
+    setSelected((current) => {
+      const next = current.filter((id) => candidateIds.has(id));
+      return next.length === current.length ? current : next;
+    });
+  }, [students, classId]);
 
   function toggle(id: string, checked: boolean) {
     setSelected((current) =>
@@ -70,6 +82,9 @@ export function ClassStudentRoster({
         <p className="field-help">{t('multiClassHelp')}</p>
         <input name="locale" type="hidden" value={locale} />
         <input name="classId" type="hidden" value={classId} />
+        {selected.map((studentId) => (
+          <input key={studentId} name="studentIds" type="hidden" value={studentId} />
+        ))}
         <label>
           {t('searchStudents')}
           <input
@@ -85,7 +100,6 @@ export function ClassStudentRoster({
               <label className="guardian-directory-option" key={student.id}>
                 <input
                   checked={selected.includes(student.id)}
-                  name="studentIds"
                   onChange={(event) => toggle(student.id, event.target.checked)}
                   type="checkbox"
                   value={student.id}
