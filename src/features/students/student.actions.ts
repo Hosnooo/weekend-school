@@ -7,6 +7,8 @@ import {z} from 'zod';
 import {
   changeStudentClass,
   createStudentWithEnrollment,
+  endStudentClassEnrollment,
+  enrollStudentsInClass,
   enrollStudentInClass,
   moveStudentSubjectGroup,
   setSubjectExcluded,
@@ -92,6 +94,11 @@ export async function createStudentAction(
   revalidateStudentSurfaces(locale);
   revalidatePath(`/${locale}/classes`);
   revalidatePath(`/${locale}/guardians`);
+  const returnClassId = databaseUuid.safeParse(formData.get('returnClassId'));
+  if (returnClassId.success && returnClassId.data === parsed.data.classId) {
+    revalidatePath(`/${locale}/classes/${returnClassId.data}`);
+    redirect(`/${locale}/classes/${returnClassId.data}`);
+  }
   redirect(`/${locale}/students`);
 }
 
@@ -153,6 +160,67 @@ export async function enrollStudentInClassAction(
   }
 
   revalidateStudentSurfaces(locale, parsed.data.studentId);
+  revalidatePath(`/${locale}/classes`);
+  return initialActionState;
+}
+
+
+const bulkClassEnrollmentSchema = z.object({
+  classId: databaseUuid,
+  startsOn: z.iso.date(),
+  studentIds: z.array(databaseUuid).min(1).max(100)
+}).refine((item) => new Set(item.studentIds).size === item.studentIds.length);
+
+export async function enrollStudentsFromClassAction(
+  _state: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const locale = localeFrom(formData);
+  await requireProfile(locale, 'ADMIN');
+  const parsed = bulkClassEnrollmentSchema.safeParse({
+    classId: formData.get('classId'),
+    startsOn: formData.get('startsOn'),
+    studentIds: formData.getAll('studentIds')
+  });
+  if (!parsed.success) return validationFailure(parsed.error);
+  try {
+    await enrollStudentsInClass({
+      studentIds: parsed.data.studentIds,
+      targetClassId: parsed.data.classId,
+      startsOn: parsed.data.startsOn
+    });
+  } catch (error) {
+    return enrollmentMutationFailure(error);
+  }
+  revalidatePath(`/${locale}/classes/${parsed.data.classId}`);
+  revalidatePath(`/${locale}/classes`);
+  revalidateStudentSurfaces(locale);
+  return initialActionState;
+}
+
+export async function endStudentClassEnrollmentAction(
+  _state: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const locale = localeFrom(formData);
+  await requireProfile(locale, 'ADMIN');
+  const parsed = z.object({
+    studentId: databaseUuid,
+    classId: databaseUuid,
+    endsOn: z.iso.date()
+  }).safeParse({
+    studentId: formData.get('studentId'),
+    classId: formData.get('classId'),
+    endsOn: formData.get('endsOn')
+  });
+  if (!parsed.success) return validationFailure(parsed.error);
+  try {
+    await endStudentClassEnrollment(parsed.data);
+  } catch (error) {
+    return enrollmentMutationFailure(error);
+  }
+  revalidateStudentSurfaces(locale, parsed.data.studentId);
+  revalidatePath(`/${locale}/classes/${parsed.data.classId}`);
   revalidatePath(`/${locale}/classes`);
   return initialActionState;
 }
