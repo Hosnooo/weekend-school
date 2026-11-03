@@ -79,7 +79,8 @@ test.describe('Teacher Teaching Update workflow', () => {
     await page.goto('/en/my-teaching');
     await openStudentGroupUpdate(page, 'en');
     await expect(page.getByRole('radio', {name: 'Date range'})).toBeChecked();
-    await page.getByRole('button', {name: 'Mark all present'}).click();
+    await page.locator('input[placeholder="6"]').fill('1');
+    await page.getByRole('button', {name: 'Mark all students as attending all sessions'}).click();
     await page.getByLabel('What did you cover? (English)').fill('Flexible Teaching Update E2E');
     await page.getByLabel('Default performance').selectOption('GOOD');
     await page.getByRole('button', {name: 'Save update'}).click();
