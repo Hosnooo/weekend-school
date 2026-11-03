@@ -24,7 +24,7 @@ function mapStudent(row: StudentRow, today: string): StudentListItem {
     enrollment.starts_on <= today &&
     (enrollment.ends_on === null || enrollment.ends_on >= today)
   );
-  const currentClasses = [...new Map(effective.filter((item) => item.classes).map((item) => {
+  const currentClasses = [...new Map(effective.filter((item) => item.classes).map((item): [string, {id: string; nameEn: string; nameAr: string | null}] => {
     const schoolClass = item.classes!;
     return [schoolClass.id, {id: schoolClass.id, nameEn: schoolClass.name_en, nameAr: schoolClass.name_ar}];
   })).values()].sort((a, b) => a.nameEn.localeCompare(b.nameEn));
