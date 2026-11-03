@@ -104,59 +104,30 @@ export default async function StudentDetailPage({params}: {
 
         <section className="detail-section">
           <SectionHeader title={t('enrollment')} />
-          <p>
-            <strong>{t('currentClass')}:</strong>{' '}
-            {enrollment.currentClass
-              ? localize(enrollment.currentClass)
-              : common('notAssigned')}
-          </p>
-
-          {enrollment.currentEnrollment ? (
-            <p>
-              <strong>{t('enrollmentStart')}:</strong>{' '}
-              {enrollment.currentEnrollment.startsOn}
-            </p>
-          ) : null}
-
-          {enrollment.participation.length > 0 ? (
+          {enrollment.currentEnrollments.length ? (
             <div className="stack-list">
-              {enrollment.participation.map((participation) => {
-                const subject = enrollment.currentClass?.subjects.find(
-                  (item) => item.id === participation.classSubjectId
-                );
-                const group = subject?.groups.find(
-                  (item) => item.id === participation.subjectGroupId
-                );
-
-                return (
-                  <div key={participation.classSubjectId}>
-                    <strong>
-                      {locale === 'ar' && participation.nameAr
-                        ? participation.nameAr
-                        : participation.nameEn}
-                    </strong>
-                    <div>
-                      <Badge
-                        variant={participation.included ? 'success' : 'neutral'}
-                      >
-                        {participation.included
-                          ? t('included')
-                          : t('excluded')}
-                      </Badge>
-                      {' '}
-                      {participation.included
-                        ? group
-                          ? localize(group)
-                          : subject?.groups.some(({isActive}) => isActive)
-                            ? t('groupAssignmentNeeded')
-                            : common('notAssigned')
-                        : null}
-                    </div>
-                  </div>
-                );
-              })}
+              {enrollment.currentEnrollments.map(({schoolClass, enrollment: dated, participation}) => (
+                <div className="record-card" key={schoolClass.id}>
+                  <h3>{localize(schoolClass)}</h3>
+                  <p><strong>{t('enrollmentStart')}:</strong> {dated.startsOn}</p>
+                  {participation.map((entry) => {
+                    const subject = schoolClass.subjects.find((item) => item.id === entry.classSubjectId);
+                    const group = subject?.groups.find((item) => item.id === entry.subjectGroupId);
+                    return (
+                      <p key={entry.classSubjectId}>
+                        {locale === 'ar' && entry.nameAr ? entry.nameAr : entry.nameEn}
+                        {' · '}
+                        <Badge variant={entry.included ? 'success' : 'neutral'}>
+                          {entry.included ? t('included') : t('excluded')}
+                        </Badge>
+                        {entry.included && group ? ` · ${localize(group)}` : ''}
+                      </p>
+                    );
+                  })}
+                </div>
+              ))}
             </div>
-          ) : null}
+          ) : <p>{t('noCurrentClass')}</p>}
 
         </section>
 
