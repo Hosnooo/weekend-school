@@ -84,7 +84,8 @@ describe('migration contract', () => {
       '20261011231340_restore_individual_report_requests.sql',
       '20261012025832_shared_admin_request_draft_saves.sql',
       '20261013195247_teaching_update_partial_draft_persistence.sql',
-      '20261013220238_bilingual_guardian_delivery.sql'
+      '20261013220238_bilingual_guardian_delivery.sql',
+      '20261103040800_multi_class_student_enrollment.sql'
     ];
     expect(filenames.slice(-forwardFiles.length)).toEqual(forwardFiles);
     if (guardFiles.length > 0) {
@@ -186,6 +187,7 @@ describe('migration contract', () => {
     expect(sql).toMatch(/create function public\.student_participates_in_class_subject\b/i);
     expect(sql).toMatch(/create function public\.teacher_can_teach_context\b/i);
     expect(sql).toContain('class_enrollments_one_active_class_per_student');
+    expect(sql).toContain('class_enrollments_no_overlap_in_same_class');
     expect(sql).toContain('subject_group_memberships_one_group_per_class_subject');
     expect(sql).toContain('teaching_assignments_no_duplicate_overlap');
   });
