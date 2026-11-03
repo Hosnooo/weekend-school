@@ -8,6 +8,9 @@ if (!supabaseUrl || !/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(supabaseUrl)
 
 export default defineConfig({
   testDir: './tests/e2e',
+  // Recovery verification has its own isolated credentials, URL, and invocation.
+  // It must not be collected by the ordinary local/CI browser suite.
+  testIgnore: ['**/report-production-recovery.local.spec.ts'],
   timeout: 180_000,
   expect: {timeout: 60_000},
   fullyParallel: false,
