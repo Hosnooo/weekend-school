@@ -285,15 +285,15 @@ test.describe('Reports and Delivery Status', () => {
       }
 
       await expect(
-        page.getByText('Sara Ali', {exact: true})
+        page.getByRole('cell', {name: 'Sara Ali', exact: true})
       ).toBeVisible();
 
       await expect(
-        page.getByText('Omar Hassan', {exact: true})
+        page.getByRole('cell', {name: 'Omar Hassan', exact: true})
       ).toBeVisible();
 
       await expect(
-        page.getByText('Lina Khalil', {exact: true})
+        page.getByRole('cell', {name: 'Lina Khalil', exact: true})
       ).toBeVisible();
 
       await assertNoHorizontalOverflow(page);
@@ -311,7 +311,7 @@ test.describe('Reports and Delivery Status', () => {
       );
 
       await expect(
-        page.getByText('Lina Khalil', {exact: true})
+        page.getByRole('cell', {name: 'Lina Khalil', exact: true})
       ).toBeVisible();
 
       await expect(
@@ -319,7 +319,7 @@ test.describe('Reports and Delivery Status', () => {
       ).toBeVisible();
 
       await expect(
-        page.getByText('Sara Ali', {exact: true})
+        page.getByRole('cell', {name: 'Sara Ali', exact: true})
       ).toHaveCount(0);
 
       // English Preview — desktop.
@@ -379,7 +379,7 @@ test.describe('Reports and Delivery Status', () => {
       ).toBeVisible();
 
       await expect(
-        page.getByText('Lina Khalil', {exact: true})
+        page.getByRole('cell', {name: 'Lina Khalil', exact: true})
       ).toBeVisible();
 
       await assertNoHorizontalOverflow(page);
@@ -461,7 +461,7 @@ test.describe('Reports and Delivery Status', () => {
       }
 
       await expect(
-        page.getByText('لينا خليل', {exact: true})
+        page.getByRole('cell', {name: 'لينا خليل', exact: true})
       ).toBeVisible();
 
       await assertNoHorizontalOverflow(page);
@@ -532,7 +532,7 @@ test.describe('Reports and Delivery Status', () => {
       ).toBeVisible();
 
       await expect(
-        page.getByText('لينا خليل', {exact: true})
+        page.getByRole('cell', {name: 'لينا خليل', exact: true})
       ).toBeVisible();
 
       await assertNoHorizontalOverflow(page);
