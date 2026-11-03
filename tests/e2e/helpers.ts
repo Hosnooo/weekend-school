@@ -69,7 +69,7 @@ export async function submitTeachingUpdate(page: Page, input: {
   await expect(defaultPerformance).toBeVisible({timeout: 5_000});
   await defaultPerformance.selectOption('GOOD');
   if (input.exceptionStudent) {
-    await page.getByRole('row', {name: new RegExp(input.exceptionStudent)}).locator('select').nth(1).selectOption('EXCELLENT');
+    await page.getByRole('combobox', {name: `Individual performance — ${input.exceptionStudent}`}).selectOption('EXCELLENT');
   }
   await page.getByRole('button', {name: input.locale === 'ar' ? 'حفظ التحديث' : 'Save update'}).click();
   await expect(page.locator('.save-status')).toContainText(input.locale === 'ar' ? 'تم الحفظ' : 'Saved');
