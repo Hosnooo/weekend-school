@@ -1,6 +1,6 @@
 'use client';
 
-import {useActionState, useEffect, useState} from 'react';
+import {useState, useTransition} from 'react';
 import {useTranslations} from 'next-intl';
 
 import {Button} from '@/components/ui/button';
@@ -10,7 +10,7 @@ import {enrollStudentsFromClassAction} from '@/features/students/student.actions
 import type {StudentListItem} from '@/features/students/student.types';
 import type {Locale} from '@/i18n/config';
 import {Link} from '@/i18n/navigation';
-import {initialActionState} from '@/lib/validation/action-state';
+import {initialActionState, type ActionState} from '@/lib/validation/action-state';
 
 export function ClassStudentRoster({
   classId, locale, students, today
@@ -22,9 +22,8 @@ export function ClassStudentRoster({
 }) {
   const t = useTranslations('classes');
   const common = useTranslations('common');
-  const [state, action, pending] = useActionState(
-    enrollStudentsFromClassAction, initialActionState
-  );
+  const [state, setState] = useState<ActionState>(initialActionState);
+  const [pending, startTransition] = useTransition();
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<string[]>([]);
   const localName = (student: StudentListItem) =>
@@ -40,18 +39,19 @@ export function ClassStudentRoster({
       localName(student).toLocaleLowerCase().includes(query) ||
       `${student.firstNameEn} ${student.lastNameEn}`.toLocaleLowerCase().includes(query);
   });
-  // Enrolled students are no longer selectable. Clear successful submissions
-  // even when their enrollment starts in the future and today's roster is unchanged.
-  useEffect(() => {
-    if (state.status === 'idle') setSelected([]);
-  }, [state]);
-  useEffect(() => {
-    const candidateIds = new Set(candidates.map((student) => student.id));
-    setSelected((current) => {
-      const next = current.filter((id) => candidateIds.has(id));
-      return next.length === current.length ? current : next;
+  const candidateIds = new Set(candidates.map((student) => student.id));
+  const eligibleSelected = selected.filter((id) => candidateIds.has(id));
+
+  function submitEnrollment(formData: FormData) {
+    startTransition(async () => {
+      const result = await enrollStudentsFromClassAction(initialActionState, formData);
+      setState(result);
+      if (result.status !== 'error') {
+        setSelected([]);
+        setSearch('');
+      }
     });
-  }, [students, classId]);
+  }
 
   function toggle(id: string, checked: boolean) {
     setSelected((current) =>
@@ -77,12 +77,12 @@ export function ClassStudentRoster({
         </ul>
       )}
 
-      <form action={action} className="record-form">
+      <form action={submitEnrollment} className="record-form">
         <h3>{t('addExistingStudents')}</h3>
         <p className="field-help">{t('multiClassHelp')}</p>
         <input name="locale" type="hidden" value={locale} />
         <input name="classId" type="hidden" value={classId} />
-        {selected.map((studentId) => (
+        {eligibleSelected.map((studentId) => (
           <input key={studentId} name="studentIds" type="hidden" value={studentId} />
         ))}
         <label>
@@ -122,8 +122,8 @@ export function ClassStudentRoster({
           <input defaultValue={today} name="startsOn" required type="date" />
         </label>
         <FormFeedback state={state} />
-        <Button disabled={pending || selected.length === 0 || selected.length > 100} type="submit">
-          {pending ? common('saving') : t('enrollSelected', {count: selected.length})}
+        <Button disabled={pending || eligibleSelected.length === 0 || eligibleSelected.length > 100} type="submit">
+          {pending ? common('saving') : t('enrollSelected', {count: eligibleSelected.length})}
         </Button>
       </form>
     </section>
