@@ -47,11 +47,20 @@ export async function submitTeachingUpdate(page: Page, input: {
   await page.locator('input[name="periodEnd"]:visible').fill(
     end.toISOString().slice(0, 10) > schoolToday ? schoolToday : end.toISOString().slice(0, 10)
   );
-  const markAll = page.getByRole('button', {name: input.locale === 'ar' ? 'تحديد الجميع حاضرين' : 'Mark all present'});
-  await expect(markAll).toBeVisible();
+  // Attendance is numeric: first specify the number of sessions held,
+  // then fill each student's attended/total counts in one operation.
+  await page.locator('input[placeholder="6"]').fill('1');
+  const markAll = page.getByRole('button', {
+    name: input.locale === 'ar'
+      ? 'تحديد حضور جميع الطلاب في كل الحصص'
+      : 'Mark all students as attending all sessions'
+  });
+  await expect(markAll).toBeEnabled();
   await markAll.click();
   if (input.absentStudent) {
-    await page.getByRole('row', {name: new RegExp(input.absentStudent)}).locator('select').first().selectOption('ABSENT');
+    const studentRow = page.locator('.teacher-student-table tbody tr')
+      .filter({hasText: input.absentStudent});
+    await studentRow.locator('.teacher-attendance-fields input').first().fill('0');
   }
   if (input.progressEn) await page.getByLabel(input.locale === 'ar' ? 'ماذا غطّيت؟ (بالإنجليزية)' : 'What did you cover? (English)').fill(input.progressEn);
   if (input.progressAr) await page.getByLabel(input.locale === 'ar' ? 'ماذا غطّيت؟ (بالعربية)' : 'What did you cover? (Arabic)').fill(input.progressAr);
