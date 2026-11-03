@@ -27,10 +27,10 @@ export function StudentManagementList({locale, students}: {locale: Locale; stude
       ? `${student.firstNameAr} ${student.lastNameAr}`
       : `${student.firstNameEn} ${student.lastNameEn}`;
 
-  const localClass = (student: StudentListItem) => student.currentClass
-    ? locale === 'ar' && student.currentClass.nameAr
-      ? student.currentClass.nameAr
-      : student.currentClass.nameEn
+  const localClass = (student: StudentListItem) => student.currentClasses.length
+    ? student.currentClasses.map((schoolClass) =>
+      locale === 'ar' && schoolClass.nameAr ? schoolClass.nameAr : schoolClass.nameEn
+    ).join(' · ')
     : common('notAssigned');
 
   if (students.length === 0) return <EmptyState title={t('empty')} />;
