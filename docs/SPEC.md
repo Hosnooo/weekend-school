@@ -2004,7 +2004,7 @@ Each Group belongs to exactly one Class Subject. The same display name such as `
 
 ## 58.2 Student enrollment and participation
 
-A student has exactly one active Class at a time. Class changes are dated: the old enrollment closes and the new enrollment begins without rewriting history.
+A student may be concurrently enrolled in multiple active Classes. Each Class enrollment is independently dated; overlapping periods are prohibited only for the same student in the same Class. Adding a Class never closes another Class. Ending participation is Class-specific and preserves historical attendance, teaching updates, and reports.
 
 An actively enrolled student automatically participates in every active Subject for the Class unless the student is explicitly excluded from that Class Subject. Subject exclusions affect only that Subject and do not remove the student from the Class or other Subjects.
 
@@ -2280,3 +2280,8 @@ An Administrator creates a Report Cycle for a Class and custom period. Eligible 
 ## 60.3 Roster CSV
 
 An Administrator may download a school-specific UTF-8 CSV template, preview an import, and confirm a school-scoped, all-or-nothing transaction. Each row creates a new Student, links one primary Guardian, enrolls the Student in one Class, and optionally assigns Groups for active Class Subjects. Guardian email is normalized; an existing same-school Guardian is reused without overwriting their details. Preview shows errors, warnings, Guardian reuse, and when a missing Class will be created. An unknown Class English name may create one new Class in the transaction; an inactive or ambiguous matching Class remains an error. Confirmation revalidates current school data and does not trust browser-provided resolved IDs. Identical completed imports are rejected, and raw uploaded files are not retained. Roster export offers current school-wide or single-Class CSV; protected historical exports remain separate.
+
+
+## Multiple Class Student Enrollment — 2026-11-02 extension
+
+Administrators may enroll existing students in multiple Classes concurrently and view every current Class on Student details and enrollment screens. The Class detail page includes a current-student roster, a searchable multi-select directory to enroll existing students atomically, and a link to create a new student with the Class preselected. Same-Class date overlaps and duplicate batch selections are rejected. School isolation, guardian identity, Subject inclusion, Group defaults, submitted teaching history, and report snapshot rules remain in effect.
