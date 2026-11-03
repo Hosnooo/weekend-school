@@ -51,3 +51,97 @@ $$;
 revoke all on function public.enroll_students_in_class(uuid[], uuid, date) from public;
 revoke execute on function public.enroll_students_in_class(uuid[], uuid, date) from anon;
 grant execute on function public.enroll_students_in_class(uuid[], uuid, date) to authenticated;
+
+-- Removing one Class membership must never close the student's other Classes.
+create function public.end_student_class_enrollment(
+  p_student_id uuid,
+  p_class_id uuid,
+  p_ends_on date
+)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  target_school_id uuid := public.current_school_id();
+  existing public.class_enrollments%rowtype;
+begin
+  if target_school_id is null or not public.is_admin() then
+    raise exception 'administrator access required' using errcode = '42501';
+  end if;
+  if p_ends_on is null then
+    raise exception 'enrollment end date required' using errcode = '22023';
+  end if;
+
+  perform 1 from public.students s
+  where s.school_id=target_school_id and s.id=p_student_id and s.is_active
+  for update;
+  if not found then
+    raise exception 'student not found' using errcode = 'P0002';
+  end if;
+
+  select * into existing from public.class_enrollments ce
+  where ce.school_id=target_school_id
+    and ce.student_id=p_student_id
+    and ce.class_id=p_class_id
+    and ce.starts_on<=p_ends_on
+    and (ce.ends_on is null or ce.ends_on>=p_ends_on)
+  order by ce.starts_on desc
+  limit 1
+  for update;
+  if existing.id is null then
+    raise exception 'enrollment not found for this date' using errcode='P0002';
+  end if;
+
+  -- Protect already submitted teaching source history from retroactive
+  -- removal. An admin must use the existing correction/revision workflow.
+  if exists (
+    select 1 from public.weekly_submissions ws
+    join public.class_subjects cs on cs.school_id=ws.school_id
+      and cs.id=ws.class_subject_id
+    join public.weekly_submission_students wss on wss.school_id=ws.school_id
+      and wss.submission_id=ws.id and wss.student_id=p_student_id
+    where ws.school_id=target_school_id and cs.class_id=p_class_id
+      and ws.status='SUBMITTED' and ws.period_end > p_ends_on
+  ) then
+    raise exception 'submitted teaching history requires this enrollment'
+      using errcode='55000';
+  end if;
+
+  update public.class_enrollments ce
+    set ends_on=p_ends_on
+    where ce.id=existing.id and ce.school_id=target_school_id;
+
+  update public.subject_group_memberships sgm
+    set ends_on=p_ends_on
+    where sgm.school_id=target_school_id and sgm.student_id=p_student_id
+      and sgm.ends_on is null and sgm.starts_on<=p_ends_on
+      and exists (select 1 from public.class_subjects cs
+        where cs.school_id=target_school_id and cs.id=sgm.class_subject_id
+          and cs.class_id=p_class_id);
+  delete from public.subject_group_memberships sgm
+    where sgm.school_id=target_school_id and sgm.student_id=p_student_id
+      and sgm.ends_on is null and sgm.starts_on>p_ends_on
+      and exists (select 1 from public.class_subjects cs
+        where cs.school_id=target_school_id and cs.id=sgm.class_subject_id
+          and cs.class_id=p_class_id);
+
+  update public.subject_exclusions se
+    set ends_on=p_ends_on
+    where se.school_id=target_school_id and se.student_id=p_student_id
+      and se.ends_on is null and se.starts_on<=p_ends_on
+      and exists (select 1 from public.class_subjects cs
+        where cs.school_id=target_school_id and cs.id=se.class_subject_id
+          and cs.class_id=p_class_id);
+  delete from public.subject_exclusions se
+    where se.school_id=target_school_id and se.student_id=p_student_id
+      and se.ends_on is null and se.starts_on>p_ends_on
+      and exists (select 1 from public.class_subjects cs
+        where cs.school_id=target_school_id and cs.id=se.class_subject_id
+          and cs.class_id=p_class_id);
+end;
+$$;
+revoke all on function public.end_student_class_enrollment(uuid,uuid,date) from public;
+revoke execute on function public.end_student_class_enrollment(uuid,uuid,date) from anon;
+grant execute on function public.end_student_class_enrollment(uuid,uuid,date) to authenticated;
