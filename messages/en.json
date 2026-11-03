@@ -297,7 +297,17 @@
     "effectiveOn": "Effective on",
     "membershipHistory": "Membership history",
     "noMembershipHistory": "No Group membership history yet.",
-    "noStudents": "No students currently participate in this Subject."
+    "noStudents": "No students currently participate in this Subject.",
+    "studentRoster": "Students enrolled in this Class",
+    "studentRosterDescription": "{count} currently enrolled students. Enrollment in another Class is allowed.",
+    "createStudentHere": "Create and enroll new student",
+    "noEnrolledStudents": "No students currently enrolled.",
+    "addExistingStudents": "Add existing students",
+    "multiClassHelp": "Select existing students from the school directory. Their other Class enrollments will remain unchanged.",
+    "searchStudents": "Search students",
+    "noEligibleStudents": "No eligible students match your search.",
+    "enrollmentStartDate": "Enrollment start date",
+    "enrollSelected": "Enroll selected ({count})"
   },
   "students": {
     "title": "Students",
@@ -416,7 +426,12 @@
     "manageEnrollment": "Manage enrollment",
     "guardianOptional": "Guardian (optional)",
     "guardianOptionalHelp": "Add guardian contact details now, or add them later from the student record.",
-    "guardianPhone": "Guardian phone"
+    "guardianPhone": "Guardian phone",
+    "addAnotherClass": "Enroll in another Class",
+    "multiClassHelp": "A student can attend multiple Classes at the same time. Existing Class enrollments remain unchanged.",
+    "allClassesEnrolled": "This student is already enrolled in all active Classes.",
+    "currentClasses": "Current Classes",
+    "endClassEnrollment": "End this Class enrollment"
   },
   "guardians": {
     "title": "Guardians",
