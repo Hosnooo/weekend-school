@@ -186,7 +186,7 @@ test(
     ).toBeVisible();
 
     // Finalization prepares immutable reports but must not start email delivery.
-    await expect(page.getByRole('button', {name: 'Send reports'})).toBeVisible();
+    await expect(page.getByRole('button', {name: 'Send available reports'})).toBeVisible();
     await expect(page.getByRole('button', {
       name: 'Reopen for admin editing'
     })).toBeVisible();
