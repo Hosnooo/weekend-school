@@ -15,11 +15,10 @@ import type {
   SubjectParticipation
 } from '@/features/enrollment/enrollment.types';
 import {
-  changeStudentClassAction,
+  endStudentClassEnrollmentAction,
   enrollStudentInClassAction,
   moveStudentSubjectGroupAction,
-  setSubjectExcludedAction,
-  updateStudentEnrollmentStartAction
+  setSubjectExcludedAction
 } from '@/features/students/student.actions';
 import type {Locale} from '@/i18n/config';
 import {initialActionState} from '@/lib/validation/action-state';
@@ -123,6 +122,66 @@ function SubjectEnrollmentRow({
   );
 }
 
+function EnrollmentClassSection({
+  enrollment,
+  locale,
+  studentId,
+  today
+}: {
+  enrollment: StudentEnrollmentState;
+  locale: Locale;
+  studentId: string;
+  today: string;
+}) {
+  const t = useTranslations('students');
+  const common = useTranslations('common');
+  const [endState, endAction, endPending] = useActionState(
+    endStudentClassEnrollmentAction,
+    initialActionState
+  );
+  const localize = (item: {nameEn: string; nameAr: string | null}) =>
+    locale === 'ar' && item.nameAr ? item.nameAr : item.nameEn;
+  return (
+    <div className="stack-list">
+      {enrollment.currentEnrollments.map(({schoolClass, enrollment: dated, participation}) => (
+        <Card key={schoolClass.id}>
+          <SectionHeader title={localize(schoolClass)} />
+          <p><strong>{t('enrollmentStart')}:</strong> {dated.startsOn}</p>
+          <div className="form-grid">
+            {schoolClass.subjects.filter(({isActive}) => isActive).map((subject) => {
+              const entry = participation.find(({classSubjectId}) => classSubjectId === subject.id);
+              return entry ? (
+                <SubjectEnrollmentRow
+                  enrollment={enrollment}
+                  key={subject.id}
+                  locale={locale}
+                  participation={entry}
+                  studentId={studentId}
+                  subject={subject}
+                  today={today}
+                />
+              ) : null;
+            })}
+          </div>
+          <form action={endAction} className="form-grid compact-form">
+            <input name="locale" type="hidden" value={locale} />
+            <input name="studentId" type="hidden" value={studentId} />
+            <input name="classId" type="hidden" value={schoolClass.id} />
+            <label>
+              {t('endClassEnrollment')}
+              <input name="endsOn" type="date" defaultValue={today} min={dated.startsOn} required />
+            </label>
+            <Button disabled={endPending} variant="secondary" type="submit">
+              {endPending ? common('saving') : t('endClassEnrollment')}
+            </Button>
+            <FormFeedback state={endState} />
+          </form>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
 export function StudentEnrollmentEditor({
   locale,
   studentId,
@@ -139,94 +198,46 @@ export function StudentEnrollmentEditor({
   const t = useTranslations('students');
   const common = useTranslations('common');
   const [classState, classAction, classPending] = useActionState(
-    enrollment.currentClass
-      ? changeStudentClassAction
-      : enrollStudentInClassAction,
-    initialActionState
+    enrollStudentInClassAction, initialActionState
   );
-  const [startState, startAction, startPending] = useActionState(
-    updateStudentEnrollmentStartAction,
-    initialActionState
-  );
-  const localize = (value: {nameEn: string; nameAr: string | null}) =>
-    locale === 'ar' && value.nameAr ? value.nameAr : value.nameEn;
-  const activeClasses = classes.filter(({isActive}) => isActive);
-  const targetClasses = activeClasses.filter(({id}) => id !== enrollment.currentClass?.id);
+  const localize = (item: {nameEn: string; nameAr: string | null}) =>
+    locale === 'ar' && item.nameAr ? item.nameAr : item.nameEn;
+  const enrolledClassIds = new Set(enrollment.currentEnrollments.map(({schoolClass}) => schoolClass.id));
+  const targetClasses = classes.filter(({isActive, id}) => isActive && !enrolledClassIds.has(id));
 
   return (
     <section aria-labelledby="student-enrollment-heading" className="stack-list">
       <Card>
-        <SectionHeader title={t('currentClass')} />
-        <p>{enrollment.currentClass ? localize(enrollment.currentClass) : common('notAssigned')}</p>
-        {enrollment.currentEnrollment ? (
-          <form action={startAction} className="form-grid compact-form">
-            <input name="locale" type="hidden" value={locale} />
-            <input name="studentId" type="hidden" value={studentId} />
-            <label>
-              {t('enrollmentStart')}
-              <input
-                defaultValue={enrollment.currentEnrollment.startsOn}
-                name="startsOn"
-                required
-                type="date"
-              />
-            </label>
-            <Button disabled={startPending} type="submit" variant="secondary">
-              {startPending ? common('saving') : common('save')}
-            </Button>
-            <FormFeedback state={startState} />
-          </form>
-        ) : null}
-        {targetClasses.length > 0 ? (
+        <SectionHeader title={t('addAnotherClass')} />
+        <p className="field-help">{t('multiClassHelp')}</p>
+        {targetClasses.length ? (
           <form action={classAction} className="form-grid compact-form">
             <input name="locale" type="hidden" value={locale} />
             <input name="studentId" type="hidden" value={studentId} />
             <label>
-              {enrollment.currentClass ? t('changeClass') : t('class')}
-              <select name="targetClassId" required>
+              {t('class')}
+              <select name="targetClassId" required defaultValue="">
                 <option value="">—</option>
-                {targetClasses.map((schoolClass) => <option key={schoolClass.id} value={schoolClass.id}>{localize(schoolClass)}</option>)}
+                {targetClasses.map((schoolClass) =>
+                  <option key={schoolClass.id} value={schoolClass.id}>{localize(schoolClass)}</option>
+                )}
               </select>
             </label>
             <label>
               {t('effectiveDate')}
               <input defaultValue={today} name="startsOn" required type="date" />
             </label>
-            <Button disabled={classPending} type="submit" variant="secondary">
-              {classPending
-                ? common('saving')
-                : enrollment.currentClass
-                  ? t('changeClass')
-                  : t('enrollInClass')}
+            <Button disabled={classPending} type="submit">
+              {classPending ? common('saving') : t('enrollInClass')}
             </Button>
             <FormFeedback state={classState} />
           </form>
-        ) : null}
+        ) : <p className="field-help">{t('allClassesEnrolled')}</p>}
       </Card>
-
-      <div>
-        <h2 id="student-enrollment-heading">{t('subjects')}</h2>
-        <p className="field-help">{t('enrollmentHelp')}</p>
-      </div>
-
-      {enrollment.currentClass ? (
-        <div className="form-grid">
-          {enrollment.currentClass.subjects.filter(({isActive}) => isActive).map((subject) => {
-            const participation = enrollment.participation.find(({classSubjectId}) => classSubjectId === subject.id);
-            return participation ? (
-              <SubjectEnrollmentRow
-                enrollment={enrollment}
-                key={subject.id}
-                locale={locale}
-                participation={participation}
-                studentId={studentId}
-                subject={subject}
-                today={today}
-              />
-            ) : null;
-          })}
-        </div>
-      ) : <p className="empty-state">{t('noCurrentClass')}</p>}
+      <h2 id="student-enrollment-heading">{t('currentClasses')}</h2>
+      {enrollment.currentEnrollments.length
+        ? <EnrollmentClassSection enrollment={enrollment} locale={locale} studentId={studentId} today={today} />
+        : <p className="empty-state">{t('noCurrentClass')}</p>}
     </section>
   );
 }
