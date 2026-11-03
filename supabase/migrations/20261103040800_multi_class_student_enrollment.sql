@@ -145,3 +145,64 @@ $$;
 revoke all on function public.end_student_class_enrollment(uuid,uuid,date) from public;
 revoke execute on function public.end_student_class_enrollment(uuid,uuid,date) from anon;
 grant execute on function public.end_student_class_enrollment(uuid,uuid,date) to authenticated;
+
+-- Old RPCs lack a Class identifier. Keep them for one-Class histories, but
+-- reject ambiguous multi-Class calls rather than silently modifying whichever
+-- Class happens to sort first.
+alter function public.change_student_class(uuid,uuid,date)
+  rename to change_student_class_single_class_legacy;
+
+create function public.change_student_class(
+  p_student_id uuid, p_target_class_id uuid, p_starts_on date
+) returns void
+language plpgsql security definer set search_path = ''
+as $$
+begin
+  if public.current_school_id() is null or not public.is_admin() then
+    raise exception 'administrator access required' using errcode='42501';
+  end if;
+  if (select count(*) from public.class_enrollments
+      where school_id=public.current_school_id()
+        and student_id=p_student_id and ends_on is null) > 1 then
+    raise exception 'use Class-specific enrollment operations for multi-Class students'
+      using errcode='22023';
+  end if;
+  perform public.change_student_class_single_class_legacy(p_student_id,p_target_class_id,p_starts_on);
+end;
+$$;
+revoke all on function public.change_student_class(uuid,uuid,date) from public;
+revoke execute on function public.change_student_class(uuid,uuid,date) from anon;
+grant execute on function public.change_student_class(uuid,uuid,date) to authenticated;
+
+revoke all on function public.change_student_class_single_class_legacy(uuid,uuid,date) from public;
+revoke execute on function public.change_student_class_single_class_legacy(uuid,uuid,date) from anon;
+revoke execute on function public.change_student_class_single_class_legacy(uuid,uuid,date) from authenticated;
+
+alter function public.update_student_enrollment_start(uuid,date)
+  rename to update_student_enrollment_start_single_class_legacy;
+
+create function public.update_student_enrollment_start(
+  p_student_id uuid, p_starts_on date
+) returns void
+language plpgsql security definer set search_path = ''
+as $$
+begin
+  if public.current_school_id() is null or not public.is_admin() then
+    raise exception 'administrator access required' using errcode='42501';
+  end if;
+  if (select count(*) from public.class_enrollments
+      where school_id=public.current_school_id()
+        and student_id=p_student_id and ends_on is null) > 1 then
+    raise exception 'select a specific Class to edit a multi-Class enrollment'
+      using errcode='22023';
+  end if;
+  perform public.update_student_enrollment_start_single_class_legacy(p_student_id,p_starts_on);
+end;
+$$;
+revoke all on function public.update_student_enrollment_start(uuid,date) from public;
+revoke execute on function public.update_student_enrollment_start(uuid,date) from anon;
+grant execute on function public.update_student_enrollment_start(uuid,date) to authenticated;
+
+revoke all on function public.update_student_enrollment_start_single_class_legacy(uuid,date) from public;
+revoke execute on function public.update_student_enrollment_start_single_class_legacy(uuid,date) from anon;
+revoke execute on function public.update_student_enrollment_start_single_class_legacy(uuid,date) from authenticated;
