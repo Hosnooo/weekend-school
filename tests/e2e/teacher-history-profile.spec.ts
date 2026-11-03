@@ -15,7 +15,7 @@ const cases = [
     locale: 'en' as const,
     account: credentials.englishTeacher,
     history: 'History', profile: 'My account', loginIdentity: 'Sign-in email', teacherRecords: 'Linked Teacher records',
-    newUpdate: 'New Teaching Update', selectedDates: 'Selected dates', markAll: 'Mark all present',
+    newUpdate: 'New Teaching Update', selectedDates: 'Selected dates', markAll: 'Mark all students as attending all sessions',
     progress: 'What did you cover? (English)', performance: 'Default performance',
     save: 'Save update', submit: 'Submit update', view: 'View', reopen: 'Reopen and edit'
   },
@@ -23,7 +23,7 @@ const cases = [
     locale: 'ar' as const,
     account: credentials.arabicTeacher,
     history: 'السجل', profile: 'حسابي', loginIdentity: 'البريد الإلكتروني لتسجيل الدخول', teacherRecords: 'سجلات المعلم المرتبطة',
-    newUpdate: 'تحديث تدريس جديد', selectedDates: 'تواريخ محددة', markAll: 'تحديد الجميع حاضرين',
+    newUpdate: 'تحديث تدريس جديد', selectedDates: 'تواريخ محددة', markAll: 'تحديد حضور جميع الحصص لكل الطلاب',
     progress: 'ماذا غطّيت؟ (بالعربية)', performance: 'الأداء الافتراضي',
     save: 'حفظ التحديث', submit: 'إرسال التحديث', view: 'عرض', reopen: 'إعادة الفتح والتعديل'
   }
@@ -39,6 +39,9 @@ for (const item of cases) {
       has: page.locator(`input[name="classSubjectId"][value="${redesign.groupedSubjectId}"]`)
     }).first().getByRole('button', {name: item.newUpdate}).click();
     await page.getByRole('radio', {name: item.selectedDates}).check();
+    await page.getByLabel(item.locale === 'ar' ? 'التاريخ' : 'Date', {exact: true}).fill('2026-09-24');
+    await page.getByRole('button', {name: item.locale === 'ar' ? 'إضافة تاريخ' : 'Add date'}).click();
+    await page.locator('input[placeholder="6"]').fill('1');
     await page.getByRole('button', {name: item.markAll}).click();
     await page.getByLabel(item.progress).fill(`History verification ${item.locale}`);
     await page.getByLabel(item.performance).selectOption('GOOD');
