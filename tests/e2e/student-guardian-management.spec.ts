@@ -235,8 +235,8 @@ test.describe('Student, enrollment, and Guardian management', () => {
     }
 
     await expect(
-      page.locator('p').filter({hasText: 'الفصل الحالي:'})
-    ).toContainText('الأساسيات');
+      page.getByRole('heading', {level: 3, name: 'الأساسيات'})
+    ).toBeVisible();
     await assertNoHorizontalOverflow(page);
 
     await page.screenshot({
