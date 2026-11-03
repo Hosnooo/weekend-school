@@ -52,7 +52,7 @@ export async function submitTeachingUpdate(page: Page, input: {
   await page.locator('input[placeholder="6"]').fill('1');
   const markAll = page.getByRole('button', {
     name: input.locale === 'ar'
-      ? 'تحديد حضور جميع الطلاب في كل الحصص'
+      ? 'تحديد حضور جميع الحصص لكل الطلاب'
       : 'Mark all students as attending all sessions'
   });
   await expect(markAll).toBeEnabled();
