@@ -58,7 +58,7 @@ test.describe('Teacher Teaching Update workflow', () => {
 
     await expect(page.getByRole('radio', {name: 'Date range'})).toBeChecked();
     await page.getByRole('radio', {name: 'Selected dates'}).check();
-    await page.getByLabel('Date', {exact: true}).fill('2040-10-02');
+    await page.locator('input[type="date"]').first().fill('2040-10-02');
     await page.getByRole('button', {name: 'Add date'}).click();
     await expect(page.getByRole('button', {name: 'Submit update'})).toBeDisabled();
 
@@ -117,7 +117,7 @@ test.describe('Teacher Teaching Update workflow', () => {
     await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
     await expect(page.getByRole('radio', {name: 'نطاق تاريخ'})).toBeChecked();
     await page.getByRole('radio', {name: 'تواريخ محددة'}).check();
-    await page.getByLabel('التاريخ', {exact: true}).fill('2040-10-02');
+    await page.locator('input[type="date"]').first().fill('2040-10-02');
     await page.getByRole('button', {name: 'إضافة تاريخ'}).click();
     await expect(page.getByRole('button', {name: 'إرسال التحديث'})).toBeDisabled();
     await assertNoHorizontalOverflow(page);
