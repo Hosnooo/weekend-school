@@ -21,6 +21,9 @@ test('Class page enrolls an existing student without moving them, then creates a
   await page.getByLabel('Enrollment start date').fill('2026-10-10');
   await page.getByRole('button', {name: 'Enroll selected (1)'}).click();
   await expect(page.getByRole('link', {name: 'Sara Ali'})).toBeVisible();
+  await expect(page.getByRole('button', {name: 'Enroll selected (0)'})).toBeDisabled();
+  await page.getByLabel('Search students').fill('Omar');
+  await expect(page.getByRole('button', {name: 'Enroll selected (0)'})).toBeDisabled();
 
   await page.goto(`/en/students/${existingStudentId}`);
   await expect(page.getByRole('heading', {level: 3, name: 'Foundations'})).toBeVisible();
