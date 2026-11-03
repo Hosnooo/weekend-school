@@ -53,6 +53,7 @@ export type SubjectParticipation = {
 export type StudentEnrollmentState = {
   currentClass: EnrollmentClassOption | null;
   currentEnrollment: ClassEnrollmentHistoryItem | null;
+  currentEnrollments: Array<{schoolClass: EnrollmentClassOption; enrollment: ClassEnrollmentHistoryItem; participation: SubjectParticipation[]}>;
   exclusions: EnrollmentSubjectExclusion[];
   memberships: EnrollmentGroupMembership[];
   participation: SubjectParticipation[];
