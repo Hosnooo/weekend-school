@@ -39,7 +39,7 @@ for (const item of cases) {
       has: page.locator(`input[name="classSubjectId"][value="${redesign.groupedSubjectId}"]`)
     }).first().getByRole('button', {name: item.newUpdate}).click();
     await page.getByRole('radio', {name: item.selectedDates}).check();
-    await page.getByLabel(item.locale === 'ar' ? 'التاريخ' : 'Date', {exact: true}).fill('2026-09-24');
+    await page.getByLabel(item.locale === 'ar' ? /^التاريخ/ : /^Date/).fill('2026-09-24');
     await page.getByRole('button', {name: item.locale === 'ar' ? 'إضافة تاريخ' : 'Add date'}).click();
     await page.locator('input[placeholder="6"]').fill('1');
     await page.getByRole('button', {name: item.markAll}).click();
