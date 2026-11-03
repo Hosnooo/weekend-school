@@ -116,13 +116,14 @@ begin
   update public.subject_group_memberships sgm
     set ends_on=p_ends_on
     where sgm.school_id=target_school_id and sgm.student_id=p_student_id
-      and sgm.ends_on is null and sgm.starts_on<=p_ends_on
+      and sgm.starts_on<=p_ends_on
+      and (sgm.ends_on is null or sgm.ends_on>p_ends_on)
       and exists (select 1 from public.class_subjects cs
         where cs.school_id=target_school_id and cs.id=sgm.class_subject_id
           and cs.class_id=p_class_id);
   delete from public.subject_group_memberships sgm
     where sgm.school_id=target_school_id and sgm.student_id=p_student_id
-      and sgm.ends_on is null and sgm.starts_on>p_ends_on
+      and sgm.starts_on>p_ends_on
       and exists (select 1 from public.class_subjects cs
         where cs.school_id=target_school_id and cs.id=sgm.class_subject_id
           and cs.class_id=p_class_id);
@@ -130,13 +131,14 @@ begin
   update public.subject_exclusions se
     set ends_on=p_ends_on
     where se.school_id=target_school_id and se.student_id=p_student_id
-      and se.ends_on is null and se.starts_on<=p_ends_on
+      and se.starts_on<=p_ends_on
+      and (se.ends_on is null or se.ends_on>p_ends_on)
       and exists (select 1 from public.class_subjects cs
         where cs.school_id=target_school_id and cs.id=se.class_subject_id
           and cs.class_id=p_class_id);
   delete from public.subject_exclusions se
     where se.school_id=target_school_id and se.student_id=p_student_id
-      and se.ends_on is null and se.starts_on>p_ends_on
+      and se.starts_on>p_ends_on
       and exists (select 1 from public.class_subjects cs
         where cs.school_id=target_school_id and cs.id=se.class_subject_id
           and cs.class_id=p_class_id);
