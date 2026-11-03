@@ -88,11 +88,11 @@ select throws_ok($overlap$
   ) values (
     '75000000-0000-0000-0000-000000000002',
     'a0000000-0000-0000-0000-000000000001',
-    '71000000-0000-0000-0000-000000000002',
+    '71000000-0000-0000-0000-000000000001',
     'e0000000-0000-0000-0000-000000000001',
     date '2026-09-15'
   );
-$overlap$, '23P01', 'conflicting key value violates exclusion constraint "class_enrollments_one_active_class_per_student"', 'student cannot have overlapping active Classes');
+$overlap$, '23P01', 'conflicting key value violates exclusion constraint "class_enrollments_no_overlap_in_same_class"', 'student cannot have overlapping enrollments in one Class');
 
 select lives_ok($memberships$
   insert into public.subject_group_memberships (

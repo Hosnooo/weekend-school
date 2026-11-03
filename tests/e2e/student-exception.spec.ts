@@ -15,7 +15,7 @@ test('student exception remains sparse and visible in submitted history', async 
   });
 
   await page.goto(historyHref);
-  const exception = page.getByRole('row', {name: /Omar Hassan/}).locator('select').nth(1);
+  const exception = page.getByRole('combobox', {name: 'Individual performance — Omar Hassan'});
   await expect(exception).toBeDisabled();
   await expect(exception).toHaveValue('EXCELLENT');
   await expect(page.getByText('Exception workflow lesson')).toBeVisible();

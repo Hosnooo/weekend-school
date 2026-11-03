@@ -7,8 +7,8 @@ async function noHorizontalOverflow(page: Page) {
 }
 
 const cases = [
-  {locale: 'en' as const, updates: 'Teaching Updates', open: 'Open Teaching Updates', history: 'Submitted and dismissed updates', cycles: 'Report Cycles', create: 'Create Report Cycle', historical: 'Historical Subject and Group reports'},
-  {locale: 'ar' as const, updates: 'تحديثات التدريس', open: 'تحديثات التدريس المفتوحة', history: 'التحديثات المرسلة والمستبعدة', cycles: 'دورات التقارير', create: 'إنشاء دورة تقارير', historical: 'تقارير المواد والمجموعات السابقة'}
+  {locale: 'en' as const, updates: 'Teaching Updates', open: 'Open Teaching Updates', history: 'Submitted and dismissed updates', cycles: 'Open Report Cycles', recentlySent: 'Recently Sent', create: 'Create Report Cycle', historical: 'Historical Subject and Group reports'},
+  {locale: 'ar' as const, updates: 'تحديثات التدريس', open: 'تحديثات التدريس المفتوحة', history: 'التحديثات المرسلة والمستبعدة', cycles: 'دورات التقارير المفتوحة', recentlySent: 'أُرسلت مؤخراً', create: 'إنشاء دورة تقارير', historical: 'تقارير المواد والمجموعات السابقة'}
 ];
 
 for (const item of cases) {
@@ -34,6 +34,7 @@ for (const item of cases) {
 
       await page.goto(`/${item.locale}/reports`);
       await expect(page.getByRole('heading', {level: 2, name: item.cycles, exact: true})).toBeVisible();
+      await expect(page.getByRole('heading', {level: 2, name: item.recentlySent, exact: true})).toBeVisible();
       const create = page.locator('details.report-cycle-create');
       const historical = page.locator('details.report-cycle-history');
       await expect(create.locator('summary')).toHaveText(item.create);

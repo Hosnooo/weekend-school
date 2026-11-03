@@ -297,7 +297,17 @@
     "effectiveOn": "ساري في",
     "membershipHistory": "سجل العضوية",
     "noMembershipHistory": "لا يوجد سجل عضوية في المجموعات بعد.",
-    "noStudents": "لا يوجد طلاب مشاركون حاليًا في هذه المادة."
+    "noStudents": "لا يوجد طلاب مشاركون حاليًا في هذه المادة.",
+    "studentRoster": "الطلاب المسجلون في هذا الفصل",
+    "studentRosterDescription": "عدد الطلاب المسجلين حاليًا: {count}. يمكن التسجيل في فصل آخر أيضًا.",
+    "createStudentHere": "إنشاء طالب جديد وتسجيله",
+    "noEnrolledStudents": "لا يوجد طلاب مسجلون حاليًا.",
+    "addExistingStudents": "إضافة طلاب موجودين",
+    "multiClassHelp": "اختر الطلاب من دليل المدرسة. ستبقى تسجيلاتهم في الفصول الأخرى كما هي.",
+    "searchStudents": "البحث عن الطلاب",
+    "noEligibleStudents": "لا يوجد طلاب متاحون يطابقون البحث.",
+    "enrollmentStartDate": "تاريخ بدء التسجيل",
+    "enrollSelected": "تسجيل الطلاب المحددين ({count})"
   },
   "students": {
     "title": "الطلاب",
@@ -416,7 +426,12 @@
     "manageEnrollment": "إدارة التسجيل",
     "guardianOptional": "ولي الأمر (اختياري)",
     "guardianOptionalHelp": "يمكن إضافة بيانات ولي الأمر الآن أو إضافتها لاحقًا من سجل الطالب.",
-    "guardianPhone": "هاتف ولي الأمر"
+    "guardianPhone": "هاتف ولي الأمر",
+    "addAnotherClass": "التسجيل في فصل إضافي",
+    "multiClassHelp": "يمكن للطالب التسجيل في أكثر من فصل في الوقت نفسه دون تغيير تسجيلاته الأخرى.",
+    "allClassesEnrolled": "هذا الطالب مسجل بالفعل في جميع الفصول النشطة.",
+    "currentClasses": "الفصول الحالية",
+    "endClassEnrollment": "إنهاء التسجيل في هذا الفصل"
   },
   "guardians": {
     "title": "أولياء الأمور",

@@ -285,15 +285,15 @@ test.describe('Reports and Delivery Status', () => {
       }
 
       await expect(
-        page.getByText('Sara Ali', {exact: true})
+        page.locator('td[data-label="Student"]').filter({hasText: 'Sara Ali'})
       ).toBeVisible();
 
       await expect(
-        page.getByText('Omar Hassan', {exact: true})
+        page.locator('td[data-label="Student"]').filter({hasText: 'Omar Hassan'})
       ).toBeVisible();
 
       await expect(
-        page.getByText('Lina Khalil', {exact: true})
+        page.locator('td[data-label="Student"]').filter({hasText: 'Lina Khalil'})
       ).toBeVisible();
 
       await assertNoHorizontalOverflow(page);
@@ -311,7 +311,7 @@ test.describe('Reports and Delivery Status', () => {
       );
 
       await expect(
-        page.getByText('Lina Khalil', {exact: true})
+        page.locator('td[data-label="Student"]').filter({hasText: 'Lina Khalil'})
       ).toBeVisible();
 
       await expect(
@@ -319,7 +319,7 @@ test.describe('Reports and Delivery Status', () => {
       ).toBeVisible();
 
       await expect(
-        page.getByText('Sara Ali', {exact: true})
+        page.locator('td[data-label="Student"]').filter({hasText: 'Sara Ali'})
       ).toHaveCount(0);
 
       // English Preview — desktop.
@@ -379,7 +379,7 @@ test.describe('Reports and Delivery Status', () => {
       ).toBeVisible();
 
       await expect(
-        page.getByText('Lina Khalil', {exact: true})
+        page.locator('td[data-label="Student"]').filter({hasText: 'Lina Khalil'})
       ).toBeVisible();
 
       await assertNoHorizontalOverflow(page);
@@ -461,7 +461,7 @@ test.describe('Reports and Delivery Status', () => {
       }
 
       await expect(
-        page.getByText('لينا خليل', {exact: true})
+        page.locator('td[data-label="الطالب"]').filter({hasText: 'لينا خليل'})
       ).toBeVisible();
 
       await assertNoHorizontalOverflow(page);
@@ -532,7 +532,7 @@ test.describe('Reports and Delivery Status', () => {
       ).toBeVisible();
 
       await expect(
-        page.getByText('لينا خليل', {exact: true})
+        page.locator('td[data-label="الطالب"]').filter({hasText: 'لينا خليل'})
       ).toBeVisible();
 
       await assertNoHorizontalOverflow(page);

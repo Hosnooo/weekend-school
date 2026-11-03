@@ -24,16 +24,11 @@ function mapStudent(row: StudentRow, today: string): StudentListItem {
     enrollment.starts_on <= today &&
     (enrollment.ends_on === null || enrollment.ends_on >= today)
   );
-  if (effective.length > 1) {
-    throw new Error('A student has overlapping Class enrollments');
-  }
-  const currentClass = effective[0]?.classes
-    ? {
-        id: effective[0].classes.id,
-        nameEn: effective[0].classes.name_en,
-        nameAr: effective[0].classes.name_ar
-      }
-    : null;
+  const currentClasses = [...new Map(effective.filter((item) => item.classes).map((item): [string, {id: string; nameEn: string; nameAr: string | null}] => {
+    const schoolClass = item.classes!;
+    return [schoolClass.id, {id: schoolClass.id, nameEn: schoolClass.name_en, nameAr: schoolClass.name_ar}];
+  })).values()].sort((a, b) => a.nameEn.localeCompare(b.nameEn));
+  const currentClass = currentClasses[0] ?? null;
 
   return {
     id: row.id,
@@ -42,7 +37,8 @@ function mapStudent(row: StudentRow, today: string): StudentListItem {
     firstNameAr: row.first_name_ar,
     lastNameAr: row.last_name_ar,
     isActive: row.is_active,
-    currentClass
+    currentClass,
+    currentClasses
   };
 }
 

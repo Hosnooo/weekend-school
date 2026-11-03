@@ -99,9 +99,7 @@ export async function getStudentEnrollmentState(
       .eq('student_id', studentId)
       .lte('starts_on', onDate)
       .or(`ends_on.is.null,ends_on.gte.${onDate}`)
-      .order('starts_on', {ascending: false})
-      .limit(1)
-      .maybeSingle(),
+      .order('starts_on', {ascending: false}),
     supabase
       .from('subject_exclusions')
       .select('class_subject_id, starts_on, ends_on')
@@ -118,14 +116,11 @@ export async function getStudentEnrollmentState(
   if (exclusionsResult.error) throw exclusionsResult.error;
   if (membershipsResult.error) throw membershipsResult.error;
 
-  const enrollment = enrollmentResult.data as {
+  const activeEnrollments = (enrollmentResult.data ?? []) as Array<{
     class_id: string;
     starts_on: string;
     ends_on: string | null;
-  } | null;
-  const currentClass = enrollment
-    ? classes.find(({id}) => id === enrollment.class_id) ?? null
-    : null;
+  }>;
   const exclusions: EnrollmentSubjectExclusion[] = (exclusionsResult.data ?? []).map((row) => ({
     classSubjectId: row.class_subject_id as string,
     startsOn: row.starts_on as string,
@@ -137,25 +132,30 @@ export async function getStudentEnrollmentState(
     startsOn: row.starts_on as string,
     endsOn: row.ends_on as string | null
   }));
-
+  const currentEnrollments = activeEnrollments.flatMap((row) => {
+    const schoolClass = classes.find(({id}) => id === row.class_id);
+    if (!schoolClass) return [];
+    return [{
+      schoolClass,
+      enrollment: {classId: row.class_id, startsOn: row.starts_on, endsOn: row.ends_on},
+      participation: deriveSubjectParticipation({
+        classSubjects: schoolClass.subjects,
+        exclusions,
+        memberships,
+        onDate
+      })
+    }];
+  }).sort((a, b) => a.schoolClass.nameEn.localeCompare(b.schoolClass.nameEn));
+  const first = currentEnrollments[0];
   return {
-    currentClass,
-    currentEnrollment: enrollment ? {
-      classId: enrollment.class_id,
-      startsOn: enrollment.starts_on,
-      endsOn: enrollment.ends_on
-    } : null,
+    currentClass: first?.schoolClass ?? null,
+    currentEnrollment: first?.enrollment ?? null,
+    currentEnrollments,
     exclusions,
     memberships,
-    participation: currentClass
-      ? deriveSubjectParticipation({
-          classSubjects: currentClass.subjects,
-          exclusions,
-          memberships,
-          onDate
-        })
-      : []
+    participation: first?.participation ?? []
   };
+
 }
 
 export async function createStudentWithEnrollment(input: CreateStudentEnrollmentInput) {
@@ -190,6 +190,34 @@ export async function enrollStudentInClass(input: ChangeStudentClassInput) {
     p_student_id: input.studentId,
     p_target_class_id: input.targetClassId,
     p_starts_on: input.startsOn
+  });
+  if (error) throw error;
+}
+
+export async function enrollStudentsInClass(input: {
+  studentIds: string[];
+  targetClassId: string;
+  startsOn: string;
+}) {
+  const supabase = await createServerSupabaseClient();
+  const {error} = await supabase.rpc('enroll_students_in_class', {
+    p_student_ids: input.studentIds,
+    p_target_class_id: input.targetClassId,
+    p_starts_on: input.startsOn
+  });
+  if (error) throw error;
+}
+
+export async function endStudentClassEnrollment(input: {
+  studentId: string;
+  classId: string;
+  endsOn: string;
+}) {
+  const supabase = await createServerSupabaseClient();
+  const {error} = await supabase.rpc('end_student_class_enrollment', {
+    p_student_id: input.studentId,
+    p_class_id: input.classId,
+    p_ends_on: input.endsOn
   });
   if (error) throw error;
 }

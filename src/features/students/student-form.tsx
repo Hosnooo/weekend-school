@@ -28,6 +28,7 @@ export function StudentForm({
   availableGuardians = [],
   student,
   today,
+  initialClassId,
   cancelHref = '/students'
 }: {
   locale: Locale;
@@ -35,6 +36,7 @@ export function StudentForm({
   availableGuardians?: GuardianListItem[];
   student?: StudentListItem;
   today?: string;
+  initialClassId?: string;
   cancelHref?: string;
 }) {
   const t = useTranslations('students');
@@ -49,10 +51,20 @@ export function StudentForm({
     () => classes.filter(({isActive}) => isActive),
     [classes]
   );
-  const [classId, setClassId] = useState('');
+  const [classId, setClassId] = useState(initialClassId ?? '');
   const selectedClass =
     activeClasses.find(({id}) => id === classId) ?? null;
-  const [selections, setSelections] = useState<SubjectSelection[]>([]);
+  const [selections, setSelections] = useState<SubjectSelection[]>(() =>
+    (classes.find((item) => item.id === initialClassId)?.subjects ?? [])
+      .filter(({isActive}) => isActive)
+      .map((subject) => ({
+        classSubjectId: subject.id,
+        included: true,
+        groupId: subject.groups.some(({id, isActive}) => isActive && id === subject.defaultGroupId)
+          ? subject.defaultGroupId
+          : null
+      }))
+  );
   const [guardianMode, setGuardianMode] = useState<
     'none' | 'existing' | 'new'
   >('none');
@@ -115,6 +127,7 @@ export function StudentForm({
   return (
     <form action={action} className="record-form">
       <input name="locale" type="hidden" value={locale} />
+      {initialClassId && !student ? <input name="returnClassId" type="hidden" value={initialClassId} /> : null}
       {student ? <input name="id" type="hidden" value={student.id} /> : null}
 
       <div className="form-grid">

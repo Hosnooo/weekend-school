@@ -6,6 +6,10 @@ import {PageHeader} from '@/components/ui/page-header';
 import {SectionHeader} from '@/components/ui/section-header';
 import {ClassEditDialog} from '@/features/classes/class-edit-dialog';
 import {ClassSubjectCard} from '@/features/classes/class-subject-card';
+import {ClassStudentRoster} from '@/features/classes/class-student-roster';
+import {listStudents} from '@/features/students/student.repository';
+import {getSchoolTimezone} from '@/features/weekly-updates/weekly-update.repository';
+import {todayInTimeZone} from '@/features/weekly-updates/weekly-update.model';
 import {ClassSubjectForm} from '@/features/classes/class-subject-form';
 import {
   getClassDetail,
@@ -25,9 +29,11 @@ export default async function ClassDetailPage({
 
   const profile = await requireAdministrator(locale);
 
-  const [classDetail, subjects, t] = await Promise.all([
+  const [classDetail, subjects, students, timeZone, t] = await Promise.all([
     getClassDetail(profile.schoolId, classId),
     listSubjects(profile.schoolId),
+    listStudents(profile.schoolId),
+    getSchoolTimezone(profile.schoolId),
     getTranslations({locale, namespace: 'classes'})
   ]);
 
@@ -87,6 +93,8 @@ export default async function ClassDetailPage({
         })}`}
         title={className}
       />
+
+      <ClassStudentRoster classId={classDetail.id} locale={locale} students={students} today={todayInTimeZone(timeZone)} />
 
       <section className="content-section">
         <SectionHeader

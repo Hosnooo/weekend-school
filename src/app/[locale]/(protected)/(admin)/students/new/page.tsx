@@ -10,7 +10,10 @@ import {getSchoolTimezone} from '@/features/weekly-updates/weekly-update.reposit
 import {isLocale} from '@/i18n/config';
 import {requireProfile} from '@/lib/auth/require-profile';
 
-export default async function NewStudentPage({params}: {params: Promise<{locale: string}>}) {
+export default async function NewStudentPage({params, searchParams}: {
+  params: Promise<{locale: string}>;
+  searchParams: Promise<{classId?: string}>;
+}) {
   const {locale} = await params;
   if (!isLocale(locale)) notFound();
   const profile = await requireProfile(locale, 'ADMIN');
@@ -21,11 +24,18 @@ export default async function NewStudentPage({params}: {params: Promise<{locale:
     getTranslations({locale, namespace: 'students'})
   ]);
 
+  const requestedClassId = (await searchParams).classId;
+  const initialClassId = classes.some((schoolClass) => schoolClass.id === requestedClassId && schoolClass.isActive)
+    ? requestedClassId
+    : undefined;
+
   return <AdminPage title={t('newTitle')} description={t('description')}>
     <StudentForm
       availableGuardians={availableGuardians}
       classes={classes}
       locale={locale}
+      initialClassId={initialClassId}
+      cancelHref={initialClassId ? `/classes/${initialClassId}` : '/students'}
       today={todayInTimeZone(timeZone)}
     />
   </AdminPage>;

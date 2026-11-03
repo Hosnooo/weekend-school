@@ -7,7 +7,6 @@ const currentSchoolWeek = new Date(Date.UTC(
   schoolDatePart('year'), schoolDatePart('month') - 1, schoolDatePart('day'), 12
 ));
 export const schoolToday = currentSchoolWeek.toISOString().slice(0, 10);
-currentSchoolWeek.setUTCDate(currentSchoolWeek.getUTCDate() - (currentSchoolWeek.getUTCDay() + 6) % 7);
 
 export const redesign = {
   classId: '11000000-0000-0000-0000-000000000001',
@@ -20,5 +19,5 @@ export const redesign = {
   arabicWeek: '2026-09-15',
   exceptionWeek: '2026-09-22',
   authorizationWeek: '2026-09-01',
-  conflictWeek: currentSchoolWeek.toISOString().slice(0, 10)
+  conflictWeek: '2026-10-20'
 } as const;

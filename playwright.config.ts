@@ -8,14 +8,17 @@ if (!supabaseUrl || !/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(supabaseUrl)
 
 export default defineConfig({
   testDir: './tests/e2e',
+  // Recovery verification has its own isolated credentials, URL, and invocation.
+  // It must not be collected by the ordinary local/CI browser suite.
+  testIgnore: ['**/report-production-recovery.local.spec.ts'],
   timeout: 180_000,
   expect: {timeout: 60_000},
   fullyParallel: false,
   workers: 1,
   retries: 0,
-  // Stop CI after the first real browser failure instead of consuming minutes
-  // running unrelated specs. Local development can still collect all failures.
-  maxFailures: process.env.CI || process.env.E2E_FAIL_FAST === 'true' ? 1 : 0,
+  // Report the complete set of browser regressions in CI, so a release
+  // can be validated in one pass. Opt in to fail-fast only for local triage.
+  maxFailures: process.env.E2E_FAIL_FAST === 'true' ? 1 : 0,
   reporter: process.env.CI ? [['list'], ['github']] : 'list',
   use: {
     actionTimeout: 60_000,

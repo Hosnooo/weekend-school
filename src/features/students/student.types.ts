@@ -6,4 +6,5 @@ export type StudentListItem = {
   lastNameAr: string | null;
   isActive: boolean;
   currentClass: {id: string; nameEn: string; nameAr: string | null} | null;
+  currentClasses: Array<{id: string; nameEn: string; nameAr: string | null}>;
 };

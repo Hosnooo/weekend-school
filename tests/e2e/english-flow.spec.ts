@@ -42,6 +42,17 @@ test('English redesigned workflow reaches a finalized Class report', async ({pag
   await expect(page.getByRole('heading', {name: 'Report Cycle · Foundations'})).toBeVisible();
   const blueSource = page.locator('.report-source-context').filter({hasText: 'Arabic Reading · Blue'});
   await expect(blueSource.locator('.report-source-row')).toHaveCount(2);
+  // Overlapping numeric sources are intentionally blocked until an
+  // Administrator confirms attendance totals for the affected students.
+  await blueSource.getByRole('link', {name: 'Edit update'}).click();
+  const editor = blueSource.locator('.report-source-editor:visible');
+  await expect(editor).toBeVisible();
+  for (const student of await editor.locator('article.record-card').all()) {
+    await student.locator('input[name^="attendanceAttended:"]').fill('1');
+    await student.locator('input[name^="attendanceTotal:"]').fill('1');
+  }
+  await editor.getByRole('button', {name: 'Save & close'}).click();
+  await expect(editor).toBeHidden();
   await page.getByRole('button', {name: 'Finalize and prepare to send'}).click();
   await expect(page.getByText('Student reports are ready to send.', {exact: true})).toBeVisible();
   const preview = page.locator('section.report-email-review-panel').last();
