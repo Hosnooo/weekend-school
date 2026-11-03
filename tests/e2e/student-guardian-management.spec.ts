@@ -64,8 +64,8 @@ test.describe('Student, enrollment, and Guardian management', () => {
     await expect(page.getByText(guardianName, {exact: true})).toBeVisible();
     await expect(page.getByText(guardianEmail, {exact: true})).toBeVisible();
     await expect(
-      page.locator('p').filter({hasText: 'Current Class:'})
-    ).toContainText('Foundations');
+      page.getByRole('heading', {level: 3, name: 'Foundations'})
+    ).toBeVisible();
     await assertNoHorizontalOverflow(page);
 
     await page.screenshot({
